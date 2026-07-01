@@ -42,12 +42,19 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        // First: try password without is_active constraint
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
+        }
+
+        // Password was correct — check if account is deactivated and reactivate
+        $user = Auth::user();
+        if (! $user->is_active) {
+            $user->update(['is_active' => true]);
         }
 
         RateLimiter::clear($this->throttleKey());
