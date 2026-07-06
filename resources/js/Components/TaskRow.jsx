@@ -6,7 +6,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { router, useForm } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const statusStyles = {
     todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -19,6 +19,48 @@ const statusStyles = {
 function formatDue(dateString) {
     if (!dateString) return null;
     return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function KebabMenu({ onEdit, onDelete }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, []);
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && (
+                <div className="absolute right-0 z-20 mt-1 w-32 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <button
+                        onClick={() => { setOpen(false); onEdit(); }}
+                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => { setOpen(false); onDelete(); }}
+                        className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members }) {
@@ -41,6 +83,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
     const commentForm = useForm({ body: '' });
+
+    const resolveKeepForm = useForm({ action: 'keep' });
+    const resolveResetForm = useForm({ action: 'reset' });
 
     const startTask = () => router.patch(route('tasks.start', task.id));
     const startReview = () => router.patch(route('tasks.start-review', task.id));
@@ -76,10 +121,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         if (!confirm(confirmMessage)) return;
         submitForm.post(route('tasks.submit', task.id), {
             forceFormData: true,
-            onSuccess: () => {
-                submitForm.reset();
-                setShowAddPanel(false);
-            },
+            onSuccess: () => { submitForm.reset(); setShowAddPanel(false); },
         });
     };
 
@@ -115,12 +157,62 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     return (
         <div
             id={`task-${task.id}`}
-            className={`rounded-lg border bg-white p-4 shadow-sm transition dark:bg-gray-800 ${
+            className={`rounded-lg border-l-4 bg-white shadow-sm transition dark:bg-gray-800 ${
                 isHighlighted
-                    ? 'border-indigo-400 ring-2 ring-indigo-400 dark:border-indigo-500 dark:ring-indigo-500'
-                    : 'border-gray-200 dark:border-gray-700'
+                    ? 'border-l-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500'
+                    : task.status === 'todo' ? 'border-l-gray-400 dark:border-l-gray-600'
+                    : task.status === 'in_progress' ? 'border-l-blue-500'
+                    : task.status === 'submitted' ? 'border-l-yellow-500'
+                    : task.status === 'in_review' ? 'border-l-purple-500'
+                    : task.status === 'done' ? 'border-l-green-500'
+                    : 'border-l-gray-400'
             }`}
         >
+            <div className="p-4">
+            {!!task.pending_resolution && canManage && (
+                <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        The person assigned to this task left or was removed while it was {task.status.replace('_', ' ')}. Keep the submission for review, or reset the task?
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                        <SecondaryButton
+                            disabled={resolveKeepForm.processing}
+                            onClick={() => {
+                                console.log('Keep clicked, task id:', task.id);
+                                console.log('route:', route('tasks.resolve', task.id));
+                                resolveKeepForm.patch(route('tasks.resolve', task.id), {
+                                    onSuccess: () => {
+                                        console.log('onSuccess fired');
+                                        window.location.reload();
+                                    },
+                                    onError: (errors) => {
+                                        console.log('onError:', errors);
+                                    },
+                                    onFinish: () => {
+                                        console.log('onFinish fired');
+                                    },
+                                });
+                            }}
+                        >
+                            Keep Submission
+                        </SecondaryButton>
+                        <DangerButton
+                            disabled={resolveResetForm.processing}
+                            onClick={() => {
+                                if (confirm('Reset this task? The submission and deliverables will be cleared.')) {
+                                    resolveResetForm.patch(route('tasks.resolve', task.id), {
+                                        replace: true,
+                                        onSuccess: () => window.location.reload(),
+                                    });
+                                }
+                            }}
+                        >
+                            Reset Task
+                        </DangerButton>
+                    </div>
+                </div>
+            )}
+
             {isEditing ? (
                 <form onSubmit={saveEdit} className="space-y-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
                     <div>
@@ -160,47 +252,58 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 <>
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                            <p className="break-words font-medium text-gray-900 dark:text-gray-100">
-                                {task.title}
-                                {task.edited_at && <span className="ml-2 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>}
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {task.assignee ? task.assignee.name : 'Unassigned'}
-                                {task.due_date && ` · due ${formatDue(task.due_date)}`}
-                            </p>
+                            <div className="flex items-center gap-2">
+                                {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
+                                <p className="break-words font-semibold text-gray-900 dark:text-gray-100">
+                                    {task.title}
+                                    {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
+                                </p>
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                {!task.assignee && <span>Unassigned</span>}
+                                {task.assignee && <span>{task.assignee.name}</span>}
+                                {task.due_date && (
+                                    <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        {formatDue(task.due_date)}
+                                    </span>
+                                )}
+                                {task.comments?.length > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        {task.comments.length}
+                                    </span>
+                                )}
+                                {task.deliverables?.length > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                        </svg>
+                                        {task.deliverables.length} file{task.deliverables.length > 1 ? 's' : ''}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                            <span className={`rounded-full px-2 py-1 text-xs ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                 {task.status.replace('_', ' ')}
                             </span>
                             {canManage && (
-                                <div className="flex gap-1">
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={deleteTask}
-                                        className="rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/70"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                                <KebabMenu onEdit={() => setIsEditing(true)} onDelete={deleteTask} />
                             )}
                         </div>
                     </div>
                     {task.description && (
-                        <div className="mt-1">
+                        <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
                             <p className={`break-words text-sm text-gray-600 dark:text-gray-400 ${!showFullDescription ? 'line-clamp-2' : ''}`}>
                                 {task.description}
                             </p>
                             {task.description.length > 120 && (
-                                <button
-                                    onClick={() => setShowFullDescription((v) => !v)}
-                                    className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                                >
+                                <button onClick={() => setShowFullDescription((v) => !v)} className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                                     {showFullDescription ? 'Show Less' : 'View Full Description'}
                                 </button>
                             )}
@@ -222,14 +325,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             Add files or links
                         </SecondaryButton>
                     )}
-
                     {(showAddPanel || submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
                         <form onSubmit={submitTask} className="rounded-md border border-gray-200 p-3 dark:border-gray-700">
                             <div className="flex flex-wrap items-center gap-2">
                                 <input ref={fileInputRef} type="file" multiple onChange={addFiles} className="hidden" />
-                                <SecondaryButton type="button" onClick={() => fileInputRef.current.click()}>
-                                    Browse Files
-                                </SecondaryButton>
+                                <SecondaryButton type="button" onClick={() => fileInputRef.current.click()}>Browse Files</SecondaryButton>
                                 <input
                                     type="url"
                                     value={linkInput}
@@ -239,7 +339,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 />
                                 <SecondaryButton type="button" onClick={addLink}>Add Link</SecondaryButton>
                             </div>
-
                             {(submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
                                 <ul className="mt-3 space-y-1">
                                     {submitForm.data.files.map((file, i) => (
@@ -256,14 +355,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     ))}
                                 </ul>
                             )}
-
                             <div className="mt-3 flex items-center gap-2">
                                 <PrimaryButton disabled={submitForm.processing}>
                                     {task.status === 'submitted' ? 'Add More' : 'Submit Work'}
                                 </PrimaryButton>
-                                <button type="button" onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                    Cancel
-                                </button>
+                                <button type="button" onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
                             </div>
                             <InputError message={submitForm.errors.files} className="mt-2" />
                         </form>
@@ -324,7 +420,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 <button onClick={() => setShowComments((v) => !v)} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
                     {showComments ? 'Hide comments' : `Comments (${commentCount})`}
                 </button>
-
                 {showComments && (
                     <div className="mt-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900">
                         <div className="space-y-3">
@@ -365,29 +460,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                 )}
             </div>
-            {!!task.pending_resolution && canManage && (
-                <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
-                    <p className="text-sm text-amber-800 dark:text-amber-200">
-                        The person assigned to this task left or was removed while it was {task.status.replace('_', ' ')}. Keep the submission for review, or reset the task?
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                        <SecondaryButton
-                            onClick={() => router.patch(route('tasks.resolve', task.id), { action: 'keep' })}
-                        >
-                            Keep Submission
-                        </SecondaryButton>
-                        <DangerButton
-                            onClick={() => {
-                                if (confirm('Reset this task?')) {
-                                    router.patch(route('tasks.resolve', task.id), { action: 'reset' });
-                                }
-                            }}
-                        >
-                            Reset Task
-                        </DangerButton>
-                    </div>
-                </div>
-            )}
+        </div>
         </div>
     );
 }

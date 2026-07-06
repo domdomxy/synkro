@@ -21,12 +21,45 @@ const statusColors = {
 
 const rangeLabels = { today: 'Today', week: 'This Week', month: 'This Month' };
 
-function StatCard({ label, value, accent = false, sub }) {
+const statIcons = {
+    active: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+    ),
+    done: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+    ),
+    projects: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+    ),
+    review: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+    ),
+};
+
+function StatCard({ label, value, sub, icon, accentColor }) {
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-            <p className={`mt-1 text-3xl font-semibold ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-            {sub && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+                    <p className={`mt-1 text-3xl font-semibold ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+                    {sub && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
+                </div>
+                {icon && (
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
+                        {icon}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -312,83 +345,110 @@ export default function Dashboard({ stats, range }) {
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
+                    {/* Top-level stats */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard label="Active Tasks" value={stats.activeTasksCount} accent />
-                        <StatCard label="Completed" value={stats.doneTasksCount} />
-                        <StatCard label="Projects" value={stats.projectsCount} />
-                        <StatCard label="Awaiting Your Review" value={stats.pendingReview} />
+                        <StatCard
+                            label="Active Tasks"
+                            value={stats.activeTasksCount}
+                            sub="Assigned to you, not yet done"
+                            icon={statIcons.active}
+                            accentColor="text-indigo-600 dark:text-indigo-400"
+                        />
+                        <StatCard
+                            label="Tasks Completed"
+                            value={stats.doneTasksCount}
+                            sub="Marked done, assigned to you"
+                            icon={statIcons.done}
+                            accentColor="text-green-600 dark:text-green-400"
+                        />
+                        <StatCard
+                            label="Projects"
+                            value={stats.projectsCount}
+                            sub="You're a member of"
+                            icon={statIcons.projects}
+                        />
+                        <StatCard
+                            label="Awaiting Your Review"
+                            value={stats.pendingReview}
+                            sub="Submitted tasks to check"
+                            icon={statIcons.review}
+                            accentColor="text-purple-600 dark:text-purple-400"
+                        />
                     </div>
 
-                    <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity</h3>
-                                    <RangeButtons range={range} />
-                                </div>
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <AreaChart data={stats.chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                                        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Area type="monotone" dataKey="completed" name="Tasks Completed" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
-                                        <Line type="monotone" dataKey="created" name="Tasks Assigned" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                        <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                                <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
-                                <div className="space-y-2">
-                                    {Object.entries(statusLabels).map(([key, label]) => (
-                                        <div key={key} className="flex items-center gap-3">
-                                            <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
-                                            <span className="w-24 text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                                            <div className="h-2 flex-1 rounded-full bg-gray-100 dark:bg-gray-700">
-                                                <div
-                                                    className={`h-2 rounded-full ${statusColors[key]}`}
-                                                    style={{ width: `${totalTasks ? ((stats.tasksByStatus[key] ?? 0) / totalTasks) * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                            <span className="w-8 text-right text-sm text-gray-500 dark:text-gray-400">{stats.tasksByStatus[key] ?? 0}</span>
-                                        </div>
+                    {/* Actionable: what needs attention right now */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
+                            {stats.dueSoon.length === 0 ? (
+                                <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days.</p>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {stats.dueSoon.map((task) => (
+                                        <li key={task.id}>
+                                            <Link
+                                                href={`${route('projects.show', task.project_id)}?task=${task.id}`}
+                                                className="block rounded-md border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+                                            >
+                                                <p className="truncate font-medium text-gray-800 dark:text-gray-200">{task.title}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500">{task.project?.name}</p>
+                                                <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                                                    {new Date(task.due_date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                </p>
+                                            </Link>
+                                        </li>
                                     ))}
-                                    {totalTasks === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No tasks assigned to you yet.</p>}
-                                </div>
-                            </div>
-
-                            <CalendarView tasks={stats.calendarTasks} />
+                                </ul>
+                            )}
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                                <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
-                                {stats.dueSoon.length === 0 ? (
-                                    <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days.</p>
-                                ) : (
-                                    <ul className="space-y-2">
-                                        {stats.dueSoon.map((task) => (
-                                            <li key={task.id}>
-                                                <Link
-                                                    href={`${route('projects.show', task.project_id)}?task=${task.id}`}
-                                                    className="block rounded-md border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
-                                                >
-                                                    <p className="truncate font-medium text-gray-800 dark:text-gray-200">{task.title}</p>
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500">{task.project?.name}</p>
-                                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                                                        {new Date(task.due_date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                                    </p>
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
+                        <RemindersPanel reminders={stats.reminders} />
+                    </div>
 
-                            <RemindersPanel reminders={stats.reminders} />
+                    {/* Activity trend */}
+                    <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity</h3>
+                            <RangeButtons range={range} />
+                        </div>
+                        <ResponsiveContainer width="100%" height={240}>
+                            <AreaChart data={stats.chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                                <Tooltip />
+                                <Legend />
+                                <Area type="monotone" dataKey="completed" name="Tasks Completed" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
+                                <Line type="monotone" dataKey="created" name="Tasks Assigned" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Reference: breakdown + calendar */}
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-1">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
+                            <div className="space-y-3">
+                                {Object.entries(statusLabels).map(([key, label]) => (
+                                    <div key={key} className="flex items-center gap-3">
+                                        <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
+                                        <span className="w-20 text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                                        <div className="h-2 flex-1 rounded-full bg-gray-100 dark:bg-gray-700">
+                                            <div
+                                                className={`h-2 rounded-full ${statusColors[key]}`}
+                                                style={{ width: `${totalTasks ? ((stats.tasksByStatus[key] ?? 0) / totalTasks) * 100 : 0}%` }}
+                                            />
+                                        </div>
+                                        <span className="w-8 text-right text-sm text-gray-500 dark:text-gray-400">{stats.tasksByStatus[key] ?? 0}</span>
+                                    </div>
+                                ))}
+                                {totalTasks === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No tasks assigned to you yet.</p>}
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <CalendarView tasks={stats.calendarTasks} />
                         </div>
                     </div>
                 </div>

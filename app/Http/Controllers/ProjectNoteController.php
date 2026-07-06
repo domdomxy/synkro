@@ -9,21 +9,48 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectNoteController extends Controller
 {
-    public function update(Request $request, Project $project)
+    public function store(Request $request, Project $project)
     {
-        if (! $project->isMember(Auth::user())) {
-            abort(403);
-        }
+        abort_unless($project->isMember(Auth::user()), 403);
 
         $validated = $request->validate([
-            'content' => 'nullable|string|max:5000',
+            'title' => 'nullable|string|max:100',
+            'content' => 'required|string|max:5000',
         ]);
 
-        ProjectNote::updateOrCreate(
-            ['project_id' => $project->id, 'user_id' => Auth::id()],
-            ['content' => $validated['content'] ?? '']
-        );
+        ProjectNote::create([
+            ...$validated,
+            'project_id' => $project->id,
+            'user_id' => Auth::id(),
+        ]);
 
-        return back()->with('success', 'Note saved.');
+        return back()->with('success', 'Note added.');
+    }
+
+    public function update(Request $request, ProjectNote $note)
+    {
+        abort_unless($note->user_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:100',
+            'content' => 'required|string|max:5000',
+        ]);
+
+        $note->update($validated);
+
+        return back()->with('success', 'Note updated.');
+    }
+
+    public function destroy(ProjectNote $note)
+    {
+        abort_unless($note->user_id === Auth::id(), 403);
+        $note->delete();
+        return back()->with('success', 'Note deleted.');
+    }
+
+    public function clearAll(Project $project)
+    {
+        $project->notes()->where('user_id', Auth::id())->delete();
+        return back()->with('success', 'All notes cleared.');
     }
 }

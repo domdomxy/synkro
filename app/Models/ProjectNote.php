@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectNote extends Model
 {
-    protected $fillable = ['project_id', 'user_id', 'content'];
+    protected $fillable = ['project_id', 'user_id', 'title', 'content'];
 
     public function project(): BelongsTo { return $this->belongsTo(Project::class); }
     public function user(): BelongsTo { return $this->belongsTo(User::class); }

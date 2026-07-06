@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\ReminderDue;
 use App\Models\Reminder;
 use App\Models\UserNotification;
 use Illuminate\Console\Command;
@@ -19,12 +20,23 @@ class SendDueReminders extends Command
             ->get();
 
         foreach ($due as $reminder) {
-            UserNotification::create([
+            $notification = UserNotification::create([
                 'user_id' => $reminder->user_id,
                 'type' => 'reminder',
                 'message' => "⏰ {$reminder->title}" . ($reminder->note ? " — {$reminder->note}" : ''),
                 'url' => route('dashboard', [], false),
             ]);
+
+            try {
+                broadcast(new ReminderDue(
+                    $reminder->user_id,
+                    $reminder->title,
+                    $reminder->note,
+                    $notification->id
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $reminder->update(['notified_at' => now(), 'dismissed' => true]);
         }

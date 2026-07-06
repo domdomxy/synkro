@@ -56,12 +56,12 @@ class ProjectController extends Controller
 
         $project->load(['members', 'tasks.assignee', 'tasks.comments.user', 'tasks.deliverables']);
 
-        $note = $project->notes()->where('user_id', Auth::id())->first();
+        $notes = $project->notes()->where('user_id', Auth::id())->latest()->get();
 
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'role' => $project->roleFor(Auth::user()),
-            'myNote' => $note?->content ?? '',
+            'myNotes' => $notes,
         ]);
     }
 

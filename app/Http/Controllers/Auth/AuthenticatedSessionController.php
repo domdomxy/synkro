@@ -21,6 +21,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'suspension' => session('suspension'),
         ]);
     }
 
@@ -31,9 +32,36 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = Auth::user();
+
+        if ($user->is_suspended) {
+            // Auto-expire a timed suspension right here instead of waiting for the scheduler
+            if ($user->suspended_until && $user->suspended_until->isPast()) {
+                $user->update([
+                    'is_suspended' => false,
+                    'suspended_until' => null,
+                    'suspension_reason' => null,
+                    'suspended_by' => null,
+                ]);
+            } else {
+                $suspensionData = [
+                    'reason' => $user->suspension_reason,
+                    'until' => $user->suspended_until?->toIso8601String(),
+                    'permanent' => $user->suspended_until === null,
+                    'user_id' => $user->id,
+                ];
+
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with('suspension', $suspensionData);
+            }
+        }
+
         $request->session()->regenerate();
 
-        return redirect()->intended(route('projects.index', absolute: false));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
@@ -48,5 +76,23 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function suspendedLogout(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        $suspensionData = $user ? [
+            'reason' => $user->suspension_reason,
+            'until' => $user->suspended_until?->toIso8601String(),
+            'permanent' => $user->suspended_until === null,
+            'user_id' => $user->id,
+        ] : null;
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('suspension', $suspensionData);
     }
 }

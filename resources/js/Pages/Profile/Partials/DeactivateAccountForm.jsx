@@ -36,13 +36,6 @@ export default function DeactivateAccountForm({ className = '' }) {
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Deactivate Account</h2>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Deactivating your account will log you out and freeze your active task submissions.
-                    You can reactivate at any time by logging back in.
-                </p>
-            </header>
 
             <DangerButton className="mt-4" onClick={confirmDeactivation}>
                 Deactivate Account

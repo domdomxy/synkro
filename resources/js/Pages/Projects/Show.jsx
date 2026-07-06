@@ -3,13 +3,14 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
 import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -19,7 +20,275 @@ const roleStyles = {
     admin: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
-export default function Show({ project, role, myNote }) {
+const statusBarColors = {
+    todo: 'bg-gray-400',
+    in_progress: 'bg-blue-500',
+    submitted: 'bg-yellow-500',
+    in_review: 'bg-purple-500',
+    done: 'bg-green-500',
+};
+
+const STATUS_OPTIONS = [
+    { value: 'all', label: 'All' },
+    { value: 'todo', label: 'To Do' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'submitted', label: 'Submitted' },
+    { value: 'in_review', label: 'In Review' },
+    { value: 'done', label: 'Done' },
+];
+
+function SearchIcon() {
+    return (
+        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+    );
+}
+
+function SearchInput({ value, onChange, placeholder, className = '' }) {
+    return (
+        <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
+                <SearchIcon />
+            </div>
+            <TextInput
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className={`pl-8 ${className}`}
+            />
+        </div>
+    );
+}
+
+function TaskStatusBar({ tasks }) {
+    const total = tasks.length;
+    if (total === 0) return null;
+
+    const counts = tasks.reduce((acc, t) => {
+        acc[t.status] = (acc[t.status] ?? 0) + 1;
+        return acc;
+    }, {});
+
+    return (
+        <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+            {Object.entries(statusBarColors).map(([status, color]) => {
+                const count = counts[status] ?? 0;
+                if (count === 0) return null;
+                return (
+                    <div
+                        key={status}
+                        className={color}
+                        style={{ width: `${(count / total) * 100}%` }}
+                        title={`${status.replace('_', ' ')}: ${count}`}
+                    />
+                );
+            })}
+        </div>
+    );
+}
+
+function NoteKebabMenu({ onEdit, onDelete }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, []);
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && (
+                <div className="absolute right-0 top-full z-20 mt-1 w-28 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <button
+                        onClick={() => { setOpen(false); onEdit(); }}
+                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => { setOpen(false); onDelete(); }}
+                        className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function NotesPanel({ project, myNotes }) {
+    const [open, setOpen] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const panelRef = useRef(null);
+
+    const newForm = useForm({ title: '', content: '' });
+    const editForm = useForm({ title: '', content: '' });
+    const [showNewForm, setShowNewForm] = useState(false);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const submitNew = (e) => {
+        e.preventDefault();
+        newForm.post(route('projects.notes.store', project.id), {
+            onSuccess: () => { newForm.reset(); setShowNewForm(false); },
+        });
+    };
+
+    const startEdit = (note) => {
+        setEditingId(note.id);
+        editForm.setData({ title: note.title ?? '', content: note.content });
+    };
+
+    const submitEdit = (e, noteId) => {
+        e.preventDefault();
+        editForm.patch(route('projects.notes.update', noteId), {
+            onSuccess: () => setEditingId(null),
+        });
+    };
+
+    const deleteNote = (noteId) => {
+        if (confirm('Delete this note?')) router.delete(route('projects.notes.destroy', noteId));
+    };
+
+    const clearAll = () => {
+        if (confirm('Clear all your notes on this project? This cannot be undone.')) {
+            router.delete(route('projects.notes.clear', project.id));
+        }
+    };
+
+    return (
+        <div className="relative" ref={panelRef}>
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+            >
+                <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="text-sm font-semibold dark:text-gray-100">My Notes</span>
+                    {myNotes.length > 0 && (
+                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                            {myNotes.length}
+                        </span>
+                    )}
+                </div>
+                <svg className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="absolute right-0 z-10 mt-1 w-full rounded-lg bg-white p-4 shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <div className="mb-3 flex items-center justify-between">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Visible only to you</p>
+                        <div className="flex gap-2">
+                            {myNotes.length > 0 && (
+                                <button onClick={clearAll} className="text-xs text-red-500 hover:underline">Clear all</button>
+                            )}
+                            <button
+                                onClick={() => setShowNewForm((v) => !v)}
+                                className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500"
+                            >
+                                {showNewForm ? 'Cancel' : '+ New Note'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {showNewForm && (
+                        <form onSubmit={submitNew} className="mb-3 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                            <input
+                                type="text"
+                                placeholder="Title (optional)"
+                                value={newForm.data.title}
+                                onChange={(e) => newForm.setData('title', e.target.value)}
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                            <textarea
+                                placeholder="Write your note..."
+                                value={newForm.data.content}
+                                onChange={(e) => newForm.setData('content', e.target.value)}
+                                rows={3}
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                            <InputError message={newForm.errors.content} />
+                            <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1 text-xs text-white hover:bg-indigo-500 disabled:opacity-50">
+                                Save Note
+                            </button>
+                        </form>
+                    )}
+
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
+                        {myNotes.length === 0 && !showNewForm && (
+                            <p className="text-center text-sm text-gray-400 dark:text-gray-500">No notes yet. Add one above.</p>
+                        )}
+                        {myNotes.map((note) => (
+                            <div key={note.id} className="rounded-md border border-gray-100 p-3 dark:border-gray-700">
+                                {editingId === note.id ? (
+                                    <form onSubmit={(e) => submitEdit(e, note.id)} className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Title (optional)"
+                                            value={editForm.data.title}
+                                            onChange={(e) => editForm.setData('title', e.target.value)}
+                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        />
+                                        <textarea
+                                            value={editForm.data.content}
+                                            onChange={(e) => editForm.setData('content', e.target.value)}
+                                            rows={3}
+                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        />
+                                        <div className="flex gap-2">
+                                            <button type="submit" disabled={editForm.processing} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Save</button>
+                                            <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <>
+                                    <div className="mt-2 flex items-center justify-between">
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                                {new Date(note.updated_at).toLocaleDateString(undefined, { dateStyle: 'short' })}
+                                            </p>
+                                            <NoteKebabMenu
+                                                onEdit={() => startEdit(note)}
+                                                onDelete={() => deleteNote(note.id)}
+                                            />
+                                    </div>
+                                        {note.title && <p className="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>}
+                                        <p className="break-words text-sm text-gray-600 dark:text-gray-400">{note.content}</p>
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function Show({ project, role, myNotes }) {
     const { auth } = usePage().props;
     const { url } = usePage();
     const canManage = ['owner', 'manager'].includes(role);
@@ -28,23 +297,13 @@ export default function Show({ project, role, myNote }) {
 
     const [memberSearch, setMemberSearch] = useState('');
     const [taskSearch, setTaskSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+    const [showNewTaskForm, setShowNewTaskForm] = useState(false);
 
     const memberForm = useForm({ email: '', role: 'member' });
     const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '' });
-    const noteForm = useForm({ content: myNote });
-    const [noteSaved, setNoteSaved] = useState(false);
-
-    const saveNote = () => {
-        noteForm.patch(route('projects.note.update', project.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setNoteSaved(true);
-                setTimeout(() => setNoteSaved(false), 2000);
-            },
-        });
-    };
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
         router.reload({ only: ['project'] });
@@ -53,19 +312,12 @@ export default function Show({ project, role, myNote }) {
     useEffect(() => {
         const taskId = new URLSearchParams(window.location.search).get('task');
         if (!taskId) return;
-
         setHighlightedTaskId(Number(taskId));
-
         const scrollTimer = setTimeout(() => {
             document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
-
         const clearTimer = setTimeout(() => setHighlightedTaskId(null), 3000);
-
-        return () => {
-            clearTimeout(scrollTimer);
-            clearTimeout(clearTimer);
-        };
+        return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
     }, [url]);
 
     const submitMember = (e) => {
@@ -75,7 +327,9 @@ export default function Show({ project, role, myNote }) {
 
     const submitTask = (e) => {
         e.preventDefault();
-        taskForm.post(route('tasks.store', project.id), { onSuccess: () => taskForm.reset() });
+        taskForm.post(route('tasks.store', project.id), {
+            onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); },
+        });
     };
 
     const removeMember = (member) => {
@@ -96,6 +350,11 @@ export default function Show({ project, role, myNote }) {
         }
     };
 
+    const clearTaskFilters = () => {
+        setTaskSearch('');
+        setStatusFilter('all');
+    };
+
     const filteredMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
         if (!term) return project.members;
@@ -104,9 +363,14 @@ export default function Show({ project, role, myNote }) {
 
     const filteredTasks = useMemo(() => {
         const term = taskSearch.trim().toLowerCase();
-        if (!term) return project.tasks;
-        return project.tasks.filter((t) => t.title.toLowerCase().includes(term));
-    }, [project.tasks, taskSearch]);
+        return project.tasks.filter((t) => {
+            if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+            if (!term) return true;
+            return t.title.toLowerCase().includes(term);
+        });
+    }, [project.tasks, taskSearch, statusFilter]);
+
+    const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all';
 
     return (
         <AuthenticatedLayout header={<h2 className="break-words text-xl font-semibold text-gray-800 dark:text-gray-200">{project.name}</h2>}>
@@ -115,10 +379,16 @@ export default function Show({ project, role, myNote }) {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_1fr_280px]">
 
+                        {/* LEFT — Members */}
                         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
                             <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                                <h3 className="mb-3 text-base font-semibold dark:text-gray-100">Members</h3>
-                                <TextInput
+                                <div className="mb-3 flex items-center gap-2">
+                                    <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
+                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                        {project.members.length}
+                                    </span>
+                                </div>
+                                <SearchInput
                                     value={memberSearch}
                                     onChange={(e) => setMemberSearch(e.target.value)}
                                     placeholder="Search members..."
@@ -142,16 +412,14 @@ export default function Show({ project, role, myNote }) {
                                                             <option value="tester">tester</option>
                                                         </select>
                                                     ) : (
-                                                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                             {member.pivot.role}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
                                             {canManage && member.id !== project.owner_id && (
-                                                <button onClick={() => removeMember(member)} className="shrink-0 text-xs text-red-500 hover:underline">
-                                                    Remove
-                                                </button>
+                                                <button onClick={() => removeMember(member)} className="shrink-0 text-xs text-red-500 hover:underline">Remove</button>
                                             )}
                                         </li>
                                     ))}
@@ -160,50 +428,99 @@ export default function Show({ project, role, myNote }) {
                             </div>
                         </div>
 
+                        {/* MIDDLE — Tasks */}
                         <div className="space-y-4">
                             {canManage && (
-                                <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                                    <h3 className="mb-4 text-lg font-semibold dark:text-gray-100">New Task</h3>
-                                    <form onSubmit={submitTask} className="space-y-4">
-                                        <div>
-                                            <InputLabel htmlFor="title" value="Title" />
-                                            <TextInput id="title" value={taskForm.data.title} onChange={(e) => taskForm.setData('title', e.target.value)} className="mt-1 block w-full" />
-                                            <InputError message={taskForm.errors.title} className="mt-2" />
+                                <>
+                                    <button
+                                        onClick={() => setShowNewTaskForm((v) => !v)}
+                                        className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800"
+                                    >
+                                        <span className="flex items-center gap-2 text-sm font-semibold dark:text-gray-100">
+                                            <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            {showNewTaskForm ? 'Close New Task' : 'Create New Task'}
+                                        </span>
+                                        <svg className={`h-4 w-4 text-gray-400 transition-transform ${showNewTaskForm ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {showNewTaskForm && (
+                                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                                            <form onSubmit={submitTask} className="space-y-4">
+                                                <div>
+                                                    <InputLabel htmlFor="title" value="Title" />
+                                                    <TextInput id="title" value={taskForm.data.title} onChange={(e) => taskForm.setData('title', e.target.value)} className="mt-1 block w-full" />
+                                                    <InputError message={taskForm.errors.title} className="mt-2" />
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="description" value="Description" />
+                                                    <textarea id="description" value={taskForm.data.description} onChange={(e) => taskForm.setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={3} />
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <div className="flex-1">
+                                                        <InputLabel htmlFor="assigned_to" value="Assign To" />
+                                                        <select id="assigned_to" value={taskForm.data.assigned_to} onChange={(e) => taskForm.setData('assigned_to', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                            <option value="">Unassigned</option>
+                                                            {project.members.map((m) => (
+                                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <InputLabel htmlFor="due_date" value="Due Date & Time" />
+                                                        <TextInput id="due_date" type="datetime-local" step="1" value={taskForm.data.due_date} onChange={(e) => taskForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <PrimaryButton disabled={taskForm.processing}>Create Task</PrimaryButton>
+                                                    <SecondaryButton type="button" onClick={() => setShowNewTaskForm(false)}>Cancel</SecondaryButton>
+                                                </div>
+                                            </form>
                                         </div>
-                                        <div>
-                                            <InputLabel htmlFor="description" value="Description" />
-                                            <textarea id="description" value={taskForm.data.description} onChange={(e) => taskForm.setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={3} />
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <div className="flex-1">
-                                                <InputLabel htmlFor="assigned_to" value="Assign To" />
-                                                <select id="assigned_to" value={taskForm.data.assigned_to} onChange={(e) => taskForm.setData('assigned_to', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                                    <option value="">Unassigned</option>
-                                                    {project.members.map((m) => (
-                                                        <option key={m.id} value={m.id}>{m.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="flex-1">
-                                                <InputLabel htmlFor="due_date" value="Due Date & Time" />
-                                                <TextInput id="due_date" type="datetime-local" step="1" value={taskForm.data.due_date} onChange={(e) => taskForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
-                                            </div>
-                                        </div>
-                                        <PrimaryButton disabled={taskForm.processing}>Create Task</PrimaryButton>
-                                    </form>
-                                </div>
+                                    )}
+                                </>
                             )}
 
                             <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>
-                                    <TextInput
-                                        value={taskSearch}
-                                        onChange={(e) => setTaskSearch(e.target.value)}
-                                        placeholder="Search tasks..."
-                                        className="w-56 text-sm"
-                                    />
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>
+                                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                            {project.tasks.length}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <SearchInput
+                                            value={taskSearch}
+                                            onChange={(e) => setTaskSearch(e.target.value)}
+                                            placeholder="Search tasks..."
+                                            className="w-40 text-sm"
+                                        />
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        >
+                                            {STATUS_OPTIONS.map((s) => (
+                                                <option key={s.value} value={s.value}>{s.label}</option>
+                                            ))}
+                                        </select>
+                                        {hasActiveTaskFilters && (
+                                            <button onClick={clearTaskFilters} className="text-xs text-gray-500 hover:underline dark:text-gray-400">
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+                                <TaskStatusBar tasks={project.tasks} />
+                                {hasActiveTaskFilters && (
+                                    <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                                        Showing {filteredTasks.length} of {project.tasks.length} tasks
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-3">
@@ -219,13 +536,21 @@ export default function Show({ project, role, myNote }) {
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
-                                    <p className="py-3 text-gray-500 dark:text-gray-400">
-                                        {project.tasks.length === 0 ? 'No tasks yet.' : 'No tasks match your search.'}
-                                    </p>
+                                    <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center dark:border-gray-700">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            {project.tasks.length === 0 ? 'No tasks yet.' : 'No tasks match your filters.'}
+                                        </p>
+                                        {project.tasks.length > 0 && hasActiveTaskFilters && (
+                                            <button onClick={clearTaskFilters} className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                                                Clear filters
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
 
+                        {/* RIGHT — Info + Invite + Notes */}
                         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
                             <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                 <div className="flex items-start justify-between gap-2">
@@ -240,17 +565,14 @@ export default function Show({ project, role, myNote }) {
                                             {project.description}
                                         </p>
                                         {project.description.length > 150 && (
-                                            <button
-                                                onClick={() => setShowFullDescription((v) => !v)}
-                                                className="mt-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                                            >
+                                            <button onClick={() => setShowFullDescription((v) => !v)} className="mt-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                                                 {showFullDescription ? 'Show Less' : 'View Full Description'}
                                             </button>
                                         )}
                                     </div>
                                 )}
                                 <p className="mt-3 text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Your role</p>
-                                <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${roleStyles[role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs capitalize ${roleStyles[role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                     {role}
                                 </span>
 
@@ -275,6 +597,8 @@ export default function Show({ project, role, myNote }) {
                                 )}
                             </div>
 
+                            <NotesPanel project={project} myNotes={myNotes} />
+
                             {canManage && (
                                 <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                     <h3 className="mb-3 text-base font-semibold dark:text-gray-100">Invite a Member</h3>
@@ -294,31 +618,8 @@ export default function Show({ project, role, myNote }) {
                                         </div>
                                         <PrimaryButton disabled={memberForm.processing}>Add</PrimaryButton>
                                     </form>
-                                </div> 
+                                </div>
                             )}
-                            <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <h3 className="text-base font-semibold dark:text-gray-100">My Notes</h3>
-                                    <span className="text-xs text-gray-400 dark:text-gray-500">Only visible to you</span>
-                                </div>
-                                <textarea
-                                    value={noteForm.data.content}
-                                    onChange={(e) => noteForm.setData('content', e.target.value)}
-                                    placeholder="Note down anything about this project..."
-                                    rows={6}
-                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                />
-                                <div className="mt-2 flex items-center justify-between">
-                                    <button
-                                        onClick={saveNote}
-                                        disabled={noteForm.processing}
-                                        className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                                    >
-                                        Save Note
-                                    </button>
-                                    {noteSaved && <span className="text-xs text-green-600 dark:text-green-400">Saved ✓</span>}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

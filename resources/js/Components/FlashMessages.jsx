@@ -23,7 +23,7 @@ export default function FlashMessages() {
 
     return (
         <div
-            className={`fixed top-4 right-4 z-50 max-w-sm rounded-lg px-4 py-3 text-sm shadow-lg ${
+            className={`fixed right-4 top-20 z-[60] max-w-sm rounded-lg px-4 py-3 text-sm shadow-lg ${
                 message.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
             }`}
         >

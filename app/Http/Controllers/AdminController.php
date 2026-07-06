@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\SuspensionAppeal;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Feedback;
+use App\Events\UserSuspended;
 
 class AdminController extends Controller
 {
@@ -42,6 +46,7 @@ class AdminController extends Controller
                 'created' => Task::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newUsers' => User::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newProjects' => Project::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
+                'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
             ];
         }, $this->buckets($range));
 
@@ -52,8 +57,9 @@ class AdminController extends Controller
             'range' => $range,
             'stats' => [
                 'users' => User::count(),
-                'activeUsers' => User::where('is_active', true)->count(),
+                'activeUsers' => User::where('is_active', true)->where('is_suspended', false)->count(),
                 'inactiveUsers' => User::where('is_active', false)->count(),
+                'suspendedUsers' => User::where('is_suspended', true)->count(),
                 'admins' => User::where('role', 'admin')->count(),
                 'projects' => Project::count(),
                 'tasks' => Task::count(),
@@ -62,6 +68,7 @@ class AdminController extends Controller
                 'recentUsers' => $recentUsers,
                 'recentProjects' => $recentProjects,
                 'pendingResolution' => Task::where('pending_resolution', true)->count(),
+                'pendingAppeals' => SuspensionAppeal::where('status', 'pending')->count(),
             ],
         ]);
     }
@@ -72,13 +79,46 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users', ['users' => $users]);
     }
 
-    public function toggleActive(User $user)
+    public function suspend(Request $request, User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->withErrors(['error' => "You can't deactivate your own account."]);
+            return back()->withErrors(['error' => "You can't suspend your own account."]);
         }
-        $user->update(['is_active' => ! $user->is_active]);
-        return back()->with('success', $user->is_active ? 'User activated.' : 'User deactivated.');
+
+        $request->validate([
+            'duration' => 'required|string',
+            'custom_date' => 'nullable|date|after:now',
+            'reason' => 'nullable|string|max:2000',
+        ]);
+
+        $suspendedUntil = match ($request->duration) {
+            'permanent' => null,
+            'custom' => $request->custom_date,
+            default => now()->addDays((int) $request->duration),
+        };
+
+        $user->update([
+            'is_suspended' => true,
+            'suspended_until' => $suspendedUntil,
+            'suspension_reason' => $request->reason,
+            'suspended_by' => auth()->id(),
+        ]);
+
+        event(new UserSuspended($user));
+        
+        return back()->with('success', 'User suspended.');
+    }
+
+    public function liftSuspension(User $user)
+    {
+        $user->update([
+            'is_suspended' => false,
+            'suspended_until' => null,
+            'suspension_reason' => null,
+            'suspended_by' => null,
+        ]);
+
+        return back()->with('success', 'Suspension lifted.');
     }
 
     public function toggleRole(User $user)
@@ -88,6 +128,19 @@ class AdminController extends Controller
         }
         $user->update(['role' => $user->role === 'admin' ? 'user' : 'admin']);
         return back()->with('success', 'Role updated.');
+    }
+
+    public function appeals()
+    {
+        $appeals = SuspensionAppeal::with('user')->latest()->get();
+        return Inertia::render('Admin/Appeals', ['appeals' => $appeals]);
+    }
+
+    public function reviewAppeal(Request $request, SuspensionAppeal $appeal)
+    {
+        $request->validate(['status' => 'required|in:reviewed,dismissed']);
+        $appeal->update(['status' => $request->status]);
+        return back()->with('success', 'Appeal updated.');
     }
 
     public function projects()
@@ -100,4 +153,5 @@ class AdminController extends Controller
     {
         abort(403, 'Platform admins cannot delete projects directly.');
     }
+
 }

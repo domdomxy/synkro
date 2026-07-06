@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Events\RemovedFromProject;
 
 class ProjectMemberController extends Controller
 {
@@ -129,6 +130,19 @@ class ProjectMemberController extends Controller
         $this->freezeOrReset($project, $user->id);
 
         $project->members()->detach($user->id);
+
+        $notification = \App\Models\UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'removed_from_project',
+            'message' => "You were removed from \"{$project->name}\"",
+            'url' => route('projects.index', [], false),
+        ]);
+
+        try {
+            broadcast(new RemovedFromProject($user->id, $project, $notification->id))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         ProjectActivityLog::log($project, 'member_removed', [
             'target_name' => $user->name,

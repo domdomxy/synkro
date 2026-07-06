@@ -8,6 +8,7 @@ import FlashMessages from '@/Components/FlashMessages';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import SuspensionListener from '@/Components/SuspensionListener';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -187,7 +188,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
             </nav>
-
+            <SuspensionListener />
             {header && (
                 <header className="bg-white shadow dark:bg-gray-800">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div>
@@ -197,4 +198,5 @@ export default function AuthenticatedLayout({ header, children }) {
             <main>{children}</main>
         </div>
     );
+
 }

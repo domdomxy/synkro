@@ -14,21 +14,33 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserSearchController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ProjectNoteController;
-
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\FeedbackAdminController;
+use App\Http\Controllers\FeedbackPageController;
+use App\Http\Controllers\SuspensionAppealController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'auth' => [
-            'user' => auth()->user(),
-        ],
+        'auth' => ['user' => auth()->user()],
+        'flash' => session()->only(['feedback_tracking_id']),
     ]);
 });
 
-
-
-
+Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+Route::post('/feedback/track', [FeedbackController::class, 'track'])->name('feedback.track');
+Route::get('/feedback', [FeedbackPageController::class, 'index'])->name('feedback.page');
+Route::post('/feedback/reply', [FeedbackController::class, 'reply'])->middleware('throttle:10,60')->name('feedback.reply');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::post('/appeal', [SuspensionAppealController::class, 'store'])
+    ->middleware('throttle:3,60') // 3 attempts per 60 minutes per IP
+    ->name('appeal.store');
+
+Route::get('/appeal', function () {
+    return Inertia::render('Auth/Appeal');
+})->name('appeal.page');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -43,7 +55,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
     Route::delete('/projects/{project}/leave', [ProjectMemberController::class, 'leave'])->name('projects.leave');
     Route::patch('/projects/{project}/transfer-ownership', [ProjectController::class, 'transferOwnership'])->name('projects.transfer-ownership');
-    Route::patch('/projects/{project}/note', [ProjectNoteController::class, 'update'])->name('projects.note.update');
+    Route::post('/projects/{project}/notes', [ProjectNoteController::class, 'store'])->name('projects.notes.store');
+    Route::patch('/notes/{note}', [ProjectNoteController::class, 'update'])->name('projects.notes.update');
+    Route::delete('/notes/{note}', [ProjectNoteController::class, 'destroy'])->name('projects.notes.destroy');
+    Route::delete('/projects/{project}/notes', [ProjectNoteController::class, 'clearAll'])->name('projects.notes.clear');
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
@@ -66,15 +81,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/reminders', [ReminderController::class, 'store'])->name('reminders.store');
     Route::patch('/reminders/{reminder}/dismiss', [ReminderController::class, 'dismiss'])->name('reminders.dismiss');
     Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy');
+    Route::post('/suspended-logout', [AuthenticatedSessionController::class, 'suspendedLogout'])->name('suspended-logout');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::patch('/users/{user}/toggle-active', [AdminController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::post('/users/{user}/suspend', [AdminController::class, 'suspend'])->name('users.suspend');
+    Route::post('/users/{user}/lift-suspension', [AdminController::class, 'liftSuspension'])->name('users.lift-suspension');
     Route::patch('/users/{user}/toggle-role', [AdminController::class, 'toggleRole'])->name('users.toggle-role');
     Route::get('/projects', [AdminController::class, 'projects'])->name('projects');
     Route::delete('/projects/{project}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
+    Route::get('/feedbacks', [FeedbackAdminController::class, 'index'])->name('feedbacks');
+    Route::patch('/feedbacks/{feedback}/status', [FeedbackAdminController::class, 'updateStatus'])->name('feedbacks.status');
+    Route::post('/feedbacks/{feedback}/respond', [FeedbackAdminController::class, 'respond'])->name('feedbacks.respond');
+    Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
+    Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
 });
 
 require __DIR__.'/auth.php';

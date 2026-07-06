@@ -13,7 +13,7 @@ use App\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path'])]
+#[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until','suspension_reason','suspended_by',])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {   
@@ -51,6 +51,25 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_suspended' => 'boolean',
+            'suspended_until' => 'datetime',
         ];
+    }
+    public function suspendedBy()
+    {
+        return $this->belongsTo(User::class, 'suspended_by');
+    }
+
+    public function appeals()
+    {
+        return $this->hasMany(SuspensionAppeal::class);
+    }
+
+    public function isCurrentlySuspended(): bool
+    {
+        if (! $this->is_suspended) return false;
+        // Permanent suspension (null suspended_until) never auto-expires here;
+        // the scheduled job only clears timed suspensions.
+        return true;
     }
 }

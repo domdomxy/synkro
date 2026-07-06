@@ -14,6 +14,7 @@ const categoryMap = {
     project_member_added: 'membership',
     project_role_changed: 'membership',
     reminder: 'assignments',
+    removed_from_project: 'membership',
 };
 
 const typeStyles = {
@@ -72,6 +73,11 @@ const typeStyles = {
         text: 'text-amber-600 dark:text-amber-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
+        removed_from_project: {
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-600 dark:text-red-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />,
+    },
 };
 
 function relativeTime(dateString) {
@@ -108,6 +114,8 @@ export default function NotificationBell() {
             '.task.review-needed',
             '.task.updated',
             '.task.unassigned',
+            '.reminder.due',
+            '.project.removed',
         ],
         (payload) => {
             let message;
@@ -134,6 +142,12 @@ export default function NotificationBell() {
             } else if (payload.type === 'task_unassigned') {
                 message = `You were removed from task "${payload.title}"`;
                 url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'removed_from_project') {
+                message = `You were removed from "${payload.project_name}"`;
+                url = '/projects';
+            } else if (payload.type === 'reminder') {
+                message = `⏰ ${payload.title}${payload.note ? ' : ' + payload.note : ''}`;
+                url = '/dashboard';
             } else if (payload.decision) {
                 message = `"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;

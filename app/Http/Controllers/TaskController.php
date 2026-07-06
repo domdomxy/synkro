@@ -386,19 +386,29 @@ class TaskController extends Controller
         ]);
 
         if ($validated['action'] === 'reset') {
+            // delete stored files from disk first
+            foreach ($task->deliverables as $deliverable) {
+                if ($deliverable->type === 'file' && $deliverable->path) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($deliverable->path);
+                }
+            }
+            $task->deliverables()->delete();
+
             $task->update([
                 'assigned_to' => null,
                 'status' => 'todo',
                 'pending_resolution' => false,
+                'submitted_at' => null,
             ]);
 
             ProjectActivityLog::log($task->project, 'submission_reset', ['task_title' => $task->title]);
         } else {
             $task->update(['pending_resolution' => false]);
-
             ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title]);
         }
-
-        return back()->with('success', 'Resolved.');
+        return redirect()->route('projects.show', [
+            'project' => $task->project_id,
+            '_r' => now()->timestamp,
+        ])->with('success', 'Resolved.');
     }
 }
