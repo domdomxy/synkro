@@ -69,6 +69,7 @@ class AdminController extends Controller
                 'recentProjects' => $recentProjects,
                 'pendingResolution' => Task::where('pending_resolution', true)->count(),
                 'pendingAppeals' => SuspensionAppeal::where('status', 'pending')->count(),
+                'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
             ],
         ]);
     }

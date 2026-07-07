@@ -125,6 +125,7 @@ export default function Dashboard({ stats, range }) {
                             </p>
                         </div>
                     )}
+                    
                     {stats.pendingAppeals > 0 && (
                         <div className="flex items-start gap-3 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-950/30">
                             <svg className="h-5 w-5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -135,6 +136,7 @@ export default function Dashboard({ stats, range }) {
                             </p>
                         </div>
                     )}
+
                     {stats.pendingFeedbacks > 0 && (
                         <div className="flex items-start gap-3 rounded-lg border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-950/30">
                             <svg className="h-5 w-5 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

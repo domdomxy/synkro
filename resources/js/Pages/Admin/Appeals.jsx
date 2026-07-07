@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
+import BackButton from '@/Components/BackButton';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -113,7 +114,12 @@ export default function Appeals({ appeals }) {
     const pendingCount = appeals.filter((a) => a.status === 'pending').length;
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Suspension Appeals</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center gap-4">
+                <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Suspension Appeals</h2>
+            </div>
+        }>
             <Head title="Admin - Appeals" />
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">

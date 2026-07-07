@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Events\TaskDeleted;
 
 class TaskController extends Controller
 {
@@ -187,10 +188,36 @@ class TaskController extends Controller
 
         ProjectActivityLog::log($task->project, 'task_deleted', ['task_title' => $task->title]);
 
+        if ($task->assigned_to) {
+            $assigneeId = $task->assigned_to;
+            $taskTitle = $task->title;
+            $projectName = $task->project->name;
+            $projectId = $task->project_id;
+
+            $notification = null;
+            try {
+                $notification = UserNotification::create([
+                    'user_id' => $assigneeId,
+                    'type' => 'task_deleted',
+                    'message' => "\"{$taskTitle}\" was deleted from {$projectName}.",
+                    'url' => route('projects.show', $projectId, false),
+                ]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            try {
+                broadcast(new TaskDeleted($assigneeId, $taskTitle, $projectName, $projectId, $notification?->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         $task->delete();
 
         return back()->with('success', 'Task deleted.');
     }
+
 
     public function start(Task $task)
     {
@@ -229,6 +256,7 @@ class TaskController extends Controller
                 'type' => 'file',
                 'path' => $file->store('deliverables', 'public'),
                 'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
             ]);
         }
 

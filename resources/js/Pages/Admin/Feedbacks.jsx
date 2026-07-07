@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import BackButton from '@/Components/BackButton';
 
 const categoryConfig = {
     bug: {
@@ -124,12 +125,23 @@ function FeedbackItem({ feedback }) {
                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{feedback.message}</p>
                     </div>
 
-                    {feedback.attachment_path && (
+                    {(feedback.attachment_path || feedback.attachments?.length > 0) && (
                         <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Attachment:</p>
-                            <a href={`/storage/${feedback.attachment_path}`} target="_blank" rel="noreferrer">
-                                <img src={`/storage/${feedback.attachment_path}`} alt="attachment" className="max-h-48 rounded-md object-cover" />
-                            </a>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                Attachments {feedback.attachments?.length > 0 && `(${feedback.attachments.length + (feedback.attachment_path ? 1 : 0)})`}:
+                            </p>
+                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                {feedback.attachment_path && (
+                                    <a href={`/storage/${feedback.attachment_path}`} target="_blank" rel="noreferrer">
+                                        <img src={`/storage/${feedback.attachment_path}`} alt="attachment" className="h-24 w-full rounded-md object-cover shadow" />
+                                    </a>
+                                )}
+                                {feedback.attachments?.map((att) => (
+                                    <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer" title={att.original_name}>
+                                        <img src={`/storage/${att.path}`} alt={att.original_name} className="h-24 w-full rounded-md object-cover shadow" />
+                                    </a>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -183,24 +195,32 @@ function FeedbackItem({ feedback }) {
                         </div>
                     )}
 
-                    <form onSubmit={submitResponse} className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Send Response</p>
-                        <textarea
-                            value={responseForm.data.message}
-                            onChange={(e) => responseForm.setData('message', e.target.value)}
-                            placeholder="Write a response to this feedback..."
-                            rows={3}
-                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        />
-                        {responseForm.errors.message && <p className="text-xs text-red-500">{responseForm.errors.message}</p>}
-                        <button
-                            type="submit"
-                            disabled={responseForm.processing}
-                            className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                        >
-                            Send Response
-                        </button>
-                    </form>
+                    {isClosed ? (
+                        <div className="rounded-md bg-gray-50 p-3 dark:bg-gray-900/50">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                This ticket is {feedback.status}. Change the status above to reopen it before replying.
+                            </p>
+                        </div>
+                    ) : (
+                        <form onSubmit={submitResponse} className="space-y-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Send Response</p>
+                            <textarea
+                                value={responseForm.data.message}
+                                onChange={(e) => responseForm.setData('message', e.target.value)}
+                                placeholder="Write a response to this feedback..."
+                                rows={3}
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                            {responseForm.errors.message && <p className="text-xs text-red-500">{responseForm.errors.message}</p>}
+                            <button
+                                type="submit"
+                                disabled={responseForm.processing}
+                                className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            >
+                                Send Response
+                            </button>
+                        </form>
+                    )}
                 </div>
             )}
         </div>
@@ -222,7 +242,12 @@ export default function Feedbacks({ feedbacks, filters }) {
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Feedback</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center gap-4">
+                <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Feedback</h2>
+            </div>
+        }>
             <Head title="Admin - Feedback" />
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">

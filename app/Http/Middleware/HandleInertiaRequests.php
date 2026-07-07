@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Feedback;
+use App\Models\SuspensionAppeal;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -42,6 +44,18 @@ class HandleInertiaRequests extends Middleware
             'unreadCount' => fn () => $request->user()?->notifications()->whereNull('read_at')->count() ?? 0,
             'recent' => fn () => $request->user()?->notifications()->limit(10)->get() ?? [],
             ],
+            'adminAlerts' => fn () => (function () use ($request) {
+                $user = $request->user();
+                if (! $user || $user->role !== 'admin') {
+                    return null;
+                }
+
+                return [
+                    'hasPending' =>
+                        Feedback::whereIn('status', ['pending', 'reviewing'])->exists() ||
+                        SuspensionAppeal::where('status', 'pending')->exists(),
+                ];
+            })(),
         ];
     }
 }

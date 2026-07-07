@@ -26,4 +26,8 @@ class Feedback extends Model
     {
         return $this->hasMany(FeedbackResponse::class)->latest();
     }
+    public function attachments()
+    {
+        return $this->hasMany(FeedbackAttachment::class);
+    }
 }

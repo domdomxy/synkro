@@ -21,6 +21,90 @@ function formatDue(dateString) {
     return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return null;
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+function getExtension(name) {
+    return name?.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function FileTypeIcon({ name, className = 'h-4 w-4' }) {
+    const ext = getExtension(name);
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        );
+    }
+    if (ext === 'pdf') {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+    }
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+        );
+    }
+    if (['doc', 'docx', 'txt', 'rtf'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+    }
+    if (['xls', 'xlsx', 'csv'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-9 4h14a2 2 0 002-2V7a2 2 0 00-2-2h-5.586a1 1 0 01-.707-.293L9.293 3.293A1 1 0 008.586 3H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+        );
+    }
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+    );
+}
+
+function LinkTypeIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+    );
+}
+
+function RemoveButton({ onClick, title = 'Remove' }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            title={title}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+        >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    );
+}
+
 function KebabMenu({ onEdit, onDelete }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -178,19 +262,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <SecondaryButton
                             disabled={resolveKeepForm.processing}
                             onClick={() => {
-                                console.log('Keep clicked, task id:', task.id);
-                                console.log('route:', route('tasks.resolve', task.id));
                                 resolveKeepForm.patch(route('tasks.resolve', task.id), {
-                                    onSuccess: () => {
-                                        console.log('onSuccess fired');
-                                        window.location.reload();
-                                    },
-                                    onError: (errors) => {
-                                        console.log('onError:', errors);
-                                    },
-                                    onFinish: () => {
-                                        console.log('onFinish fired');
-                                    },
+                                    onSuccess: () => window.location.reload(),
                                 });
                             }}
                         >
@@ -340,17 +413,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 <SecondaryButton type="button" onClick={addLink}>Add Link</SecondaryButton>
                             </div>
                             {(submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
-                                <ul className="mt-3 space-y-1">
+                                <ul className="mt-3 space-y-1.5">
                                     {submitForm.data.files.map((file, i) => (
-                                        <li key={`file-${i}`} className="flex items-center justify-between text-sm dark:text-gray-300">
-                                            <span className="truncate">📎 {file.name}</span>
-                                            <button type="button" onClick={() => removeFile(i)} className="text-red-500 hover:underline">remove</button>
+                                        <li key={`file-${i}`} className="flex items-center gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                                            <FileTypeIcon name={file.name} className="h-4 w-4 shrink-0 text-gray-400" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm text-gray-700 dark:text-gray-300">{file.name}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(file.size)}</p>
+                                            </div>
+                                            <RemoveButton onClick={() => removeFile(i)} />
                                         </li>
                                     ))}
                                     {submitForm.data.links.map((link, i) => (
-                                        <li key={`link-${i}`} className="flex items-center justify-between text-sm dark:text-gray-300">
-                                            <span className="truncate">🔗 {link}</span>
-                                            <button type="button" onClick={() => removeLink(i)} className="text-red-500 hover:underline">remove</button>
+                                        <li key={`link-${i}`} className="flex items-center gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                                            <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                                            <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{link}</p>
+                                            <RemoveButton onClick={() => removeLink(i)} />
                                         </li>
                                     ))}
                                 </ul>
@@ -373,22 +451,46 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         {showDeliverables ? 'Hide Submitted' : `View Submitted (${task.deliverables.length})`}
                     </button>
                     {showDeliverables && (
-                        <div className="mt-2 space-y-1 rounded-md bg-gray-50 p-2 dark:bg-gray-900">
+                        <ul className="mt-2 space-y-1.5">
                             {task.deliverables.map((d) => (
-                                <div key={d.id} className="flex items-center justify-between gap-2">
-                                    <p className="break-words text-sm">
-                                        {d.type === 'file' ? (
-                                            <a href={`/storage/${d.path}`} target="_blank" rel="noreferrer" className="text-indigo-600 underline dark:text-indigo-400">📎 {d.original_name}</a>
-                                        ) : (
-                                            <a href={d.url} target="_blank" rel="noreferrer" className="text-indigo-600 underline dark:text-indigo-400">🔗 {d.url}</a>
-                                        )}
-                                    </p>
-                                    {canEditDeliverables && (
-                                        <button onClick={() => removeDeliverable(d.id)} className="shrink-0 text-xs text-red-500 hover:underline">remove</button>
+                                <li key={d.id} className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900">
+                                    {d.type === 'file' ? (
+                                        <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
+                                    ) : (
+                                        <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
                                     )}
-                                </div>
+                                    <div className="min-w-0 flex-1">
+                                        {d.type === 'file' ? (
+                                            <a
+                                                href={`/storage/${d.path}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                                title={d.original_name}
+                                            >
+                                                {d.original_name}
+                                            </a>
+                                        ) : (
+                                            <a
+                                                href={d.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                                title={d.url}
+                                            >
+                                                {d.url}
+                                            </a>
+                                        )}
+                                        {d.size != null && (
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(d.size)}</p>
+                                        )}
+                                    </div>
+                                    {canEditDeliverables && (
+                                        <RemoveButton onClick={() => removeDeliverable(d.id)} />
+                                    )}
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     )}
                 </div>
             )}

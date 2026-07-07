@@ -6,6 +6,7 @@ const categoryMap = {
     task_assigned: 'assignments',
     task_unassigned: 'assignments',
     task_updated: 'assignments',
+    task_deleted: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
     task_done: 'reviews',
@@ -52,6 +53,11 @@ const typeStyles = {
         bg: 'bg-gray-100 dark:bg-gray-700',
         text: 'text-gray-600 dark:text-gray-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />,
+    },
+    task_deleted: {
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-600 dark:text-red-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
     },
     member_left: {
         bg: 'bg-gray-100 dark:bg-gray-700',
@@ -114,12 +120,14 @@ export default function NotificationBell() {
             '.task.review-needed',
             '.task.updated',
             '.task.unassigned',
+            '.task.deleted',
             '.reminder.due',
             '.project.removed',
         ],
         (payload) => {
             let message;
             let url;
+            let type = payload.type;
 
             if (payload.type === 'member_left') {
                 message = `${payload.member_name} (${payload.role}) left "${payload.project_name}"`;
@@ -142,6 +150,11 @@ export default function NotificationBell() {
             } else if (payload.type === 'task_unassigned') {
                 message = `You were removed from task "${payload.title}"`;
                 url = `/projects/${payload.project_id}`;
+            } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
+                // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }
+                type = 'task_deleted';
+                message = payload.message;
+                url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'removed_from_project') {
                 message = `You were removed from "${payload.project_name}"`;
                 url = '/projects';
@@ -159,7 +172,7 @@ export default function NotificationBell() {
             setItems((prev) => [
                 {
                     id: payload.notification_id,
-                    type: payload.type,
+                    type,
                     message,
                     url,
                     read_at: null,

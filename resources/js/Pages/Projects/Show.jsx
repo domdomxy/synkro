@@ -88,22 +88,53 @@ function TaskStatusBar({ tasks }) {
     );
 }
 
-function NoteKebabMenu({ onEdit, onDelete }) {
+/** Shared hook: computes a fixed-position dropdown anchored to a trigger button,
+ *  escaping any overflow/scroll container so it never gets clipped. */
+function useFixedDropdown(menuWidth) {
     const [open, setOpen] = useState(false);
-    const ref = useRef(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const btnRef = useRef(null);
+    const menuRef = useRef(null);
+
+    const toggle = () => {
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setCoords({
+                top: rect.bottom + 4,
+                left: Math.max(8, rect.right - menuWidth),
+            });
+        }
+        setOpen((v) => !v);
+    };
 
     useEffect(() => {
-        const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        if (!open) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) {
+                setOpen(false);
+            }
         };
-        document.addEventListener('click', handler);
-        return () => document.removeEventListener('click', handler);
-    }, []);
+        const handleScroll = () => setOpen(false);
+        document.addEventListener('mousedown', handleClick);
+        window.addEventListener('scroll', handleScroll, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            window.removeEventListener('scroll', handleScroll, true);
+        };
+    }, [open]);
+
+    return { open, setOpen, coords, btnRef, menuRef, toggle };
+}
+
+function NoteKebabMenu({ onEdit, onDelete }) {
+    const MENU_WIDTH = 128; // w-32
+    const { open, setOpen, coords, btnRef, menuRef, toggle } = useFixedDropdown(MENU_WIDTH);
 
     return (
-        <div className="relative" ref={ref}>
+        <>
             <button
-                onClick={() => setOpen((v) => !v)}
+                ref={btnRef}
+                onClick={toggle}
                 className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
             >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -111,7 +142,11 @@ function NoteKebabMenu({ onEdit, onDelete }) {
                 </svg>
             </button>
             {open && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-28 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                >
                     <button
                         onClick={() => { setOpen(false); onEdit(); }}
                         className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -126,13 +161,59 @@ function NoteKebabMenu({ onEdit, onDelete }) {
                     </button>
                 </div>
             )}
-        </div>
+        </>
+    );
+}
+
+function MemberActionsMenu({ currentRole, onChangeRole, onRemove }) {
+    const MENU_WIDTH = 176; // w-44
+    const { open, setOpen, coords, btnRef, menuRef, toggle } = useFixedDropdown(MENU_WIDTH);
+    const roles = ['manager', 'member', 'tester'].filter((r) => r !== currentRole);
+
+    return (
+        <>
+            <button
+                ref={btnRef}
+                onClick={toggle}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && (
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                >
+                    <p className="px-4 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Change Role</p>
+                    {roles.map((r) => (
+                        <button
+                            key={r}
+                            onClick={() => { setOpen(false); onChangeRole(r); }}
+                            className="block w-full px-4 py-1.5 text-left text-sm capitalize text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            {r}
+                        </button>
+                    ))}
+                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                    <button
+                        onClick={() => { setOpen(false); onRemove(); }}
+                        className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                        Remove from project
+                    </button>
+                </div>
+            )}
+        </>
     );
 }
 
 function NotesPanel({ project, myNotes }) {
     const [open, setOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [expandedId, setExpandedId] = useState(null);
     const panelRef = useRef(null);
 
     const newForm = useForm({ title: '', content: '' });
@@ -202,15 +283,24 @@ function NotesPanel({ project, myNotes }) {
                 <div className="absolute right-0 z-10 mt-1 w-full rounded-lg bg-white p-4 shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
                     <div className="mb-3 flex items-center justify-between">
                         <p className="text-xs text-gray-400 dark:text-gray-500">Visible only to you</p>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3">
                             {myNotes.length > 0 && (
-                                <button onClick={clearAll} className="text-xs text-red-500 hover:underline">Clear all</button>
+                                <button onClick={clearAll} className="text-xs font-medium text-red-500 hover:underline">Clear all</button>
                             )}
                             <button
                                 onClick={() => setShowNewForm((v) => !v)}
-                                className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500"
+                                className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-500"
                             >
-                                {showNewForm ? 'Cancel' : '+ New Note'}
+                                {showNewForm ? (
+                                    'Cancel'
+                                ) : (
+                                    <>
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        New Note
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -230,9 +320,10 @@ function NotesPanel({ project, myNotes }) {
                                 onChange={(e) => newForm.setData('content', e.target.value)}
                                 rows={3}
                                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                autoFocus
                             />
                             <InputError message={newForm.errors.content} />
-                            <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1 text-xs text-white hover:bg-indigo-500 disabled:opacity-50">
+                            <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
                                 Save Note
                             </button>
                         </form>
@@ -240,47 +331,72 @@ function NotesPanel({ project, myNotes }) {
 
                     <div className="max-h-64 space-y-2 overflow-y-auto">
                         {myNotes.length === 0 && !showNewForm && (
-                            <p className="text-center text-sm text-gray-400 dark:text-gray-500">No notes yet. Add one above.</p>
-                        )}
-                        {myNotes.map((note) => (
-                            <div key={note.id} className="rounded-md border border-gray-100 p-3 dark:border-gray-700">
-                                {editingId === note.id ? (
-                                    <form onSubmit={(e) => submitEdit(e, note.id)} className="space-y-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Title (optional)"
-                                            value={editForm.data.title}
-                                            onChange={(e) => editForm.setData('title', e.target.value)}
-                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        />
-                                        <textarea
-                                            value={editForm.data.content}
-                                            onChange={(e) => editForm.setData('content', e.target.value)}
-                                            rows={3}
-                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        />
-                                        <div className="flex gap-2">
-                                            <button type="submit" disabled={editForm.processing} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Save</button>
-                                            <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <>
-                                    <div className="mt-2 flex items-center justify-between">
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">
-                                                {new Date(note.updated_at).toLocaleDateString(undefined, { dateStyle: 'short' })}
-                                            </p>
-                                            <NoteKebabMenu
-                                                onEdit={() => startEdit(note)}
-                                                onDelete={() => deleteNote(note.id)}
-                                            />
-                                    </div>
-                                        {note.title && <p className="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>}
-                                        <p className="break-words text-sm text-gray-600 dark:text-gray-400">{note.content}</p>
-                                    </>
-                                )}
+                            <div className="flex flex-col items-center py-6 text-center">
+                                <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No notes yet</p>
+                                <p className="text-xs text-gray-300 dark:text-gray-600">Jot down anything private about this project</p>
                             </div>
-                        ))}
+                        )}
+                        {myNotes.map((note) => {
+                            const isLong = note.content.length > 140;
+                            const isExpanded = expandedId === note.id;
+                            return (
+                                <div key={note.id} className="rounded-md border border-gray-100 p-3 transition hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600">
+                                    {editingId === note.id ? (
+                                        <form onSubmit={(e) => submitEdit(e, note.id)} className="space-y-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Title (optional)"
+                                                value={editForm.data.title}
+                                                onChange={(e) => editForm.setData('title', e.target.value)}
+                                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            />
+                                            <textarea
+                                                value={editForm.data.content}
+                                                onChange={(e) => editForm.setData('content', e.target.value)}
+                                                rows={3}
+                                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2">
+                                                <button type="submit" disabled={editForm.processing} className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500">Save</button>
+                                                <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    {note.title && (
+                                                        <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>
+                                                    )}
+                                                    <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
+                                                        {new Date(note.updated_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                                    </p>
+                                                </div>
+                                                <NoteKebabMenu
+                                                    onEdit={() => startEdit(note)}
+                                                    onDelete={() => deleteNote(note.id)}
+                                                />
+                                            </div>
+                                            <p className={`mt-1.5 break-words text-sm text-gray-600 dark:text-gray-400 ${!isExpanded && isLong ? 'line-clamp-3' : ''}`}>
+                                                {note.content}
+                                            </p>
+                                            {isLong && (
+                                                <button
+                                                    onClick={() => setExpandedId(isExpanded ? null : note.id)}
+                                                    className="mt-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                                                >
+                                                    {isExpanded ? 'Show less' : 'Show more'}
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -358,7 +474,11 @@ export default function Show({ project, role, myNotes }) {
     const filteredMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
         if (!term) return project.members;
-        return project.members.filter((m) => m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term));
+        return project.members.filter((m) =>
+            m.name.toLowerCase().includes(term) ||
+            m.email.toLowerCase().includes(term) ||
+            m.pivot?.role?.toLowerCase().includes(term)
+        );
     }, [project.members, memberSearch]);
 
     const filteredTasks = useMemo(() => {
@@ -366,7 +486,10 @@ export default function Show({ project, role, myNotes }) {
         return project.tasks.filter((t) => {
             if (statusFilter !== 'all' && t.status !== statusFilter) return false;
             if (!term) return true;
-            return t.title.toLowerCase().includes(term);
+            const titleMatch = t.title.toLowerCase().includes(term);
+            const assigneeMatch = t.assignee?.name?.toLowerCase().includes(term);
+            const unassignedMatch = !t.assignee && 'unassigned'.includes(term);
+            return titleMatch || assigneeMatch || unassignedMatch;
         });
     }, [project.tasks, taskSearch, statusFilter]);
 
@@ -391,36 +514,31 @@ export default function Show({ project, role, myNotes }) {
                                 <SearchInput
                                     value={memberSearch}
                                     onChange={(e) => setMemberSearch(e.target.value)}
-                                    placeholder="Search members..."
+                                    placeholder="Search members or role..."
                                     className="mb-3 block w-full text-sm"
                                 />
-                                <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                                <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
                                     {filteredMembers.map((member) => (
-                                        <li key={member.id} className="flex items-center justify-between gap-2">
-                                            <div className="flex min-w-0 items-center gap-2">
-                                                <Avatar user={member} size="h-7 w-7" />
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{member.name}</p>
-                                                    {canManage && member.id !== project.owner_id ? (
-                                                        <select
-                                                            value={member.pivot.role}
-                                                            onChange={(e) => changeRole(member, e.target.value)}
-                                                            className="mt-0.5 rounded-md border-gray-300 py-0.5 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                                        >
-                                                            <option value="manager">manager</option>
-                                                            <option value="member">member</option>
-                                                            <option value="tester">tester</option>
-                                                        </select>
-                                                    ) : (
-                                                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                            {member.pivot.role}
-                                                        </span>
-                                                    )}
+                                        <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <div className="flex items-start gap-2">
+                                                <Avatar user={member} size="h-9 w-9" className="mt-0.5 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-1">
+                                                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{member.name}</p>
+                                                        {canManage && member.id !== project.owner_id && (
+                                                            <MemberActionsMenu
+                                                                currentRole={member.pivot.role}
+                                                                onChangeRole={(newRole) => changeRole(member, newRole)}
+                                                                onRemove={() => removeMember(member)}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
+                                                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                        {member.pivot.role}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            {canManage && member.id !== project.owner_id && (
-                                                <button onClick={() => removeMember(member)} className="shrink-0 text-xs text-red-500 hover:underline">Remove</button>
-                                            )}
                                         </li>
                                     ))}
                                     {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
@@ -496,8 +614,8 @@ export default function Show({ project, role, myNotes }) {
                                         <SearchInput
                                             value={taskSearch}
                                             onChange={(e) => setTaskSearch(e.target.value)}
-                                            placeholder="Search tasks..."
-                                            className="w-40 text-sm"
+                                            placeholder="Search by task or assignee..."
+                                            className="w-48 text-sm"
                                         />
                                         <select
                                             value={statusFilter}

@@ -16,14 +16,25 @@ class FeedbackController extends Controller
             'category' => 'required|in:bug,help,report,question,suggestion,other',
             'subject' => 'required|string|max:255',
             'message' => 'required|string|max:5000',
-            'attachment' => 'nullable|image|max:4096',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'image|max:4096',
         ]);
 
-        $path = $request->hasFile('attachment')
-            ? $request->file('attachment')->store('feedback-attachments', 'public')
-            : null;
+        $feedback = Feedback::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'category' => $validated['category'],
+            'subject' => $validated['subject'],
+            'message' => $validated['message'],
+        ]);
 
-        $feedback = Feedback::create([...$validated, 'attachment_path' => $path]);
+        foreach ($request->file('attachments', []) as $file) {
+            $feedback->attachments()->create([
+                'path' => $file->store('feedback-attachments', 'public'),
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+            ]);
+        }
 
         return redirect()->route('feedback.page')
             ->with('feedback_tracking_id', $feedback->tracking_id);
@@ -35,7 +46,7 @@ class FeedbackController extends Controller
             'tracking_id' => 'required|string',
         ]);
 
-        $feedback = Feedback::with('responses.admin')
+        $feedback = Feedback::with(['responses.admin', 'attachments'])
             ->where('tracking_id', strtoupper(trim($validated['tracking_id'])))
             ->first();
 

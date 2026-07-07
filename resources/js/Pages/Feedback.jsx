@@ -112,6 +112,18 @@ function getCsrfToken() {
     return decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');
 }
 
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return null;
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
 function ReplyBox({ feedback, trackingId, email, onReplySent }) {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
@@ -192,8 +204,10 @@ export default function Feedback({ flash }) {
     const [trackResult, setTrackResult] = useState(null);
     const [trackLoading, setTrackLoading] = useState(false);
     const [submitted, setSubmitted] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
+    const [previews, setPreviews] = useState([]); // [{ file, url }]
     const fileInputRef = useRef(null);
+
+    const MAX_ATTACHMENTS = 5;
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -201,14 +215,15 @@ export default function Feedback({ flash }) {
         category: '',
         subject: '',
         message: '',
-        attachment: null,
+        attachments: [],
     });
 
     useEffect(() => {
         if (flash?.feedback_tracking_id) {
             setSubmitted(flash.feedback_tracking_id);
             reset();
-            setPreviewUrl(null);
+            previews.forEach((p) => URL.revokeObjectURL(p.url));
+            setPreviews([]);
         }
     }, [flash]);
 
@@ -217,11 +232,23 @@ export default function Feedback({ flash }) {
         post(route('feedback.store'), { forceFormData: true });
     };
 
-    const onFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setData('attachment', file);
-        setPreviewUrl(URL.createObjectURL(file));
+    const onFilesChange = (e) => {
+        const incoming = Array.from(e.target.files);
+        const room = MAX_ATTACHMENTS - data.attachments.length;
+        const accepted = incoming.slice(0, room);
+
+        setData('attachments', [...data.attachments, ...accepted]);
+        setPreviews((prev) => [
+            ...prev,
+            ...accepted.map((file) => ({ file, url: URL.createObjectURL(file) })),
+        ]);
+        e.target.value = '';
+    };
+
+    const removeAttachment = (index) => {
+        URL.revokeObjectURL(previews[index].url);
+        setData('attachments', data.attachments.filter((_, i) => i !== index));
+        setPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
     const trackFeedback = async (e) => {
@@ -413,34 +440,50 @@ export default function Feedback({ flash }) {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Screenshot <span className="text-gray-400 font-normal">(optional)</span>
+                                            Screenshots <span className="text-gray-400 font-normal">(optional, up to {MAX_ATTACHMENTS})</span>
                                         </label>
-                                        <input ref={fileInputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
-                                        <button
-                                            type="button"
-                                            onClick={() => fileInputRef.current.click()}
-                                            className="mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-3 text-sm text-gray-500 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
-                                        >
-                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            {data.attachment ? data.attachment.name : 'Click to attach a screenshot'}
-                                        </button>
-                                        {previewUrl && (
-                                            <div className="relative mt-2 w-fit">
-                                                <img src={previewUrl} alt="Preview" className="h-32 rounded-md object-cover shadow" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { setData('attachment', null); setPreviewUrl(null); fileInputRef.current.value = ''; }}
-                                                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow hover:bg-red-600"
-                                                >
-                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={onFilesChange}
+                                            className="hidden"
+                                        />
+                                        {previews.length < MAX_ATTACHMENTS && (
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current.click()}
+                                                className="mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-3 text-sm text-gray-500 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                                            >
+                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {previews.length > 0
+                                                    ? `Add more (${previews.length}/${MAX_ATTACHMENTS})`
+                                                    : 'Click to attach screenshots'}
+                                            </button>
+                                        )}
+                                        {previews.length > 0 && (
+                                            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                {previews.map((p, i) => (
+                                                    <div key={i} className="group relative">
+                                                        <img src={p.url} alt={p.file.name} className="h-20 w-full rounded-md object-cover shadow" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeAttachment(i)}
+                                                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                                                        >
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                        <p className="mt-0.5 truncate text-[10px] text-gray-400 dark:text-gray-500">{formatBytes(p.file.size)}</p>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
-                                        {errors.attachment && <p className="mt-1 text-xs text-red-500">{errors.attachment}</p>}
+                                        {errors.attachments && <p className="mt-1 text-xs text-red-500">{errors.attachments}</p>}
                                     </div>
 
                                     <button
@@ -521,18 +564,20 @@ export default function Feedback({ flash }) {
                                                     })()}
                                                 </div>
                                                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">{trackResult.feedback.message}</p>
-                                                {trackResult.feedback.attachment_path && (
-                                                    <a
-                                                        href={`/storage/${trackResult.feedback.attachment_path}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="mt-2 flex items-center gap-1 text-xs text-indigo-600 hover:underline dark:text-indigo-400"
-                                                    >
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                        </svg>
-                                                        View attachment
-                                                    </a>
+
+                                                {(trackResult.feedback.attachment_path || trackResult.feedback.attachments?.length > 0) && (
+                                                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                        {trackResult.feedback.attachment_path && (
+                                                            <a href={`/storage/${trackResult.feedback.attachment_path}`} target="_blank" rel="noreferrer">
+                                                                <img src={`/storage/${trackResult.feedback.attachment_path}`} alt="attachment" className="h-20 w-full rounded-md object-cover shadow" />
+                                                            </a>
+                                                        )}
+                                                        {trackResult.feedback.attachments?.map((att) => (
+                                                            <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer">
+                                                                <img src={`/storage/${att.path}`} alt={att.original_name} className="h-20 w-full rounded-md object-cover shadow" />
+                                                            </a>
+                                                        ))}
+                                                    </div>
                                                 )}
                                             </div>
 

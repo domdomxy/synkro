@@ -14,6 +14,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [theme, setThemeState] = useState(getStoredTheme());
+    const { adminAlerts } = usePage().props;
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);
@@ -41,9 +42,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Tasks
                                 </NavLink>
                                 {user.role === 'admin' && (
-                                    <NavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
-                                        Admin
-                                    </NavLink>
+                                    <div className="relative inline-flex">
+                                        <NavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
+                                            Admin
+                                        </NavLink>
+                                        {adminAlerts?.hasPending && (
+                                            <span className="pointer-events-none absolute -right-1 top-5 h-2 w-2 rounded-full bg-red-500" />
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -141,9 +147,14 @@ export default function AuthenticatedLayout({ header, children }) {
                             Tasks
                         </ResponsiveNavLink>
                         {user.role === 'admin' && (
-                            <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
-                                Admin
-                            </ResponsiveNavLink>
+                            <div className="relative">
+                                <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
+                                    Admin
+                                </ResponsiveNavLink>
+                                {adminAlerts?.hasPending && (
+                                    <span className="pointer-events-none absolute right-4 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-500" />
+                                )}
+                            </div>
                         )}
                     </div>
 

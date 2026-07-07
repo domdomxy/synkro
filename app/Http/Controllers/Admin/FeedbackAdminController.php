@@ -13,7 +13,7 @@ class FeedbackAdminController extends Controller
 {
     public function index(Request $request)
     {
-        $feedbacks = Feedback::with('responses.admin')
+        $feedbacks = Feedback::with(['responses.admin', 'attachments'])
             ->when($request->category, fn ($q) => $q->where('category', $request->category))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
@@ -44,6 +44,10 @@ class FeedbackAdminController extends Controller
 
     public function respond(Request $request, Feedback $feedback)
     {
+        if (in_array($feedback->status, ['closed', 'rejected'])) {
+            return back()->withErrors(['message' => 'This ticket is closed. Change its status to respond.']);
+        }
+
         $validated = $request->validate([
             'message' => 'required|string|max:2000',
         ]);
