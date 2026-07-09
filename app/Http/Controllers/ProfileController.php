@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Storage;
+use App\Support\NotificationMailer;
+use App\Mail\SynkroNotificationMail;
+use Illuminate\Support\Facades\Mail;
 
 class ProfileController extends Controller
 {
@@ -30,13 +33,42 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $oldEmail = $user->getOriginal('email');
+        $newEmail = $request->validated()['email'];
+        $emailChanged = $oldEmail !== $newEmail;
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        if ($emailChanged) {
+            // Security alert goes to the OLD address — that's the account that might be compromised.
+            try {
+                Mail::to($oldEmail)->queue(new SynkroNotificationMail(
+                    $user->name,
+                    'Your email address was changed',
+                    [
+                        "Your Synkro account email was changed from {$oldEmail} to {$newEmail}.",
+                        "If you didn't make this change, please contact support immediately.",
+                    ]
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            // Optional confirmation to the new address too.
+            NotificationMailer::send(
+                $user,
+                'account.email_changed',
+                'Your email address was updated',
+                ["Your Synkro account email is now {$newEmail}."]
+            );
+        }
 
         return Redirect::route('profile.edit');
     }
@@ -105,7 +137,15 @@ class ProfileController extends Controller
                 }
             }
         }
-
+        NotificationMailer::send(
+            $user,
+            'account.deleted',
+            'Your account has been deleted',
+            [
+                'Your Synkro account and associated data have been permanently deleted.',
+                "If you didn't request this, please contact support immediately.",
+            ]
+        );
         Auth::logout();
 
         $user->delete();
@@ -188,6 +228,16 @@ class ProfileController extends Controller
                 ]);
             }
         }
+
+        NotificationMailer::send(
+            $user,
+            'account.deactivated',
+            'Your account has been deactivated',
+            [
+                'Your Synkro account has been deactivated.',
+                'Simply log back in at any time to reactivate it automatically.',
+            ]
+        );
 
         $user->update(['is_active' => false]);
 

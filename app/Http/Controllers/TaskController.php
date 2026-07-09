@@ -9,26 +9,32 @@ use App\Events\TaskReviewed;
 use App\Events\TaskReviewNeeded;
 use App\Events\TaskUnassigned;
 use App\Events\TaskUpdated;
+use App\Events\TaskDeleted;
 use App\Models\Project;
 use App\Models\ProjectActivityLog;
 use App\Models\Task;
 use App\Models\TaskDeliverable;
 use App\Models\UserNotification;
+use App\Support\NotificationMailer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use App\Events\TaskDeleted;
 
 class TaskController extends Controller
 {
     public function index()
     {
+        $pinnedIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
+
         $tasks = Task::where('assigned_to', Auth::id())
             ->with('project')
             ->withCount('comments')
             ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, due_date ASC')
-            ->get();
+            ->get()
+            ->map(fn ($t) => tap($t, fn ($t) => $t->is_pinned = in_array($t->id, $pinnedIds)))
+            ->sortByDesc('is_pinned')
+            ->values();
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
@@ -58,11 +64,13 @@ class TaskController extends Controller
                 'target_name' => $assignee->name,
             ]);
 
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_assigned',
                 'message' => "You were assigned a new task: \"{$task->title}\"",
-                'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+                'url' => $url,
             ]);
 
             try {
@@ -70,6 +78,15 @@ class TaskController extends Controller
             } catch (\Throwable $e) {
                 report($e);
             }
+
+            NotificationMailer::send(
+                $assignee,
+                'task.assigned',
+                "New task assigned: {$task->title}",
+                ["You've been assigned a new task, \"{$task->title}\", in the project \"{$project->name}\"."],
+                url($url),
+                'View Task'
+            );
         }
 
         return back()->with('success', 'Task created.');
@@ -124,6 +141,7 @@ class TaskController extends Controller
         if ($assigneeChanged) {
             if ($task->assigned_to) {
                 $newAssignee = $task->assignee()->first();
+                $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
                 ProjectActivityLog::log($task->project, 'task_reassigned', [
                     'task_title' => $task->title,
@@ -135,7 +153,7 @@ class TaskController extends Controller
                     'user_id' => $task->assigned_to,
                     'type' => 'task_assigned',
                     'message' => "You were assigned a task: \"{$task->title}\"",
-                    'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+                    'url' => $url,
                 ]);
 
                 try {
@@ -143,6 +161,15 @@ class TaskController extends Controller
                 } catch (\Throwable $e) {
                     report($e);
                 }
+
+                NotificationMailer::send(
+                    $newAssignee,
+                    'task.assigned',
+                    "New task assigned: {$task->title}",
+                    ["You've been assigned the task \"{$task->title}\" in \"{$task->project->name}\"."],
+                    url($url),
+                    'View Task'
+                );
             } else {
                 ProjectActivityLog::log($task->project, 'task_unassigned', [
                     'task_title' => $task->title,
@@ -151,11 +178,13 @@ class TaskController extends Controller
             }
 
             if ($previousAssignee && $previousAssignee !== $task->assigned_to) {
+                $projectUrl = route('projects.show', $task->project_id, false);
+
                 $notification = UserNotification::create([
                     'user_id' => $previousAssignee,
                     'type' => 'task_unassigned',
                     'message' => "You were removed from task \"{$task->title}\"",
-                    'url' => route('projects.show', $task->project_id, false),
+                    'url' => $projectUrl,
                 ]);
 
                 try {
@@ -163,13 +192,27 @@ class TaskController extends Controller
                 } catch (\Throwable $e) {
                     report($e);
                 }
+
+                $previousUser = \App\Models\User::find($previousAssignee);
+                if ($previousUser) {
+                    NotificationMailer::send(
+                        $previousUser,
+                        'task.unassigned',
+                        "Removed from task: {$task->title}",
+                        ["You've been unassigned from \"{$task->title}\" in \"{$task->project->name}\"."],
+                        url($projectUrl),
+                        'View Project'
+                    );
+                }
             }
         } elseif ($contentChanged && $task->assigned_to) {
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_updated',
                 'message' => "Task \"{$task->title}\" was updated",
-                'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+                'url' => $url,
             ]);
 
             try {
@@ -177,6 +220,15 @@ class TaskController extends Controller
             } catch (\Throwable $e) {
                 report($e);
             }
+
+            NotificationMailer::send(
+                $task->assignee,
+                'task.updated',
+                "Task updated: {$task->title}",
+                ["The task \"{$task->title}\" you're assigned to was updated in \"{$task->project->name}\"."],
+                url($url),
+                'View Task'
+            );
         }
 
         return back()->with('success', 'Task updated.');
@@ -190,9 +242,11 @@ class TaskController extends Controller
 
         if ($task->assigned_to) {
             $assigneeId = $task->assigned_to;
+            $assignee = $task->assignee;
             $taskTitle = $task->title;
             $projectName = $task->project->name;
             $projectId = $task->project_id;
+            $projectUrl = route('projects.show', $projectId, false);
 
             $notification = null;
             try {
@@ -200,7 +254,7 @@ class TaskController extends Controller
                     'user_id' => $assigneeId,
                     'type' => 'task_deleted',
                     'message' => "\"{$taskTitle}\" was deleted from {$projectName}.",
-                    'url' => route('projects.show', $projectId, false),
+                    'url' => $projectUrl,
                 ]);
             } catch (\Throwable $e) {
                 report($e);
@@ -211,13 +265,23 @@ class TaskController extends Controller
             } catch (\Throwable $e) {
                 report($e);
             }
+
+            if ($assignee) {
+                NotificationMailer::send(
+                    $assignee,
+                    'task.deleted',
+                    "Task deleted: {$taskTitle}",
+                    ["The task \"{$taskTitle}\" you were assigned to was deleted from \"{$projectName}\"."],
+                    url($projectUrl),
+                    'View Project'
+                );
+            }
         }
 
         $task->delete();
 
         return back()->with('success', 'Task deleted.');
     }
-
 
     public function start(Task $task)
     {
@@ -273,13 +337,14 @@ class TaskController extends Controller
 
         if (! $wasAlreadySubmitted) {
             $testers = $task->project->members()->wherePivot('role', 'tester')->get();
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
             foreach ($testers as $tester) {
                 $notification = UserNotification::create([
                     'user_id' => $tester->id,
                     'type' => 'task_review_needed',
                     'message' => "\"{$task->title}\" is waiting for your review",
-                    'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+                    'url' => $url,
                 ]);
 
                 try {
@@ -287,6 +352,15 @@ class TaskController extends Controller
                 } catch (\Throwable $e) {
                     report($e);
                 }
+
+                NotificationMailer::send(
+                    $tester,
+                    'task.review_needed',
+                    "Review needed: {$task->title}",
+                    ["\"{$task->title}\" in \"{$task->project->name}\" has been submitted and is waiting for your review."],
+                    url($url),
+                    'Review Now'
+                );
             }
         }
 
@@ -362,18 +436,35 @@ class TaskController extends Controller
 
         $decisionLabel = $validated['decision'] === 'approve' ? 'approved' : 'sent back for changes';
         $message = "\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
         $notification = UserNotification::create([
             'user_id' => $task->assigned_to,
             'type' => $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected',
             'message' => $message,
-            'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+            'url' => $url,
         ]);
 
         try {
             broadcast(new TaskReviewed($task, $validated['decision'], $validated['feedback'] ?? null, $notification->id))->toOthers();
         } catch (\Throwable $e) {
             report($e);
+        }
+
+        if ($task->assignee) {
+            $mailLines = ["\"{$task->title}\" in \"{$task->project->name}\" was {$decisionLabel}."];
+            if (! empty($validated['feedback'])) {
+                $mailLines[] = "Feedback: {$validated['feedback']}";
+            }
+
+            NotificationMailer::send(
+                $task->assignee,
+                $validated['decision'] === 'approve' ? 'task.approved' : 'task.rejected',
+                $validated['decision'] === 'approve' ? "Approved: {$task->title}" : "Changes requested: {$task->title}",
+                $mailLines,
+                url($url),
+                'View Task'
+            );
         }
 
         if ($validated['decision'] === 'approve') {
@@ -387,7 +478,7 @@ class TaskController extends Controller
                     'user_id' => $recipient->id,
                     'type' => 'task_done',
                     'message' => "\"{$task->title}\" was marked done",
-                    'url' => route('projects.show', $task->project_id, false) . '?task=' . $task->id,
+                    'url' => $url,
                 ]);
 
                 try {
@@ -395,6 +486,15 @@ class TaskController extends Controller
                 } catch (\Throwable $e) {
                     report($e);
                 }
+
+                NotificationMailer::send(
+                    $recipient,
+                    'task.done',
+                    "Task completed: {$task->title}",
+                    ["\"{$task->title}\" in \"{$task->project->name}\" was marked done."],
+                    url($url),
+                    'View Task'
+                );
             }
         }
 
@@ -414,7 +514,6 @@ class TaskController extends Controller
         ]);
 
         if ($validated['action'] === 'reset') {
-            // delete stored files from disk first
             foreach ($task->deliverables as $deliverable) {
                 if ($deliverable->type === 'file' && $deliverable->path) {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($deliverable->path);
@@ -438,5 +537,16 @@ class TaskController extends Controller
             'project' => $task->project_id,
             '_r' => now()->timestamp,
         ])->with('success', 'Resolved.');
+    }
+    public function pin(Task $task)
+    {
+        Auth::user()->pinnedTasks()->syncWithoutDetaching([$task->id]);
+        return back()->with('success', 'Task pinned.');
+    }
+
+    public function unpin(Task $task)
+    {
+        Auth::user()->pinnedTasks()->detach($task->id);
+        return back()->with('success', 'Task unpinned.');
     }
 }

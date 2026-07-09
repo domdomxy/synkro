@@ -6,7 +6,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 const roleStyles = {
@@ -24,15 +24,23 @@ function SearchIcon() {
     );
 }
 
-function TaskIcon() {
+function ArchiveIcon({ className = 'h-3.5 w-3.5' }) {
     return (
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
         </svg>
     );
 }
 
-function EmptyState({ hasAnyProjects, onNewProject, onClearFilters }) {
+function PinIcon({ filled, className = 'h-3.5 w-3.5' }) {
+    return (
+        <svg className={className} fill={filled ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+    );
+}
+
+function EmptyState({ hasAnyProjects, showingArchived, onNewProject, onClearFilters }) {
     return (
         <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center dark:border-gray-700">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
@@ -48,6 +56,11 @@ function EmptyState({ hasAnyProjects, onNewProject, onClearFilters }) {
                         Clear filters
                     </button>
                 </>
+            ) : showingArchived ? (
+                <>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">No archived projects</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Projects you archive will show up here.</p>
+                </>
             ) : (
                 <>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">You don't have any projects yet</p>
@@ -59,7 +72,7 @@ function EmptyState({ hasAnyProjects, onNewProject, onClearFilters }) {
     );
 }
 
-export default function Index({ projects }) {
+export default function Index({ projects, showingArchived }) {
     const { auth } = usePage().props;
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -88,6 +101,23 @@ export default function Index({ projects }) {
         setRoleFilter('all');
     };
 
+    const switchTab = (archived) => {
+        router.get(route('projects.index'), { archived: archived ? 1 : undefined }, { preserveState: false });
+    };
+
+    const archiveProject = (project) => {
+        if (confirm(`Archive "${project.name}"? This only affects your own view — other members will still see it normally. You can unarchive it anytime.`)) {
+            router.post(route('projects.archive', project.id), {}, { preserveScroll: true });
+        }
+    };
+
+    const unarchiveProject = (project) => {
+        router.post(route('projects.unarchive', project.id), {}, { preserveScroll: true });
+    };
+
+    const pinProject = (project) => router.post(route('projects.pin', project.id), {}, { preserveScroll: true });
+    const unpinProject = (project) => router.post(route('projects.unpin', project.id), {}, { preserveScroll: true });
+
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
 
@@ -111,6 +141,30 @@ export default function Index({ projects }) {
             <div className="py-12">
 
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+
+                    <div className="mb-6 flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxWidth: 280 }}>
+                        <button
+                            onClick={() => switchTab(false)}
+                            className={`flex-1 py-2 text-sm font-medium transition ${
+                                !showingArchived
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            Active
+                        </button>
+                        <button
+                            onClick={() => switchTab(true)}
+                            className={`flex-1 py-2 text-sm font-medium transition ${
+                                showingArchived
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            Archived
+                        </button>
+                    </div>
+
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="relative">
@@ -141,7 +195,9 @@ export default function Index({ projects }) {
                                 </button>
                             )}
                         </div>
-                        <PrimaryButton onClick={() => setShowCreateModal(true)}>New Project</PrimaryButton>
+                        {!showingArchived && (
+                            <PrimaryButton onClick={() => setShowCreateModal(true)}>New Project</PrimaryButton>
+                        )}
                     </div>
 
                     {projects.length > 0 && (
@@ -156,50 +212,70 @@ export default function Index({ projects }) {
                                 ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
                                 : 0;
                             const progressColor = progress === 100 ? 'bg-green-500' : 'bg-indigo-500';
+                            const isOwner = project.owner_id === auth.user.id;
 
                             return (
-                                <Link
+                                <div
                                     key={project.id}
-                                    href={route('projects.show', project.id)}
-                                    className="block rounded-lg border border-transparent bg-white p-6 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900"
+                                    className="group relative rounded-lg border border-transparent bg-white p-6 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900"
                                 >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
-                                            {project.name}
-                                        </h3>
-                                        <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium capitalize ${roleStyles[project.pivot?.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                            {project.pivot?.role}
-                                        </span>
-                                    </div>
-                                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-500 dark:text-gray-400">
-                                        {project.description || 'No description provided.'}
-                                    </p>
+                                    <button
+                                        onClick={() => showingArchived ? unarchiveProject(project) : archiveProject(project)}
+                                        title={showingArchived ? 'Unarchive project' : 'Archive project (only affects your view)'}
+                                        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                    >
+                                        <ArchiveIcon />
+                                    </button>
+                                    <button
+                                        onClick={() => project.pivot?.pinned ? unpinProject(project) : pinProject(project)}
+                                        title={project.pivot?.pinned ? 'Unpin' : 'Pin to top'}
+                                        className={`absolute right-11 top-3 z-10 rounded-md p-1.5 transition ${
+                                            project.pivot?.pinned
+                                                ? 'text-amber-500 opacity-100'
+                                                : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                    >
+                                        <PinIcon filled={!!project.pivot?.pinned} />
+                                    </button>
+                                    <Link href={route('projects.show', project.id)} className="block">
+                                        <div className="flex items-start justify-between gap-2 pr-6">
+                                            <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
+                                                {project.name}
+                                            </h3>
+                                            <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium capitalize ${roleStyles[project.pivot?.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                {project.pivot?.role}
+                                            </span>
+                                        </div>
+                                        <p className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-500 dark:text-gray-400">
+                                            {project.description || 'No description provided.'}
+                                        </p>
 
-                                    <div className="mt-4 flex items-center justify-between gap-2">
-                                        <div className="flex min-w-0 items-center gap-2">
-                                            <Avatar user={project.owner} size="h-6 w-6" />
-                                            <p className="truncate text-xs text-gray-400 dark:text-gray-500" title={project.owner?.name}>
-                                                {project.owner?.name}
-                                            </p>
+                                        <div className="mt-4 flex items-center justify-between gap-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Avatar user={project.owner} size="h-6 w-6" />
+                                                <p className="truncate text-xs text-gray-400 dark:text-gray-500" title={project.owner?.name}>
+                                                    {project.owner?.name}
+                                                </p>
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                {project.tasks_count} tasks
+                                            </div>
                                         </div>
-                                        <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                                            <TaskIcon />
-                                            {project.tasks_count}
-                                        </div>
-                                    </div>
 
-                                    <div className="mt-3">
-                                        <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-                                            <div className={`h-1.5 rounded-full transition-all ${progressColor}`} style={{ width: `${progress}%` }} />
+                                        <div className="mt-3">
+                                            <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
+                                                <div className={`h-1.5 rounded-full transition-all ${progressColor}`} style={{ width: `${progress}%` }} />
+                                            </div>
+                                            <p className="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{progress}% done</p>
                                         </div>
-                                        <p className="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{progress}% done</p>
-                                    </div>
-                                </Link>
+                                    </Link>
+                                </div>
                             );
                         })}
                         {filtered.length === 0 && (
                             <EmptyState
                                 hasAnyProjects={projects.length > 0}
+                                showingArchived={showingArchived}
                                 onNewProject={() => setShowCreateModal(true)}
                                 onClearFilters={clearFilters}
                             />

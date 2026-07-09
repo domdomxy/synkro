@@ -33,6 +33,18 @@ function formatBytes(bytes) {
     return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
+function timeAgo(dateString) {
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateString).toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
 function getExtension(name) {
     return name?.split('.').pop()?.toLowerCase() ?? '';
 }
@@ -90,6 +102,14 @@ function LinkTypeIcon({ className = 'h-4 w-4' }) {
     );
 }
 
+function PinIcon({ filled, className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill={filled ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+    );
+}
+
 function RemoveButton({ onClick, title = 'Remove' }) {
     return (
         <button
@@ -105,7 +125,7 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function KebabMenu({ onEdit, onDelete }) {
+function KebabMenu({ canManage, isPinned, onEdit, onDelete, onPin }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -128,19 +148,31 @@ function KebabMenu({ onEdit, onDelete }) {
                 </svg>
             </button>
             {open && (
-                <div className="absolute right-0 z-20 mt-1 w-32 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                <div className="absolute right-0 z-20 mt-1 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
                     <button
-                        onClick={() => { setOpen(false); onEdit(); }}
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => { setOpen(false); onPin(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
-                        Edit
+                        <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
+                        {isPinned ? 'Unpin task' : 'Pin task'}
                     </button>
-                    <button
-                        onClick={() => { setOpen(false); onDelete(); }}
-                        className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                    >
-                        Delete
-                    </button>
+                    {canManage && (
+                        <>
+                            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                            <button
+                                onClick={() => { setOpen(false); onEdit(); }}
+                                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => { setOpen(false); onDelete(); }}
+                                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                            >
+                                Delete
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -157,6 +189,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const fileInputRef = useRef(null);
     const [showDeliverables, setShowDeliverables] = useState(false);
     const [showFullDescription, setShowFullDescription] = useState(false);
+    const [pinning, setPinning] = useState(false);
 
     const editForm = useForm({
         title: task.title,
@@ -173,6 +206,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const startTask = () => router.patch(route('tasks.start', task.id));
     const startReview = () => router.patch(route('tasks.start-review', task.id));
+
+    const togglePin = () => {
+        setPinning(true);
+        const routeName = task.is_pinned ? 'tasks.unpin' : 'tasks.pin';
+        router.post(route(routeName, task.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setPinning(false),
+        });
+    };
 
     const saveEdit = (e) => {
         e.preventDefault();
@@ -331,6 +373,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     {task.title}
                                     {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
                                 </p>
+                                {task.is_pinned && (
+                                    <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                )}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
                                 {!task.assignee && <span>Unassigned</span>}
@@ -365,9 +410,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                 {task.status.replace('_', ' ')}
                             </span>
-                            {canManage && (
-                                <KebabMenu onEdit={() => setIsEditing(true)} onDelete={deleteTask} />
-                            )}
+                            <KebabMenu
+                                canManage={canManage}
+                                isPinned={!!task.is_pinned}
+                                onEdit={() => setIsEditing(true)}
+                                onDelete={deleteTask}
+                                onPin={togglePin}
+                            />
                         </div>
                     </div>
                     {task.description && (
@@ -518,47 +567,82 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
-            <div className="mt-3">
-                <button onClick={() => setShowComments((v) => !v)} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
-                    {showComments ? 'Hide comments' : `Comments (${commentCount})`}
+            <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
+                <button
+                    onClick={() => setShowComments((v) => !v)}
+                    className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    {commentCount === 0 ? 'Add a comment' : `${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+                    <svg className={`h-3.5 w-3.5 transition-transform ${showComments ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                 </button>
                 {showComments && (
-                    <div className="mt-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900">
-                        <div className="space-y-3">
-                            {task.comments?.map((comment) => (
-                                <div key={comment.id} className="flex items-start justify-between gap-2">
-                                    <div className="flex min-w-0 items-start gap-2">
-                                        <Avatar user={comment.user} size="h-6 w-6" />
-                                        <div className="min-w-0 text-sm">
-                                            <p>
-                                                <span className="font-medium text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                                {comment.is_feedback && (
-                                                    <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                                                        Tester Feedback
-                                                    </span>
-                                                )}
-                                            </p>
-                                            <p className="break-words text-gray-600 dark:text-gray-400">{comment.body}</p>
+                    <div className="mt-3 space-y-3">
+                        {task.comments?.map((comment) => (
+                            <div key={comment.id} className="flex items-start gap-2.5">
+                                <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <div className={`rounded-2xl rounded-tl-sm px-3.5 py-2 ${
+                                        comment.is_feedback
+                                            ? 'bg-purple-50 dark:bg-purple-950/30'
+                                            : 'bg-gray-100 dark:bg-gray-700/60'
+                                    }`}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
+                                            {comment.is_feedback && (
+                                                <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                                    Tester Feedback
+                                                </span>
+                                            )}
                                         </div>
+                                        <p className="mt-0.5 break-words text-sm text-gray-700 dark:text-gray-300">{comment.body}</p>
                                     </div>
-                                    {(comment.user.id === currentUserId || canManage) && (
-                                        <button onClick={() => deleteComment(comment.id)} className="shrink-0 text-xs text-red-500 hover:underline">delete</button>
-                                    )}
+                                    <div className="mt-1 flex items-center gap-2 px-1">
+                                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeAgo(comment.created_at)}</span>
+                                        {(comment.user.id === currentUserId || canManage) && (
+                                            <>
+                                                <span className="text-gray-300 dark:text-gray-600">·</span>
+                                                <button
+                                                    onClick={() => deleteComment(comment.id)}
+                                                    className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            ))}
-                            {commentCount === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No comments yet.</p>}
-                        </div>
-                        <form onSubmit={submitComment} className="mt-3 flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={commentForm.data.body}
-                                onChange={(e) => commentForm.setData('body', e.target.value)}
-                                placeholder="Add a comment..."
-                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            />
-                            <PrimaryButton disabled={commentForm.processing}>Send</PrimaryButton>
+                            </div>
+                        ))}
+                        {commentCount === 0 && (
+                            <p className="text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                        )}
+
+                        <form onSubmit={submitComment} className="flex items-start gap-2.5 pt-1">
+                            <div className="min-w-0 flex-1">
+                                <input
+                                    type="text"
+                                    value={commentForm.data.body}
+                                    onChange={(e) => commentForm.setData('body', e.target.value)}
+                                    placeholder="Write a comment..."
+                                    className="block w-full rounded-full border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                />
+                                {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={commentForm.processing || !commentForm.data.body.trim()}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                            >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </button>
                         </form>
-                        {commentForm.errors.body && <p className="mt-1 text-sm text-red-600">{commentForm.errors.body}</p>}
                     </div>
                 )}
             </div>

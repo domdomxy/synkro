@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
 use App\Models\FeedbackResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class FeedbackAdminController extends Controller
@@ -37,7 +39,22 @@ class FeedbackAdminController extends Controller
             'status' => 'required|in:pending,reviewing,accepted,rejected,closed',
         ]);
 
+        $oldStatus = $feedback->status;
         $feedback->update($validated);
+
+        if ($oldStatus !== $validated['status']) {
+            $lines = ["Your ticket \"{$feedback->subject}\" ({$feedback->tracking_id}) is now: {$validated['status']}."];
+
+            if ($validated['status'] === 'closed') {
+                $lines[] = 'If you have further questions, you can reopen it from the tracking page.';
+            }
+
+            $this->notifySubmitter(
+                $feedback,
+                "Ticket status updated ({$feedback->tracking_id})",
+                $lines
+            );
+        }
 
         return back()->with('success', 'Status updated.');
     }
@@ -59,6 +76,33 @@ class FeedbackAdminController extends Controller
             'sender_type' => 'admin',
         ]);
 
+        $this->notifySubmitter(
+            $feedback,
+            "Support replied to your ticket ({$feedback->tracking_id})",
+            [
+                "Support responded to your ticket \"{$feedback->subject}\":",
+                $validated['message'],
+            ]
+        );
+
         return back()->with('success', 'Response sent.');
+    }
+
+    /** Feedback submitters aren't registered users, so this always sends — no preference toggle applies. */
+    private function notifySubmitter(Feedback $feedback, string $subject, array $lines): void
+    {
+        try {
+            Mail::to($feedback->email)->queue(
+                new SynkroNotificationMail(
+                    $feedback->name,
+                    $subject,
+                    $lines,
+                    url(route('feedback.page', [], false)),
+                    'Track Your Ticket'
+                )
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

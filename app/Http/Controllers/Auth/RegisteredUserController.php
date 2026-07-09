@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\NotificationMailer;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,18 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        NotificationMailer::send(
+            $user,
+            'account.welcome',
+            'Welcome to Synkro!',
+            [
+                "Hi {$user->name}, your Synkro account has been created successfully.",
+                'You can now create projects, manage tasks, and collaborate with your team.',
+            ],
+            url(route('projects.index', [], false)),
+            'View Your Projects'
+        );
 
         Auth::login($user);
 

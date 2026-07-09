@@ -58,7 +58,13 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('login')->with('suspension', $suspensionData);
             }
         }
+        if ($user->must_change_password && $user->temp_password_expires_at && $user->temp_password_expires_at->isPast()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
+            return redirect()->route('login')->with('passwordExpired', true);
+        }
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));

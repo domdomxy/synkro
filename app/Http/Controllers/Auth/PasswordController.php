@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\NotificationMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,9 +21,20 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
+            'temp_password_expires_at' => null,
         ]);
+
+        NotificationMailer::send(
+            $user,
+            'account.password_changed',
+            'Your password was changed',
+            ["Your Synkro account password was changed. If you didn't make this change, please contact support immediately."]
+        );
 
         return back();
     }

@@ -6,7 +6,10 @@ use App\Models\Project;
 use App\Models\SuspensionAppeal;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\NotificationMailer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Models\Feedback;
 use App\Events\UserSuspended;
@@ -46,7 +49,6 @@ class AdminController extends Controller
                 'created' => Task::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newUsers' => User::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newProjects' => Project::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
-                'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
             ];
         }, $this->buckets($range));
 
@@ -74,10 +76,67 @@ class AdminController extends Controller
         ]);
     }
 
-    public function users()
+    public function users(Request $request)
     {
-        $users = User::withCount('ownedProjects')->orderBy('name')->get();
-        return Inertia::render('Admin/Users', ['users' => $users]);
+        $query = User::query();
+
+        if ($request->role && $request->role !== 'all') {
+            $query->where('role', $request->role);
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            match ($request->status) {
+                'active' => $query->where('is_active', true)->where('is_suspended', false),
+                'inactive' => $query->where('is_active', false),
+                'suspended' => $query->where('is_suspended', true),
+                default => null,
+            };
+        }
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('email', 'like', "%{$request->search}%");
+            });
+        }
+
+        $users = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('is_active', true)->where('is_suspended', false)->count(),
+            'inactive' => User::where('is_active', false)->count(),
+            'suspended' => User::where('is_suspended', true)->count(),
+            'admins' => User::where('role', 'admin')->count(),
+        ];
+
+        return Inertia::render('Admin/Users', [
+            'users' => $users,
+            'stats' => $stats,
+            'filters' => $request->only(['search', 'role', 'status']),
+        ]);
+    }
+
+    public function projects(Request $request)
+    {
+        $query = Project::with('owner')->withCount(['members', 'tasks']);
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                ->orWhereHas('owner', function ($q2) use ($request) {
+                    $q2->where('name', 'like', "%{$request->search}%")
+                        ->orWhere('email', 'like', "%{$request->search}%");
+                });
+            });
+        }
+
+        $projects = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        return Inertia::render('Admin/Projects', [
+            'projects' => $projects,
+            'filters' => $request->only(['search']),
+        ]);
     }
 
     public function suspend(Request $request, User $user)
@@ -106,7 +165,22 @@ class AdminController extends Controller
         ]);
 
         event(new UserSuspended($user));
-        
+
+        NotificationMailer::send(
+            $user,
+            'account.suspended',
+            'Your account has been suspended',
+            array_filter([
+                $suspendedUntil
+                    ? "Your account has been suspended until {$suspendedUntil->format('M j, Y g:i A')}."
+                    : 'Your account has been suspended indefinitely.',
+                $request->reason ? "Reason: {$request->reason}" : null,
+                "If you believe this was a mistake, you can submit an appeal using the button below.",
+            ]),
+            url(route('appeal.page', [], false)),
+            'Submit an Appeal'
+        );
+
         return back()->with('success', 'User suspended.');
     }
 
@@ -118,6 +192,15 @@ class AdminController extends Controller
             'suspension_reason' => null,
             'suspended_by' => null,
         ]);
+
+        NotificationMailer::send(
+            $user,
+            'account.suspension_lifted',
+            'Your suspension has been lifted',
+            ["Good news — your Synkro account suspension has been lifted. You can log in again right away."],
+            url(route('login', [], false)),
+            'Log In'
+        );
 
         return back()->with('success', 'Suspension lifted.');
     }
@@ -131,6 +214,36 @@ class AdminController extends Controller
         return back()->with('success', 'Role updated.');
     }
 
+    public function resetPassword(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => "You can't reset your own password this way. Use your profile settings."]);
+        }
+
+        $newPassword = Str::random(12);
+
+        $user->update([
+            'password' => Hash::make($newPassword),
+            'must_change_password' => true,
+            'temp_password_expires_at' => now()->addHours(24),
+        ]);
+
+        NotificationMailer::send(
+            $user,
+            'account.temp_password',
+            'Your password has been reset',
+            [
+                'An administrator has reset your Synkro password.',
+                "Your new temporary password is: {$newPassword}",
+                'This password expires in 24 hours. Please log in and set a new password as soon as possible.',
+            ],
+            url(route('login', [], false)),
+            'Log In Now'
+        );
+
+        return back()->with('success', 'Password reset and emailed to the user.');
+    }
+
     public function appeals()
     {
         $appeals = SuspensionAppeal::with('user')->latest()->get();
@@ -141,18 +254,26 @@ class AdminController extends Controller
     {
         $request->validate(['status' => 'required|in:reviewed,dismissed']);
         $appeal->update(['status' => $request->status]);
+
+        if ($appeal->user) {
+            NotificationMailer::send(
+                $appeal->user,
+                'account.appeal_reviewed',
+                'Your appeal has been reviewed',
+                [
+                    $request->status === 'reviewed'
+                        ? 'Your suspension appeal has been reviewed by our team.'
+                        : 'Your suspension appeal has been dismissed.',
+                ],
+                url(route('login', [], false)),
+                'Log In'
+            );
+        }
+
         return back()->with('success', 'Appeal updated.');
     }
-
-    public function projects()
-    {
-        $projects = Project::with('owner')->withCount(['members', 'tasks'])->orderBy('name')->get();
-        return Inertia::render('Admin/Projects', ['projects' => $projects]);
-    }
-
     public function destroyProject(Project $project)
     {
         abort(403, 'Platform admins cannot delete projects directly.');
     }
-
 }

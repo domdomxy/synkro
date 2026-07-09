@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'feedback_tracking_id' => fn () => $request->session()->get('feedback_tracking_id'),
+                'passwordExpired' => fn () => $request->session()->get('passwordExpired'),
                 ],
             'notifications' => [
             'unreadCount' => fn () => $request->user()?->notifications()->whereNull('read_at')->count() ?? 0,

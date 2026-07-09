@@ -7,23 +7,41 @@ use App\Models\ProjectActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Support\NotificationMailer;
 
 class ProjectController extends Controller
 {
     public function index()
     {
+        $showArchived = request()->boolean('archived');
+
         $projects = Auth::user()->projects()
             ->with('owner')
+            ->wherePivot('archived', $showArchived)
             ->withCount([
                 'tasks',
                 'tasks as done_tasks_count' => fn ($query) => $query->where('status', 'done'),
             ])
-            ->latest()
-            ->get();
+            ->get()
+            ->sortByDesc(fn ($p) => $p->pivot->pinned)
+            ->values();
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
+            'showingArchived' => $showArchived,
         ]);
+    }
+
+    public function archive(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['archived' => true]);
+        return back()->with('success', 'Project archived.');
+    }
+
+    public function unarchive(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['archived' => false]);
+        return back()->with('success', 'Project unarchived.');
     }
 
     public function create()
@@ -92,6 +110,18 @@ class ProjectController extends Controller
 
         if (! empty($changes)) {
             ProjectActivityLog::log($project, 'project_updated', ['changes' => $changes]);
+
+            $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+            foreach ($recipients as $recipient) {
+                NotificationMailer::send(
+                    $recipient,
+                    'project.edited',
+                    "{$project->name} was updated",
+                    ["The project \"{$project->name}\" you belong to was edited."],
+                    url(route('projects.show', $project->id, false)),
+                    'View Project'
+                );
+            }
         }
 
         return redirect()->route('projects.show', $project)->with('success', 'Project updated.');
@@ -130,6 +160,15 @@ class ProjectController extends Controller
 
         ProjectActivityLog::log($project, 'ownership_transferred', ['target_name' => $newOwner->name]);
 
+        NotificationMailer::send(
+            $newOwner,
+            'project.ownership_transferred',
+            "You now own {$project->name}",
+            ["Ownership of \"{$project->name}\" was transferred to you."],
+            url(route('projects.show', $project->id, false)),
+            'View Project'
+        );
+
         return back()->with('success', 'Ownership transferred.');
     }
 
@@ -147,6 +186,17 @@ class ProjectController extends Controller
             'project' => $project,
             'role' => $role,
         ]);
+    }
+    public function pin(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['pinned' => true]);
+        return back()->with('success', 'Project pinned.');
+    }
+
+    public function unpin(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['pinned' => false]);
+        return back()->with('success', 'Project unpinned.');
     }
 
     public function logs(Project $project)

@@ -517,7 +517,10 @@ export default function Show({ project, role, myNotes }) {
                                     placeholder="Search members or role..."
                                     className="mb-3 block w-full text-sm"
                                 />
-                                <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
+                                <ul
+                                    className="space-y-1 overflow-y-auto pr-1"
+                                    style={{ maxHeight: filteredMembers.length > 6 ? '18rem' : 'none' }}
+                                >
                                     {filteredMembers.map((member) => (
                                         <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
                                             <div className="flex items-start gap-2">

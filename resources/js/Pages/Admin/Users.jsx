@@ -1,23 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
-import SecondaryButton from '@/Components/SecondaryButton';
-import PrimaryButton from '@/Components/PrimaryButton';
-import DangerButton from '@/Components/DangerButton';
 import TextInput from '@/Components/TextInput';
-import InputError from '@/Components/InputError';
-import Modal from '@/Components/Modal';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-import BackButton from '@/Components/BackButton';
-
-const DURATION_OPTIONS = [
-    { value: '1', label: '1 day' },
-    { value: '3', label: '3 days' },
-    { value: '7', label: '7 days' },
-    { value: '30', label: '30 days' },
-    { value: 'custom', label: 'Custom date...' },
-    { value: 'permanent', label: 'Permanent' },
-];
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 
 function SearchIcon() {
     return (
@@ -45,9 +30,6 @@ function timeRemaining(dateString) {
     return `${hours}h left`;
 }
 
-// Determines the single, unambiguous status shown for a user.
-// Suspension (admin-imposed) always takes priority over self-deactivation,
-// since a suspended user can't log in to reactivate themselves anyway.
 function getUserStatus(user) {
     if (user.is_suspended) return 'suspended';
     if (!user.is_active) return 'inactive';
@@ -84,123 +66,149 @@ function StatusBadge({ user }) {
     );
 }
 
-function SuspendModal({ user, show, onClose }) {
-    const form = useForm({ duration: '7', custom_date: '', reason: '' });
+function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspend, onLiftSuspension }) {
+    const [open, setOpen] = useState(false);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const btnRef = useRef(null);
+    const menuRef = useRef(null);
+    const MENU_WIDTH = 200;
 
-    const submit = (e) => {
-        e.preventDefault();
-        if (!confirm(`Suspend ${user?.name}? ${form.data.duration === 'permanent' ? 'This will be permanent until manually lifted.' : ''}`)) return;
-        form.post(route('admin.users.suspend', user.id), {
-            onSuccess: () => { form.reset(); onClose(); },
-        });
+    const toggle = () => {
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setCoords({ top: rect.bottom + 4, left: Math.max(8, rect.right - MENU_WIDTH) });
+        }
+        setOpen((v) => !v);
     };
 
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) {
+                setOpen(false);
+            }
+        };
+        const handleScroll = () => setOpen(false);
+        document.addEventListener('mousedown', handleClick);
+        window.addEventListener('scroll', handleScroll, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            window.removeEventListener('scroll', handleScroll, true);
+        };
+    }, [open]);
+
     return (
-        <Modal show={show} onClose={onClose}>
-            <form onSubmit={submit} className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Suspend {user?.name}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    They won't be able to log in until the suspension is lifted or expires.
-                </p>
-
-                <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
-                    <select
-                        value={form.data.duration}
-                        onChange={(e) => form.setData('duration', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+        <>
+            <button
+                ref={btnRef}
+                onClick={toggle}
+                className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+                Actions
+                <svg className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {open && (
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
+                    className="z-50 overflow-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                >
+                    <button
+                        onClick={() => { setOpen(false); onToggleRole(user); }}
+                        disabled={isSelf}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
-                        {DURATION_OPTIONS.map((d) => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
-                        ))}
-                    </select>
+                        {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
+                    </button>
+                    <button
+                        onClick={() => { setOpen(false); onResetPassword(user); }}
+                        disabled={isSelf}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Reset Password
+                    </button>
+                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                    {user.is_suspended ? (
+                        <button
+                            onClick={() => { setOpen(false); onLiftSuspension(user); }}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+                        >
+                            Lift Suspension
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => { setOpen(false); onSuspend(user); }}
+                            disabled={isSelf}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/30"
+                        >
+                            Suspend User
+                        </button>
+                    )}
                 </div>
-
-                {form.data.duration === 'custom' && (
-                    <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Suspended until</label>
-                        <TextInput
-                            type="datetime-local"
-                            value={form.data.custom_date}
-                            onChange={(e) => form.setData('custom_date', e.target.value)}
-                            className="mt-1 block w-full"
-                        />
-                        <InputError message={form.errors.custom_date} className="mt-2" />
-                    </div>
-                )}
-
-                <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Reason <span className="font-normal text-gray-400">(optional, shown to the user)</span>
-                    </label>
-                    <textarea
-                        value={form.data.reason}
-                        onChange={(e) => form.setData('reason', e.target.value)}
-                        rows={3}
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        placeholder="e.g. Violation of community guidelines"
-                    />
-                </div>
-
-                <div className="mt-6 flex justify-end gap-2">
-                    <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
-                    <DangerButton disabled={form.processing}>Suspend</DangerButton>
-                </div>
-            </form>
-        </Modal>
+            )}
+        </>
     );
 }
 
-export default function Users({ users }) {
+function Pagination({ links }) {
+    if (!links || links.length <= 3) return null;
+    return (
+        <div className="flex flex-wrap justify-center gap-2 py-4">
+            {links.map((link, i) => (
+                <button
+                    key={i}
+                    disabled={!link.url}
+                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                    className={`rounded-md px-3 py-1 text-sm ${
+                        link.active
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                />
+            ))}
+        </div>
+    );
+}
+
+export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
-    const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [search, setSearch] = useState(filters.search ?? '');
+    const [roleFilter, setRoleFilter] = useState(filters.role ?? 'all');
+    const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     const [suspendTarget, setSuspendTarget] = useState(null);
 
-    const maxOwned = Math.max(1, ...users.map((u) => u.owned_projects_count));
+    const applyFilters = () => {
+        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter }, { preserveState: true });
+    };
 
-    const stats = useMemo(() => ({
-        total: users.length,
-        active: users.filter((u) => getUserStatus(u) === 'active').length,
-        inactive: users.filter((u) => getUserStatus(u) === 'inactive').length,
-        suspended: users.filter((u) => getUserStatus(u) === 'suspended').length,
-        admins: users.filter((u) => u.role === 'admin').length,
-    }), [users]);
+    const clearFilters = () => {
+        setSearch(''); setRoleFilter('all'); setStatusFilter('all');
+        router.get(route('admin.users'));
+    };
 
-    const filtered = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        return users.filter((u) => {
-            if (roleFilter !== 'all' && u.role !== roleFilter) return false;
-            if (statusFilter !== 'all' && getUserStatus(u) !== statusFilter) return false;
-            if (!term) return true;
-            return u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
-        });
-    }, [users, search, roleFilter, statusFilter]);
+    const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';
 
     const toggleRole = (user) => {
         const action = user.role === 'admin' ? 'demote to a regular user' : 'promote to admin';
         if (!confirm(`Are you sure you want to ${action} ${user.name}?`)) return;
-        router.patch(route('admin.users.toggle-role', user.id));
+        router.patch(route('admin.users.toggle-role', user.id), {}, { preserveScroll: true });
     };
 
     const liftSuspension = (user) => {
         if (!confirm(`Lift the suspension on ${user.name}? They'll be able to log in immediately.`)) return;
-        router.post(route('admin.users.lift-suspension', user.id));
+        router.post(route('admin.users.lift-suspension', user.id), {}, { preserveScroll: true });
     };
 
-    const clearFilters = () => { setSearch(''); setRoleFilter('all'); setStatusFilter('all'); };
-    const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';
+    const resetPassword = (user) => {
+        if (!confirm(`Reset ${user.name}'s password? A new temporary password will be emailed to them, expiring in 24 hours.`)) return;
+        router.post(route('admin.users.reset-password', user.id), {}, { preserveScroll: true });
+    };
 
     return (
-        <AuthenticatedLayout header={
-                <div className="flex items-center gap-4">
-                    <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Users</h2>
-                </div>
-            }>
+        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Users</h2>}>
             <Head title="Admin - Users" />
             <div className="py-12">
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
@@ -222,6 +230,7 @@ export default function Users({ users }) {
                                 <TextInput
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                                     placeholder="Search by name or email..."
                                     className="w-64 pl-9"
                                 />
@@ -237,15 +246,14 @@ export default function Users({ users }) {
                                 <option value="inactive">Inactive</option>
                                 <option value="suspended">Suspended</option>
                             </select>
+                            <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                             {hasActiveFilters && (
                                 <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear filters</button>
                             )}
                         </div>
-                        {users.length > 0 && (
-                            <p className="text-sm text-gray-400 dark:text-gray-500">
-                                {filtered.length} of {users.length} user{users.length > 1 ? 's' : ''}
-                            </p>
-                        )}
+                        <p className="text-sm text-gray-400 dark:text-gray-500">
+                            {users.total} user{users.total !== 1 ? 's' : ''} match{users.total === 1 ? 'es' : ''} your filters
+                        </p>
                     </div>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
@@ -255,15 +263,13 @@ export default function Users({ users }) {
                                     <th className="px-6 py-3">User</th>
                                     <th className="px-6 py-3">Role</th>
                                     <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Owned Projects</th>
                                     <th className="px-6 py-3">Joined</th>
                                     <th className="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y dark:divide-gray-700">
-                                {filtered.map((user) => {
+                                {users.data.map((user) => {
                                     const isSelf = user.id === auth.user.id;
-                                    const status = getUserStatus(user);
                                     return (
                                         <tr key={user.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                             <td className="px-6 py-3">
@@ -286,62 +292,35 @@ export default function Users({ users }) {
                                             <td className="px-6 py-3">
                                                 <StatusBadge user={user} />
                                             </td>
-                                            <td className="px-6 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-1.5 w-20 rounded-full bg-gray-100 dark:bg-gray-700">
-                                                        <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${(user.owned_projects_count / maxOwned) * 100}%` }} />
-                                                    </div>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{user.owned_projects_count}</span>
-                                                </div>
-                                            </td>
                                             <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
                                                 {new Date(user.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                                             </td>
                                             <td className="px-6 py-3">
-                                                <div className="flex flex-wrap gap-2">
-                                                    <SecondaryButton
-                                                        onClick={() => toggleRole(user)}
-                                                        disabled={isSelf}
-                                                        title={isSelf ? "You can't change your own role" : undefined}
-                                                    >
-                                                        {user.role === 'admin' ? 'Demote' : 'Make Admin'}
-                                                    </SecondaryButton>
-                                                    {status === 'suspended' ? (
-                                                        <PrimaryButton onClick={() => liftSuspension(user)}>
-                                                            Lift Suspension
-                                                        </PrimaryButton>
-                                                    ) : (
-                                                        <DangerButton
-                                                            onClick={() => setSuspendTarget(user)}
-                                                            disabled={isSelf}
-                                                            title={isSelf ? "You can't suspend your own account" : undefined}
-                                                        >
-                                                            Suspend
-                                                        </DangerButton>
-                                                    )}
-                                                </div>
+                                                <UserActionsMenu
+                                                    user={user}
+                                                    isSelf={isSelf}
+                                                    onToggleRole={toggleRole}
+                                                    onResetPassword={resetPassword}
+                                                    onSuspend={setSuspendTarget}
+                                                    onLiftSuspension={liftSuspension}
+                                                />
                                             </td>
                                         </tr>
                                     );
                                 })}
-                                {filtered.length === 0 && (
+                                {users.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
-                                            {users.length === 0 ? 'No users on the platform yet.' : 'No users match your filters.'}
+                                        <td colSpan={5} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
+                                            No users match your filters.
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+                        <Pagination links={users.links} />
                     </div>
                 </div>
             </div>
-
-            <SuspendModal
-                user={suspendTarget}
-                show={suspendTarget !== null}
-                onClose={() => setSuspendTarget(null)}
-            />
         </AuthenticatedLayout>
     );
 }

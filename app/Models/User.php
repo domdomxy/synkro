@@ -13,7 +13,8 @@ use App\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until','suspension_reason','suspended_by',])]
+#[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until',
+'suspension_reason','suspended_by','email_preferences'],'must_change_password','temp_password_expires_at','notification_preferences',)]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {   
@@ -53,7 +54,15 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_suspended' => 'boolean',
             'suspended_until' => 'datetime',
+            'email_preferences' => 'array',
+            'must_change_password' => 'boolean',
+            'temp_password_expires_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
+    }
+    public function pinnedTasks()
+    {
+        return $this->belongsToMany(Task::class, 'pinned_tasks');
     }
     public function suspendedBy()
     {

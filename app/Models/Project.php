@@ -12,18 +12,16 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'owner_id'];
+    protected $fillable = ['name', 'description', 'owner_id','is_archived',];
 
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
 
-    public function members(): BelongsToMany
+    public function members()
     {
-        return $this->belongsToMany(User::class, 'project_user')
-            ->withPivot('role')
-            ->withTimestamps();
+        return $this->belongsToMany(User::class, 'project_user')->withPivot('role', 'pinned', 'archived')->withTimestamps();
     }
 
     public function tasks(): HasMany
@@ -48,4 +46,11 @@ class Project extends Model
     {
         return $this->hasMany(ProjectNote::class);
     }
+    protected function casts(): array
+    {
+        return [
+            'is_archived' => 'boolean',
+        ];
+    }
+
 }

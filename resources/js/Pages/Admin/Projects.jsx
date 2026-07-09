@@ -1,8 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
-import { Head } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
 
 function SearchIcon() {
@@ -13,18 +13,38 @@ function SearchIcon() {
     );
 }
 
-export default function Projects({ projects }) {
-    const [search, setSearch] = useState('');
+function Pagination({ links }) {
+    if (!links || links.length <= 3) return null;
+    return (
+        <div className="flex flex-wrap justify-center gap-2 py-4">
+            {links.map((link, i) => (
+                <button
+                    key={i}
+                    disabled={!link.url}
+                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                    className={`rounded-md px-3 py-1 text-sm ${
+                        link.active
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                />
+            ))}
+        </div>
+    );
+}
 
-    const filtered = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        if (!term) return projects;
-        return projects.filter((p) =>
-            p.name.toLowerCase().includes(term) ||
-            p.owner?.name?.toLowerCase().includes(term) ||
-            p.owner?.email?.toLowerCase().includes(term)
-        );
-    }, [projects, search]);
+export default function Projects({ projects, filters }) {
+    const [search, setSearch] = useState(filters.search ?? '');
+
+    const applyFilters = () => {
+        router.get(route('admin.projects'), { search }, { preserveState: true });
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(route('admin.projects'));
+    };
 
     return (
         <AuthenticatedLayout header={
@@ -44,22 +64,22 @@ export default function Projects({ projects }) {
                             <TextInput
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                                 placeholder="Search by project name or owner..."
                                 className="w-72 pl-9"
                             />
                         </div>
+                        <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {search && (
-                            <button onClick={() => setSearch('')} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
+                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear
                             </button>
                         )}
                     </div>
 
-                    {projects.length > 0 && (
-                        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                            {filtered.length} of {projects.length} project{projects.length > 1 ? 's' : ''}
-                        </p>
-                    )}
+                    <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
+                        {projects.total} project{projects.total !== 1 ? 's' : ''} match{projects.total === 1 ? 'es' : ''} your search
+                    </p>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         <table className="w-full text-left text-sm">
@@ -72,7 +92,7 @@ export default function Projects({ projects }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y dark:divide-gray-700">
-                                {filtered.map((project) => (
+                                {projects.data.map((project) => (
                                     <tr key={project.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                         <td className="max-w-xs truncate px-6 py-3">
                                             <span className="text-gray-700 dark:text-gray-300" title={project.name}>{project.name}</span>
@@ -91,15 +111,16 @@ export default function Projects({ projects }) {
                                         <td className="px-6 py-3 dark:text-gray-300">{project.tasks_count}</td>
                                     </tr>
                                 ))}
-                                {filtered.length === 0 && (
+                                {projects.data.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
-                                            {projects.length === 0 ? 'No projects on the platform yet.' : 'No projects match your search.'}
+                                            No projects match your search.
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+                        <Pagination links={projects.links} />
                     </div>
                 </div>
             </div>

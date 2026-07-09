@@ -48,4 +48,8 @@ class Task extends Model
     {
         return $this->hasMany(Comment::class)->orderBy('created_at');
     }
+    public function pinnedBy()
+    {
+        return $this->belongsToMany(User::class, 'pinned_tasks');
+    }
 }

@@ -30,6 +30,22 @@ function SuspensionNotice({ suspension }) {
         });
     };
 
+    const {passwordExpired } = usePage().props;
+
+    if (passwordExpired) {
+        return (
+            <GuestLayout>
+                <Head title="Password Expired" />
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/30">
+                    <h3 className="text-base font-semibold text-amber-700 dark:text-amber-400">Your temporary password has expired</h3>
+                    <p className="mt-1 text-sm text-amber-600 dark:text-amber-300">
+                        Please contact an administrator to request a new one.
+                    </p>
+                </div>
+            </GuestLayout>
+        );
+    }
+
     const remaining = !suspension.permanent ? timeRemaining(suspension.until) : null;
 
     return (

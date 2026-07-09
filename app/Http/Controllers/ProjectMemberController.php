@@ -13,6 +13,7 @@ use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Events\RemovedFromProject;
+use App\Support\NotificationMailer;
 
 class ProjectMemberController extends Controller
 {
@@ -76,6 +77,15 @@ class ProjectMemberController extends Controller
             report($e);
         }
 
+        NotificationMailer::send(
+        $user,
+        'project.added',
+        "You've been added to {$project->name}",
+        ["You were added to the project \"{$project->name}\" as {$validated['role']}."],
+        url(route('projects.show', $project->id, false)),
+        'View Project'
+    );
+
         return back()->with('success', 'Member added.');
     }
 
@@ -96,7 +106,7 @@ class ProjectMemberController extends Controller
             ProjectActivityLog::log($project, 'role_changed', [
                 'target_name' => $user->name,
                 'old_role' => $oldRole,
-                'new_role' => $validated['role'],
+                'new_role' => $validated['role'],          
             ]);
 
             $notification = UserNotification::create([
@@ -111,6 +121,14 @@ class ProjectMemberController extends Controller
             } catch (\Throwable $e) {
                 report($e);
             }
+            NotificationMailer::send(
+                $user,
+                'project.role_changed',
+                "Your role changed in {$project->name}",
+                ["Your role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}."],
+                url(route('projects.show', $project->id, false)),
+                'View Project'
+            );
         }
 
         return back()->with('success', 'Role updated.');
@@ -143,6 +161,13 @@ class ProjectMemberController extends Controller
         } catch (\Throwable $e) {
             report($e);
         }
+
+        NotificationMailer::send(
+            $user,
+            'project.removed',
+            "You were removed from {$project->name}",
+            ["You've been removed from the project \"{$project->name}\"."]
+        );
 
         ProjectActivityLog::log($project, 'member_removed', [
             'target_name' => $user->name,

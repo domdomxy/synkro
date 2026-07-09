@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class FeedbackController extends Controller
@@ -55,6 +58,7 @@ class FeedbackController extends Controller
             : ['found' => false]
         );
     }
+
     public function reply(Request $request)
     {
         $request->validate([
@@ -85,6 +89,79 @@ class FeedbackController extends Controller
             'message' => $request->message,
         ]);
 
+        $this->notifyAdmins($feedback, $request->message);
+
         return response()->json(['success' => true, 'response' => $response]);
+    }
+
+    public function close(Request $request)
+    {
+        $request->validate([
+            'tracking_id' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        $feedback = Feedback::where('tracking_id', $request->tracking_id)
+            ->where('email', $request->email)
+            ->first();
+
+        if (! $feedback) {
+            return response()->json(['error' => 'Feedback not found.'], 404);
+        }
+
+        if (in_array($feedback->status, ['closed', 'rejected'])) {
+            return response()->json(['error' => 'This ticket is already closed.'], 422);
+        }
+
+        $feedback->update(['status' => 'closed']);
+
+        return response()->json(['success' => true, 'status' => 'closed']);
+    }
+
+    public function reopen(Request $request)
+    {
+        $request->validate([
+            'tracking_id' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        $feedback = Feedback::where('tracking_id', $request->tracking_id)
+            ->where('email', $request->email)
+            ->first();
+
+        if (! $feedback) {
+            return response()->json(['error' => 'Feedback not found.'], 404);
+        }
+
+        if ($feedback->status !== 'closed') {
+            return response()->json(['error' => 'Only closed tickets can be reopened.'], 422);
+        }
+
+        $feedback->update(['status' => 'pending']);
+
+        return response()->json(['success' => true, 'status' => 'pending']);
+    }
+
+    /** Admins don't have a per-user preference for this — it's an operational alert, always sent. */
+    private function notifyAdmins(Feedback $feedback, string $message): void
+    {
+        $admins = User::where('role', 'admin')->get();
+
+        foreach ($admins as $admin) {
+            try {
+                Mail::to($admin->email)->queue(new SynkroNotificationMail(
+                    $admin->name,
+                    "New message on ticket ({$feedback->tracking_id})",
+                    [
+                        "{$feedback->name} replied to their ticket \"{$feedback->subject}\":",
+                        $message,
+                    ],
+                    url(route('admin.feedbacks', [], false)),
+                    'View Ticket'
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 }

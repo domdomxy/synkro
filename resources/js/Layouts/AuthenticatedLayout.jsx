@@ -5,7 +5,6 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import NotificationBell from '@/Components/NotificationBell';
 import FlashMessages from '@/Components/FlashMessages';
-import { getStoredTheme, setStoredTheme } from '@/theme';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SuspensionListener from '@/Components/SuspensionListener';
@@ -13,13 +12,7 @@ import SuspensionListener from '@/Components/SuspensionListener';
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-    const [theme, setThemeState] = useState(getStoredTheme());
     const { adminAlerts } = usePage().props;
-
-    const handleThemeChange = (value) => {
-        setStoredTheme(value);
-        setThemeState(value);
-    };
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -82,26 +75,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Content>
                                             <Dropdown.Link href={route('dashboard')}>Dashboard</Dropdown.Link>
                                             <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
-
-                                            <div className="border-t border-gray-100 px-4 py-2 dark:border-gray-700">
-                                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Appearance</p>
-                                                <div className="flex gap-1">
-                                                    {['system', 'light', 'dark'].map((option) => (
-                                                        <button
-                                                            key={option}
-                                                            type="button"
-                                                            onClick={() => handleThemeChange(option)}
-                                                            className={`flex-1 rounded-md px-2 py-1 text-xs capitalize ${
-                                                                theme === option
-                                                                    ? 'bg-indigo-600 text-white'
-                                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                                                            }`}
-                                                        >
-                                                            {option}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            <Dropdown.Link href={route('settings.edit')}>Settings</Dropdown.Link>
 
                                             <Dropdown.Link href={route('logout')} method="post" as="button" className="!text-red-600 dark:!text-red-400">
                                                 Log Out
@@ -170,27 +144,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route('dashboard')}>Dashboard</ResponsiveNavLink>
                             <ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink>
-
-                            {/* Appearance — was missing from mobile */}
-                            <div className="border-t border-gray-200 px-4 py-2 dark:border-gray-700">
-                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Appearance</p>
-                                <div className="flex gap-1">
-                                    {['system', 'light', 'dark'].map((option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => handleThemeChange(option)}
-                                            className={`flex-1 rounded-md px-2 py-1 text-xs capitalize ${
-                                                theme === option
-                                                    ? 'bg-indigo-600 text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                                            }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <ResponsiveNavLink href={route('settings.edit')}>Settings</ResponsiveNavLink>
 
                             <ResponsiveNavLink method="post" href={route('logout')} as="button" className="!text-red-600 dark:!text-red-400">
                                 Log Out

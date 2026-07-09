@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\FeedbackAdminController;
 use App\Http\Controllers\FeedbackPageController;
 use App\Http\Controllers\SuspensionAppealController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\SettingsController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -31,6 +32,8 @@ Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.s
 Route::post('/feedback/track', [FeedbackController::class, 'track'])->name('feedback.track');
 Route::get('/feedback', [FeedbackPageController::class, 'index'])->name('feedback.page');
 Route::post('/feedback/reply', [FeedbackController::class, 'reply'])->middleware('throttle:10,60')->name('feedback.reply');
+Route::post('/feedback/close', [FeedbackController::class, 'close'])->middleware('throttle:10,60')->name('feedback.close');
+Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middleware('throttle:10,60')->name('feedback.reopen');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -62,6 +65,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
+    Route::post('/projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
+    Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
+    Route::post('/projects/{project}/pin', [ProjectController::class, 'pin'])->name('projects.pin');
+    Route::post('/projects/{project}/unpin', [ProjectController::class, 'unpin'])->name('projects.unpin');
+
     Route::patch('/tasks/{task}/resolve', [TaskController::class, 'resolvePending'])->name('tasks.resolve');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
@@ -70,6 +78,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks/{task}/submit', [TaskController::class, 'submit'])->name('tasks.submit');
     Route::patch('/tasks/{task}/start-review', [TaskController::class, 'startReview'])->name('tasks.start-review');
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');
+    Route::post('/tasks/{task}/pin', [TaskController::class, 'pin'])->name('tasks.pin');
+    Route::post('/tasks/{task}/unpin', [TaskController::class, 'unpin'])->name('tasks.unpin');
+
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
@@ -82,6 +93,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/reminders/{reminder}/dismiss', [ReminderController::class, 'dismiss'])->name('reminders.dismiss');
     Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy');
     Route::post('/suspended-logout', [AuthenticatedSessionController::class, 'suspendedLogout'])->name('suspended-logout');
+
+
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::get('/settings-settings', [SettingsController::class, 'edit']); // tolerate the redundant suffix too
+
+    Route::match(['patch'], '/settings/email', [SettingsController::class, 'updateEmailPreferences'])->name('settings.email');
+    Route::match(['patch'], '/settings/email-settings', [SettingsController::class, 'updateEmailPreferences'])->name('settings.email-settings');
+
+    Route::match(['patch'], '/settings/notifications', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications');
+    Route::match(['patch'], '/settings/notifications-settings', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications-settings');
+
+    
+
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -97,6 +121,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/feedbacks/{feedback}/respond', [FeedbackAdminController::class, 'respond'])->name('feedbacks.respond');
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
+    Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 require __DIR__.'/auth.php';

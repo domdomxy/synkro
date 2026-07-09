@@ -198,6 +198,75 @@ function ReplyBox({ feedback, trackingId, email, onReplySent }) {
     );
 }
 
+function TicketActions({ feedback, trackingId, email, onStatusChanged }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const isClosed = feedback.status === 'closed';
+    const isRejected = feedback.status === 'rejected';
+
+    if (isRejected) return null; // rejected tickets stay rejected, no reopen path
+
+    const callEndpoint = async (routeName) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(route(routeName), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ tracking_id: trackingId, email }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                setError(json.error ?? 'Something went wrong.');
+            } else {
+                onStatusChanged(json.status);
+            }
+        } catch {
+            setError('Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+            <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isClosed ? 'This ticket is closed.' : 'Resolved your issue?'}
+                </p>
+                {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+            </div>
+            {isClosed ? (
+                <button
+                    onClick={() => callEndpoint('feedback.reopen')}
+                    disabled={loading}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+                    </svg>
+                    {loading ? 'Reopening...' : 'Reopen Ticket'}
+                </button>
+            ) : (
+                <button
+                    onClick={() => callEndpoint('feedback.close')}
+                    disabled={loading}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {loading ? 'Closing...' : 'Close Ticket'}
+                </button>
+            )}
+        </div>
+    );
+}
+
 export default function Feedback({ flash }) {
     const [activeTab, setActiveTab] = useState('submit');
     const [trackingId, setTrackingId] = useState('');
@@ -282,6 +351,13 @@ export default function Feedback({ flash }) {
                 ...prev.feedback,
                 responses: [...(prev.feedback.responses ?? []), response],
             },
+        }));
+    };
+
+    const updateStatus = (newStatus) => {
+        setTrackResult((prev) => ({
+            ...prev,
+            feedback: { ...prev.feedback, status: newStatus },
         }));
     };
 
@@ -607,6 +683,13 @@ export default function Feedback({ flash }) {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            <TicketActions
+                                                feedback={trackResult.feedback}
+                                                trackingId={trackingId}
+                                                email={trackResult.feedback.email}
+                                                onStatusChanged={updateStatus}
+                                            />
 
                                             <div>
                                                 <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Reply</p>

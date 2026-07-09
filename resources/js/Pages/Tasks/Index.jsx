@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 const statusStyles = {
@@ -70,6 +70,14 @@ function CommentIcon({ className }) {
     );
 }
 
+function PinIcon({ filled, className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill={filled ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+    );
+}
+
 function EmptyState({ hasAnyTasks, onClearFilters }) {
     return (
         <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center dark:border-gray-700">
@@ -99,19 +107,32 @@ function EmptyState({ hasAnyTasks, onClearFilters }) {
 export default function Index({ tasks }) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [pinningId, setPinningId] = useState(null);
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('all');
     };
 
+    const togglePin = (task) => {
+        setPinningId(task.id);
+        const routeName = task.is_pinned ? 'tasks.unpin' : 'tasks.pin';
+        router.post(route(routeName, task.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => setPinningId(null),
+        });
+    };
+
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
-        return tasks.filter((task) => {
-            if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-            if (!term) return true;
-            return task.title.toLowerCase().includes(term) || task.project?.name?.toLowerCase().includes(term);
-        });
+        return tasks
+            .filter((task) => {
+                if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+                if (!term) return true;
+                return task.title.toLowerCase().includes(term) || task.project?.name?.toLowerCase().includes(term);
+            })
+            .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0));
     }, [tasks, search, statusFilter]);
 
     const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all';
@@ -166,41 +187,57 @@ export default function Index({ tasks }) {
                         {filtered.map((task) => {
                             const overdue = isOverdue(task);
                             return (
-                                <Link
+                                <div
                                     key={task.id}
-                                    href={`${route('projects.show', task.project_id)}?task=${task.id}`}
-                                    className={`block rounded-lg border-l-4 bg-white p-5 shadow transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-800 ${statusBorders[task.status] ?? 'border-l-gray-400'}`}
+                                    className={`group relative rounded-lg border-l-4 bg-white p-5 shadow transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-800 ${statusBorders[task.status] ?? 'border-l-gray-400'}`}
                                 >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <h3 className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100" title={task.title}>
-                                            {task.title}
-                                            {task.edited_at && (
-                                                <span className="ml-2 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>
-                                            )}
-                                        </h3>
-                                        <span className={`shrink-0 rounded-full px-2 py-1 text-xs capitalize ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                                            {task.status.replace('_', ' ')}
-                                        </span>
-                                    </div>
-                                    {task.description && (
-                                        <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
-                                    )}
-                                    <p className="mt-3 truncate text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500" title={task.project?.name}>
-                                        {task.project?.name}
-                                    </p>
-                                    <div className="mt-2 flex items-center justify-between gap-2 text-xs">
-                                        <span className={`flex items-center gap-1 ${overdue ? 'font-medium text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                                            {overdue ? <AlertIcon className="h-3.5 w-3.5 shrink-0" /> : <ClockIcon className="h-3.5 w-3.5 shrink-0" />}
-                                            {task.due_date ? `${overdue ? 'Overdue' : 'Due'} ${formatDue(task.due_date)}` : 'No due date'}
-                                        </span>
-                                        {task.comments_count > 0 && (
-                                            <span className="flex shrink-0 items-center gap-1 text-gray-400 dark:text-gray-500">
-                                                <CommentIcon className="h-3.5 w-3.5" />
-                                                {task.comments_count}
+                                    <button
+                                        onClick={() => togglePin(task)}
+                                        disabled={pinningId === task.id}
+                                        title={task.is_pinned ? 'Unpin' : 'Pin to top'}
+                                        className={`absolute right-3 top-3 z-10 rounded-md p-1.5 transition disabled:opacity-50 ${
+                                            task.is_pinned
+                                                ? 'text-amber-500 opacity-100'
+                                                : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                    >
+                                        <PinIcon filled={!!task.is_pinned} className="h-3.5 w-3.5" />
+                                    </button>
+                                    <Link
+                                        href={`${route('projects.show', task.project_id)}?task=${task.id}`}
+                                        className="block"
+                                    >
+                                        <div className="flex items-start justify-between gap-2 pr-6">
+                                            <h3 className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100" title={task.title}>
+                                                {task.title}
+                                                {task.edited_at && (
+                                                    <span className="ml-2 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>
+                                                )}
+                                            </h3>
+                                            <span className={`shrink-0 rounded-full px-2 py-1 text-xs capitalize ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                                {task.status.replace('_', ' ')}
                                             </span>
+                                        </div>
+                                        {task.description && (
+                                            <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
                                         )}
-                                    </div>
-                                </Link>
+                                        <p className="mt-3 truncate text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500" title={task.project?.name}>
+                                            {task.project?.name}
+                                        </p>
+                                        <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                                            <span className={`flex items-center gap-1 ${overdue ? 'font-medium text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                {overdue ? <AlertIcon className="h-3.5 w-3.5 shrink-0" /> : <ClockIcon className="h-3.5 w-3.5 shrink-0" />}
+                                                {task.due_date ? `${overdue ? 'Overdue' : 'Due'} ${formatDue(task.due_date)}` : 'No due date'}
+                                            </span>
+                                            {task.comments_count > 0 && (
+                                                <span className="flex shrink-0 items-center gap-1 text-gray-400 dark:text-gray-500">
+                                                    <CommentIcon className="h-3.5 w-3.5" />
+                                                    {task.comments_count}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
+                                </div>
                             );
                         })}
                         {filtered.length === 0 && (
