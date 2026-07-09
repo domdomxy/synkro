@@ -3,6 +3,7 @@ import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import BackButton from '@/Components/BackButton';
 
 function SearchIcon() {
     return (
@@ -208,7 +209,12 @@ export default function Users({ users, stats, filters }) {
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Users</h2>}>
+        <AuthenticatedLayout header={
+        <div className="flex items-center gap-4">
+            <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Users</h2>
+        </div>
+        }>
             <Head title="Admin - Users" />
             <div className="py-12">
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">

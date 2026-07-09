@@ -7,7 +7,8 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -20,22 +21,6 @@ function SearchIcon() {
     return (
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-    );
-}
-
-function ArchiveIcon({ className = 'h-3.5 w-3.5' }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-        </svg>
-    );
-}
-
-function PinIcon({ filled, className = 'h-3.5 w-3.5' }) {
-    return (
-        <svg className={className} fill={filled ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
         </svg>
     );
 }
@@ -69,6 +54,88 @@ function EmptyState({ hasAnyProjects, showingArchived, onNewProject, onClearFilt
                 </>
             )}
         </div>
+    );
+}
+
+function ProjectActionsMenu({ project, isOwner, showingArchived, onPin, onUnpin, onArchive, onUnarchive }) {
+    const [open, setOpen] = useState(false);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const btnRef = useRef(null);
+    const menuRef = useRef(null);
+    const MENU_WIDTH = 176;
+
+    const toggle = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setCoords({ top: rect.bottom + 4, left: Math.max(8, rect.right - MENU_WIDTH) });
+        }
+        setOpen((v) => !v);
+    };
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) {
+                setOpen(false);
+            }
+        };
+        const handleScroll = () => setOpen(false);
+        document.addEventListener('mousedown', handleClick);
+        window.addEventListener('scroll', handleScroll, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            window.removeEventListener('scroll', handleScroll, true);
+        };
+    }, [open]);
+
+    const isPinned = !!project.pivot?.pinned;
+
+    return (
+        <>
+            <button
+                ref={btnRef}
+                onClick={toggle}
+                title="More actions"
+                className={`absolute right-3 top-3 z-10 rounded-md p-1.5 transition ${
+                    isPinned
+                        ? 'text-amber-500 opacity-100'
+                        : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                }`}
+            >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && createPortal(
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                >
+                    <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); isPinned ? onUnpin() : onPin(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-4 w-4" fill={isPinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        {isPinned ? 'Unpin' : 'Pin to top'}
+                    </button>
+                    <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); showingArchived ? onUnarchive() : onArchive(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        {showingArchived ? 'Unarchive' : 'Archive'}
+                    </button>
+                </div>,
+                document.body
+            )}
+        </>
     );
 }
 
@@ -219,24 +286,15 @@ export default function Index({ projects, showingArchived }) {
                                     key={project.id}
                                     className="group relative rounded-lg border border-transparent bg-white p-6 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900"
                                 >
-                                    <button
-                                        onClick={() => showingArchived ? unarchiveProject(project) : archiveProject(project)}
-                                        title={showingArchived ? 'Unarchive project' : 'Archive project (only affects your view)'}
-                                        className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                                    >
-                                        <ArchiveIcon />
-                                    </button>
-                                    <button
-                                        onClick={() => project.pivot?.pinned ? unpinProject(project) : pinProject(project)}
-                                        title={project.pivot?.pinned ? 'Unpin' : 'Pin to top'}
-                                        className={`absolute right-11 top-3 z-10 rounded-md p-1.5 transition ${
-                                            project.pivot?.pinned
-                                                ? 'text-amber-500 opacity-100'
-                                                : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
-                                        }`}
-                                    >
-                                        <PinIcon filled={!!project.pivot?.pinned} />
-                                    </button>
+                                    <ProjectActionsMenu
+                                        project={project}
+                                        isOwner={isOwner}
+                                        showingArchived={showingArchived}
+                                        onPin={() => pinProject(project)}
+                                        onUnpin={() => unpinProject(project)}
+                                        onArchive={() => archiveProject(project)}
+                                        onUnarchive={() => unarchiveProject(project)}
+                                    />
                                     <Link href={route('projects.show', project.id)} className="block">
                                         <div className="flex items-start justify-between gap-2 pr-6">
                                             <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
@@ -246,8 +304,8 @@ export default function Index({ projects, showingArchived }) {
                                                 {project.pivot?.role}
                                             </span>
                                         </div>
-                                        <p className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-500 dark:text-gray-400">
-                                            {project.description || 'No description provided.'}
+                                        <p className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">
+                                            {project.description || <span className="text-gray-400 dark:text-gray-500">No description provided.</span>}
                                         </p>
 
                                         <div className="mt-4 flex items-center justify-between gap-2">

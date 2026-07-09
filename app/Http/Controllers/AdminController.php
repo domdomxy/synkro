@@ -276,4 +276,13 @@ class AdminController extends Controller
     {
         abort(403, 'Platform admins cannot delete projects directly.');
     }
+    public function projectLogs(Project $project)
+    {
+        $logs = $project->activityLogs()->with('user')->latest()->get();
+
+        return Inertia::render('Admin/ProjectLogs', [
+            'project' => $project,
+            'logs' => $logs,
+        ]);
+    }
 }

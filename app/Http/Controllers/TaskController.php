@@ -549,4 +549,54 @@ class TaskController extends Controller
         Auth::user()->pinnedTasks()->detach($task->id);
         return back()->with('success', 'Task unpinned.');
     }
+    public function reopen(Request $request, Task $task)
+    {
+        $this->authorize('manageMembers', $task->project); // was: $this->authorize('review', $task);
+
+        if ($task->status !== 'done') {
+            return back()->withErrors(['status' => 'Only completed tasks can be sent back for changes.']);
+        }
+
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+        ]);
+
+        $comment = $task->comments()->create([
+            'user_id' => Auth::id(),
+            'body' => $validated['feedback'],
+            'is_feedback' => true,
+        ]);
+
+        try {
+            broadcast(new CommentPosted($comment))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $task->update(['status' => 'in_progress']);
+
+        ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title]);
+
+        if ($task->assignee) {
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
+            $notification = UserNotification::create([
+                'user_id' => $task->assigned_to,
+                'type' => 'task_reopened',
+                'message' => "\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
+                'url' => $url,
+            ]);
+
+            NotificationMailer::send(
+                $task->assignee,
+                'task.reopened',
+                "Changes requested: {$task->title}",
+                ["\"{$task->title}\" in \"{$task->project->name}\" was reopened for changes.", "Feedback: {$validated['feedback']}"],
+                url($url),
+                'View Task'
+            );
+        }
+
+        return back()->with('success', 'Task sent back for changes.');
+    }
 }

@@ -74,6 +74,18 @@ class ProjectController extends Controller
 
         $project->load(['members', 'tasks.assignee', 'tasks.comments.user', 'tasks.deliverables']);
 
+        $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
+
+        $sortedTasks = $project->tasks
+            ->map(function ($task) use ($pinnedTaskIds) {
+                $task->is_pinned = in_array($task->id, $pinnedTaskIds);
+                return $task;
+            })
+            ->sortByDesc('is_pinned')
+            ->values();
+
+        $project->setRelation('tasks', $sortedTasks);
+
         $notes = $project->notes()->where('user_id', Auth::id())->latest()->get();
 
         return Inertia::render('Projects/Show', [

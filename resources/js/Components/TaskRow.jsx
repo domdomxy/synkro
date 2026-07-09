@@ -190,6 +190,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [showDeliverables, setShowDeliverables] = useState(false);
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [pinning, setPinning] = useState(false);
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [showReopenPanel, setShowReopenPanel] = useState(false);
 
     const editForm = useForm({
         title: task.title,
@@ -200,6 +202,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
     const commentForm = useForm({ body: '' });
+    const editCommentForm = useForm({ body: '' });
+    const reopenForm = useForm({ feedback: '' });
 
     const resolveKeepForm = useForm({ action: 'keep' });
     const resolveResetForm = useForm({ action: 'reset' });
@@ -262,9 +266,29 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         reviewForm.post(route('tasks.review', task.id), { onSuccess: () => reviewForm.reset() });
     };
 
+    const submitReopen = (e) => {
+        e.preventDefault();
+        if (!confirm('Send this task back for changes? It will move back to In Progress.')) return;
+        reopenForm.post(route('tasks.reopen', task.id), {
+            onSuccess: () => { reopenForm.reset(); setShowReopenPanel(false); },
+        });
+    };
+
     const submitComment = (e) => {
         e.preventDefault();
         commentForm.post(route('comments.store', task.id), { onSuccess: () => commentForm.reset() });
+    };
+
+    const startEditComment = (comment) => {
+        setEditingCommentId(comment.id);
+        editCommentForm.setData('body', comment.body);
+    };
+
+    const saveCommentEdit = (e, commentId) => {
+        e.preventDefault();
+        editCommentForm.patch(route('comments.update', commentId), {
+            onSuccess: () => setEditingCommentId(null),
+        });
     };
 
     const deleteComment = (commentId) => {
@@ -421,7 +445,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     {task.description && (
                         <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
-                            <p className={`break-words text-sm text-gray-600 dark:text-gray-400 ${!showFullDescription ? 'line-clamp-2' : ''}`}>
+                            <p className={`whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''}`}>
                                 {task.description}
                             </p>
                             {task.description.length > 120 && (
@@ -496,9 +520,31 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
             {task.deliverables?.length > 0 && (
                 <div className="mt-2">
-                    <button onClick={() => setShowDeliverables((v) => !v)} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
-                        {showDeliverables ? 'Hide Submitted' : `View Submitted (${task.deliverables.length})`}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            onClick={() => setShowDeliverables((v) => !v)}
+                            className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            {showDeliverables ? 'Hide Submitted' : 'Submitted'}
+                            <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-700 dark:bg-gray-600 dark:text-gray-200">
+                                {task.deliverables.length}
+                            </span>
+                            <svg className={`h-3 w-3 transition-transform ${showDeliverables ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        {task.updated_at && ['submitted', 'in_review', 'done'].includes(task.status) && (
+                            <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Last Submission update {formatDue(task.updated_at)}
+                            </span>
+                        )}
+                    </div>
                     {showDeliverables && (
                         <ul className="mt-2 space-y-1.5">
                             {task.deliverables.map((d) => (
@@ -567,6 +613,40 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
+            {!isEditing && canManage && task.status === 'done' && (
+                <div className="mt-3">
+                    {!showReopenPanel ? (
+                        <button
+                            onClick={() => setShowReopenPanel(true)}
+                            className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100 dark:border-gray-600 dark:bg-gray-700/50 dark:text-amber-400 dark:hover:bg-gray-700"
+                        >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+                            </svg>
+                            Request Changes
+                        </button>
+                    ) : (
+                        <form onSubmit={submitReopen} className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-gray-600 dark:bg-gray-700/40">
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                This will move the task back to In Progress, keeping its existing submission and history — the assignee can then update it without starting over.
+                            </p>
+                            <textarea
+                                value={reopenForm.data.feedback}
+                                onChange={(e) => reopenForm.setData('feedback', e.target.value)}
+                                placeholder="What needs to change?"
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                rows={2}
+                            />
+                            <InputError message={reopenForm.errors.feedback} className="mt-1" />
+                            <div className="flex gap-2">
+                                <PrimaryButton disabled={reopenForm.processing}>Send Back for Changes</PrimaryButton>
+                                <button type="button" onClick={() => setShowReopenPanel(false)} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            )}
+
             <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
                 <button
                     onClick={() => setShowComments((v) => !v)}
@@ -586,35 +666,80 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             <div key={comment.id} className="flex items-start gap-2.5">
                                 <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5 shrink-0" />
                                 <div className="min-w-0 flex-1">
-                                    <div className={`rounded-2xl rounded-tl-sm px-3.5 py-2 ${
-                                        comment.is_feedback
-                                            ? 'bg-purple-50 dark:bg-purple-950/30'
-                                            : 'bg-gray-100 dark:bg-gray-700/60'
-                                    }`}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                            {comment.is_feedback && (
-                                                <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                                                    Tester Feedback
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="mt-0.5 break-words text-sm text-gray-700 dark:text-gray-300">{comment.body}</p>
-                                    </div>
-                                    <div className="mt-1 flex items-center gap-2 px-1">
-                                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeAgo(comment.created_at)}</span>
-                                        {(comment.user.id === currentUserId || canManage) && (
-                                            <>
-                                                <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    {editingCommentId === comment.id ? (
+                                        <form onSubmit={(e) => saveCommentEdit(e, comment.id)} className="space-y-1.5">
+                                            <textarea
+                                                value={editCommentForm.data.body}
+                                                onChange={(e) => editCommentForm.setData('body', e.target.value)}
+                                                rows={2}
+                                                autoFocus
+                                                className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            />
+                                            {editCommentForm.errors.body && <p className="text-xs text-red-500">{editCommentForm.errors.body}</p>}
+                                            <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => deleteComment(comment.id)}
-                                                    className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                                                    type="submit"
+                                                    disabled={editCommentForm.processing}
+                                                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                                                 >
-                                                    Delete
+                                                    Save
                                                 </button>
-                                            </>
-                                        )}
-                                    </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditingCommentId(null)}
+                                                    className="text-xs text-gray-500 hover:underline dark:text-gray-400"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        <>
+                                            <div className={`rounded-2xl rounded-tl-sm px-3.5 py-2 ${
+                                                comment.is_feedback
+                                                    ? 'bg-purple-50 dark:bg-purple-950/30'
+                                                    : 'bg-gray-100 dark:bg-gray-700/60'
+                                            }`}>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
+                                                    {!!comment.is_feedback && (
+                                                        <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                                            Tester Feedback
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">{comment.body}</p>
+                                            </div>
+                                            <div className="mt-1 flex items-center gap-2 px-1">
+                                                <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                                                    {timeAgo(comment.created_at)}
+                                                    {comment.edited_at && ' · edited'}
+                                                </span>
+                                                {comment.user.id === currentUserId && (
+                                                    <>
+                                                        <span className="text-gray-300 dark:text-gray-600">·</span>
+                                                        <button
+                                                            onClick={() => startEditComment(comment)}
+                                                            className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {(comment.user.id === currentUserId || canManage) && (
+                                                    <>
+                                                        <span className="text-gray-300 dark:text-gray-600">·</span>
+                                                        <button
+                                                            onClick={() => deleteComment(comment.id)}
+                                                            className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}

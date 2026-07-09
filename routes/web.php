@@ -80,9 +80,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');
     Route::post('/tasks/{task}/pin', [TaskController::class, 'pin'])->name('tasks.pin');
     Route::post('/tasks/{task}/unpin', [TaskController::class, 'unpin'])->name('tasks.unpin');
+    Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
 
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::patch('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
@@ -122,6 +125,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
-});
+    Route::get('/projects/{project}/logs', [AdminController::class, 'projectLogs'])->name('projects.logs');
+    });
 
 require __DIR__.'/auth.php';

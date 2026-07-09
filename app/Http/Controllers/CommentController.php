@@ -40,4 +40,19 @@ class CommentController extends Controller
         
         return back()->with('success', 'Comment deleted.');
     }
+    public function update(Request $request, Comment $comment)
+    {
+        abort_unless($comment->user_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'body' => 'required|string|max:2000',
+        ]);
+
+        $comment->update([
+            'body' => $validated['body'],
+            'edited_at' => now(),
+        ]);
+
+        return back();
+    }
 }

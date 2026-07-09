@@ -682,7 +682,7 @@ export default function Show({ project, role, myNotes }) {
                                 </div>
                                 {project.description && (
                                     <div className="mt-2">
-                                        <p className={`break-words text-sm text-gray-500 dark:text-gray-400 ${!showFullDescription ? 'line-clamp-3' : ''}`}>
+                                        <p className={`whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-3' : ''}`}>
                                             {project.description}
                                         </p>
                                         {project.description.length > 150 && (
