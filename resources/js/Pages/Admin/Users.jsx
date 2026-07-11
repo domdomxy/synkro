@@ -154,7 +154,7 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
 }
 
 function Pagination({ links }) {
-    if (!links || links.length <= 3) return null;
+    if (!links) return null;
     return (
         <div className="flex flex-wrap justify-center gap-2 py-4">
             {links.map((link, i) => (

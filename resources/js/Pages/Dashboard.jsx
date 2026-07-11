@@ -19,8 +19,6 @@ const statusColors = {
     done: 'bg-green-500',
 };
 
-const rangeLabels = { today: 'Today', week: 'This Week', month: 'This Month' };
-
 const statIcons = {
     active: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -64,23 +62,39 @@ function StatCard({ label, value, sub, icon, accentColor }) {
     );
 }
 
-function RangeButtons({ range }) {
+function RangeButtons({ range, routeName, customFrom, customTo }) {
+    const [showCustom, setShowCustom] = useState(range === 'custom');
+    const [from, setFrom] = useState(customFrom ?? '');
+    const [to, setTo] = useState(customTo ?? '');
+
+    const applyCustom = () => {
+        if (from && to) router.get(route(routeName, { range: 'custom', from, to }), {}, { preserveScroll: true });
+    };
+
     return (
-        <div className="flex gap-1">
-            {Object.entries(rangeLabels).map(([key, label]) => (
+        <div className="flex flex-wrap items-center gap-1">
+            {Object.entries({ today: 'Today', week: 'This Week', month: 'This Month' }).map(([key, label]) => (
                 <Link
                     key={key}
-                    href={route('dashboard', { range: key })}
+                    href={route(routeName, { range: key })}
                     preserveScroll
-                    className={`rounded-md px-3 py-1 text-xs ${
-                        range === key
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                    }`}
+                    className={`rounded-md px-3 py-1 text-xs ${range === key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+                    onClick={() => setShowCustom(false)}
                 >
                     {label}
                 </Link>
             ))}
+            <button onClick={() => setShowCustom((v) => !v)} className={`rounded-md px-3 py-1 text-xs ${range === 'custom' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}>
+                Custom
+            </button>
+            {showCustom && (
+                <div className="flex items-center gap-1">
+                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <span className="text-xs text-gray-400">to</span>
+                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <button onClick={applyCustom} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
+                </div>
+            )}
         </div>
     );
 }
@@ -110,10 +124,7 @@ function CalendarView({ tasks }) {
             }
             return arr;
         } else {
-            return Array.from({ length: 12 }, (_, i) => {
-                const d = new Date(start.getFullYear(), i, 1);
-                return d;
-            });
+            return Array.from({ length: 12 }, (_, i) => new Date(start.getFullYear(), i, 1));
         }
     }, [calRange, baseDate]);
 
@@ -129,9 +140,7 @@ function CalendarView({ tasks }) {
         const map = {};
         tasks.forEach((task) => {
             if (!task.due_date) return;
-            const key = calRange === 'year'
-                ? new Date(task.due_date).getMonth()
-                : new Date(task.due_date).toDateString();
+            const key = calRange === 'year' ? new Date(task.due_date).getMonth() : new Date(task.due_date).toDateString();
             if (!map[key]) map[key] = [];
             map[key].push(task);
         });
@@ -156,11 +165,7 @@ function CalendarView({ tasks }) {
                     <button onClick={() => navigate(1)} className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">→</button>
                     <div className="ml-2 flex gap-1">
                         {['week', 'month', 'year'].map((r) => (
-                            <button
-                                key={r}
-                                onClick={() => setCalRange(r)}
-                                className={`rounded-md px-2 py-1 text-xs capitalize ${calRange === r ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}
-                            >
+                            <button key={r} onClick={() => setCalRange(r)} className={`rounded-md px-2 py-1 text-xs capitalize ${calRange === r ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                 {r}
                             </button>
                         ))}
@@ -174,49 +179,34 @@ function CalendarView({ tasks }) {
                         const monthTasks = tasksByDay[i] ?? [];
                         return (
                             <div key={i} className="rounded-md border border-gray-100 p-2 dark:border-gray-700">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                    {d.toLocaleDateString(undefined, { month: 'short' })}
-                                </p>
-                                {monthTasks.length > 0 && (
-                                    <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">{monthTasks.length} deadline{monthTasks.length > 1 ? 's' : ''}</p>
-                                )}
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{d.toLocaleDateString(undefined, { month: 'short' })}</p>
+                                {monthTasks.length > 0 && <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">{monthTasks.length} deadline{monthTasks.length > 1 ? 's' : ''}</p>}
                             </div>
                         );
                     })}
                 </div>
             ) : (
-                <div className={`grid gap-2 ${calRange === 'week' ? 'grid-cols-7' : 'grid-cols-7'}`}>
+                <div className="grid grid-cols-7 gap-2">
                     {calRange === 'week' && ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                         <p key={d} className="text-center text-xs font-medium text-gray-400 dark:text-gray-500">{d}</p>
                     ))}
                     {calRange === 'month' && ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
                         <p key={i} className="text-center text-xs font-medium text-gray-400 dark:text-gray-500">{d}</p>
                     ))}
-                    {calRange === 'month' && days[0] && Array.from({ length: days[0].getDay() }, (_, i) => (
-                        <div key={`empty-${i}`} />
-                    ))}
+                    {calRange === 'month' && days[0] && Array.from({ length: days[0].getDay() }, (_, i) => <div key={`empty-${i}`} />)}
                     {days.map((d, i) => {
                         const key = d.toDateString();
                         const dayTasks = tasksByDay[key] ?? [];
                         const isToday = key === today;
                         return (
                             <div key={i} className={`min-h-10 rounded-md border p-1 ${isToday ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' : 'border-gray-100 dark:border-gray-700'}`}>
-                                <p className={`text-right text-xs ${isToday ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                    {d.getDate()}
-                                </p>
+                                <p className={`text-right text-xs ${isToday ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{d.getDate()}</p>
                                 {dayTasks.slice(0, 2).map((t) => (
-                                    <Link
-                                        key={t.id}
-                                        href={`${route('projects.show', t.project_id)}?task=${t.id}`}
-                                        className="mt-0.5 block truncate rounded bg-indigo-100 px-1 text-[10px] text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
-                                        title={t.title}
-                                    >
+                                    <Link key={t.id} href={`${route('projects.show', t.project_id)}?task=${t.id}`} className="mt-0.5 block truncate rounded bg-indigo-100 px-1 text-[10px] text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300" title={t.title}>
                                         {t.title}
                                     </Link>
                                 ))}
-                                {dayTasks.length > 2 && (
-                                    <p className="text-[10px] text-gray-400">+{dayTasks.length - 2} more</p>
-                                )}
+                                {dayTasks.length > 2 && <p className="text-[10px] text-gray-400">+{dayTasks.length - 2} more</p>}
                             </div>
                         );
                     })}
@@ -226,28 +216,75 @@ function CalendarView({ tasks }) {
     );
 }
 
+const REPEAT_LABELS = { none: 'Once', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+
+function RepeatIcon({ className = 'h-3 w-3' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+    );
+}
+
+function ReminderCard({ r, overdue, onDismiss, onRemove }) {
+    return (
+        <li className={`rounded-lg border p-3 transition ${
+            overdue
+                ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20'
+                : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'
+        }`}>
+            <div className="flex items-start gap-3">
+                <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    overdue ? 'bg-red-100 text-red-500 dark:bg-red-900/40 dark:text-red-400' : 'bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400'
+                }`}>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{r.title}</p>
+                    {r.note && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{r.note}</p>}
+                    <div className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs ${overdue ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                        <span>{new Date(r.remind_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        {r.repeat_interval !== 'none' && (
+                            <span className="flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                <RepeatIcon className="h-2.5 w-2.5" /> {REPEAT_LABELS[r.repeat_interval]}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                    {overdue && (
+                        <button onClick={onDismiss} title="Dismiss" className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    )}
+                    <button onClick={onRemove} title="Delete" className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </li>
+    );
+}
+
 function RemindersPanel({ reminders }) {
     const { data, setData, post, processing, reset, errors } = useForm({
-        title: '',
-        note: '',
-        remind_at: '',
+        title: '', note: '', remind_at: '', repeat_interval: 'none',
     });
     const [showForm, setShowForm] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('reminders.store'), {
-            onSuccess: () => {
-                reset();
-                setShowForm(false);
-            },
-        });
+        post(route('reminders.store'), { onSuccess: () => { reset(); setShowForm(false); } });
     };
 
     const dismiss = (id) => router.patch(route('reminders.dismiss', id), {}, { preserveScroll: true });
-    const remove = (id) => {
-        if (confirm('Delete this reminder?')) router.delete(route('reminders.destroy', id), { preserveScroll: true });
-    };
+    const remove = (id) => { if (confirm('Delete this reminder?')) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
 
     const now = new Date();
     const overdue = reminders.filter((r) => new Date(r.remind_at) < now);
@@ -256,88 +293,80 @@ function RemindersPanel({ reminders }) {
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Reminders</h3>
-                <button
-                    onClick={() => setShowForm((v) => !v)}
-                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-500"
-                >
-                    {showForm ? 'Cancel' : '+ New'}
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Reminders</h3>
+                </div>
+                <button onClick={() => setShowForm((v) => !v)} className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-500">
+                    {showForm ? 'Cancel' : (
+                        <>
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Reminder
+                        </>
+                    )}
                 </button>
             </div>
 
             {showForm && (
                 <form onSubmit={submit} className="mb-4 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
-                    <input
-                        type="text"
-                        placeholder="Reminder title..."
-                        value={data.title}
-                        onChange={(e) => setData('title', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    />
+                    <input type="text" placeholder="Reminder title..." value={data.title} onChange={(e) => setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
                     {errors.title && <p className="text-xs text-red-500">{errors.title}</p>}
-                    <textarea
-                        placeholder="Optional note..."
-                        value={data.note}
-                        onChange={(e) => setData('note', e.target.value)}
-                        rows={2}
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    />
-                    <input
-                        type="datetime-local"
-                        value={data.remind_at}
-                        onChange={(e) => setData('remind_at', e.target.value)}
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    />
+                    <textarea placeholder="Optional note..." value={data.note} onChange={(e) => setData('note', e.target.value)} rows={2} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <div className="flex gap-2">
+                        <input type="datetime-local" value={data.remind_at} onChange={(e) => setData('remind_at', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                        <select value={data.repeat_interval} onChange={(e) => setData('repeat_interval', e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                            {Object.entries(REPEAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                    </div>
                     {errors.remind_at && <p className="text-xs text-red-500">{errors.remind_at}</p>}
-                    <button type="submit" disabled={processing} className="w-full rounded-md bg-indigo-600 py-1 text-xs text-white hover:bg-indigo-500 disabled:opacity-50">
-                        Set Reminder
-                    </button>
+                    <button type="submit" disabled={processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Set Reminder</button>
                 </form>
             )}
 
-            {overdue.length > 0 && (
-                <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-red-500">Overdue</p>
-                    <ul className="space-y-2">
-                        {overdue.map((r) => (
-                            <li key={r.id} className="flex items-start justify-between gap-2 rounded-md border border-red-200 bg-red-50 p-2 dark:border-red-800 dark:bg-red-950/30">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{r.title}</p>
-                                    {r.note && <p className="text-xs text-gray-500 dark:text-gray-400">{r.note}</p>}
-                                    <p className="text-xs text-red-500">{new Date(r.remind_at).toLocaleString()}</p>
-                                </div>
-                                <div className="flex gap-1">
-                                    <button onClick={() => dismiss(r.id)} className="text-xs text-gray-500 hover:underline dark:text-gray-400">Dismiss</button>
-                                    <button onClick={() => remove(r.id)} className="text-xs text-red-500 hover:underline">Delete</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+            {overdue.length === 0 && upcoming.length === 0 ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                    <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set</p>
                 </div>
-            )}
-
-            {upcoming.length > 0 ? (
-                <ul className="space-y-2">
-                    {upcoming.map((r) => (
-                        <li key={r.id} className="flex items-start justify-between gap-2 rounded-md border border-gray-100 p-2 dark:border-gray-700">
-                            <div>
-                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{r.title}</p>
-                                {r.note && <p className="text-xs text-gray-500 dark:text-gray-400">{r.note}</p>}
-                                <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(r.remind_at).toLocaleString()}</p>
-                            </div>
-                            <button onClick={() => remove(r.id)} className="text-xs text-red-500 hover:underline">Delete</button>
-                        </li>
-                    ))}
-                </ul>
             ) : (
-                !overdue.length && <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set.</p>
+                <div className="max-h-96 space-y-4 overflow-y-auto pr-1">
+                    {overdue.length > 0 && (
+                        <div>
+                            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-red-500">Overdue</p>
+                            <ul className="space-y-2">
+                                {overdue.map((r) => (
+                                    <ReminderCard key={r.id} r={r} overdue onDismiss={() => dismiss(r.id)} onRemove={() => remove(r.id)} />
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {upcoming.length > 0 && (
+                        <div>
+                            {overdue.length > 0 && <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Upcoming</p>}
+                            <ul className="space-y-2">
+                                {upcoming.map((r) => (
+                                    <ReminderCard key={r.id} r={r} overdue={false} onRemove={() => remove(r.id)} />
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );
 }
 
-export default function Dashboard({ stats, range }) {
+export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
+    const totals = stats.activityTotals ?? { completed: 0, created: 0, projects: 0 };
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
@@ -345,38 +374,13 @@ export default function Dashboard({ stats, range }) {
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
-                    {/* Top-level stats */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard
-                            label="Active Tasks"
-                            value={stats.activeTasksCount}
-                            sub="Assigned to you, not yet done"
-                            icon={statIcons.active}
-                            accentColor="text-indigo-600 dark:text-indigo-400"
-                        />
-                        <StatCard
-                            label="Tasks Completed"
-                            value={stats.doneTasksCount}
-                            sub="Marked done, assigned to you"
-                            icon={statIcons.done}
-                            accentColor="text-green-600 dark:text-green-400"
-                        />
-                        <StatCard
-                            label="Projects"
-                            value={stats.projectsCount}
-                            sub="You're a member of"
-                            icon={statIcons.projects}
-                        />
-                        <StatCard
-                            label="Awaiting Your Review"
-                            value={stats.pendingReview}
-                            sub="Submitted tasks to check"
-                            icon={statIcons.review}
-                            accentColor="text-purple-600 dark:text-purple-400"
-                        />
+                        <StatCard label="Active Tasks" value={stats.activeTasksCount} sub="Assigned to you, not yet done" icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />
+                        <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Marked done, assigned to you" icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
+                        <StatCard label="Projects" value={stats.projectsCount} sub="You're a member of" icon={statIcons.projects} />
+                        <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
 
-                    {/* Actionable: what needs attention right now */}
                     <div className="grid gap-6 lg:grid-cols-2">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
@@ -386,10 +390,7 @@ export default function Dashboard({ stats, range }) {
                                 <ul className="space-y-2">
                                     {stats.dueSoon.map((task) => (
                                         <li key={task.id}>
-                                            <Link
-                                                href={`${route('projects.show', task.project_id)}?task=${task.id}`}
-                                                className="block rounded-md border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
-                                            >
+                                            <Link href={`${route('projects.show', task.project_id)}?task=${task.id}`} className="block rounded-md border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                                                 <p className="truncate font-medium text-gray-800 dark:text-gray-200">{task.title}</p>
                                                 <p className="text-xs text-gray-400 dark:text-gray-500">{task.project?.name}</p>
                                                 <p className="text-xs text-indigo-600 dark:text-indigo-400">
@@ -405,12 +406,27 @@ export default function Dashboard({ stats, range }) {
                         <RemindersPanel reminders={stats.reminders} />
                     </div>
 
-                    {/* Activity trend */}
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity</h3>
-                            <RangeButtons range={range} />
+                            <RangeButtons range={range} routeName="dashboard" customFrom={customFrom} customTo={customTo} />
                         </div>
+
+                        <div className="mb-4 grid grid-cols-3 gap-3">
+                            <div className="rounded-md bg-teal-50 p-3 text-center dark:bg-teal-950/30">
+                                <p className="text-xl font-semibold text-teal-700 dark:text-teal-400">{totals.completed}</p>
+                                <p className="text-xs text-teal-600 dark:text-teal-500">Completed</p>
+                            </div>
+                            <div className="rounded-md bg-amber-50 p-3 text-center dark:bg-amber-950/30">
+                                <p className="text-xl font-semibold text-amber-700 dark:text-amber-400">{totals.created}</p>
+                                <p className="text-xs text-amber-600 dark:text-amber-500">Assigned</p>
+                            </div>
+                            <div className="rounded-md bg-indigo-50 p-3 text-center dark:bg-indigo-950/30">
+                                <p className="text-xl font-semibold text-indigo-700 dark:text-indigo-400">{totals.projects}</p>
+                                <p className="text-xs text-indigo-600 dark:text-indigo-500">Projects Joined</p>
+                            </div>
+                        </div>
+
                         <ResponsiveContainer width="100%" height={240}>
                             <AreaChart data={stats.chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
@@ -425,7 +441,6 @@ export default function Dashboard({ stats, range }) {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Reference: breakdown + calendar */}
                     <div className="grid gap-6 lg:grid-cols-3">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-1">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
@@ -435,10 +450,7 @@ export default function Dashboard({ stats, range }) {
                                         <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
                                         <span className="w-20 text-sm text-gray-600 dark:text-gray-400">{label}</span>
                                         <div className="h-2 flex-1 rounded-full bg-gray-100 dark:bg-gray-700">
-                                            <div
-                                                className={`h-2 rounded-full ${statusColors[key]}`}
-                                                style={{ width: `${totalTasks ? ((stats.tasksByStatus[key] ?? 0) / totalTasks) * 100 : 0}%` }}
-                                            />
+                                            <div className={`h-2 rounded-full ${statusColors[key]}`} style={{ width: `${totalTasks ? ((stats.tasksByStatus[key] ?? 0) / totalTasks) * 100 : 0}%` }} />
                                         </div>
                                         <span className="w-8 text-right text-sm text-gray-500 dark:text-gray-400">{stats.tasksByStatus[key] ?? 0}</span>
                                     </div>

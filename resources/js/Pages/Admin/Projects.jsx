@@ -14,7 +14,7 @@ function SearchIcon() {
 }
 
 function Pagination({ links }) {
-    if (!links || links.length <= 3) return null;
+    if (!links) return null;
     return (
         <div className="flex flex-wrap justify-center gap-2 py-4">
             {links.map((link, i) => (
@@ -85,6 +85,7 @@ export default function Projects({ projects, filters }) {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
+                                    <th className="px-6 py-3">ID</th>
                                     <th className="px-6 py-3">Name</th>
                                     <th className="px-6 py-3">Owner</th>
                                     <th className="px-6 py-3">Members</th>
@@ -95,6 +96,7 @@ export default function Projects({ projects, filters }) {
                             <tbody className="divide-y dark:divide-gray-700">
                                 {projects.data.map((project) => (
                                     <tr key={project.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                        <td className="px-6 py-3 text-gray-400 dark:text-gray-500">#{project.id}</td>
                                         <td className="max-w-xs truncate px-6 py-3">
                                             <span className="text-gray-700 dark:text-gray-300" title={project.name}>{project.name}</span>
                                         </td>
@@ -125,7 +127,7 @@ export default function Projects({ projects, filters }) {
                                 ))}
                                 {projects.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
                                             No projects match your search.
                                         </td>
                                     </tr>

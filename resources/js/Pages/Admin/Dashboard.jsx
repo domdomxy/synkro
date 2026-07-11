@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
+import { useState } from 'react';
+ 
 const statusLabels = {
     todo: 'To Do',
     in_progress: 'In Progress',
@@ -10,7 +11,7 @@ const statusLabels = {
     in_review: 'In Review',
     done: 'Done',
 };
-
+ 
 const statusColors = {
     todo: 'bg-gray-400',
     in_progress: 'bg-blue-500',
@@ -18,9 +19,9 @@ const statusColors = {
     in_review: 'bg-purple-500',
     done: 'bg-green-500',
 };
-
+ 
 const rangeLabels = { today: 'Today', week: 'This Week', month: 'This Month' };
-
+ 
 const statIcons = {
     users: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -43,7 +44,7 @@ const statIcons = {
         </svg>
     ),
 };
-
+ 
 function StatCard({ label, value, sub, accent, icon }) {
     return (
         <div className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
@@ -62,37 +63,50 @@ function StatCard({ label, value, sub, accent, icon }) {
         </div>
     );
 }
-
-function RangeButtons({ range }) {
+ 
+function RangeButtons({ range, routeName, customFrom, customTo }) {
+    const [showCustom, setShowCustom] = useState(range === 'custom');
+    const [from, setFrom] = useState(customFrom ?? '');
+    const [to, setTo] = useState(customTo ?? '');
+ 
+    const applyCustom = () => {
+        if (from && to) router.get(route(routeName, { range: 'custom', from, to }), {}, { preserveScroll: true });
+    };
+ 
     return (
-        <div className="flex gap-1">
-            {Object.entries(rangeLabels).map(([key, label]) => (
-                <Link
-                    key={key}
-                    href={route('admin.dashboard', { range: key })}
-                    preserveScroll
-                    className={`rounded-md px-3 py-1 text-xs ${
-                        range === key
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
+        <div className="flex flex-wrap items-center gap-1">
+            {Object.entries({ today: 'Today', week: 'This Week', month: 'This Month' }).map(([key, label]) => (
+                <Link key={key} href={route(routeName, { range: key })} preserveScroll
+                    className={`rounded-md px-3 py-1 text-xs ${range === key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+                    onClick={() => setShowCustom(false)}
                 >
                     {label}
                 </Link>
             ))}
+            <button onClick={() => setShowCustom((v) => !v)} className={`rounded-md px-3 py-1 text-xs ${range === 'custom' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}>
+                Custom
+            </button>
+            {showCustom && (
+                <div className="flex items-center gap-1">
+                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <span className="text-xs text-gray-400">to</span>
+                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <button onClick={applyCustom} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
+                </div>
+            )}
         </div>
     );
 }
-
-export default function Dashboard({ stats, range }) {
+ 
+export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = stats.tasks;
-
+ 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Admin Dashboard</h2>}>
             <Head title="Admin Dashboard" />
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-
+ 
                     <div className="flex flex-wrap gap-3">
                         <Link href={route('admin.users')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
                             Manage Users
@@ -107,14 +121,14 @@ export default function Dashboard({ stats, range }) {
                             Appeals
                         </Link>
                     </div>
-
+ 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.users} sub={`${stats.activeUsers} active · ${stats.inactiveUsers} inactive`} accent icon={statIcons.users} />
                         <StatCard label="Admins" value={stats.admins} icon={statIcons.admins} />
                         <StatCard label="Projects" value={stats.projects} icon={statIcons.projects} />
                         <StatCard label="Tasks" value={stats.tasks} sub={`${stats.tasksByStatus.done ?? 0} completed`} icon={statIcons.tasks} />
                     </div>
-
+ 
                     {stats.pendingResolution > 0 && (
                         <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">
                             <svg className="h-5 w-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -136,7 +150,7 @@ export default function Dashboard({ stats, range }) {
                             </p>
                         </div>
                     )}
-
+ 
                     {stats.pendingFeedbacks > 0 && (
                         <div className="flex items-start gap-3 rounded-lg border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-950/30">
                             <svg className="h-5 w-5 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -147,12 +161,12 @@ export default function Dashboard({ stats, range }) {
                             </p>
                         </div>
                     )}
-
+ 
                     {/* Activity trend — full width */}
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Platform Activity</h3>
-                            <RangeButtons range={range} />
+                            <RangeButtons range={range} routeName="admin.dashboard" customFrom={customFrom} customTo={customTo} />
                         </div>
                         <ResponsiveContainer width="100%" height={240}>
                             <AreaChart data={stats.chartData}>
@@ -168,7 +182,7 @@ export default function Dashboard({ stats, range }) {
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-
+ 
                     {/* Status breakdown + recent activity */}
                     <div className="grid gap-6 lg:grid-cols-3">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-2">
@@ -189,7 +203,7 @@ export default function Dashboard({ stats, range }) {
                                 ))}
                             </div>
                         </div>
-
+ 
                         <div className="space-y-6">
                             <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                                 <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">Recent Users</h3>
@@ -211,14 +225,14 @@ export default function Dashboard({ stats, range }) {
                                     View all users →
                                 </Link>
                             </div>
-
+ 
                             <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                                 <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">Recent Projects</h3>
                                 <ul className="space-y-2">
                                     {stats.recentProjects.map((project) => (
                                         <li key={project.id}>
                                             <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{project.name}</p>
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">by {project.owner?.name}</p>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">ID {project.id} · by {project.owner?.name}</p>
                                         </li>
                                     ))}
                                 </ul>

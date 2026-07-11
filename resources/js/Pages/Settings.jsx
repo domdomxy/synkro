@@ -166,7 +166,7 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
                             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h3>
                         </div>
                         <div className="flex gap-2">
-                            {['system', 'light', 'dark'].map((option) => (
+                            {['system', 'light', 'dark', 'black'].map((option) => (
                                 <button
                                     key={option}
                                     type="button"

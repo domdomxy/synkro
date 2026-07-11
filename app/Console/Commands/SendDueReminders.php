@@ -30,12 +30,7 @@ class SendDueReminders extends Command
             ]);
 
             try {
-                broadcast(new ReminderDue(
-                    $reminder->user_id,
-                    $reminder->title,
-                    $reminder->note,
-                    $notification->id
-                ));
+                broadcast(new ReminderDue($reminder->user_id, $reminder->title, $reminder->note, $notification->id));
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -51,9 +46,17 @@ class SendDueReminders extends Command
                 );
             }
 
-            $reminder->update(['notified_at' => now(), 'dismissed' => true]);
+            if ($reminder->repeat_interval === 'none') {
+                $reminder->update(['notified_at' => now(), 'dismissed' => true]);
+            } else {
+                $nextDate = match ($reminder->repeat_interval) {
+                    'daily' => $reminder->remind_at->copy()->addDay(),
+                    'weekly' => $reminder->remind_at->copy()->addWeek(),
+                    'monthly' => $reminder->remind_at->copy()->addMonth(),
+                };
+                $reminder->update(['remind_at' => $nextDate, 'notified_at' => null]);
+            }
         }
-
         $this->info("Sent {$due->count()} reminder notifications.");
     }
 }

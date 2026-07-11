@@ -5,11 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <script>
-        (function () {
-            var theme = localStorage.getItem('synkro-theme') || 'system';
-            var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            document.documentElement.classList.toggle('dark', isDark);
-        })();
+            (function () {
+                const theme = localStorage.getItem('synkro-theme') || 'system';
+                const resolved = theme === 'system'
+                    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                    : theme;
+                if (resolved === 'dark' || resolved === 'black') document.documentElement.classList.add('dark');
+                if (resolved === 'black') document.documentElement.classList.add('theme-black');
+            })();
         </script>
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>

@@ -129,7 +129,7 @@ class ProjectController extends Controller
                     $recipient,
                     'project.edited',
                     "{$project->name} was updated",
-                    ["The project \"{$project->name}\" you belong to was edited."],
+                    ["The project \"{$project->name}\" (ID {$project->id}) you belong to was edited."],
                     url(route('projects.show', $project->id, false)),
                     'View Project'
                 );

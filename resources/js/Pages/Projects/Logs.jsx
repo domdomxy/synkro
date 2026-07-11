@@ -20,6 +20,7 @@ const actionLabels = {
     task_deleted: 'Task Deleted',
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
+    task_reopened: 'Task Reopened',
 };
 
 const fieldLabels = {
@@ -70,6 +71,7 @@ const actionIconConfig = {
     task_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
+    task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
 };
 
 function describeLog(log) {
@@ -92,6 +94,7 @@ function describeLog(log) {
         case 'task_updated': return `${actor} updated "${d.task_title}"`;
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
+        case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
         default: return `${actor} performed ${log.action}`;
     }
 }

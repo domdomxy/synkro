@@ -16,8 +16,53 @@ use App\Events\UserSuspended;
 
 class AdminController extends Controller
 {
-    private function buckets(string $range): array
+    private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
+        if ($range === 'custom' && $from && $to) {
+            $start = \Carbon\Carbon::parse($from)->startOfDay();
+            $end = \Carbon\Carbon::parse($to)->endOfDay();
+            $totalDays = $start->diffInDays($end);
+            $spansMultipleYears = $start->year !== $end->year;
+
+            if ($totalDays <= 31) {
+                // Daily buckets
+                return array_map(function ($d) use ($start, $spansMultipleYears) {
+                    $day = $start->copy()->addDays($d);
+                    return [
+                        'label' => $day->format($spansMultipleYears ? 'M j, Y' : 'M j'),
+                        'start' => $day->copy()->startOfDay(),
+                        'end' => $day->copy()->endOfDay(),
+                    ];
+                }, range(0, $totalDays));
+            }
+
+            if ($totalDays <= 180) {
+                // Weekly buckets
+                $weeks = (int) ceil($totalDays / 7);
+                return array_map(function ($w) use ($start, $end, $spansMultipleYears) {
+                    $weekStart = $start->copy()->addWeeks($w);
+                    $weekEnd = min($weekStart->copy()->addDays(6)->endOfDay(), $end);
+                    return [
+                        'label' => $weekStart->format($spansMultipleYears ? 'M j, Y' : 'M j'),
+                        'start' => $weekStart->copy()->startOfDay(),
+                        'end' => $weekEnd,
+                    ];
+                }, range(0, $weeks));
+            }
+
+            // Monthly buckets for long ranges
+            $months = $start->diffInMonths($end);
+            return array_map(function ($m) use ($start, $end) {
+                $monthStart = $start->copy()->addMonths($m)->startOfMonth();
+                $monthEnd = min($monthStart->copy()->endOfMonth(), $end);
+                return [
+                    'label' => $monthStart->format('M Y'),
+                    'start' => $monthStart,
+                    'end' => $monthEnd,
+                ];
+            }, range(0, $months));
+        }
+
         return match ($range) {
             'today' => array_map(fn ($h) => [
                 'label' => now()->subHours(23 - $h)->format('ga'),
@@ -25,7 +70,7 @@ class AdminController extends Controller
                 'end' => now()->subHours(23 - $h)->endOfHour(),
             ], range(0, 23)),
             'month' => array_map(fn ($d) => [
-                'label' => (string) ($d + 1),
+                'label' => now()->subDays(29 - $d)->format('M j'),
                 'start' => now()->subDays(29 - $d)->startOfDay(),
                 'end' => now()->subDays(29 - $d)->endOfDay(),
             ], range(0, 29)),
@@ -50,13 +95,20 @@ class AdminController extends Controller
                 'newUsers' => User::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newProjects' => Project::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
             ];
-        }, $this->buckets($range));
+        }, $this->buckets($range, request('from'), request('to')));
 
+        $activityTotals = [
+            'completed' => array_sum(array_column($chartData, 'completed')),
+            'created' => array_sum(array_column($chartData, 'created')),
+            'projects' => array_sum(array_column($chartData, 'newProjects')),
+        ];
         $recentUsers = User::latest()->limit(5)->get();
         $recentProjects = Project::with('owner')->latest()->limit(5)->get();
 
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
+            'customFrom' => request('from'),
+            'customTo' => request('to'),
             'stats' => [
                 'users' => User::count(),
                 'activeUsers' => User::where('is_active', true)->where('is_suspended', false)->count(),
@@ -67,6 +119,7 @@ class AdminController extends Controller
                 'tasks' => Task::count(),
                 'tasksByStatus' => $tasksByStatus,
                 'chartData' => $chartData,
+                'activityTotals' => $activityTotals,
                 'recentUsers' => $recentUsers,
                 'recentProjects' => $recentProjects,
                 'pendingResolution' => Task::where('pending_resolution', true)->count(),

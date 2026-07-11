@@ -81,8 +81,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks/{task}/pin', [TaskController::class, 'pin'])->name('tasks.pin');
     Route::post('/tasks/{task}/unpin', [TaskController::class, 'unpin'])->name('tasks.unpin');
     Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
-
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download');
+    
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::patch('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
 

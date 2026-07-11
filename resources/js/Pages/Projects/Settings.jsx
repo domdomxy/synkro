@@ -110,7 +110,7 @@ export default function Settings({ project, role }) {
                             <div className="flex items-center gap-3">
                                 <PrimaryButton disabled={editForm.processing || !hasUnsavedChanges}>Save Changes</PrimaryButton>
                                 {hasUnsavedChanges && (
-                                    <span className="text-xs text-amber-600 dark:text-amber-400">You have unsaved changes</span>
+                                    <span className="text-sm text-amber-600 dark:text-amber-400">You have unsaved changes</span>
                                 )}
                             </div>
                         </form>

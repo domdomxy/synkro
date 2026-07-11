@@ -14,6 +14,7 @@ class ReminderController extends Controller
             'title' => 'required|string|max:255',
             'note' => 'nullable|string',
             'remind_at' => 'required|date|after:now',
+            'repeat_interval' => 'nullable|in:none,daily,weekly,monthly',
         ]);
 
         Reminder::create([...$validated, 'user_id' => Auth::id()]);

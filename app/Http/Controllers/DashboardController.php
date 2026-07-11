@@ -9,8 +9,53 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    private function buckets(string $range): array
+    private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
+        if ($range === 'custom' && $from && $to) {
+            $start = \Carbon\Carbon::parse($from)->startOfDay();
+            $end = \Carbon\Carbon::parse($to)->endOfDay();
+            $totalDays = $start->diffInDays($end);
+            $spansMultipleYears = $start->year !== $end->year;
+
+            if ($totalDays <= 31) {
+                // Daily buckets
+                return array_map(function ($d) use ($start, $spansMultipleYears) {
+                    $day = $start->copy()->addDays($d);
+                    return [
+                        'label' => $day->format($spansMultipleYears ? 'M j, Y' : 'M j'),
+                        'start' => $day->copy()->startOfDay(),
+                        'end' => $day->copy()->endOfDay(),
+                    ];
+                }, range(0, $totalDays));
+            }
+
+            if ($totalDays <= 180) {
+                // Weekly buckets
+                $weeks = (int) ceil($totalDays / 7);
+                return array_map(function ($w) use ($start, $end, $spansMultipleYears) {
+                    $weekStart = $start->copy()->addWeeks($w);
+                    $weekEnd = min($weekStart->copy()->addDays(6)->endOfDay(), $end);
+                    return [
+                        'label' => $weekStart->format($spansMultipleYears ? 'M j, Y' : 'M j'),
+                        'start' => $weekStart->copy()->startOfDay(),
+                        'end' => $weekEnd,
+                    ];
+                }, range(0, $weeks));
+            }
+
+            // Monthly buckets for long ranges
+            $months = $start->diffInMonths($end);
+            return array_map(function ($m) use ($start, $end) {
+                $monthStart = $start->copy()->addMonths($m)->startOfMonth();
+                $monthEnd = min($monthStart->copy()->endOfMonth(), $end);
+                return [
+                    'label' => $monthStart->format('M Y'),
+                    'start' => $monthStart,
+                    'end' => $monthEnd,
+                ];
+            }, range(0, $months));
+        }
+
         return match ($range) {
             'today' => array_map(fn ($h) => [
                 'label' => now()->subHours(23 - $h)->format('ga'),
@@ -18,7 +63,7 @@ class DashboardController extends Controller
                 'end' => now()->subHours(23 - $h)->endOfHour(),
             ], range(0, 23)),
             'month' => array_map(fn ($d) => [
-                'label' => (string) ($d + 1),
+                'label' => now()->subDays(29 - $d)->format('M j'),
                 'start' => now()->subDays(29 - $d)->startOfDay(),
                 'end' => now()->subDays(29 - $d)->endOfDay(),
             ], range(0, 29)),
@@ -35,6 +80,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $range = request('range', 'week');
         $myTasksQuery = Task::where('assigned_to', $user->id);
+        $range = request('range', 'week');
 
         $tasksByStatus = (clone $myTasksQuery)
             ->selectRaw('status, count(*) as count')
@@ -71,8 +117,13 @@ class DashboardController extends Controller
                     ->whereBetween('project_user.created_at', [$bucket['start'], $bucket['end']])
                     ->count(),
             ];
-        }, $this->buckets($range));
+        }, $this->buckets($range, request('from'), request('to')));
 
+        $activityTotals = [
+            'completed' => array_sum(array_column($chartData, 'completed')),
+            'created' => array_sum(array_column($chartData, 'created')),
+            'projects' => array_sum(array_column($chartData, 'projects')),
+        ];
         // Calendar: all tasks with due dates in the next 90 days
         $calendarTasks = Task::where('assigned_to', $user->id)
             ->whereNotNull('due_date')
@@ -89,6 +140,8 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'range' => $range,
+            'customFrom' => request('from'),
+            'customTo' => request('to'),
             'stats' => [
                 'projectsCount' => $user->projects()->count(),
                 'activeTasksCount' => (clone $myTasksQuery)->whereNotIn('status', ['done'])->count(),
@@ -97,6 +150,7 @@ class DashboardController extends Controller
                 'tasksByStatus' => $tasksByStatus,
                 'dueSoon' => $dueSoon,
                 'chartData' => $chartData,
+                'activityTotals' => $activityTotals,
                 'calendarTasks' => $calendarTasks,
                 'reminders' => $reminders,
             ],

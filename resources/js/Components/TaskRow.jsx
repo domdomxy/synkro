@@ -125,7 +125,7 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function KebabMenu({ canManage, isPinned, onEdit, onDelete, onPin }) {
+function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -139,38 +139,30 @@ function KebabMenu({ canManage, isPinned, onEdit, onDelete, onPin }) {
 
     return (
         <div className="relative" ref={ref}>
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-            >
+            <button onClick={() => setOpen((v) => !v)} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                 </svg>
             </button>
             {open && (
-                <div className="absolute right-0 z-20 mt-1 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
-                    <button
-                        onClick={() => { setOpen(false); onPin(); }}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
+                <div className="absolute right-0 z-20 mt-1 w-44 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <button onClick={() => { setOpen(false); onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
                         {isPinned ? 'Unpin task' : 'Pin task'}
                     </button>
+                    {canManage && isDone && (
+                        <button onClick={() => { setOpen(false); onRequestChanges(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-gray-700">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+                            </svg>
+                            Request Changes
+                        </button>
+                    )}
                     {canManage && (
                         <>
                             <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                            <button
-                                onClick={() => { setOpen(false); onEdit(); }}
-                                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                onClick={() => { setOpen(false); onDelete(); }}
-                                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                            >
-                                Delete
-                            </button>
+                            <button onClick={() => { setOpen(false); onEdit(); }} className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Edit</button>
+                            <button onClick={() => { setOpen(false); onDelete(); }} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">Delete</button>
                         </>
                     )}
                 </div>
@@ -302,7 +294,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const commentCount = task.comments?.length ?? 0;
-    const canEditDeliverables = isAssignee && task.status === 'submitted';
+    const canEditDeliverables = isAssignee && ['in_progress', 'submitted'].includes(task.status);
 
     return (
         <div
@@ -437,9 +429,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             <KebabMenu
                                 canManage={canManage}
                                 isPinned={!!task.is_pinned}
+                                isDone={task.status === 'done'}
                                 onEdit={() => setIsEditing(true)}
                                 onDelete={deleteTask}
                                 onPin={togglePin}
+                                onRequestChanges={() => setShowReopenPanel(true)}
                             />
                         </div>
                     </div>
@@ -544,6 +538,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 Last Submission update {formatDue(task.updated_at)}
                             </span>
                         )}
+                        {task.deliverables?.some((d) => d.type === 'file') && (
+                            <a
+                                href={route('tasks.download', task.id)}
+                                className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                                </svg>
+                                Download ZIP
+                            </a>
+                        )}
                     </div>
                     {showDeliverables && (
                         <ul className="mt-2 space-y-1.5">
@@ -613,37 +618,25 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
-            {!isEditing && canManage && task.status === 'done' && (
+            {!isEditing && canManage && task.status === 'done' && showReopenPanel && (
                 <div className="mt-3">
-                    {!showReopenPanel ? (
-                        <button
-                            onClick={() => setShowReopenPanel(true)}
-                            className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100 dark:border-gray-600 dark:bg-gray-700/50 dark:text-amber-400 dark:hover:bg-gray-700"
-                        >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
-                            </svg>
-                            Request Changes
-                        </button>
-                    ) : (
-                        <form onSubmit={submitReopen} className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-gray-600 dark:bg-gray-700/40">
-                            <p className="text-xs text-amber-700 dark:text-amber-400">
-                                This will move the task back to In Progress, keeping its existing submission and history — the assignee can then update it without starting over.
-                            </p>
-                            <textarea
-                                value={reopenForm.data.feedback}
-                                onChange={(e) => reopenForm.setData('feedback', e.target.value)}
-                                placeholder="What needs to change?"
-                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                rows={2}
-                            />
-                            <InputError message={reopenForm.errors.feedback} className="mt-1" />
-                            <div className="flex gap-2">
-                                <PrimaryButton disabled={reopenForm.processing}>Send Back for Changes</PrimaryButton>
-                                <button type="button" onClick={() => setShowReopenPanel(false)} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
-                            </div>
-                        </form>
-                    )}
+                    <form onSubmit={submitReopen} className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-gray-600 dark:bg-gray-700/40">
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                            This will move the task back to In Progress, keeping its existing submission and history — the assignee can then update it without starting over.
+                        </p>
+                        <textarea
+                            value={reopenForm.data.feedback}
+                            onChange={(e) => reopenForm.setData('feedback', e.target.value)}
+                            placeholder="What needs to change?"
+                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            rows={2}
+                        />
+                        <InputError message={reopenForm.errors.feedback} className="mt-1" />
+                        <div className="flex gap-2">
+                            <PrimaryButton disabled={reopenForm.processing}>Send Back for Changes</PrimaryButton>
+                            <button type="button" onClick={() => setShowReopenPanel(false)} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             )}
 
@@ -695,7 +688,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         </form>
                                     ) : (
                                         <>
-                                            <div className={`rounded-2xl rounded-tl-sm px-3.5 py-2 ${
+                                            <div className={`rounded-2xl px-3.5 py-2 ${
                                                 comment.is_feedback
                                                     ? 'bg-purple-50 dark:bg-purple-950/30'
                                                     : 'bg-gray-100 dark:bg-gray-700/60'

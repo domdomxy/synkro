@@ -57,7 +57,7 @@ function EmptyState({ hasAnyProjects, showingArchived, onNewProject, onClearFilt
     );
 }
 
-function ProjectActionsMenu({ project, isOwner, showingArchived, onPin, onUnpin, onArchive, onUnarchive }) {
+function ProjectActionsMenu({ project, showingArchived, onPin, onUnpin, onArchive, onUnarchive }) {
     const [open, setOpen] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const btnRef = useRef(null);
@@ -77,9 +77,7 @@ function ProjectActionsMenu({ project, isOwner, showingArchived, onPin, onUnpin,
     useEffect(() => {
         if (!open) return;
         const handleClick = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) {
-                setOpen(false);
-            }
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) setOpen(false);
         };
         const handleScroll = () => setOpen(false);
         document.addEventListener('mousedown', handleClick);
@@ -98,35 +96,21 @@ function ProjectActionsMenu({ project, isOwner, showingArchived, onPin, onUnpin,
                 ref={btnRef}
                 onClick={toggle}
                 title="More actions"
-                className={`absolute right-3 top-3 z-10 rounded-md p-1.5 transition ${
-                    isPinned
-                        ? 'text-amber-500 opacity-100'
-                        : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
-                }`}
+                className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
             >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                 </svg>
             </button>
             {open && createPortal(
-                <div
-                    ref={menuRef}
-                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
-                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
-                >
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); isPinned ? onUnpin() : onPin(); }}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
+                <div ref={menuRef} style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }} className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); isPinned ? onUnpin() : onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <svg className="h-4 w-4" fill={isPinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                         </svg>
                         {isPinned ? 'Unpin' : 'Pin to top'}
                     </button>
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); showingArchived ? onUnarchive() : onArchive(); }}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); showingArchived ? onUnarchive() : onArchive(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                         </svg>
@@ -314,6 +298,14 @@ export default function Index({ projects, showingArchived }) {
                                                 <p className="truncate text-xs text-gray-400 dark:text-gray-500" title={project.owner?.name}>
                                                     {project.owner?.name}
                                                 </p>
+                                                {!!project.pivot?.pinned && (
+                                                    <span title="Pinned" className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                                                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                        </svg>
+                                                        Pinned
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                                                 {project.tasks_count} tasks
