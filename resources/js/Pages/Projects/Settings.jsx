@@ -8,6 +8,7 @@ import DangerButton from '@/Components/DangerButton';
 import BackButton from '@/Components/BackButton';
 import Avatar from '@/Components/Avatar';
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import RichTextEditor from '@/Components/RichTextEditor';
 
 function SectionCard({ icon, title, description, children, danger }) {
     return (
@@ -103,8 +104,11 @@ export default function Settings({ project, role }) {
                                 <InputError message={editForm.errors.name} className="mt-2" />
                             </div>
                             <div>
-                                <InputLabel htmlFor="description" value="Description" />
-                                <textarea id="description" value={editForm.data.description} onChange={(e) => editForm.setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={4} />
+                                <InputLabel htmlFor="create-description" value="Description" />
+                                <RichTextEditor
+                                    value={editForm.data.description}
+                                    onChange={(html) => editForm.setData('description', html)}
+                                />
                                 <InputError message={editForm.errors.description} className="mt-2" />
                             </div>
                             <div className="flex items-center gap-3">

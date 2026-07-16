@@ -43,6 +43,53 @@ const statIcons = {
     ),
 };
 
+function StatusDonut({ tasksByStatus, total, size = 160, strokeWidth = 18 }) {
+    const strokeColors = {
+        todo: '#9ca3af',
+        in_progress: '#3b82f6',
+        submitted: '#eab308',
+        in_review: '#a855f7',
+        done: '#22c55e',
+    };
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    let cumulative = 0;
+    const segments = Object.keys(statusLabels).map((key) => {
+        const count = tasksByStatus[key] ?? 0;
+        const dash = total ? (count / total) * circumference : 0;
+        const seg = { key, dash, offset: cumulative, count };
+        cumulative += dash;
+        return seg;
+    });
+
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100 dark:stroke-gray-700" />
+                {segments.filter((s) => s.count > 0).map((s) => (
+                    <circle
+                        key={s.key}
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke={strokeColors[s.key]}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={`${s.dash} ${circumference - s.dash}`}
+                        strokeDashoffset={-s.offset}
+                    />
+                ))}
+            </g>
+            <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 dark:fill-gray-100" style={{ fontSize: 30, fontWeight: 700 }}>
+                {total}
+            </text>
+            <text x="50%" y="62%" textAnchor="middle" className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 11 }}>
+                Tasks
+            </text>
+        </svg>
+    );
+}
+
 function StatCard({ label, value, sub, icon, accentColor }) {
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
@@ -368,6 +415,15 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const totals = stats.activityTotals ?? { completed: 0, created: 0, projects: 0 };
 
+    const dateRangeLabel = (() => {
+        if (range === 'custom' && customFrom && customTo) {
+            return `${new Date(customFrom).toLocaleDateString(undefined, { dateStyle: 'medium' })} – ${new Date(customTo).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+        }
+        if (range === 'today') return new Date().toLocaleDateString(undefined, { dateStyle: 'full' });
+        if (range === 'month') return `${new Date(Date.now() - 29 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        return `${new Date(Date.now() - 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    })();
+
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
             <Head title="Dashboard" />
@@ -412,6 +468,8 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             <RangeButtons range={range} routeName="dashboard" customFrom={customFrom} customTo={customTo} />
                         </div>
 
+                        <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
+
                         <div className="mb-4 grid grid-cols-3 gap-3">
                             <div className="rounded-md bg-teal-50 p-3 text-center dark:bg-teal-950/30">
                                 <p className="text-xl font-semibold text-teal-700 dark:text-teal-400">{totals.completed}</p>
@@ -430,34 +488,39 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <ResponsiveContainer width="100%" height={240}>
                             <AreaChart data={stats.chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                                <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
                                 <Tooltip />
-                                <Legend />
-                                <Area type="monotone" dataKey="completed" name="Tasks Completed" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
-                                <Line type="monotone" dataKey="created" name="Tasks Assigned" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                                <Legend wrapperStyle={{ color: 'currentColor' }} />
+                                <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
+                                <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                                <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-1">
+                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-2">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
-                            <div className="space-y-3">
-                                {Object.entries(statusLabels).map(([key, label]) => (
-                                    <div key={key} className="flex items-center gap-3">
-                                        <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
-                                        <span className="w-20 text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                                        <div className="h-2 flex-1 rounded-full bg-gray-100 dark:bg-gray-700">
-                                            <div className={`h-2 rounded-full ${statusColors[key]}`} style={{ width: `${totalTasks ? ((stats.tasksByStatus[key] ?? 0) / totalTasks) * 100 : 0}%` }} />
-                                        </div>
-                                        <span className="w-8 text-right text-sm text-gray-500 dark:text-gray-400">{stats.tasksByStatus[key] ?? 0}</span>
-                                    </div>
-                                ))}
-                                {totalTasks === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No tasks assigned to you yet.</p>}
+                            <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+                                <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} />
+                                <div className="w-full max-w-xs space-y-2">
+                                    {Object.entries(statusLabels).map(([key, label]) => {
+                                        const count = stats.tasksByStatus[key] ?? 0;
+                                        const pct = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
+                                        return (
+                                            <div key={key} className="flex items-center gap-3">
+                                                <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
+                                                <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
+                                                <span className="w-9 text-right text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+</div>
 
                         <div className="lg:col-span-2">
                             <CalendarView tasks={stats.calendarTasks} />

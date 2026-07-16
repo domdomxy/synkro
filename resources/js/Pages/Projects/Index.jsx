@@ -9,6 +9,7 @@ import Modal from '@/Components/Modal';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import RichTextEditor from '@/Components/RichTextEditor';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -288,9 +289,10 @@ export default function Index({ projects, showingArchived }) {
                                                 {project.pivot?.role}
                                             </span>
                                         </div>
-                                        <p className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">
-                                            {project.description || <span className="text-gray-400 dark:text-gray-500">No description provided.</span>}
-                                        </p>
+                                        <div
+                                            className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-900 dark:text-gray-100"
+                                            dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
+                                        />
 
                                         <div className="mt-4 flex items-center justify-between gap-2">
                                             <div className="flex min-w-0 items-center gap-2">
@@ -350,12 +352,9 @@ export default function Index({ projects, showingArchived }) {
                     </div>
                     <div className="mt-4">
                         <InputLabel htmlFor="create-description" value="Description" />
-                        <textarea
-                            id="create-description"
+                        <RichTextEditor
                             value={createForm.data.description}
-                            onChange={(e) => createForm.setData('description', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            rows={4}
+                            onChange={(html) => createForm.setData('description', html)}
                         />
                         <InputError message={createForm.errors.description} className="mt-2" />
                     </div>

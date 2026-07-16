@@ -38,6 +38,10 @@ class Project extends Model
     {
         return $this->members()->where('user_id', $user->id)->exists();
     }
+    public function invitations()
+    {
+        return $this->hasMany(ProjectInvitation::class);
+    }
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ProjectActivityLog::class)->latest();

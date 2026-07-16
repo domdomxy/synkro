@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Recharts doesn't use Tailwind dark: classes — override its hardcoded colors explicitly */
+.dark .recharts-default-tooltip {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+.dark .recharts-default-tooltip .recharts-tooltip-label,
+.dark .recharts-default-tooltip .recharts-tooltip-item {
+    color: #e5e7eb !important;
+}
+html.theme-black .recharts-default-tooltip {
+    background-color: #0d0d0d !important;
+    border-color: #202020 !important;
+}
+.recharts-cartesian-axis-tick-value tspan {
+    fill: currentColor;
+}

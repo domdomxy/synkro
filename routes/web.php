@@ -20,6 +20,7 @@ use App\Http\Controllers\FeedbackPageController;
 use App\Http\Controllers\SuspensionAppealController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\InvitationController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -87,6 +88,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::patch('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
 
+
+    Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+    Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+    Route::post('/invitations/{token}/deny', [InvitationController::class, 'deny'])->name('invitations.deny');
+    Route::delete('/invitations/{invitation}', [ProjectMemberController::class, 'destroyInvitation'])->name('projects.invitations.destroy');
+
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
@@ -127,6 +134,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/projects/{project}/logs', [AdminController::class, 'projectLogs'])->name('projects.logs');
+    Route::get('/suspension-logs', [AdminController::class, 'suspensionLogs'])->name('suspension-logs');
     });
 
 require __DIR__.'/auth.php';

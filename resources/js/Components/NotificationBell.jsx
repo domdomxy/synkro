@@ -16,6 +16,9 @@ const categoryMap = {
     project_role_changed: 'membership',
     reminder: 'assignments',
     removed_from_project: 'membership',
+    project_invitation: 'membership',
+    invitation_accepted: 'membership',
+    invitation_denied: 'membership',
 };
 
 const typeStyles = {
@@ -83,6 +86,21 @@ const typeStyles = {
         bg: 'bg-red-100 dark:bg-red-900',
         text: 'text-red-600 dark:text-red-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />,
+    },
+    project_invitation: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
+    },
+    invitation_accepted: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
+    },
+    invitation_denied: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
     },
 };
 

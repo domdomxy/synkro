@@ -52,6 +52,7 @@ const ICON_PATHS = {
     undo: 'M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4',
     check: 'M5 13l4 4L19 7',
     dot: 'M12 12h.01',
+    close_or_x: 'M6 18L18 6M6 6l12 12',
 };
 
 const actionIconConfig = {
@@ -72,6 +73,7 @@ const actionIconConfig = {
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
+    invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
 };
 
 function describeLog(log) {
@@ -95,6 +97,7 @@ function describeLog(log) {
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
+        case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
         default: return `${actor} performed ${log.action}`;
     }
 }

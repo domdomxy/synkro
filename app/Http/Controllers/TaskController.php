@@ -307,9 +307,11 @@ class TaskController extends Controller
  
         $validated = $request->validate([
             'files' => 'nullable|array',
-            'files.*' => 'file|max:20480',
+            'files.*' => 'file|max:51200', // see #8 below for the raised limit
             'links' => 'nullable|array',
             'links.*' => 'url',
+        ], [
+            'files.*.max' => 'One or more files exceed the 50MB size limit and were not uploaded.',
         ]);
  
         if (empty($validated['files']) && empty($validated['links'])) {

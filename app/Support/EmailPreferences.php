@@ -23,7 +23,9 @@ class EmailPreferences
             'project' => [
                 'label' => 'Projects',
                 'items' => [
-                    'project.added' => 'You were added to a project',
+                    'project.invitation_received' => 'Someone invited you to a project',
+                    'project.invitation_accepted' => 'Your invitation was accepted',
+                    'project.invitation_denied' => 'Your invitation was declined',
                     'project.removed' => 'You were removed from a project',
                     'project.edited' => 'A project you belong to was edited',
                     'project.ownership_transferred' => 'Project ownership was transferred to you',

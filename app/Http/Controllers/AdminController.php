@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Models\Feedback;
 use App\Events\UserSuspended;
+use App\Models\SuspensionLog;
 
 class AdminController extends Controller
 {
@@ -177,6 +178,7 @@ class AdminController extends Controller
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('id', $request->search)
                 ->orWhereHas('owner', function ($q2) use ($request) {
                     $q2->where('name', 'like', "%{$request->search}%")
                         ->orWhere('email', 'like', "%{$request->search}%");
@@ -192,50 +194,58 @@ class AdminController extends Controller
         ]);
     }
 
-    public function suspend(Request $request, User $user)
-    {
-        if ($user->id === auth()->id()) {
-            return back()->withErrors(['error' => "You can't suspend your own account."]);
-        }
-
-        $request->validate([
-            'duration' => 'required|string',
-            'custom_date' => 'nullable|date|after:now',
-            'reason' => 'nullable|string|max:2000',
-        ]);
-
-        $suspendedUntil = match ($request->duration) {
-            'permanent' => null,
-            'custom' => $request->custom_date,
-            default => now()->addDays((int) $request->duration),
-        };
-
-        $user->update([
-            'is_suspended' => true,
-            'suspended_until' => $suspendedUntil,
-            'suspension_reason' => $request->reason,
-            'suspended_by' => auth()->id(),
-        ]);
-
-        event(new UserSuspended($user));
-
-        NotificationMailer::send(
-            $user,
-            'account.suspended',
-            'Your account has been suspended',
-            array_filter([
-                $suspendedUntil
-                    ? "Your account has been suspended until {$suspendedUntil->format('M j, Y g:i A')}."
-                    : 'Your account has been suspended indefinitely.',
-                $request->reason ? "Reason: {$request->reason}" : null,
-                "If you believe this was a mistake, you can submit an appeal using the button below.",
-            ]),
-            url(route('appeal.page', [], false)),
-            'Submit an Appeal'
-        );
-
-        return back()->with('success', 'User suspended.');
+public function suspend(Request $request, User $user)
+{
+    if ($user->id === auth()->id()) {
+        return back()->withErrors(['error' => "You can't suspend your own account."]);
     }
+
+    $request->validate([
+        'duration' => 'required|string',
+        'custom_date' => 'nullable|date|after:now',
+        'reason' => 'required|string|max:2000',
+    ]);
+
+    $suspendedUntil = match ($request->duration) {
+        'permanent' => null,
+        'custom' => \Carbon\Carbon::parse($request->custom_date),
+        default => now()->addDays((int) $request->duration),
+    };
+
+    $user->update([
+        'is_suspended' => true,
+        'suspended_until' => $suspendedUntil,
+        'suspension_reason' => $request->reason,
+        'suspended_by' => auth()->id(),
+    ]);
+
+    // New: log every suspension for the audit trail
+    SuspensionLog::create([
+        'user_id' => $user->id,
+        'suspended_by' => auth()->id(),
+        'reason' => $request->reason,
+        'suspended_until' => $suspendedUntil,
+    ]);
+
+    event(new UserSuspended($user));
+
+    NotificationMailer::send(
+        $user,
+        'account.suspended',
+        'Your account has been suspended',
+        array_filter([
+            $suspendedUntil
+                ? "Your account has been suspended until {$suspendedUntil->format('M j, Y g:i A')}."
+                : 'Your account has been suspended indefinitely.',
+            "Reason: {$request->reason}",
+            "If you believe this was a mistake, you can submit an appeal using the button below.",
+        ]),
+        url(route('appeal.page', [], false)),
+        'Submit an Appeal'
+    );
+
+    return back()->with('success', 'User suspended.');
+}
 
     public function liftSuspension(User $user)
     {
@@ -244,6 +254,11 @@ class AdminController extends Controller
             'suspended_until' => null,
             'suspension_reason' => null,
             'suspended_by' => null,
+        ]);
+
+        SuspensionLog::where('user_id', $user->id)->whereNull('lifted_at')->latest()->first()?->update([
+            'lifted_at' => now(),
+            'lifted_by' => auth()->id(),
         ]);
 
         NotificationMailer::send(
@@ -256,6 +271,39 @@ class AdminController extends Controller
         );
 
         return back()->with('success', 'Suspension lifted.');
+    }
+
+    public function suspensionLogs(Request $request)
+    {
+        $query = SuspensionLog::with(['user', 'suspendedBy', 'liftedBy']);
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('user', function ($q2) use ($request) {
+                    $q2->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('email', 'like', "%{$request->search}%");
+                })
+                ->orWhereHas('suspendedBy', function ($q2) use ($request) {
+                    $q2->where('name', 'like', "%{$request->search}%");
+                })
+                ->orWhere('reason', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            match ($request->status) {
+                'active' => $query->whereNull('lifted_at'),
+                'lifted' => $query->whereNotNull('lifted_at'),
+                default => null,
+            };
+        }
+
+        $logs = $query->latest()->get();
+
+        return Inertia::render('Admin/SuspensionLogs', [
+            'logs' => $logs,
+            'filters' => $request->only(['search', 'status']),
+        ]);
     }
 
     public function toggleRole(User $user)
@@ -297,10 +345,23 @@ class AdminController extends Controller
         return back()->with('success', 'Password reset and emailed to the user.');
     }
 
-    public function appeals()
+    public function appeals(Request $request)
     {
-        $appeals = SuspensionAppeal::with('user')->latest()->get();
-        return Inertia::render('Admin/Appeals', ['appeals' => $appeals]);
+        $query = SuspensionAppeal::with('user');
+
+        if ($request->search) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('email', 'like', "%{$request->search}%");
+            });
+        }
+
+        $appeals = $query->latest()->get();
+
+        return Inertia::render('Admin/Appeals', [
+            'appeals' => $appeals,
+            'filters' => $request->only(['search']),
+        ]);
     }
 
     public function reviewAppeal(Request $request, SuspensionAppeal $appeal)

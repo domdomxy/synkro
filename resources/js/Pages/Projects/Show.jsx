@@ -4,14 +4,13 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
 import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -85,6 +84,16 @@ function useFixedDropdown(menuWidth) {
         }
         setOpen((v) => !v);
     };
+
+    useLayoutEffect(() => {
+        if (!open || !menuRef.current || !btnRef.current) return;
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const btnRect = btnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        if (spaceBelow < menuRect.height + 12 && btnRect.top > menuRect.height + 12) {
+            setCoords((prev) => ({ ...prev, top: btnRect.top - menuRect.height - 4 }));
+        }
+    }, [open]);
 
     useEffect(() => {
         if (!open) return;
@@ -315,9 +324,10 @@ function ProjectInfoModal({ show, onClose, project }) {
 
                 <div className="overflow-y-auto p-6 pt-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Description</p>
-                    <p className="mt-1 whitespace-pre-wrap break-words text-base text-gray-900 dark:text-gray-100">
-                        {project.description || <span className="text-gray-400 dark:text-gray-500">No description provided.</span>}
-                    </p>
+                    <div
+                        className="mt-2 whitespace-pre-wrap break-words text-base text-gray-900 dark:text-gray-100"
+                        dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
+                    />
                 </div>
 
                 <div className="flex justify-end border-t border-gray-100 p-4 dark:border-gray-700">
@@ -328,7 +338,7 @@ function ProjectInfoModal({ show, onClose, project }) {
     );
 }
 
-export default function Show({ project, role, myNotes }) {
+export default function Show({ project, role, myNotes, pendingInvitations }) {
     const { auth } = usePage().props;
     const { url } = usePage();
     const canManage = ['owner', 'manager'].includes(role);
@@ -592,6 +602,28 @@ export default function Show({ project, role, myNotes }) {
                                     ))}
                                     {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
                                 </ul>
+
+                                {canManage && pendingInvitations?.length > 0 && (
+                                    <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
+                                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Pending Invitations</p>
+                                        <ul className="space-y-1.5">
+                                            {pendingInvitations.map((inv) => (
+                                                <li key={inv.id} className="flex items-center justify-between gap-2 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm text-gray-700 dark:text-gray-300">{inv.invited_user.name}</p>
+                                                        <p className="text-xs capitalize text-gray-400 dark:text-gray-500">{inv.role}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => { if (confirm(`Cancel the invitation to ${inv.invited_user.name}?`)) router.delete(route('projects.invitations.destroy', inv.id)); }}
+                                                        className="shrink-0 text-xs text-red-500 hover:underline"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

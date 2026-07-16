@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { Head, useForm } from '@inertiajs/react';
 
 export default function Create() {
@@ -26,7 +27,10 @@ export default function Create() {
                         </div>
                         <div>
                             <InputLabel htmlFor="description" value="Description" />
-                            <textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={4} />
+                            <RichTextEditor
+                                value={data.description}
+                                onChange={(html) => setData('description', html)}
+                            />
                             <InputError message={errors.description} className="mt-2" />
                         </div>
                         <PrimaryButton disabled={processing}>Create Project</PrimaryButton>

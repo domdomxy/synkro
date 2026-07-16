@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Support\NotificationMailer;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -56,6 +57,8 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+
         $project = Project::create([
             ...$validated,
             'owner_id' => Auth::id(),
@@ -88,10 +91,13 @@ class ProjectController extends Controller
 
         $notes = $project->notes()->where('user_id', Auth::id())->latest()->get();
 
+        $pendingInvitations = $project->invitations()->where('status', 'pending')->with('invitedUser')->get();
+
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'role' => $project->roleFor(Auth::user()),
             'myNotes' => $notes,
+            'pendingInvitations' => $pendingInvitations,
         ]);
     }
 
@@ -110,6 +116,8 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
+
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
 
         $changes = [];
         foreach (['name', 'description'] as $field) {

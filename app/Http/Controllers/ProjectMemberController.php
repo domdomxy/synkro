@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Events\RemovedFromProject;
 use App\Support\NotificationMailer;
+use App\Models\ProjectInvitation;
 
 class ProjectMemberController extends Controller
 {
@@ -57,18 +58,24 @@ class ProjectMemberController extends Controller
             return back()->withErrors(['email' => 'This user is already a member.']);
         }
 
-        $project->members()->attach($user->id, ['role' => $validated['role']]);
+        if (ProjectInvitation::where('project_id', $project->id)->where('invited_user_id', $user->id)->where('status', 'pending')->exists()) {
+            return back()->withErrors(['email' => 'This user already has a pending invitation.']);
+        }
 
-        ProjectActivityLog::log($project, 'member_added', [
-            'target_name' => $user->name,
+        $invitation = ProjectInvitation::create([
+            'project_id' => $project->id,
+            'invited_user_id' => $user->id,
+            'invited_by' => Auth::id(),
             'role' => $validated['role'],
         ]);
 
+        $inviteUrl = route('invitations.show', $invitation->token, false);
+
         $notification = UserNotification::create([
             'user_id' => $user->id,
-            'type' => 'project_member_added',
-            'message' => "You were added to \"{$project->name}\" as {$validated['role']}",
-            'url' => route('projects.show', $project->id, false),
+            'type' => 'project_invitation',
+            'message' => "{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
+            'url' => $inviteUrl,
         ]);
 
         try {
@@ -78,15 +85,22 @@ class ProjectMemberController extends Controller
         }
 
         NotificationMailer::send(
-        $user,
-        'project.added',
-        "You've been added to {$project->name}",
-        ["You were added to the project \"{$project->name}\" as {$validated['role']}."],
-        url(route('projects.show', $project->id, false)),
-        'View Project'
-    );
+            $user,
+            'project.invitation_received',
+            "{$request->user()->name} invited you to join {$project->name}",
+            ["{$request->user()->name} invited you to join the project \"{$project->name}\" (ID {$project->id}) as {$validated['role']}."],
+            url($inviteUrl),
+            'View Invitation'
+        );
 
-        return back()->with('success', 'Member added.');
+        return back()->with('success', 'Invitation sent.');
+    }
+
+    public function destroyInvitation(ProjectInvitation $invitation)
+    {
+        $this->authorize('manageMembers', $invitation->project);
+        $invitation->delete();
+        return back()->with('success', 'Invitation cancelled.');
     }
 
     public function update(Request $request, Project $project, User $user)

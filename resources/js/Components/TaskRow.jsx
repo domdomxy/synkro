@@ -20,7 +20,12 @@ function formatDue(dateString) {
     if (!dateString) return null;
     return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
-
+function toDatetimeLocalValue(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
 function formatBytes(bytes) {
     if (!bytes && bytes !== 0) return null;
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -188,7 +193,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const editForm = useForm({
         title: task.title,
         description: task.description ?? '',
-        due_date: task.due_date ? task.due_date.slice(0, 19) : '',
+        due_date: toDatetimeLocalValue(task.due_date),
         assigned_to: task.assigned_to ?? '',
     });
     const submitForm = useForm({ files: [], links: [] });
@@ -500,11 +505,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     ))}
                                 </ul>
                             )}
+                            {submitForm.progress && (
+                                <div className="mt-3">
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                        <div
+                                            className="h-1.5 rounded-full bg-indigo-500 transition-all"
+                                            style={{ width: `${submitForm.progress.percentage}%` }}
+                                        />
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Uploading... {submitForm.progress.percentage}%</p>
+                                </div>
+                            )}
                             <div className="mt-3 flex items-center gap-2">
                                 <PrimaryButton disabled={submitForm.processing}>
-                                    {task.status === 'submitted' ? 'Add More' : 'Submit Work'}
+                                    {submitForm.progress ? `Uploading ${submitForm.progress.percentage}%` : task.status === 'submitted' ? 'Add More' : 'Submit Work'}
                                 </PrimaryButton>
-                                <button type="button" onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                                <button type="button" disabled={submitForm.processing} onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline disabled:opacity-50 dark:text-gray-400">Cancel</button>
                             </div>
                             <InputError message={submitForm.errors.files} className="mt-2" />
                         </form>
@@ -752,7 +768,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
                             </div>
                             <button
-                                type="submit"
+                                tyfpe="submit"
                                 disabled={commentForm.processing || !commentForm.data.body.trim()}
                                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
                             >

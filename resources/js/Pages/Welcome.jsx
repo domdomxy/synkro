@@ -1,6 +1,7 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { getStoredTheme, setStoredTheme } from '@/theme';
 
 const features = [
     {
@@ -35,302 +36,100 @@ const features = [
     },
 ];
 
-const categoryOptions = [
-    { value: 'bug', label: '🐛 Bug Report' },
-    { value: 'help', label: '🙋 Help Request' },
-    { value: 'report', label: '🚩 Report User/Content' },
-    { value: 'question', label: '❓ Question' },
-    { value: 'suggestion', label: '💡 Suggestion' },
-    { value: 'other', label: '📝 Other' },
-];
-
-const statusStyles = {
-    pending: 'bg-gray-100 text-gray-700',
-    reviewing: 'bg-blue-100 text-blue-700',
-    accepted: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-    closed: 'bg-gray-200 text-gray-500',
+const THEME_CYCLE = ['system', 'light', 'dark', 'black'];
+const THEME_ICONS = {
+    system: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L15 17M4 13.5V6a2 2 0 012-2h12a2 2 0 012 2v7.5a2 2 0 01-2 2H6a2 2 0 01-2-2z" />
+        </svg>
+    ),
+    light: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+    ),
+    dark: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    ),
+    black: (
+        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    ),
 };
 
-function FeedbackSection({ flash }) {
-    const [activeTab, setActiveTab] = useState('submit');
-    const [trackingId, setTrackingId] = useState('');
-    const [trackResult, setTrackResult] = useState(null);
-    const [trackLoading, setTrackLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(null);
-    const fileInputRef = useRef(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
-
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        email: '',
-        category: '',
-        subject: '',
-        message: '',
-        attachment: null,
-    });
-
-    useEffect(() => {
-        if (flash?.feedback_tracking_id) {
-            setSubmitted(flash.feedback_tracking_id);
-            reset();
-            setPreviewUrl(null);
-        }
-    }, [flash]);
-
-    const submitFeedback = (e) => {
-        e.preventDefault();
-        post(route('feedback.store'), { forceFormData: true });
+function ThemeToggleButton() {
+    const [theme, setThemeState] = useState(getStoredTheme());
+    const cycle = () => {
+        const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
+        setStoredTheme(next);
+        setThemeState(next);
     };
-
-    const onFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setData('attachment', file);
-        setPreviewUrl(URL.createObjectURL(file));
-    };
-
-    const trackFeedback = async (e) => {
-        e.preventDefault();
-        if (!trackingId.trim()) return;
-        setTrackLoading(true);
-        setTrackResult(null);
-        try {
-            const res = await fetch(route('feedback.track'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ tracking_id: trackingId }),
-            });
-            const json = await res.json();
-            setTrackResult(json);
-        } catch {
-            setTrackResult({ found: false });
-        } finally {
-            setTrackLoading(false);
-        }
-    };
-
     return (
-        <section className="mx-auto max-w-3xl px-6 pb-24">
-            <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Contact & Feedback</h2>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Report a bug, ask a question, or share a suggestion. We read everything.</p>
-            </div>
-
-            <div className="flex rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
-                <button
-                    onClick={() => setActiveTab('submit')}
-                    className={`flex-1 rounded-l-lg py-3 text-sm font-medium transition ${activeTab === 'submit' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
-                >
-                    Submit Feedback
-                </button>
-                <button
-                    onClick={() => setActiveTab('track')}
-                    className={`flex-1 rounded-r-lg py-3 text-sm font-medium transition ${activeTab === 'track' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}
-                >
-                    Track Status
-                </button>
-            </div>
-
-            <div className="mt-4 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                {activeTab === 'submit' ? (
-                    submitted ? (
-                        <div className="py-8 text-center">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                                <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Feedback received!</h3>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Your tracking ID is:</p>
-                            <div className="mx-auto mt-2 w-fit rounded-lg bg-indigo-50 px-6 py-3 font-mono text-xl font-bold tracking-widest text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                                {submitted}
-                            </div>
-                            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Save this ID to track your feedback status.</p>
-                            <button
-                                onClick={() => setSubmitted(null)}
-                                className="mt-4 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                            >
-                                Submit another
-                            </button>
-                        </div>
-                    ) : (
-                        <form onSubmit={submitFeedback} className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                                    <input
-                                        type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        placeholder="Your name"
-                                    />
-                                    {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                                    <input
-                                        type="email"
-                                        value={data.email}
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        placeholder="you@example.com"
-                                    />
-                                    {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                                <select
-                                    value={data.category}
-                                    onChange={(e) => setData('category', e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                >
-                                    <option value="">Select a category...</option>
-                                    {categoryOptions.map((c) => (
-                                        <option key={c.value} value={c.value}>{c.label}</option>
-                                    ))}
-                                </select>
-                                {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label>
-                                <input
-                                    type="text"
-                                    value={data.subject}
-                                    onChange={(e) => setData('subject', e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    placeholder="Brief summary of your feedback"
-                                />
-                                {errors.subject && <p className="mt-1 text-xs text-red-500">{errors.subject}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
-                                <textarea
-                                    value={data.message}
-                                    onChange={(e) => setData('message', e.target.value)}
-                                    rows={5}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    placeholder="Describe your feedback in detail..."
-                                />
-                                {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Screenshot / Attachment <span className="text-gray-400">(optional)</span></label>
-                                <input ref={fileInputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current.click()}
-                                    className="mt-1 flex items-center gap-2 rounded-md border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400"
-                                >
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    {data.attachment ? data.attachment.name : 'Attach a screenshot'}
-                                </button>
-                                {previewUrl && (
-                                    <div className="relative mt-2 w-fit">
-                                        <img src={previewUrl} alt="Preview" className="h-24 rounded-md object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setData('attachment', null); setPreviewUrl(null); fileInputRef.current.value = ''; }}
-                                            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
-                                        >×</button>
-                                    </div>
-                                )}
-                                {errors.attachment && <p className="mt-1 text-xs text-red-500">{errors.attachment}</p>}
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full rounded-md bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-                            >
-                                {processing ? 'Sending...' : 'Send Feedback'}
-                            </button>
-                        </form>
-                    )
-                ) : (
-                    <div>
-                        <form onSubmit={trackFeedback} className="flex gap-2">
-                            <input
-                                type="text"
-                                value={trackingId}
-                                onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
-                                placeholder="Enter your tracking ID (e.g. ABC-1234-XYZ)"
-                                className="flex-1 rounded-md border-gray-300 font-mono text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            />
-                            <button
-                                type="submit"
-                                disabled={trackLoading}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                            >
-                                {trackLoading ? '...' : 'Track'}
-                            </button>
-                        </form>
-
-                        {trackResult && (
-                            <div className="mt-4">
-                                {!trackResult.found ? (
-                                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">No feedback found with that ID. Double-check and try again.</p>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{trackResult.feedback.subject}</p>
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                                                        {trackResult.feedback.tracking_id} · {categoryOptions.find((c) => c.value === trackResult.feedback.category)?.label}
-                                                    </p>
-                                                </div>
-                                                <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusStyles[trackResult.feedback.status] ?? 'bg-gray-100 text-gray-700'}`}>
-                                                    {trackResult.feedback.status}
-                                                </span>
-                                            </div>
-                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{trackResult.feedback.message}</p>
-                                            {trackResult.feedback.attachment_path && (
-                                                <a href={`/storage/${trackResult.feedback.attachment_path}`} target="_blank" rel="noreferrer" className="mt-2 block text-xs text-indigo-600 hover:underline dark:text-indigo-400">
-                                                    View attachment
-                                                </a>
-                                            )}
-                                        </div>
-
-                                        {trackResult.feedback.responses?.length > 0 && (
-                                            <div>
-                                                <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Admin Responses:</p>
-                                                <div className="space-y-2">
-                                                    {trackResult.feedback.responses.map((r) => (
-                                                        <div key={r.id} className="rounded-md bg-indigo-50 p-3 dark:bg-indigo-950/30">
-                                                            <p className="text-sm text-gray-700 dark:text-gray-300">{r.message}</p>
-                                                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                                                {r.admin?.name} · {new Date(r.created_at).toLocaleDateString()}
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </section>
+        <button
+            onClick={cycle}
+            title={`Theme: ${theme}`}
+            className="rounded-md p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+        >
+            {THEME_ICONS[theme]}
+        </button>
     );
 }
 
-export default function Welcome({ auth, flash }) {
+function useFadeInOnScroll() {
+    const ref = useRef(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.15 }
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, []);
+
+    return [ref, visible];
+}
+
+function FeatureCard({ feature, index }) {
+    const [ref, visible] = useFadeInOnScroll();
+    return (
+        <div
+            ref={ref}
+            style={{ transitionDelay: `${index * 60}ms` }}
+            className={`group rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100 transition-all duration-500 hover:-translate-y-1 hover:shadow-md dark:bg-gray-800 dark:ring-gray-700 ${
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+        >
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:group-hover:bg-indigo-950/60">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
+                    {feature.icon}
+                </svg>
+            </div>
+            <h3 className="mt-4 font-semibold text-gray-900 dark:text-gray-100">{feature.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{feature.description}</p>
+        </div>
+    );
+}
+
+export default function Welcome({ auth }) {
+    const [heroVisible, setHeroVisible] = useState(false);
+
+    useEffect(() => {
+        const t = setTimeout(() => setHeroVisible(true), 50);
+        return () => clearTimeout(t);
+    }, []);
+
     return (
         <>
             <Head title="Welcome" />
@@ -340,17 +139,19 @@ export default function Welcome({ auth, flash }) {
                         <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
                         <span className="text-xl font-bold">Synkro</span>
                     </div>
-                    <nav>
+
+                    <nav className="flex items-center gap-3">
+                        <ThemeToggleButton />
                         {auth.user ? (
-                            <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                            <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
                                 Projects
                             </Link>
                         ) : (
                             <div className="flex items-center gap-4">
-                                <Link href={route('login')} className="text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
+                                <Link href={route('login')} className="text-sm font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
                                     Log in
                                 </Link>
-                                <Link href={route('register')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                                <Link href={route('register')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
                                     Get Started
                                 </Link>
                             </div>
@@ -360,48 +161,54 @@ export default function Welcome({ auth, flash }) {
 
                 <main>
                     <section className="mx-auto max-w-4xl px-6 py-20 text-center">
-                        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+                        <h1
+                            className={`text-4xl font-bold tracking-tight text-gray-900 transition-all duration-700 dark:text-gray-100 sm:text-5xl ${
+                                heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+                            }`}
+                        >
                             Plan projects. Assign tasks. <span className="text-indigo-600 dark:text-indigo-400">Ship work, together.</span>
                         </h1>
-                        <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+                        <p
+                            className={`mx-auto mt-6 max-w-2xl text-lg text-gray-600 transition-all delay-100 duration-700 dark:text-gray-400 ${
+                                heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+                            }`}
+                        >
                             Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders — built for teams that actually want to ship.
                         </p>
-                        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                                {auth.user ? (
-                                    <>
-                                        <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-500">
-                                            Go to Projects
-                                        </Link>
-                                        <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Help / Feedback
-                                        </Link>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-500">
-                                            Create an Account
-                                        </Link>
-                                        <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Log in
-                                        </Link>
-                                        <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Help / Feedback
-                                        </Link>
-                                    </>
-                                )}
-                            </div>
+                        <div
+                            className={`mt-10 flex flex-wrap items-center justify-center gap-4 transition-all delay-200 duration-700 ${
+                                heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+                            }`}
+                        >
+                            {auth.user ? (
+                                <>
+                                    <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                        Go to Projects
+                                    </Link>
+                                    <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Help / Feedback
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                        Create an Account
+                                    </Link>
+                                    <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Log in
+                                    </Link>
+                                    <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Help / Feedback
+                                    </Link>
+                                </>
+                            )}
+                        </div>
                     </section>
 
-                    <section className="mx-auto max-w-6xl px-6 pb-16">
+                    <section className="mx-auto max-w-6xl px-6 pb-20">
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {features.map((feature) => (
-                                <div key={feature.title} className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
-                                    <svg viewBox="0 0 24 24" className="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="currentColor">
-                                        {feature.icon}
-                                    </svg>
-                                    <h3 className="mt-4 font-semibold text-gray-900 dark:text-gray-100">{feature.title}</h3>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{feature.description}</p>
-                                </div>
+                            {features.map((feature, i) => (
+                                <FeatureCard key={feature.title} feature={feature} index={i} />
                             ))}
                         </div>
                     </section>

@@ -1,13 +1,23 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import TextInput from '@/Components/TextInput';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
+import { Link } from '@inertiajs/react';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     reviewed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     dismissed: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
+
+function SearchIcon() {
+    return (
+        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+    );
+}
 
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
@@ -107,8 +117,11 @@ function AppealItem({ appeal }) {
     );
 }
 
-export default function Appeals({ appeals }) {
+export default function Appeals({ appeals, filters }) {
     const [statusFilter, setStatusFilter] = useState('all');
+    const [search, setSearch] = useState(filters?.search ?? '');
+
+    const applySearch = () => router.get(route('admin.appeals'), { search, status: statusFilter !== 'all' ? statusFilter : undefined }, { preserveState: true });
 
     const filtered = statusFilter === 'all' ? appeals : appeals.filter((a) => a.status === statusFilter);
     const pendingCount = appeals.filter((a) => a.status === 'pending').length;
@@ -124,6 +137,21 @@ export default function Appeals({ appeals }) {
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
                     <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                                <SearchIcon />
+                            </div>
+                            <TextInput
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+                                placeholder="Search by user name or email..."
+                                className="w-64 pl-9"
+                            />
+                        </div>
+                        <button onClick={applySearch} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                            Filter
+                        </button>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
@@ -139,6 +167,12 @@ export default function Appeals({ appeals }) {
                                 {pendingCount} pending
                             </span>
                         )}
+                        <Link href={route('admin.suspension-logs')} className="flex items-center gap-1.5 rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Suspension Logs
+                        </Link>
                     </div>
 
                     <div className="space-y-3">

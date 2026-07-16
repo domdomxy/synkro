@@ -4,6 +4,8 @@ import TextInput from '@/Components/TextInput';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
+import SuspendModal from '@/Components/SuspendModal';
+
 
 function SearchIcon() {
     return (
@@ -327,6 +329,11 @@ export default function Users({ users, stats, filters }) {
                     </div>
                 </div>
             </div>
+            <SuspendModal
+                user={suspendTarget}
+                show={suspendTarget !== null}
+                onClose={() => setSuspendTarget(null)}
+            />
         </AuthenticatedLayout>
     );
 }

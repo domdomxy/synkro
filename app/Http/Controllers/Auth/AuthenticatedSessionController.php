@@ -43,6 +43,11 @@ class AuthenticatedSessionController extends Controller
                     'suspension_reason' => null,
                     'suspended_by' => null,
                 ]);
+
+                \App\Models\SuspensionLog::where('user_id', $user->id)->whereNull('lifted_at')->latest()->first()?->update([
+                    'lifted_at' => now(),
+                    'lifted_by' => null,
+                ]);
             } else {
                 $suspensionData = [
                     'reason' => $user->suspension_reason,
