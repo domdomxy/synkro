@@ -14,7 +14,7 @@ const categoryMap = {
     member_left: 'membership',
     project_member_added: 'membership',
     project_role_changed: 'membership',
-    reminder: 'assignments',
+    reminder: 'reminders',
     removed_from_project: 'membership',
     project_invitation: 'membership',
     invitation_accepted: 'membership',
@@ -306,6 +306,7 @@ export default function NotificationBell() {
                             <option value="assignments">Assignments</option>
                             <option value="reviews">Reviews</option>
                             <option value="membership">Membership</option>
+                            <option value="reminders">Reminders</option>
                         </select>
                     </div>
 

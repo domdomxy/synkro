@@ -16,6 +16,8 @@ class SynkroNotificationMail extends Mailable
         public array $lines,
         public ?string $actionUrl = null,
         public ?string $actionText = null,
+        public ?array $highlight = null,
+        public ?string $footerNote = null,
     ) {}
 
     public function build()

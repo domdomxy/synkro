@@ -216,9 +216,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid items-start gap-6 lg:grid-cols-3">
-                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
-
-                        <div className="space-y-6">
+                        <div className="space-y-6 lg:col-span-1">
                             <RecentPanel title="Recent Users" viewAllHref={route('admin.users')} viewAllLabel="View all users">
                                 <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {stats.recentUsers.map((user) => (
@@ -245,6 +243,8 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                                 </ul>
                             </RecentPanel>
                         </div>
+
+                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
                     </div>
                 </div>
             </div>

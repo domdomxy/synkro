@@ -43,6 +43,22 @@
                 </p>
             @endforeach
 
+            @if (!empty($highlight))
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px; background-color:#f9fafb; border-radius:8px;">
+                    <tr>
+                        <td width="4" style="background-color:#4f46e5; border-radius:8px 0 0 8px; font-size:0; line-height:0;">&nbsp;</td>
+                        <td style="padding:16px 20px;">
+                            @if (!empty($highlight['label']))
+                                <p style="margin:0 0 6px; font-size:12px; font-weight:700; color:#111827; text-transform:uppercase; letter-spacing:.03em;">
+                                    {{ $highlight['label'] }}
+                                </p>
+                            @endif
+                            <p style="margin:0; font-size:15px; color:#374151; line-height:1.6; white-space:pre-line;">{{ $highlight['content'] }}</p>
+                        </td>
+                    </tr>
+                </table>
+            @endif
+
             @if ($actionUrl && $actionText)
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
                     <tr>
@@ -64,11 +80,17 @@
     {{-- Footer --}}
     <tr>
         <td style="padding:20px 32px; background-color:#f9fafb; border-top:1px solid #f3f4f6;">
-            <p style="margin:0; font-size:12px; color:#9ca3af; line-height:1.6;">
-                You're receiving this because you have this email type enabled.
-                Manage your preferences in your
-                <a href="{{ route('settings.edit') }}" style="color:#4f46e5; text-decoration:underline;">notification settings</a>.
-            </p>
+            @if (!empty($footerNote))
+                <p style="margin:0; font-size:12px; color:#9ca3af; line-height:1.6; text-align:center;">
+                    {{ $footerNote }}
+                </p>
+            @else
+                <p style="margin:0; font-size:12px; color:#9ca3af; line-height:1.6;">
+                    You're receiving this because you have this email type enabled.
+                    Manage your preferences in your
+                    <a href="{{ route('settings.edit') }}" style="color:#4f46e5; text-decoration:underline;">notification settings</a>.
+                </p>
+            @endif
         </td>
     </tr>
 

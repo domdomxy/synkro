@@ -39,6 +39,8 @@ class FeedbackController extends Controller
             ]);
         }
 
+        $this->notifyAdminsNewTicket($feedback);
+
         return redirect()->route('feedback.page')
             ->with('feedback_tracking_id', $feedback->tracking_id);
     }
@@ -142,12 +144,41 @@ class FeedbackController extends Controller
         return response()->json(['success' => true, 'status' => 'pending']);
     }
 
-    /** Admins don't have a per-user preference for this — it's an operational alert, always sent. */
+    /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */
+    private function notifyAdminsNewTicket(Feedback $feedback): void
+    {
+        $admins = User::where('role', 'admin')->get();
+
+        foreach ($admins as $admin) {
+            if (! \App\Support\EmailPreferences::wants($admin, 'admin.ticket_created')) {
+                continue;
+            }
+
+            try {
+                Mail::to($admin->email)->queue(new SynkroNotificationMail(
+                    $admin->name,
+                    "New ticket submitted ({$feedback->tracking_id})",
+                    ["{$feedback->name} submitted a new {$feedback->category} ticket:"],
+                    url(route('admin.feedbacks', [], false)),
+                    'View Ticket',
+                    highlight: ['label' => $feedback->subject, 'content' => $feedback->message],
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    /** Admins can now opt out of this via Settings → Email Notifications → Admin Alerts. */
     private function notifyAdmins(Feedback $feedback, string $message): void
     {
         $admins = User::where('role', 'admin')->get();
 
         foreach ($admins as $admin) {
+            if (! \App\Support\EmailPreferences::wants($admin, 'admin.ticket_reply')) {
+                continue;
+            }
+
             try {
                 Mail::to($admin->email)->queue(new SynkroNotificationMail(
                     $admin->name,

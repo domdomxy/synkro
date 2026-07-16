@@ -7,9 +7,10 @@ class NotificationPreferences
     public static function catalog(): array
     {
         return [
-            'assignments' => 'Task assignments, updates, and reminders',
-            'reviews' => 'Review requests and decisions',
-            'membership' => 'Project membership changes',
+            'assignments' => 'Task assignments, updates, and deletions',
+            'reviews' => 'Review requests and submission decisions',
+            'membership' => 'Project invitations, role changes, and removals',
+            'reminders' => 'Reminders you set going off',
         ];
     }
 

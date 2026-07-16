@@ -43,7 +43,7 @@ class FeedbackAdminController extends Controller
         $feedback->update($validated);
 
         if ($oldStatus !== $validated['status']) {
-            $lines = ["Your ticket \"{$feedback->subject}\" ({$feedback->tracking_id}) is now: {$validated['status']}."];
+            $lines = ["The status of your ticket \"{$feedback->subject}\" has been updated."];
 
             if ($validated['status'] === 'closed') {
                 $lines[] = 'If you have further questions, you can reopen it from the tracking page.';
@@ -52,7 +52,8 @@ class FeedbackAdminController extends Controller
             $this->notifySubmitter(
                 $feedback,
                 "Ticket status updated ({$feedback->tracking_id})",
-                $lines
+                $lines,
+                highlight: ['label' => 'Status', 'content' => ucfirst($validated['status'])],
             );
         }
 
@@ -79,17 +80,15 @@ class FeedbackAdminController extends Controller
         $this->notifySubmitter(
             $feedback,
             "Support replied to your ticket ({$feedback->tracking_id})",
-            [
-                "Support responded to your ticket \"{$feedback->subject}\":",
-                $validated['message'],
-            ]
+            ["Support responded to your ticket \"{$feedback->subject}\":"],
+            highlight: ['label' => null, 'content' => $validated['message']],
         );
 
         return back()->with('success', 'Response sent.');
     }
 
     /** Feedback submitters aren't registered users, so this always sends — no preference toggle applies. */
-    private function notifySubmitter(Feedback $feedback, string $subject, array $lines): void
+    private function notifySubmitter(Feedback $feedback, string $subject, array $lines, ?array $highlight = null): void
     {
         try {
             Mail::to($feedback->email)->queue(
@@ -98,7 +97,9 @@ class FeedbackAdminController extends Controller
                     $subject,
                     $lines,
                     url(route('feedback.page', [], false)),
-                    'Track Your Ticket'
+                    'Track Your Ticket',
+                    $highlight,
+                    footerNote: 'This email was generated automatically — please do not reply directly. Use the button above to continue the conversation on your ticket.',
                 )
             );
         } catch (\Throwable $e) {

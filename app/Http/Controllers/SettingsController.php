@@ -13,11 +13,11 @@ class SettingsController extends Controller
     {
         $user = $request->user();
 
-        $emailPrefs = array_merge(EmailPreferences::defaults(), $user->email_preferences ?? []);
+        $emailPrefs = array_merge(EmailPreferences::defaults($user), $user->email_preferences ?? []);
         $notificationPrefs = array_merge(NotificationPreferences::defaults(), $user->notification_preferences ?? []);
 
         return Inertia::render('Settings', [
-            'emailCatalog' => EmailPreferences::catalog(),
+            'emailCatalog' => EmailPreferences::catalog($user),
             'emailPreferences' => $emailPrefs,
             'notificationCatalog' => NotificationPreferences::catalog(),
             'notificationPreferences' => $notificationPrefs,

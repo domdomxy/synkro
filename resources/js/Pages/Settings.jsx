@@ -44,6 +44,18 @@ const categoryIcons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a4 4 0 10-4-4" />
         </svg>
     ),
+    admin: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+    ),
+};
+
+const notificationTitles = {
+    assignments: 'Task Assignments',
+    reviews: 'Reviews',
+    membership: 'Project Membership',
+    reminders: 'Reminders',
 };
 
 function Toggle({ enabled, onClick }) {
@@ -141,12 +153,18 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
     const toggleNotification = (key, value) => {
         notificationForm.setData('preferences', { ...notificationForm.data.preferences, [key]: value });
     };
+    const toggleNotificationMany = (keys, value) => {
+        const updated = { ...notificationForm.data.preferences };
+        keys.forEach((key) => { updated[key] = value; });
+        notificationForm.setData('preferences', updated);
+    };
     const submitNotifications = (e) => {
         e.preventDefault();
         notificationForm.patch(route('settings.notifications'));
     };
     const notificationKeys = Object.keys(notificationCatalog);
     const notificationTotalEnabled = notificationKeys.filter((key) => notificationForm.data.preferences[key]).length;
+    const notificationAllOn = notificationTotalEnabled === notificationKeys.length;
     const notificationHasChanges = JSON.stringify(notificationForm.data.preferences) !== JSON.stringify(notificationPreferences);
 
     return (
@@ -185,29 +203,41 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
 
                     {/* In-App Notifications */}
                     <form onSubmit={submitNotifications} className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">In-App Notifications</h3>
-                            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                {notificationTotalEnabled} of {notificationKeys.length} categories enabled — controls what shows up in your notification bell
-                            </p>
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">In-App Notifications</h3>
+                                <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+                                    {notificationTotalEnabled} of {notificationKeys.length} categories enabled — controls what shows up in your notification bell
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => toggleNotificationMany(notificationKeys, !notificationAllOn)}
+                                className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:underline dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+                            >
+                                {notificationAllOn ? 'Turn all off' : 'Turn all on'}
+                            </button>
                         </div>
-                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                                {Object.entries(notificationCatalog).map(([key, label]) => (
-                                    <label key={key} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                        <div className="space-y-3">
+                            {Object.entries(notificationCatalog).map(([key, description]) => (
+                                <div key={key} className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
+                                    <label className="flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
                                                 {categoryIcons[key]}
                                             </div>
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{notificationTitles[key] ?? key}</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500">{description}</p>
+                                            </div>
                                         </div>
                                         <Toggle
                                             enabled={!!notificationForm.data.preferences[key]}
                                             onClick={() => toggleNotification(key, !notificationForm.data.preferences[key])}
                                         />
                                     </label>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
                         <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                             <span className="text-sm text-gray-500 dark:text-gray-400">

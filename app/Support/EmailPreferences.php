@@ -8,9 +8,9 @@ class EmailPreferences
      * Master list of every toggleable email key, grouped by category.
      * `always` = true means it ignores the user's preference (security-critical).
      */
-    public static function catalog(): array
+    public static function catalog(?\App\Models\User $user = null): array
     {
-        return [
+        $catalog = [
             'account' => [
                 'label' => 'Account',
                 'items' => [
@@ -59,13 +59,25 @@ class EmailPreferences
                 ],
             ],
         ];
+
+        if ($user?->role === 'admin') {
+            $catalog['admin'] = [
+                'label' => 'Admin Alerts',
+                'items' => [
+                    'admin.ticket_reply' => 'A user replied to a feedback ticket',
+                    'admin.ticket_created' => 'A new feedback ticket was submitted',
+                ],
+            ];
+        }
+
+        return $catalog;
     }
 
     /** Flat map of key => default (all true unless overridden here). */
-    public static function defaults(): array
+    public static function defaults(?\App\Models\User $user = null): array
     {
         $flat = [];
-        foreach (self::catalog() as $group) {
+        foreach (self::catalog($user) as $group) {
             foreach ($group['items'] as $key => $label) {
                 $flat[$key] = true;
             }
@@ -94,6 +106,6 @@ class EmailPreferences
         if (in_array($key, self::alwaysSend())) return true;
 
         $prefs = $user->email_preferences ?? [];
-        return $prefs[$key] ?? self::defaults()[$key] ?? true;
+        return $prefs[$key] ?? self::defaults($user)[$key] ?? true;
     }
 }
