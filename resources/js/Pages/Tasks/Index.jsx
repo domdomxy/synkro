@@ -220,7 +220,8 @@ export default function Index({ tasks }) {
                                         </div>
                                         {task.description && (
                                             <div
-                                                className="prose-sm mt-2 line-clamp-2 max-w-none text-sm text-gray-500 dark:text-gray-400"
+                                                className="prose-sm mt-2 line-clamp-2 max-w-none whitespace-pre-wrap break-words text-sm text-gray-500 dark:text-gray-400"
+                                                style={{ tabSize: 4 }}
                                                 dangerouslySetInnerHTML={{ __html: task.description }}
                                             />
                                         )}

@@ -58,7 +58,7 @@ function ColorSwatch({ color, onClick, onRemove, title }) {
     );
 }
 
-function Popover({ trigger, children, open, onToggle, onClose, width = 'auto' }) {
+function Popover({ trigger, children, open, onToggle, onClose, width = 'auto', leadingButton }) {
     const btnRef = useRef(null);
     const menuRef = useRef(null);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -103,7 +103,9 @@ function Popover({ trigger, children, open, onToggle, onClose, width = 'auto' })
     }, [open, onClose]);
 
     return (
-        <div className="relative">
+        <div className={`relative flex items-stretch ${leadingButton ? 'overflow-hidden rounded-md' : ''}`}>
+            {leadingButton}
+            {leadingButton && <div className="w-px shrink-0 self-stretch bg-gray-300 dark:bg-gray-600" />}
             <button
                 ref={btnRef}
                 type="button"
@@ -390,29 +392,33 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                     </label>
                 </Popover>
 
-                <ToolbarButton active={activeStates.highlight} onClick={toggleHighlightAtCursor} title={activeStates.highlight ? 'Turn off highlight' : 'Highlight (uses last color)'}>
-                    <span className="relative flex h-4 w-4 items-center justify-center">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l6-6m-6 6l-3 8 8-3m-5-5l5 5M17 5l2 2" />
-                        </svg>
-                        <span className="absolute -bottom-1 h-1 w-3 rounded-sm" style={{ backgroundColor: lastHighlightColor }} />
-                    </span>
-                </ToolbarButton>
-
                 <Popover
                     open={openPopover === 'highlight'}
                     onToggle={() => togglePopover('highlight')}
                     onClose={() => setOpenPopover(null)}
                     width="10.5rem"
-                    trigger={
-                        <>
+                    leadingButton={
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={toggleHighlightAtCursor}
+                            title={activeStates.highlight ? 'Remove highlight' : 'Highlight (uses last color)'}
+                            className={`flex h-8 items-center gap-1 px-2 transition ${
+                                activeStates.highlight
+                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                                    : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+                            }`}
+                        >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l6-6m-6 6l-3 8 8-3m-5-5l5 5M17 5l2 2" />
                             </svg>
-                            <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </>
+                            <span className="h-1 w-3 rounded-sm" style={{ backgroundColor: lastHighlightColor }} />
+                        </button>
+                    }
+                    trigger={
+                        <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
                     }
                 >
                     <p className="mb-1.5 px-1 text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500">Highlight</p>

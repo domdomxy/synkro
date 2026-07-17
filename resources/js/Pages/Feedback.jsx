@@ -639,7 +639,7 @@ export default function Feedback({ flash }) {
                                                         ) : null;
                                                     })()}
                                                 </div>
-                                                <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">{trackResult.feedback.message}</p>
+                                                <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">{trackResult.feedback.message}</p>
 
                                                 {(trackResult.feedback.attachment_path || trackResult.feedback.attachments?.length > 0) && (
                                                     <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -670,13 +670,13 @@ export default function Feedback({ flash }) {
                                                                         : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
                                                                 }`}
                                                             >
-                                                                <p className="text-sm text-gray-700 dark:text-gray-300">{r.message}</p>
+                                                                <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{r.message}</p>
                                                                 <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                                                                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                                     </svg>
                                                                     {r.sender_type === 'admin' ? 'Support Team' : 'You'} ·{' '}
-                                                                    {new Date(r.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                                                    {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                                                 </p>
                                                             </div>
                                                         ))}

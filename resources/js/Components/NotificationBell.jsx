@@ -82,6 +82,11 @@ const typeStyles = {
         text: 'text-amber-600 dark:text-amber-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
+    feedback_replied: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
+    },
         removed_from_project: {
         bg: 'bg-red-100 dark:bg-red-900',
         text: 'text-red-600 dark:text-red-300',
@@ -141,6 +146,7 @@ export default function NotificationBell() {
             '.task.deleted',
             '.reminder.due',
             '.project.removed',
+            '.feedback.replied',
         ],
         (payload) => {
             let message;
@@ -179,6 +185,9 @@ export default function NotificationBell() {
             } else if (payload.type === 'reminder') {
                 message = `⏰ ${payload.title}${payload.note ? ' : ' + payload.note : ''}`;
                 url = '/dashboard';
+            } else if (payload.type === 'feedback_replied') {
+                message = `${payload.submitter_name} replied to ticket "${payload.subject}"`;
+                url = '/admin/feedbacks';
             } else if (payload.decision) {
                 message = `"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;

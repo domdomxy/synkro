@@ -18,11 +18,26 @@ function SearchIcon() {
     );
 }
 
-function StatPill({ label, value, accent }) {
+const statPillIcons = {
+    total: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a4 4 0 10-4-4" /></svg>,
+    active: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM17 9l2 2 4-4" /></svg>,
+    inactive: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM18 8l4 4m0-4l-4 4" /></svg>,
+    suspended: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728" /></svg>,
+    admins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+};
+
+function StatPill({ label, value, accent, icon }) {
     return (
-        <div className="rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
-            <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-            <p className={`mt-0.5 text-xl font-semibold ${accent ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+        <div className="rounded-2xl bg-white p-5 shadow dark:bg-gray-800">
+            <div className="flex items-start justify-between">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+                {icon && (
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 ${accent ?? 'text-gray-500 dark:text-gray-400'}`}>
+                        {icon}
+                    </div>
+                )}
+            </div>
+            <p className={`mt-2.5 text-3xl font-bold tracking-tight ${accent ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
         </div>
     );
 }
@@ -213,11 +228,11 @@ export default function Users({ users, stats, filters }) {
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
 
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                        <StatPill label="Total Users" value={stats.total} />
-                        <StatPill label="Active" value={stats.active} accent="text-green-600 dark:text-green-400" />
-                        <StatPill label="Inactive" value={stats.inactive} accent="text-gray-500 dark:text-gray-400" />
-                        <StatPill label="Suspended" value={stats.suspended} accent="text-red-600 dark:text-red-400" />
-                        <StatPill label="Admins" value={stats.admins} accent="text-purple-600 dark:text-purple-400" />
+                        <StatPill label="Total Users" value={stats.total} icon={statPillIcons.total} />
+                        <StatPill label="Active" value={stats.active} accent="text-green-600 dark:text-green-400" icon={statPillIcons.active} />
+                        <StatPill label="Inactive" value={stats.inactive} accent="text-gray-500 dark:text-gray-400" icon={statPillIcons.inactive} />
+                        <StatPill label="Suspended" value={stats.suspended} accent="text-red-600 dark:text-red-400" icon={statPillIcons.suspended} />
+                        <StatPill label="Admins" value={stats.admins} accent="text-purple-600 dark:text-purple-400" icon={statPillIcons.admins} />
                     </div>
 
                     <div>

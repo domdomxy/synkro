@@ -49,15 +49,17 @@ function StatusDonut({ tasksByStatus, total, size = 140, strokeWidth = 15 }) {
 
 function StatCard({ label, value, sub, accent, icon }) {
     return (
-        <div className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
+        <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-                    <p className={`mt-1 text-3xl font-semibold ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-                    {sub && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
-                </div>
-                {icon && <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400'}`}>{icon}</div>}
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+                {icon && (
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${accent ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                        {icon}
+                    </div>
+                )}
             </div>
+            <p className={`mt-3 text-4xl font-bold tracking-tight ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+            {sub && <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
         </div>
     );
 }

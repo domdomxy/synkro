@@ -109,7 +109,7 @@ function FeedbackItem({ feedback }) {
                     <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500">
                         <span>{feedback.name} ({feedback.email})</span>
                         <span>ID: {feedback.tracking_id}</span>
-                        <span>{new Date(feedback.created_at).toLocaleDateString()}</span>
+                        <span>{new Date(feedback.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                         {feedback.responses?.length > 0 && <span>{feedback.responses.length} message{feedback.responses.length > 1 ? 's' : ''}</span>}
                     </div>
                 </div>
@@ -182,12 +182,12 @@ function FeedbackItem({ feedback }) {
                                                 : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
                                         }`}
                                     >
-                                        <p className="text-sm text-gray-700 dark:text-gray-300">{r.message}</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{r.message}</p>
                                         <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                             {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : feedback.name}
                                             {r.sender_type === 'user' && <span className="ml-1 italic">(user)</span>}
                                             {' · '}
-                                            {new Date(r.created_at).toLocaleDateString()}
+                                            {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                         </p>
                                     </div>
                                 ))}

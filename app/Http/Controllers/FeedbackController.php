@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\FeedbackReplied;
 use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -169,12 +171,41 @@ class FeedbackController extends Controller
         }
     }
 
-    /** Admins can now opt out of this via Settings → Email Notifications → Admin Alerts. */
+    /**
+     * When a user replies, only notify admins who have already responded on THIS ticket,
+     * not every admin platform-wide — once an admin has replied, they're effectively the
+     * one handling the conversation, and follow-ups should go back to them, not the whole
+     * team. (A brand-new ticket with no admin response yet still goes to every admin via
+     * notifyAdminsNewTicket() above — nobody is "handling" it yet at that point.)
+     */
     private function notifyAdmins(Feedback $feedback, string $message): void
     {
-        $admins = User::where('role', 'admin')->get();
+        $admins = $feedback->responses()
+            ->where('sender_type', 'admin')
+            ->with('admin')
+            ->get()
+            ->pluck('admin')
+            ->filter()
+            ->unique('id');
+
+        $url = url(route('admin.feedbacks', [], false));
 
         foreach ($admins as $admin) {
+            // In-app bell notification: always created, same as every other notification type
+            // in this app (email preferences only gate the email send below, not the bell).
+            $notification = UserNotification::create([
+                'user_id' => $admin->id,
+                'type' => 'feedback_replied',
+                'message' => "{$feedback->name} replied to ticket \"{$feedback->subject}\"",
+                'url' => $url,
+            ]);
+
+            try {
+                broadcast(new FeedbackReplied($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
             if (! \App\Support\EmailPreferences::wants($admin, 'admin.ticket_reply')) {
                 continue;
             }
@@ -183,12 +214,10 @@ class FeedbackController extends Controller
                 Mail::to($admin->email)->queue(new SynkroNotificationMail(
                     $admin->name,
                     "New message on ticket ({$feedback->tracking_id})",
-                    [
-                        "{$feedback->name} replied to their ticket \"{$feedback->subject}\":",
-                        $message,
-                    ],
-                    url(route('admin.feedbacks', [], false)),
-                    'View Ticket'
+                    ["{$feedback->name} replied to their ticket \"{$feedback->subject}\":"],
+                    $url,
+                    'View Ticket',
+                    highlight: ['label' => null, 'content' => $message],
                 ));
             } catch (\Throwable $e) {
                 report($e);
