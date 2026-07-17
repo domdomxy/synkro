@@ -5,6 +5,8 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
+import PerPageSelect from '@/Components/PerPageSelect';
+import Pagination from '@/Components/Pagination';
 
 
 function SearchIcon() {
@@ -155,41 +157,28 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
     );
 }
 
-function Pagination({ links }) {
-    if (!links) return null;
-    return (
-        <div className="flex flex-wrap justify-center gap-2 py-4">
-            {links.map((link, i) => (
-                <button
-                    key={i}
-                    disabled={!link.url}
-                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                    className={`rounded-md px-3 py-1 text-sm ${
-                        link.active
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                    dangerouslySetInnerHTML={{ __html: link.label }}
-                />
-            ))}
-        </div>
-    );
-}
+const DEFAULT_PER_PAGE = 20;
 
 export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
     const [search, setSearch] = useState(filters.search ?? '');
     const [roleFilter, setRoleFilter] = useState(filters.role ?? 'all');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
+    const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
     const [suspendTarget, setSuspendTarget] = useState(null);
 
     const applyFilters = () => {
-        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter }, { preserveState: true });
+        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter, per_page: perPage }, { preserveState: true });
     };
 
     const clearFilters = () => {
-        setSearch(''); setRoleFilter('all'); setStatusFilter('all');
+        setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setPerPage(DEFAULT_PER_PAGE);
         router.get(route('admin.users'));
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter, per_page: value }, { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';
@@ -325,7 +314,10 @@ export default function Users({ users, stats, filters }) {
                                 )}
                             </tbody>
                         </table>
-                        <Pagination links={users.links} />
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <Pagination meta={users} />
+                        </div>
                     </div>
                 </div>
             </div>

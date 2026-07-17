@@ -18,6 +18,17 @@ use App\Models\AdminLog;
 
 class AdminController extends Controller
 {
+    /**
+     * Clamp the requested page size to a sane range so custom values can't be
+     * used to pull an unbounded number of rows in one request.
+     */
+    private function perPage(Request $request, int $default): int
+    {
+        $perPage = (int) $request->input('per_page', $default);
+
+        return max(1, min($perPage, 500));
+    }
+
     private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
         if ($range === 'custom' && $from && $to) {
@@ -155,7 +166,7 @@ class AdminController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate(20)->withQueryString();
+        $users = $query->orderBy('name')->paginate($this->perPage($request, 20))->withQueryString();
 
         $stats = [
             'total' => User::count(),
@@ -168,7 +179,7 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'role', 'status']),
+            'filters' => $request->only(['search', 'role', 'status', 'per_page']),
         ]);
     }
 
@@ -187,11 +198,11 @@ class AdminController extends Controller
             });
         }
 
-        $projects = $query->orderBy('name')->paginate(20)->withQueryString();
+        $projects = $query->orderBy('name')->paginate($this->perPage($request, 20))->withQueryString();
 
         return Inertia::render('Admin/Projects', [
             'projects' => $projects,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'per_page']),
         ]);
     }
 
@@ -344,12 +355,12 @@ public function suspend(Request $request, User $user)
             $query->whereDate('created_at', '<=', $request->to);
         }
 
-        $logs = $query->latest()->paginate(30)->withQueryString();
+        $logs = $query->latest()->paginate($this->perPage($request, 30))->withQueryString();
 
         return Inertia::render('Admin/Logs', [
             'logs' => $logs,
             'actionCatalog' => AdminLog::actionCatalog(),
-            'filters' => $request->only(['search', 'action', 'from', 'to']),
+            'filters' => $request->only(['search', 'action', 'from', 'to', 'per_page']),
         ]);
     }
 

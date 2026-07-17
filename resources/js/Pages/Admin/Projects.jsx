@@ -4,6 +4,8 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
+import PerPageSelect from '@/Components/PerPageSelect';
+import Pagination from '@/Components/Pagination';
 
 function SearchIcon() {
     return (
@@ -13,37 +15,24 @@ function SearchIcon() {
     );
 }
 
-function Pagination({ links }) {
-    if (!links) return null;
-    return (
-        <div className="flex flex-wrap justify-center gap-2 py-4">
-            {links.map((link, i) => (
-                <button
-                    key={i}
-                    disabled={!link.url}
-                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                    className={`rounded-md px-3 py-1 text-sm ${
-                        link.active
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                    dangerouslySetInnerHTML={{ __html: link.label }}
-                />
-            ))}
-        </div>
-    );
-}
+const DEFAULT_PER_PAGE = 20;
 
 export default function Projects({ projects, filters }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = () => {
-        router.get(route('admin.projects'), { search }, { preserveState: true });
+        router.get(route('admin.projects'), { search, per_page: perPage }, { preserveState: true });
     };
 
     const clearFilters = () => {
-        setSearch('');
+        setSearch(''); setPerPage(DEFAULT_PER_PAGE);
         router.get(route('admin.projects'));
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        router.get(route('admin.projects'), { search, per_page: value }, { preserveState: true, preserveScroll: true });
     };
 
     return (
@@ -134,7 +123,10 @@ export default function Projects({ projects, filters }) {
                                 )}
                             </tbody>
                         </table>
-                        <Pagination links={projects.links} />
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <Pagination meta={projects} />
+                        </div>
                     </div>
                 </div>
             </div>

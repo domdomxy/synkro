@@ -2,6 +2,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
+import PerPageSelect from '@/Components/PerPageSelect';
+import Pagination from '@/Components/Pagination';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -24,35 +26,17 @@ const actionColors = {
     'ticket.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
 };
 
-function Pagination({ links }) {
-    if (!links) return null;
-    return (
-        <div className="flex flex-wrap justify-center gap-2 py-4">
-            {links.map((link, i) => (
-                <button
-                    key={i}
-                    disabled={!link.url}
-                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                    className={`rounded-md px-3 py-1 text-sm ${
-                        link.active
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                    dangerouslySetInnerHTML={{ __html: link.label }}
-                />
-            ))}
-        </div>
-    );
-}
+const DEFAULT_PER_PAGE = 30;
 
 export default function Logs({ logs, actionCatalog, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
+    const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = () => {
-        router.get(route('admin.logs'), { search, action, from, to }, { preserveState: true });
+        router.get(route('admin.logs'), { search, action, from, to, per_page: perPage }, { preserveState: true });
     };
 
     const clearFilters = () => {
@@ -60,7 +44,13 @@ export default function Logs({ logs, actionCatalog, filters }) {
         setAction('all');
         setFrom('');
         setTo('');
+        setPerPage(DEFAULT_PER_PAGE);
         router.get(route('admin.logs'));
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        router.get(route('admin.logs'), { search, action, from, to, per_page: value }, { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || action !== 'all' || from !== '' || to !== '';
@@ -164,7 +154,10 @@ export default function Logs({ logs, actionCatalog, filters }) {
                         </table>
                     </div>
 
-                    <Pagination links={logs.links} />
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={logs} />
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>
