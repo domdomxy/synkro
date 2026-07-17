@@ -29,6 +29,21 @@ html.theme-black .dark\:text-gray-400 { color: #999999 !important; }
 html.theme-black .dark\:text-gray-500 { color: #737373 !important; }
 html.theme-black .dark\:text-gray-600 { color: #5c5c5c !important; }
 
+/* Elements like the Log Out link carry both a base dark:text-gray-* class and a
+   dark:text-red-* override class at once. The gray-scale rules above have to stay
+   !important for the true-black palette, which otherwise beats Tailwind's own
+   !text-red-* important modifier on specificity. Re-assert red here, after the
+   gray rules, so intentionally-red text (e.g. destructive actions) stays red.
+   Tailwind compiles the `!` important modifier into the class name itself
+   (dark:!text-red-400 -> .dark\:\!text-red-400), so both escaped forms are
+   needed below to cover plain red text and important-modifier red text. */
+html.theme-black .dark\:text-red-300,
+html.theme-black .dark\:\!text-red-300 { color: #fca5a5 !important; }
+html.theme-black .dark\:text-red-400,
+html.theme-black .dark\:\!text-red-400 { color: #f87171 !important; }
+html.theme-black .dark\:text-red-500,
+html.theme-black .dark\:\!text-red-500 { color: #ef4444 !important; }
+
 /* Rings/shadows read as too bright on true black, so soften */
 html.theme-black .dark\:ring-gray-700 { --tw-ring-color: #202020 !important; }
 html.theme-black .shadow,

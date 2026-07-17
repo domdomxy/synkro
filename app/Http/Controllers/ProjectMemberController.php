@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\MemberLeftProject;
-use App\Events\ProjectMemberAdded;
+use App\Events\ProjectInvitationSent;
 use App\Events\ProjectRoleChanged;
 use App\Models\Comment;
 use App\Models\Project;
@@ -79,7 +79,7 @@ class ProjectMemberController extends Controller
         ]);
 
         try {
-            broadcast(new ProjectMemberAdded($user->id, $project, $validated['role'], $notification->id))->toOthers();
+            broadcast(new ProjectInvitationSent($user->id, $project, $validated['role'], $request->user()->name, $invitation->token, $notification->id))->toOthers();
         } catch (\Throwable $e) {
             report($e);
         }

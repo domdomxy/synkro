@@ -77,7 +77,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
                                             <Dropdown.Link href={route('settings.edit')}>Settings</Dropdown.Link>
 
-                                            <Dropdown.Link href={route('logout')} method="post" as="button" className="!text-red-600 dark:!text-red-400">
+                                            <Dropdown.Link
+                                                href={route('logout')}
+                                                method="post"
+                                                as="button"
+                                                className="!text-red-600 hover:!bg-red-50 hover:!text-red-700 focus:!bg-red-50 focus:!text-red-700 dark:!text-red-400 dark:hover:!bg-red-950/40 dark:hover:!text-red-300 dark:focus:!bg-red-950/40 dark:focus:!text-red-300"
+                                            >
                                                 Log Out
                                             </Dropdown.Link>
                                         </Dropdown.Content>
@@ -146,7 +151,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             <ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink>
                             <ResponsiveNavLink href={route('settings.edit')}>Settings</ResponsiveNavLink>
 
-                            <ResponsiveNavLink method="post" href={route('logout')} as="button" className="!text-red-600 dark:!text-red-400">
+                            <ResponsiveNavLink
+                                method="post"
+                                href={route('logout')}
+                                as="button"
+                                className="!border-transparent !text-red-600 hover:!border-red-300 hover:!bg-red-50 hover:!text-red-700 focus:!border-red-300 focus:!bg-red-50 focus:!text-red-700 dark:!text-red-400 dark:hover:!border-red-800 dark:hover:!bg-red-950/40 dark:hover:!text-red-300 dark:focus:!border-red-800 dark:focus:!bg-red-950/40 dark:focus:!text-red-300"
+                            >
                                 Log Out
                             </ResponsiveNavLink>
                         </div>

@@ -137,7 +137,9 @@ export default function NotificationBell() {
             '.task.assigned',
             '.task.reviewed',
             '.member.left',
-            '.project.member-added',
+            '.project.invitation',
+            '.invitation.accepted',
+            '.invitation.denied',
             '.project.role-changed',
             '.task.done',
             '.task.review-needed',
@@ -156,8 +158,14 @@ export default function NotificationBell() {
             if (payload.type === 'member_left') {
                 message = `${payload.member_name} (${payload.role}) left "${payload.project_name}"`;
                 url = `/projects/${payload.project_id}`;
-            } else if (payload.type === 'project_member_added') {
-                message = `You were added to "${payload.project_name}" as ${payload.role}`;
+            } else if (payload.type === 'project_invitation') {
+                message = `${payload.inviter_name} invited you to join "${payload.project_name}" as ${payload.role}`;
+                url = `/invitations/${payload.token}`;
+            } else if (payload.type === 'invitation_accepted') {
+                message = `${payload.accepted_by} accepted your invitation to "${payload.project_name}"`;
+                url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'invitation_denied') {
+                message = `${payload.denied_by} declined your invitation to "${payload.project_name}"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_role_changed') {
                 message = `Your role in "${payload.project_name}" changed from ${payload.old_role} to ${payload.new_role}`;

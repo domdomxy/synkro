@@ -1,6 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Events\InvitationAccepted;
+use App\Events\InvitationDenied;
 use App\Models\ProjectActivityLog;
 use App\Models\ProjectInvitation;
 use App\Models\UserNotification;
@@ -52,12 +54,18 @@ class InvitationController extends Controller
         $inviter = $invitation->invitedBy;
         if ($inviter) {
             $projectUrl = route('projects.show', $invitation->project_id, false);
-            UserNotification::create([
+            $notification = UserNotification::create([
                 'user_id' => $inviter->id,
                 'type' => 'invitation_accepted',
                 'message' => Auth::user()->name . " accepted your invitation to \"{$invitation->project->name}\"",
                 'url' => $projectUrl,
             ]);
+
+            try {
+                broadcast(new InvitationAccepted($inviter->id, $invitation->project, Auth::user()->name, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             NotificationMailer::send(
                 $inviter,
@@ -93,12 +101,18 @@ class InvitationController extends Controller
 
         $inviter = $invitation->invitedBy;
         if ($inviter) {
-            UserNotification::create([
+            $notification = UserNotification::create([
                 'user_id' => $inviter->id,
                 'type' => 'invitation_denied',
                 'message' => Auth::user()->name . " declined your invitation to \"{$invitation->project->name}\"",
                 'url' => route('projects.show', $invitation->project_id, false),
             ]);
+
+            try {
+                broadcast(new InvitationDenied($inviter->id, $invitation->project, Auth::user()->name, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             NotificationMailer::send(
                 $inviter,

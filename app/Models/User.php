@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\NotificationMailer;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\URL;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until',
 'suspension_reason','suspended_by','email_preferences'],'must_change_password','temp_password_expires_at','notification_preferences',)]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {   
     public function notifications(): HasMany
     {
@@ -78,5 +80,33 @@ class User extends Authenticatable
         // Permanent suspension (null suspended_until) never auto-expires here;
         // the scheduled job only clears timed suspensions.
         return true;
+    }
+
+    /**
+     * Send the branded Synkro verification email instead of Laravel's default
+     * plain notification, so it matches every other outbound email.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(config('auth.verification.expire', 60)),
+            [
+                'id' => $this->getKey(),
+                'hash' => sha1($this->getEmailForVerification()),
+            ]
+        );
+
+        NotificationMailer::send(
+            $this,
+            'account.email_verification',
+            'Verify your email address',
+            [
+                "Thanks for signing up for Synkro! Please confirm this is your email address to unlock your dashboard and get full access to your account.",
+                'This link expires in 60 minutes. If you didn\'t create a Synkro account, you can safely ignore this email.',
+            ],
+            $verificationUrl,
+            'Verify Email Address'
+        );
     }
 }
