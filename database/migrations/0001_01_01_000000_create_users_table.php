@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -18,6 +15,26 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+
+            // Global platform role, separate from the per-project role in project_user.
+            $table->string('role')->default('user'); // user | admin
+            $table->boolean('is_active')->default(true);
+            $table->string('avatar_path')->nullable();
+
+            // Notification opt-outs, keyed by event type; see EmailPreferences / NotificationPreferences.
+            $table->json('email_preferences')->nullable();
+            $table->json('notification_preferences')->nullable();
+
+            // Suspension state (see also suspension_logs and suspension_appeals for history).
+            $table->boolean('is_suspended')->default(false);
+            $table->timestamp('suspended_until')->nullable();
+            $table->text('suspension_reason')->nullable();
+            $table->foreignId('suspended_by')->nullable()->constrained('users')->nullOnDelete();
+
+            // Forced password reset flow (admin-issued temporary passwords).
+            $table->boolean('must_change_password')->default(false);
+            $table->timestamp('temp_password_expires_at')->nullable();
+
             $table->timestamps();
         });
 
@@ -37,9 +54,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

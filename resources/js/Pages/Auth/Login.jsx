@@ -111,7 +111,7 @@ function SuspensionNotice({ suspension }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                             <p className="text-sm text-green-700 dark:text-green-400">
-                                Appeal submitted — we'll review it and get back to you as soon as possible.
+                                Appeal submitted. We'll review it and get back to you as soon as possible.
                             </p>
                         </div>
                     ) : (

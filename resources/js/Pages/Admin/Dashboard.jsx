@@ -119,7 +119,7 @@ function AttentionPanel({ items }) {
 
 function TasksByStatusCard({ tasksByStatus, total }) {
     return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800 lg:col-span-2">
+        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <SectionHeading>Tasks by Status</SectionHeading>
             <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
                 <StatusDonut tasksByStatus={tasksByStatus} total={total} />
@@ -181,6 +181,12 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <Link href={route('admin.projects')} className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600">View Projects</Link>
                         <Link href={route('admin.feedbacks')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Feedback</Link>
                         <Link href={route('admin.appeals')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Appeals</Link>
+                        <Link href={route('admin.logs')} className="ml-auto flex items-center gap-1.5 rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Administration Logs
+                        </Link>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -215,36 +221,34 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         </div>
                     </div>
 
-                    <div className="grid items-start gap-6 lg:grid-cols-3">
-                        <div className="space-y-6 lg:col-span-1">
-                            <RecentPanel title="Recent Users" viewAllHref={route('admin.users')} viewAllLabel="View all users">
-                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {stats.recentUsers.map((user) => (
-                                        <li key={user.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
-                                            <Avatar user={user} size="h-7 w-7" />
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{user.name}</p>
-                                                <p className="truncate text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
-                                            </div>
-                                            <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>{user.role}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </RecentPanel>
+                    <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
 
-                            <RecentPanel title="Recent Projects" viewAllHref={route('admin.projects')} viewAllLabel="View all projects">
-                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {stats.recentProjects.map((project) => (
-                                        <li key={project.id} className="py-2 first:pt-0 last:pb-0">
-                                            <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{project.name}</p>
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">ID {project.id} · by {project.owner?.name}</p>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </RecentPanel>
-                        </div>
+                    <div className="grid items-start gap-6 lg:grid-cols-2">
+                        <RecentPanel title="Recent Users" viewAllHref={route('admin.users')} viewAllLabel="View all users">
+                            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                {stats.recentUsers.map((user) => (
+                                    <li key={user.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+                                        <Avatar user={user} size="h-7 w-7" />
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{user.name}</p>
+                                            <p className="truncate text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
+                                        </div>
+                                        <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>{user.role}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </RecentPanel>
 
-                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
+                        <RecentPanel title="Recent Projects" viewAllHref={route('admin.projects')} viewAllLabel="View all projects">
+                            <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                {stats.recentProjects.map((project) => (
+                                    <li key={project.id} className="py-2 first:pt-0 last:pb-0">
+                                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{project.name}</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">ID {project.id} · by {project.owner?.name}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </RecentPanel>
                     </div>
                 </div>
             </div>

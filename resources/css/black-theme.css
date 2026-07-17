@@ -29,7 +29,7 @@ html.theme-black .dark\:text-gray-400 { color: #999999 !important; }
 html.theme-black .dark\:text-gray-500 { color: #737373 !important; }
 html.theme-black .dark\:text-gray-600 { color: #5c5c5c !important; }
 
-/* Rings/shadows read as too bright on true black — soften */
+/* Rings/shadows read as too bright on true black, so soften */
 html.theme-black .dark\:ring-gray-700 { --tw-ring-color: #202020 !important; }
 html.theme-black .shadow,
 html.theme-black .shadow-sm,

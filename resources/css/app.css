@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Recharts doesn't use Tailwind dark: classes — override its hardcoded colors explicitly */
+/* Recharts doesn't use Tailwind dark: classes, so override its hardcoded colors explicitly */
 .dark .recharts-default-tooltip {
     background-color: #1f2937 !important;
     border-color: #374151 !important;

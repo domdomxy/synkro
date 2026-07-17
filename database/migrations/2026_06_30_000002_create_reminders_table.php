@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('reminders', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->text('note')->nullable();
+            $table->dateTime('remind_at');
+            $table->enum('repeat_interval', ['none', 'daily', 'weekly', 'monthly'])->default('none');
+            $table->boolean('dismissed')->default(false);
+            $table->timestamp('notified_at')->nullable(); // set once SendDueReminders has fired for this reminder
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('reminders');
+    }
+};

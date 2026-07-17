@@ -6,26 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('project_activity_logs', function (Blueprint $table) {
+        // A user can keep several personal notes per project (kebab menu), not just one.
+        Schema::create('project_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('action');
-            $table->json('details')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title')->nullable();
+            $table->text('content');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('project_activity_logs');
+        Schema::dropIfExists('project_notes');
     }
 };

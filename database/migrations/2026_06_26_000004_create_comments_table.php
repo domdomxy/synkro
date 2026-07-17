@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('body');
+            $table->boolean('is_feedback')->default(false); // flagged as tester/reviewer feedback
+            $table->timestamp('edited_at')->nullable();
             $table->timestamps();
         });
     }

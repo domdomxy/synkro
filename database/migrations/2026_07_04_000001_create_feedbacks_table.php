@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('feedbacks', function (Blueprint $table) {
@@ -18,17 +15,13 @@ return new class extends Migration
             $table->string('category');
             $table->string('subject');
             $table->text('message');
-            $table->string('status')->default('pending');
-            $table->string('tracking_id')->unique();
+            $table->string('status')->default('pending'); // pending | reviewing | accepted | rejected | closed
+            $table->string('tracking_id')->unique(); // public-facing ID guests use to track their ticket
             $table->string('attachment_path')->nullable();
             $table->timestamps();
         });
     }
 
-
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('feedbacks');

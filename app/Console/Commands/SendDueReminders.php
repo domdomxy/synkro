@@ -25,7 +25,7 @@ class SendDueReminders extends Command
             $notification = UserNotification::create([
                 'user_id' => $reminder->user_id,
                 'type' => 'reminder',
-                'message' => "⏰ {$reminder->title}" . ($reminder->note ? " — {$reminder->note}" : ''),
+                'message' => "⏰ {$reminder->title}" . ($reminder->note ? ": {$reminder->note}" : ''),
                 'url' => route('dashboard', [], false),
             ]);
 
@@ -40,7 +40,7 @@ class SendDueReminders extends Command
                     $reminder->user,
                     'reminders.due',
                     "Reminder: {$reminder->title}",
-                    [$reminder->note ? "{$reminder->title} — {$reminder->note}" : $reminder->title],
+                    [$reminder->note ? "{$reminder->title}: {$reminder->note}" : $reminder->title],
                     url(route('dashboard', [], false)),
                     'View Dashboard'
                 );

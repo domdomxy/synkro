@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 const TEXT_COLORS = ['#111827', '#ffffff', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777'];
 const HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa', '#e9d5ff'];
@@ -31,33 +32,96 @@ function Divider() {
     return <div className="mx-1 h-5 w-px shrink-0 bg-gray-300 dark:bg-gray-600" />;
 }
 
-function Popover({ trigger, children, open, onToggle, onClose, width = 'auto' }) {
-    const ref = useRef(null);
-
-    useEffect(() => {
-        if (!open) return;
-        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open, onClose]);
-
+function ColorSwatch({ color, onClick, onRemove, title }) {
     return (
-        <div className="relative" ref={ref}>
+        <div className="group relative">
             <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={onToggle}
+                onClick={onClick}
+                title={title ?? color}
+                className="h-6 w-6 rounded-full border border-gray-200 transition hover:scale-110 dark:border-gray-600"
+                style={{ backgroundColor: color }}
+            />
+            {onRemove && (
+                <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                    title="Remove from list"
+                    className="absolute -right-1.5 -top-1.5 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-gray-700 text-[9px] leading-none text-white hover:bg-gray-900 group-hover:flex dark:bg-gray-300 dark:text-gray-800 dark:hover:bg-white"
+                >
+                    &times;
+                </button>
+            )}
+        </div>
+    );
+}
+
+function Popover({ trigger, children, open, onToggle, onClose, width = 'auto' }) {
+    const btnRef = useRef(null);
+    const menuRef = useRef(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+    // Rough initial placement right above the toolbar button; the layout effect below
+    // corrects it once the portal content has real dimensions to measure against.
+    const handleToggle = () => {
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setCoords({ top: rect.top, left: rect.left });
+        }
+        onToggle();
+    };
+
+    useLayoutEffect(() => {
+        if (!open || !menuRef.current || !btnRef.current) return;
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const btnRect = btnRef.current.getBoundingClientRect();
+        const spaceAbove = btnRect.top;
+        // Prefer opening upward (matches the old bottom-full look); fall back to opening
+        // downward if there isn't enough room above the viewport top.
+        const top = spaceAbove > menuRect.height + 12 ? btnRect.top - menuRect.height - 8 : btnRect.bottom + 8;
+        const left = Math.min(Math.max(8, btnRect.left), window.innerWidth - menuRect.width - 8);
+        setCoords({ top, left });
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) onClose();
+        };
+        // Closing on scroll/resize is simpler and more reliable than re-tracking position mid-scroll.
+        const handleScrollOrResize = () => onClose();
+        document.addEventListener('mousedown', handleClick);
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [open, onClose]);
+
+    return (
+        <div className="relative">
+            <button
+                ref={btnRef}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleToggle}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
             >
                 {trigger}
             </button>
-            {open && (
+            {open && createPortal(
                 <div
-                    className="absolute bottom-full left-0 z-20 mb-2 rounded-lg bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
-                    style={{ width }}
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width }}
+                    className="z-50 rounded-lg bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
                     {children}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -68,8 +132,12 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const isFirstRender = useRef(true);
     const [savedRange, setSavedRange] = useState(null);
     const [openPopover, setOpenPopover] = useState(null); // 'color' | 'highlight' | 'size' | null
-    const [activeStates, setActiveStates] = useState({ bold: false, italic: false, underline: false });
+    const [activeStates, setActiveStates] = useState({ bold: false, italic: false, underline: false, highlight: false });
     const [customColor, setCustomColor] = useState('#111827');
+    const [customHighlight, setCustomHighlight] = useState('#fef08a');
+    const [lastHighlightColor, setLastHighlightColor] = useState(HIGHLIGHT_COLORS[0]);
+    const [customTextColors, setCustomTextColors] = useState([]);
+    const [customHighlightColors, setCustomHighlightColors] = useState([]);
 
     useEffect(() => {
         if (isFirstRender.current && editorRef.current) {
@@ -89,13 +157,15 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
 
     const updateActiveStates = useCallback(() => {
         try {
+            const hiliteValue = document.queryCommandValue('hiliteColor');
             setActiveStates({
                 bold: document.queryCommandState('bold'),
                 italic: document.queryCommandState('italic'),
                 underline: document.queryCommandState('underline'),
+                highlight: !!hiliteValue && !['transparent', 'rgba(0, 0, 0, 0)', ''].includes(hiliteValue),
             });
         } catch {
-            // queryCommandState can throw outside a focused editable context — ignore
+            // queryCommandState/queryCommandValue can throw outside a focused editable context; ignore
         }
     }, []);
 
@@ -140,18 +210,47 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
             if (current === hexToRgb(color)) {
                 document.execCommand('hiliteColor', false, 'transparent');
                 onChange(editorRef.current.innerHTML);
+                updateActiveStates();
                 setOpenPopover(null);
                 return;
             }
         }
         document.execCommand('hiliteColor', false, color);
         onChange(editorRef.current.innerHTML);
+        setLastHighlightColor(color);
+        updateActiveStates();
         setOpenPopover(null);
     };
 
     const clearHighlight = () => { exec('hiliteColor', 'transparent'); setOpenPopover(null); };
 
+    const applyHighlight = (color) => { exec('hiliteColor', color); setLastHighlightColor(color); setOpenPopover(null); };
+
+    // One-click highlight on/off at the cursor, so the person doesn't have to select already-typed
+    // text and open the popover just to turn highlighting off again. Works both on a selection
+    // (wraps it) and on a collapsed cursor (sets the "typing state" for whatever's typed next),
+    // because execCommand('hiliteColor', ...) supports both natively.
+    const toggleHighlightAtCursor = () => {
+        if (activeStates.highlight) {
+            exec('hiliteColor', 'transparent');
+        } else {
+            exec('hiliteColor', lastHighlightColor);
+        }
+    };
+
     const applyTextColor = (color) => { exec('foreColor', color); setOpenPopover(null); };
+
+    // Custom colors picked via the native <input type="color"> get remembered here so they show up
+    // as reusable swatches instead of requiring the OS color picker to be reopened every time.
+    const MAX_CUSTOM_COLORS = 8;
+    const addCustomTextColor = (color) => {
+        setCustomTextColors((prev) => (TEXT_COLORS.includes(color) || prev.includes(color) ? prev : [color, ...prev].slice(0, MAX_CUSTOM_COLORS)));
+    };
+    const addCustomHighlightColor = (color) => {
+        setCustomHighlightColors((prev) => (HIGHLIGHT_COLORS.includes(color) || prev.includes(color) ? prev : [color, ...prev].slice(0, MAX_CUSTOM_COLORS)));
+    };
+    const removeCustomTextColor = (color) => setCustomTextColors((prev) => prev.filter((c) => c !== color));
+    const removeCustomHighlightColor = (color) => setCustomHighlightColors((prev) => prev.filter((c) => c !== color));
 
     const applyFontSize = (px) => {
         editorRef.current.focus();
@@ -198,7 +297,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                 onFocus={updateActiveStates}
                 data-placeholder={placeholder}
                 className="w-full overflow-y-auto whitespace-pre-wrap px-3.5 py-3 text-sm leading-relaxed text-gray-900 outline-none empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:bg-gray-900 dark:text-gray-100 dark:empty:before:text-gray-500"
-                style={{ minHeight: `${rows * 1.5}rem`, maxHeight }}
+                style={{ minHeight: `${rows * 1.5}rem`, maxHeight, tabSize: 4 }}
             />
 
             <div className="flex flex-wrap items-center gap-0.5 border-t border-gray-200 bg-gray-50 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900">
@@ -268,14 +367,14 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                     <p className="mb-1.5 px-1 text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500">Text Color</p>
                     <div className="grid grid-cols-5 gap-1.5 px-1">
                         {TEXT_COLORS.map((c) => (
-                            <button
+                            <ColorSwatch key={c} color={c} onClick={() => { setCustomColor(c); applyTextColor(c); }} />
+                        ))}
+                        {customTextColors.map((c) => (
+                            <ColorSwatch
                                 key={c}
-                                type="button"
-                                onMouseDown={(e) => e.preventDefault()}
+                                color={c}
                                 onClick={() => { setCustomColor(c); applyTextColor(c); }}
-                                title={c}
-                                className="h-6 w-6 rounded-full border border-gray-200 transition hover:scale-110 dark:border-gray-600"
-                                style={{ backgroundColor: c }}
+                                onRemove={() => removeCustomTextColor(c)}
                             />
                         ))}
                     </div>
@@ -284,38 +383,62 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                             type="color"
                             value={customColor}
                             onChange={(e) => setCustomColor(e.target.value)}
-                            onBlur={() => applyTextColor(customColor)}
+                            onBlur={() => { addCustomTextColor(customColor); applyTextColor(customColor); }}
                             className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
                         />
                         Custom
                     </label>
                 </Popover>
 
+                <ToolbarButton active={activeStates.highlight} onClick={toggleHighlightAtCursor} title={activeStates.highlight ? 'Turn off highlight' : 'Highlight (uses last color)'}>
+                    <span className="relative flex h-4 w-4 items-center justify-center">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l6-6m-6 6l-3 8 8-3m-5-5l5 5M17 5l2 2" />
+                        </svg>
+                        <span className="absolute -bottom-1 h-1 w-3 rounded-sm" style={{ backgroundColor: lastHighlightColor }} />
+                    </span>
+                </ToolbarButton>
+
                 <Popover
                     open={openPopover === 'highlight'}
                     onToggle={() => togglePopover('highlight')}
                     onClose={() => setOpenPopover(null)}
-                    width="9.5rem"
+                    width="10.5rem"
                     trigger={
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l6-6m-6 6l-3 8 8-3m-5-5l5 5M17 5l2 2" />
-                        </svg>
+                        <>
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l6-6m-6 6l-3 8 8-3m-5-5l5 5M17 5l2 2" />
+                            </svg>
+                            <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </>
                     }
                 >
                     <p className="mb-1.5 px-1 text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500">Highlight</p>
                     <div className="grid grid-cols-6 gap-1.5 px-1">
                         {HIGHLIGHT_COLORS.map((c) => (
-                            <button
+                            <ColorSwatch key={c} color={c} onClick={() => toggleHighlight(c)} title="Click again to remove" />
+                        ))}
+                        {customHighlightColors.map((c) => (
+                            <ColorSwatch
                                 key={c}
-                                type="button"
-                                onMouseDown={(e) => e.preventDefault()}
+                                color={c}
                                 onClick={() => toggleHighlight(c)}
-                                title="Click again to remove"
-                                className="h-6 w-6 rounded-full border border-gray-200 transition hover:scale-110 dark:border-gray-600"
-                                style={{ backgroundColor: c }}
+                                onRemove={() => removeCustomHighlightColor(c)}
                             />
                         ))}
                     </div>
+                    <label className="mt-2 flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <input
+                            type="color"
+                            value={customHighlight}
+                            onChange={(e) => setCustomHighlight(e.target.value)}
+                            onBlur={() => { addCustomHighlightColor(customHighlight); applyHighlight(customHighlight); }}
+                            className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                        />
+                        Custom
+                    </label>
                     <button
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}

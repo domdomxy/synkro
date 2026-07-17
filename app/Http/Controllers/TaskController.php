@@ -52,7 +52,11 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
         ]);
- 
+
+        // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
+        // Allow-list matches ProjectController's project-description sanitization for consistency.
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+
         $task = $project->tasks()->create($validated);
  
         ProjectActivityLog::log($project, 'task_created', ['task_title' => $task->title]);
@@ -103,6 +107,9 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
         ]);
+
+        // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
  
         if (! empty($validated['assigned_to']) && ! $task->project->members()->where('user_id', $validated['assigned_to'])->exists()) {
             return back()->withErrors(['assigned_to' => 'That user is not a member of this project.']);

@@ -6,7 +6,7 @@ import { getStoredTheme, setStoredTheme } from '@/theme';
 const features = [
     {
         title: 'Role-based collaboration',
-        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role — per project, not globally. Change roles live, transfer ownership, or leave a project at any time.',
+        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role, scoped per project rather than globally. Change roles live, transfer ownership, or leave a project at any time.',
         icon: <path d="M9 11a4 4 0 100-8 4 4 0 000 8zm-7 9a7 7 0 0114 0H2zm15-9a4 4 0 100-8 4 4 0 000 8zm-1.5 1.5c.49-.13 1-.2 1.5-.2a6 6 0 016 6H17a7.97 7.97 0 00-3.5-6.6V12.5z" />,
     },
     {
@@ -16,22 +16,22 @@ const features = [
     },
     {
         title: 'Live notifications',
-        description: 'Task assignments, review decisions, role changes, member joins and departures — every meaningful event arrives live via WebSocket. A persistent notification center with category and read/unread filters keeps you in control.',
+        description: 'Task assignments, review decisions, role changes, member joins and departures: every meaningful event arrives live via WebSocket. A persistent notification center with category and read/unread filters keeps you in control.',
         icon: <path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
     },
     {
         title: 'Activity logs',
-        description: 'Every action on a project is logged — member changes, role updates, task edits, ownership transfers. Owners and managers can filter by user or action type to audit the full project history.',
+        description: 'Every action on a project is logged, including member changes, role updates, task edits, and ownership transfers. Owners and managers can filter by user or action type to audit the full project history.',
         icon: <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 14l2 2 4-4" />,
     },
     {
         title: 'Personal dashboard',
-        description: 'A full activity chart, deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders — everything you need to stay organized.',
+        description: 'A full activity chart, deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay organized.',
         icon: <path d="M16 8v8m-4-5v5m-4-2v2M4 20h16a1 1 0 001-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v13a1 1 0 001 1z" />,
     },
     {
         title: 'Platform admin',
-        description: 'A dedicated admin panel for managing users and overseeing platform activity — activate, deactivate, or change global roles — separate from project-level permissions.',
+        description: 'A dedicated admin panel for managing users and overseeing platform activity: activate, deactivate, or change global roles, separate from project-level permissions.',
         icon: <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4zm0 4.2L7 8.5v3.7c0 3.4 2.3 6.1 5 7.2 2.7-1.1 5-3.8 5-7.2V8.5l-5-2.3z" />,
     },
 ];
@@ -173,7 +173,7 @@ export default function Welcome({ auth }) {
                                 heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
                             }`}
                         >
-                            Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders — built for teams that actually want to ship.
+                            Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders, built for teams that actually want to ship.
                         </p>
                         <div
                             className={`mt-10 flex flex-wrap items-center justify-center gap-4 transition-all delay-200 duration-700 ${

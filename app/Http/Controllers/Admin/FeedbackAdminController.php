@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\SynkroNotificationMail;
+use App\Models\AdminLog;
 use App\Models\Feedback;
 use App\Models\FeedbackResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,8 @@ class FeedbackAdminController extends Controller
         $feedback->update($validated);
 
         if ($oldStatus !== $validated['status']) {
+            AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']}", $feedback);
+
             $lines = ["The status of your ticket \"{$feedback->subject}\" has been updated."];
 
             if ($validated['status'] === 'closed') {
@@ -77,6 +80,8 @@ class FeedbackAdminController extends Controller
             'sender_type' => 'admin',
         ]);
 
+        AdminLog::log('ticket.responded', "Responded to ticket {$feedback->tracking_id} (\"{$feedback->subject}\")", $feedback);
+
         $this->notifySubmitter(
             $feedback,
             "Support replied to your ticket ({$feedback->tracking_id})",
@@ -87,7 +92,10 @@ class FeedbackAdminController extends Controller
         return back()->with('success', 'Response sent.');
     }
 
-    /** Feedback submitters aren't registered users, so this always sends — no preference toggle applies. */
+    /**
+     * Feedback submitters are guests (not registered users), so there's no per-user
+     * preference to check here; this always sends.
+     */
     private function notifySubmitter(Feedback $feedback, string $subject, array $lines, ?array $highlight = null): void
     {
         try {
@@ -99,7 +107,7 @@ class FeedbackAdminController extends Controller
                     url(route('feedback.page', [], false)),
                     'Track Your Ticket',
                     $highlight,
-                    footerNote: 'This email was generated automatically — please do not reply directly. Use the button above to continue the conversation on your ticket.',
+                    footerNote: 'This email was generated automatically. Please do not reply directly; use the button above to continue the conversation on your ticket.',
                 )
             );
         } catch (\Throwable $e) {

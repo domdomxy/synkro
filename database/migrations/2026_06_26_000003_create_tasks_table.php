@@ -12,10 +12,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->text('description')->nullable();
+            $table->text('description')->nullable(); // rich text (HTML), sanitized in TaskController
             $table->string('status')->default('todo'); // todo | in_progress | submitted | in_review | done
             $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
-            $table->date('due_date')->nullable();
+            $table->dateTime('due_date')->nullable();
+            $table->string('deliverable_path')->nullable();
+            $table->timestamp('submitted_at')->nullable();
+            $table->timestamp('edited_at')->nullable();
+            $table->boolean('pending_resolution')->default(false); // awaiting manager review of a submitted change
             $table->timestamps();
         });
     }

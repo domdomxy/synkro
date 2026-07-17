@@ -432,7 +432,7 @@ export default function Feedback({ flash }) {
                                         {submitted}
                                     </div>
                                     <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-                                        Save this ID — you can use it to track your feedback status anytime.
+                                        Save this ID so you can use it to track your feedback status anytime.
                                     </p>
                                     <button
                                         onClick={() => setSubmitted(null)}

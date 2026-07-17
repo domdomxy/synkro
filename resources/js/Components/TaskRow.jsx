@@ -5,6 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -358,7 +359,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     <div>
                         <InputLabel htmlFor={`description-${task.id}`} value="Description" />
-                        <textarea id={`description-${task.id}`} value={editForm.data.description} onChange={(e) => editForm.setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={2} />
+                        <RichTextEditor
+                            value={editForm.data.description}
+                            onChange={(html) => editForm.setData('description', html)}
+                            rows={2}
+                        />
                     </div>
                     <div>
                         <InputLabel htmlFor={`assigned-${task.id}`} value="Assign To" />
@@ -444,10 +449,12 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     {task.description && (
                         <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
-                            <p className={`whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''}`}>
-                                {task.description}
-                            </p>
-                            {task.description.length > 120 && (
+                            <div
+                                className={`prose-sm max-w-none whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''}`}
+                                style={{ tabSize: 4 }}
+                                dangerouslySetInnerHTML={{ __html: task.description }}
+                            />
+                            {task.description.replace(/<[^>]*>/g, '').length > 120 && (
                                 <button onClick={() => setShowFullDescription((v) => !v)} className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                                     {showFullDescription ? 'Show Less' : 'View Full Description'}
                                 </button>
@@ -638,7 +645,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 <div className="mt-3">
                     <form onSubmit={submitReopen} className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-gray-600 dark:bg-gray-700/40">
                         <p className="text-xs text-amber-700 dark:text-amber-400">
-                            This will move the task back to In Progress, keeping its existing submission and history — the assignee can then update it without starting over.
+                            This will move the task back to In Progress, keeping its existing submission and history. The assignee can then update it without starting over.
                         </p>
                         <textarea
                             value={reopenForm.data.feedback}

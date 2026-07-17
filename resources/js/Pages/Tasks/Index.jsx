@@ -219,7 +219,10 @@ export default function Index({ tasks }) {
                                             </span>
                                         </div>
                                         {task.description && (
-                                            <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
+                                            <div
+                                                className="prose-sm mt-2 line-clamp-2 max-w-none text-sm text-gray-500 dark:text-gray-400"
+                                                dangerouslySetInnerHTML={{ __html: task.description }}
+                                            />
                                         )}
                                         <p className="mt-3 truncate text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500" title={task.project?.name}>
                                             {task.project?.name}

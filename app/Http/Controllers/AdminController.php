@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use App\Models\Feedback;
 use App\Events\UserSuspended;
 use App\Models\SuspensionLog;
+use App\Models\AdminLog;
 
 class AdminController extends Controller
 {
@@ -227,6 +228,8 @@ public function suspend(Request $request, User $user)
         'suspended_until' => $suspendedUntil,
     ]);
 
+    AdminLog::log('user.suspended', "Suspended {$user->name} ({$user->email}): {$request->reason}", $user);
+
     event(new UserSuspended($user));
 
     NotificationMailer::send(
@@ -261,11 +264,13 @@ public function suspend(Request $request, User $user)
             'lifted_by' => auth()->id(),
         ]);
 
+        AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user);
+
         NotificationMailer::send(
             $user,
             'account.suspension_lifted',
             'Your suspension has been lifted',
-            ["Good news — your Synkro account suspension has been lifted. You can log in again right away."],
+            ["Good news, your Synkro account suspension has been lifted. You can log in again right away."],
             url(route('login', [], false)),
             'Log In'
         );
@@ -306,12 +311,56 @@ public function suspend(Request $request, User $user)
         ]);
     }
 
+    /**
+     * Administration Logs page (general audit trail).
+     * Distinct from suspensionLogs() above (user-suspension-specific) and
+     * projectLogs() below (per-project member activity) — this one covers
+     * every AdminLog::log() call across the app (see AdminLog::actionCatalog()
+     * for the full list of tracked action types).
+     */
+    public function logs(Request $request)
+    {
+        $query = AdminLog::with('admin');
+
+        // Free-text search matches either the log description or the admin's name.
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('description', 'like', "%{$request->search}%")
+                    ->orWhereHas('admin', function ($q2) use ($request) {
+                        $q2->where('name', 'like', "%{$request->search}%");
+                    });
+            });
+        }
+
+        if ($request->action && $request->action !== 'all') {
+            $query->where('action', $request->action);
+        }
+
+        // Date filters are inclusive on both ends and compare by day only (no time-of-day precision).
+        if ($request->from) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->to) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
+        $logs = $query->latest()->paginate(30)->withQueryString();
+
+        return Inertia::render('Admin/Logs', [
+            'logs' => $logs,
+            'actionCatalog' => AdminLog::actionCatalog(),
+            'filters' => $request->only(['search', 'action', 'from', 'to']),
+        ]);
+    }
+
     public function toggleRole(User $user)
     {
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => "You can't change your own role."]);
         }
-        $user->update(['role' => $user->role === 'admin' ? 'user' : 'admin']);
+        $newRole = $user->role === 'admin' ? 'user' : 'admin';
+        $user->update(['role' => $newRole]);
+        AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
         return back()->with('success', 'Role updated.');
     }
 
@@ -328,6 +377,8 @@ public function suspend(Request $request, User $user)
             'must_change_password' => true,
             'temp_password_expires_at' => now()->addHours(24),
         ]);
+
+        AdminLog::log('user.password_reset', "Reset password for {$user->name} ({$user->email})", $user);
 
         NotificationMailer::send(
             $user,
@@ -368,6 +419,12 @@ public function suspend(Request $request, User $user)
     {
         $request->validate(['status' => 'required|in:reviewed,dismissed']);
         $appeal->update(['status' => $request->status]);
+
+        AdminLog::log(
+            $request->status === 'reviewed' ? 'appeal.reviewed' : 'appeal.dismissed',
+            ($request->status === 'reviewed' ? 'Reviewed' : 'Dismissed') . " {$appeal->user?->name}'s suspension appeal",
+            $appeal
+        );
 
         if ($appeal->user) {
             NotificationMailer::send(

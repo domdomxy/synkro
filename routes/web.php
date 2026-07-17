@@ -135,6 +135,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/projects/{project}/logs', [AdminController::class, 'projectLogs'])->name('projects.logs');
     Route::get('/suspension-logs', [AdminController::class, 'suspensionLogs'])->name('suspension-logs');
+    Route::get('/logs', [AdminController::class, 'logs'])->name('logs');
     });
 
 require __DIR__.'/auth.php';

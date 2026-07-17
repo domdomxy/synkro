@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('suspension_appeals', function (Blueprint $table) {
+        Schema::create('pinned_tasks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->text('message');
-            $table->enum('status', ['pending', 'reviewed', 'dismissed'])->default('pending');
+            $table->foreignId('task_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
+            $table->unique(['user_id', 'task_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('suspension_appeals');
+        Schema::dropIfExists('pinned_tasks');
     }
 };

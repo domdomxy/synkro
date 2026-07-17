@@ -8,6 +8,7 @@ import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -454,7 +455,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_1fr_280px]">
 
-                        {/* LEFT — Invite + Notes */}
+                        {/* LEFT: Invite + Notes */}
                         <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
                             {canManage && (
                                 <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
@@ -481,7 +482,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             <NotesPanel project={project} myNotes={myNotes} />
                         </div>
 
-                        {/* MIDDLE — Tasks */}
+                        {/* MIDDLE: Tasks */}
                         <div className="space-y-4">
                             {canManage && (
                                 <>
@@ -507,7 +508,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 </div>
                                                 <div>
                                                     <InputLabel htmlFor="description" value="Description" />
-                                                    <textarea id="description" value={taskForm.data.description} onChange={(e) => taskForm.setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={3} />
+                                                    <RichTextEditor
+                                                        value={taskForm.data.description}
+                                                        onChange={(html) => taskForm.setData('description', html)}
+                                                        rows={3}
+                                                    />
                                                 </div>
                                                 <div className="flex gap-4">
                                                     <div className="flex-1">
@@ -567,7 +572,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             </div>
                         </div>
 
-                        {/* RIGHT — Members */}
+                        {/* RIGHT: Members */}
                         <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
                             <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                 <div className="mb-3 flex items-center gap-2">

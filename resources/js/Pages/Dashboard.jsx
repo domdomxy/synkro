@@ -437,6 +437,27 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
 
+                    <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
+                        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+                            <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} />
+                            <div className="w-full max-w-xs space-y-2">
+                                {Object.entries(statusLabels).map(([key, label]) => {
+                                    const count = stats.tasksByStatus[key] ?? 0;
+                                    const pct = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
+                                    return (
+                                        <div key={key} className="flex items-center gap-3">
+                                            <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
+                                            <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
+                                            <span className="w-9 text-right text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="grid gap-6 lg:grid-cols-2">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
@@ -501,27 +522,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <CalendarView tasks={stats.calendarTasks} />
-
-                    <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
-                        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
-                            <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} />
-                            <div className="w-full max-w-xs space-y-2">
-                                {Object.entries(statusLabels).map(([key, label]) => {
-                                    const count = stats.tasksByStatus[key] ?? 0;
-                                    const pct = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
-                                    return (
-                                        <div key={key} className="flex items-center gap-3">
-                                            <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
-                                            <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
-                                            <span className="w-9 text-right text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

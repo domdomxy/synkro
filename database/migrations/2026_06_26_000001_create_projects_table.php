@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->boolean('is_archived')->default(false);
             $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });

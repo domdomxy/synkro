@@ -158,7 +158,7 @@ export default function Index({ projects, showingArchived }) {
     };
 
     const archiveProject = (project) => {
-        if (confirm(`Archive "${project.name}"? This only affects your own view — other members will still see it normally. You can unarchive it anytime.`)) {
+        if (confirm(`Archive "${project.name}"? This only affects your own view; other members will still see it normally. You can unarchive it anytime.`)) {
             router.post(route('projects.archive', project.id), {}, { preserveScroll: true });
         }
     };

@@ -164,7 +164,7 @@ function FeedbackItem({ feedback }) {
                         </div>
                         {isClosed && (
                             <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                                This ticket is {feedback.status} — the user can no longer reply. Reopen by changing the status if needed.
+                                This ticket is {feedback.status}; the user can no longer reply. Reopen by changing the status if needed.
                             </p>
                         )}
                     </div>

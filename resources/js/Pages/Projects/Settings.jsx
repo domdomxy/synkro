@@ -70,7 +70,7 @@ export default function Settings({ project, role }) {
             <div className="flex items-center gap-4">
                 <BackButton href={route('projects.show', project.id)} label="Back to Project" />
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    {project.name} — Settings
+                    {project.name} Settings
                 </h2>
             </div>
         }>

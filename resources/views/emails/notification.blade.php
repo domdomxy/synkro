@@ -72,7 +72,7 @@
             @endif
 
             <p style="margin:24px 0 0; font-size:14px; color:#6b7280; line-height:1.6;">
-                — The Synkro Team
+                The Synkro Team
             </p>
         </td>
     </tr>

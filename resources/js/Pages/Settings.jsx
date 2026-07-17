@@ -207,7 +207,7 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">In-App Notifications</h3>
                                 <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                    {notificationTotalEnabled} of {notificationKeys.length} categories enabled — controls what shows up in your notification bell
+                                    {notificationTotalEnabled} of {notificationKeys.length} categories enabled (controls what shows up in your notification bell)
                                 </p>
                             </div>
                             <button
@@ -269,7 +269,7 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                                    Not seeing our emails? Check your spam or junk folder — marking one as "Not spam" usually fixes it for future emails too.
+                                    Not seeing our emails? Check your spam or junk folder; marking one as "Not spam" usually fixes it for future emails too.
                                 </p>
                             </div>
                         </div>

@@ -114,8 +114,8 @@ function getDetails(log) {
     if (log.action === 'task_updated' && d.changes) {
         return Object.entries(d.changes).map(([key, val]) => ({
             label: fieldLabels[key] ?? key,
-            oldValue: val.old ?? '—',
-            newValue: val.new ?? '—',
+            oldValue: val.old ?? '-',
+            newValue: val.new ?? '-',
             isChange: true,
         }));
     }
@@ -123,8 +123,8 @@ function getDetails(log) {
     if (log.action === 'project_updated' && d.changes) {
         return Object.entries(d.changes).map(([key, val]) => ({
             label: fieldLabels[key] ?? key,
-            oldValue: val.old ?? '—',
-            newValue: val.new ?? '—',
+            oldValue: val.old ?? '-',
+            newValue: val.new ?? '-',
             isChange: true,
         }));
     }
@@ -224,13 +224,13 @@ function LogRow({ log }) {
                                         <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <div className="mt-1 flex items-center gap-2 text-sm">
                                             <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 line-through dark:bg-red-900/40 dark:text-red-400">
-                                                {item.oldValue || '—'}
+                                                {item.oldValue || '-'}
                                             </span>
                                             <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                             </svg>
                                             <span className="rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                {item.newValue || '—'}
+                                                {item.newValue || '-'}
                                             </span>
                                         </div>
                                     </div>
@@ -279,7 +279,7 @@ export default function Logs({ project, logs }) {
             <div className="flex items-center gap-4">
                 <BackButton href={route('projects.settings', project.id)} label="Back to Settings" />
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    Activity Logs — {project.name}
+                    Activity Logs: {project.name}
                 </h2>
             </div>
         }>

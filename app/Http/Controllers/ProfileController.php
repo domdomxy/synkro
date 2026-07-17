@@ -47,7 +47,7 @@ class ProfileController extends Controller
         $user->save();
 
         if ($emailChanged) {
-            // Security alert goes to the OLD address — that's the account that might be compromised.
+            // Security alert goes to the OLD address (that's the account that might be compromised).
             try {
                 Mail::to($oldEmail)->queue(new SynkroNotificationMail(
                     $user->name,
@@ -87,7 +87,7 @@ class ProfileController extends Controller
         // For every project the user belongs to, handle their tasks
         foreach ($user->projects as $project) {
             if ($project->owner_id === $user->id) {
-                continue; // owner deleting account — project stays, no cascade needed here
+                continue; // owner deleting account, project stays, no cascade needed here
             }
 
             $role = $project->roleFor($user);
@@ -126,7 +126,7 @@ class ProfileController extends Controller
                 $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
-                    'message' => "{$user->name} ({$role}) deleted their account — their tasks in \"{$project->name}\" may need attention",
+                    'message' => "{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -223,7 +223,7 @@ class ProfileController extends Controller
                 \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
-                    'message' => "{$user->name} ({$role}) deactivated their account — their tasks in \"{$project->name}\" may need attention",
+                    'message' => "{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
                     'url' => route('projects.show', $project->id, false),
                 ]);
             }

@@ -51,7 +51,7 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        // Password was correct — check if account is deactivated and reactivate
+        // Password was correct; check if account is deactivated and reactivate
         $user = Auth::user();
         if (! $user->is_active) {
             $user->update(['is_active' => true]);
