@@ -17,8 +17,14 @@ class InvitationController extends Controller
 
         abort_unless($invitation->invited_user_id === Auth::id(), 403);
 
+        // The invitation was accepted at some point, but the user is no longer
+        // a member of the project (they left, or were removed by an admin/manager).
+        // Old email links/notifications should not let them silently rejoin.
+        $rejoinBlocked = $invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user());
+
         return Inertia::render('Invitations/Show', [
             'invitation' => $invitation,
+            'rejoinBlocked' => $rejoinBlocked,
         ]);
     }
 
@@ -26,6 +32,10 @@ class InvitationController extends Controller
     {
         $invitation = ProjectInvitation::with('project')->where('token', $token)->firstOrFail();
         abort_unless($invitation->invited_user_id === Auth::id(), 403);
+
+        if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
+            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+        }
 
         if ($invitation->status !== 'pending') {
             return back()->withErrors(['error' => 'This invitation has already been responded to.']);
@@ -66,6 +76,10 @@ class InvitationController extends Controller
     {
         $invitation = ProjectInvitation::with('project')->where('token', $token)->firstOrFail();
         abort_unless($invitation->invited_user_id === Auth::id(), 403);
+
+        if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
+            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+        }
 
         if ($invitation->status !== 'pending') {
             return back()->withErrors(['error' => 'This invitation has already been responded to.']);

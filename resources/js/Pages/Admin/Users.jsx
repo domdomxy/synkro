@@ -7,6 +7,7 @@ import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import { cleanParams } from '@/utils/queryParams';
 
 
 function SearchIcon() {
@@ -157,7 +158,8 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
     );
 }
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
+const FILTER_DEFAULTS = { role: 'all', status: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
@@ -168,7 +170,7 @@ export default function Users({ users, stats, filters }) {
     const [suspendTarget, setSuspendTarget] = useState(null);
 
     const applyFilters = () => {
-        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter, per_page: perPage }, { preserveState: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
@@ -178,7 +180,7 @@ export default function Users({ users, stats, filters }) {
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.users'), { search, role: roleFilter, status: statusFilter, per_page: value }, { preserveState: true, preserveScroll: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';

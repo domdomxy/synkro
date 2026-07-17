@@ -4,6 +4,7 @@ import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -26,7 +27,8 @@ const actionColors = {
     'ticket.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
 };
 
-const DEFAULT_PER_PAGE = 30;
+const DEFAULT_PER_PAGE = 10;
+const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function Logs({ logs, actionCatalog, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
@@ -36,7 +38,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = () => {
-        router.get(route('admin.logs'), { search, action, from, to, per_page: perPage }, { preserveState: true });
+        router.get(route('admin.logs'), cleanParams({ search, action, from, to, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
@@ -50,7 +52,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.logs'), { search, action, from, to, per_page: value }, { preserveState: true, preserveScroll: true });
+        router.get(route('admin.logs'), cleanParams({ search, action, from, to, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || action !== 'all' || from !== '' || to !== '';

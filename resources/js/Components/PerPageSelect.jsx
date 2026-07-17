@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const PRESETS = [10, 30, 100];
+const PRESETS = [5, 10, 30];
 const MAX_PER_PAGE = 500;
 
 /**

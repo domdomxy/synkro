@@ -6,6 +6,7 @@ import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import { cleanParams } from '@/utils/queryParams';
 
 function SearchIcon() {
     return (
@@ -15,14 +16,15 @@ function SearchIcon() {
     );
 }
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
+const FILTER_DEFAULTS = { per_page: DEFAULT_PER_PAGE };
 
 export default function Projects({ projects, filters }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = () => {
-        router.get(route('admin.projects'), { search, per_page: perPage }, { preserveState: true });
+        router.get(route('admin.projects'), cleanParams({ search, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
@@ -32,7 +34,7 @@ export default function Projects({ projects, filters }) {
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.projects'), { search, per_page: value }, { preserveState: true, preserveScroll: true });
+        router.get(route('admin.projects'), cleanParams({ search, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     return (

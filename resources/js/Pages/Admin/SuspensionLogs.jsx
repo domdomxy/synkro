@@ -2,6 +2,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
+import PerPageSelect from '@/Components/PerPageSelect';
+import Pagination from '@/Components/Pagination';
+import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -13,18 +16,28 @@ function SearchIcon() {
     );
 }
 
+const DEFAULT_PER_PAGE = 10;
+const FILTER_DEFAULTS = { status: 'all', per_page: DEFAULT_PER_PAGE };
+
 export default function SuspensionLogs({ logs, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [status, setStatus] = useState(filters?.status ?? 'all');
+    const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = () => {
-        router.get(route('admin.suspension-logs'), { search, status }, { preserveState: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
         setSearch('');
         setStatus('all');
+        setPerPage(DEFAULT_PER_PAGE);
         router.get(route('admin.suspension-logs'));
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || status !== 'all';
@@ -69,7 +82,7 @@ export default function SuspensionLogs({ logs, filters }) {
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                        {logs.length} record{logs.length !== 1 ? 's' : ''} match{logs.length === 1 ? 'es' : ''} your filters
+                        {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
@@ -84,7 +97,7 @@ export default function SuspensionLogs({ logs, filters }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y dark:divide-gray-700">
-                                {logs.map((log) => (
+                                {logs.data.map((log) => (
                                     <tr key={log.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                         <td className="px-6 py-3">
                                             <div className="flex items-center gap-2">
@@ -110,11 +123,15 @@ export default function SuspensionLogs({ logs, filters }) {
                                         </td>
                                     </tr>
                                 ))}
-                                {logs.length === 0 && (
+                                {logs.data.length === 0 && (
                                     <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">No suspension history matches your filters.</td></tr>
                                 )}
                             </tbody>
                         </table>
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <Pagination meta={logs} />
+                        </div>
                     </div>
                 </div>
             </div>

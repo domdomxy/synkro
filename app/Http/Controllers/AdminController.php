@@ -166,7 +166,7 @@ class AdminController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate($this->perPage($request, 20))->withQueryString();
+        $users = $query->orderBy('name')->paginate($this->perPage($request, 10))->withQueryString();
 
         $stats = [
             'total' => User::count(),
@@ -198,7 +198,7 @@ class AdminController extends Controller
             });
         }
 
-        $projects = $query->orderBy('name')->paginate($this->perPage($request, 20))->withQueryString();
+        $projects = $query->orderBy('name')->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Admin/Projects', [
             'projects' => $projects,
@@ -314,11 +314,11 @@ public function suspend(Request $request, User $user)
             };
         }
 
-        $logs = $query->latest()->get();
+        $logs = $query->latest()->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Admin/SuspensionLogs', [
             'logs' => $logs,
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'per_page']),
         ]);
     }
 
@@ -355,7 +355,7 @@ public function suspend(Request $request, User $user)
             $query->whereDate('created_at', '<=', $request->to);
         }
 
-        $logs = $query->latest()->paginate($this->perPage($request, 30))->withQueryString();
+        $logs = $query->latest()->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Admin/Logs', [
             'logs' => $logs,

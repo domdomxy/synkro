@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 
-export default function Show({ invitation }) {
+export default function Show({ invitation, rejoinBlocked }) {
     const acceptForm = useForm({});
     const denyForm = useForm({});
 
@@ -10,12 +10,40 @@ export default function Show({ invitation }) {
         if (confirm('Decline this invitation?')) denyForm.post(route('invitations.deny', invitation.token));
     };
 
+    if (rejoinBlocked) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
+                <Head title="Invitation" />
+                <div className="w-full max-w-xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300">
+                        You can't rejoin <span className="font-medium text-gray-900 dark:text-gray-100">{invitation.project.name}</span> using this invitation —
+                        you've since left or been removed from the project.
+                    </p>
+                    <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+                        Ask the project owner or a manager to invite you again.
+                    </p>
+
+                    <div className="mt-6 flex justify-center gap-3">
+                        <Link href={route('projects.index')} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                            Back to Projects
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (invitation.status !== 'pending') {
         const accepted = invitation.status === 'accepted';
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
                 <Head title="Invitation" />
-                <div className="w-full max-w-lg rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                <div className="w-full max-w-xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
                     <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
                         accepted ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}>
@@ -51,7 +79,7 @@ export default function Show({ invitation }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
             <Head title="Project Invitation" />
-            <div className="w-full max-w-lg rounded-lg bg-white p-10 shadow dark:bg-gray-800">
+            <div className="w-full max-w-xl rounded-lg bg-white p-10 shadow dark:bg-gray-800">
                 <div className="mb-6 flex justify-center">
                     <ApplicationLogo className="h-12 w-12 fill-current text-indigo-600 dark:text-indigo-400" />
                 </div>
