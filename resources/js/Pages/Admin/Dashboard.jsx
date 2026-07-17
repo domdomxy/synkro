@@ -15,6 +15,10 @@ const statIcons = {
     warning: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
     appeal: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     feedback: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+    newThisMonth: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>,
+    growth: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+    online: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.652a3.75 3.75 0 010-5.304m5.304 0a3.75 3.75 0 010 5.304m-7.425 2.121a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M12 12h.008v.008H12V12z" /></svg>,
+    completed: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
 
 function SectionHeading({ children }) {
@@ -47,19 +51,18 @@ function StatusDonut({ tasksByStatus, total, size = 140, strokeWidth = 15 }) {
     );
 }
 
-function StatCard({ label, value, sub, accent, icon }) {
+function StatCard({ label, value, accent, icon }) {
     return (
-        <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between">
+        <div className="rounded-2xl bg-white p-4 shadow dark:bg-gray-800">
+            <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
                 {icon && (
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${accent ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${accent ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                         {icon}
                     </div>
                 )}
             </div>
-            <p className={`mt-3 text-4xl font-bold tracking-tight ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-            {sub && <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
+            <p className={`mt-2 text-3xl font-bold tracking-tight ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
         </div>
     );
 }
@@ -192,10 +195,14 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard label="Total Users" value={stats.users} sub={`${stats.activeUsers} active · ${stats.inactiveUsers} inactive`} accent icon={statIcons.users} />
+                        <StatCard label="Total Users" value={stats.users} accent icon={statIcons.users} />
                         <StatCard label="Admins" value={stats.admins} icon={statIcons.admins} />
                         <StatCard label="Projects" value={stats.projects} icon={statIcons.projects} />
-                        <StatCard label="Tasks" value={stats.tasks} sub={`${stats.tasksByStatus.done ?? 0} completed`} icon={statIcons.tasks} />
+                        <StatCard label="Tasks" value={stats.tasks} icon={statIcons.tasks} />
+                        <StatCard label="New This Month" value={stats.newUsersThisMonth} icon={statIcons.newThisMonth} />
+                        <StatCard label="Growth Rate" value={`${stats.userGrowthRate > 0 ? '+' : ''}${stats.userGrowthRate}%`} icon={statIcons.growth} />
+                        <StatCard label="Currently Online" value={stats.currentlyOnline} icon={statIcons.online} />
+                        <StatCard label="Completed Projects" value={stats.completedProjects} icon={statIcons.completed} />
                     </div>
 
                     <AttentionPanel items={attentionItems} />

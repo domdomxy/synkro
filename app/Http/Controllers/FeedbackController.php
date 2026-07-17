@@ -147,6 +147,16 @@ class FeedbackController extends Controller
     }
 
     /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */
+    /**
+     * Deep-links to one ticket on the admin feedback list. Reuses the existing search filter
+     * (which already matches tracking_id) so the ticket is guaranteed to be on page 1 even
+     * with pagination; the frontend then scrolls to and highlights #ticket-{id} on load.
+     */
+    private function adminFeedbackUrl(Feedback $feedback): string
+    {
+        return url(route('admin.feedbacks', ['ticket' => $feedback->id, 'search' => $feedback->tracking_id], false));
+    }
+
     private function notifyAdminsNewTicket(Feedback $feedback): void
     {
         $admins = User::where('role', 'admin')->get();
@@ -161,7 +171,7 @@ class FeedbackController extends Controller
                     $admin->name,
                     "New ticket submitted ({$feedback->tracking_id})",
                     ["{$feedback->name} submitted a new {$feedback->category} ticket:"],
-                    url(route('admin.feedbacks', [], false)),
+                    $this->adminFeedbackUrl($feedback),
                     'View Ticket',
                     highlight: ['label' => $feedback->subject, 'content' => $feedback->message],
                 ));
@@ -188,7 +198,7 @@ class FeedbackController extends Controller
             ->filter()
             ->unique('id');
 
-        $url = url(route('admin.feedbacks', [], false));
+        $url = $this->adminFeedbackUrl($feedback);
 
         foreach ($admins as $admin) {
             // In-app bell notification: always created, same as every other notification type

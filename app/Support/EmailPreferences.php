@@ -64,7 +64,7 @@ class EmailPreferences
             $catalog['admin'] = [
                 'label' => 'Admin Alerts',
                 'items' => [
-                    'admin.ticket_reply' => 'A user replied to a feedback ticket',
+                    'admin.ticket_reply' => 'A user replied to a ticket you responded to',
                     'admin.ticket_created' => 'A new feedback ticket was submitted',
                 ],
             ];

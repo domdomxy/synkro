@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 
 const categoryConfig = {
@@ -72,11 +72,16 @@ function CategoryBadge({ category }) {
     );
 }
 
-function FeedbackItem({ feedback }) {
+function FeedbackItem({ feedback, isHighlighted }) {
     const [open, setOpen] = useState(false);
     const responseForm = useForm({ message: '' });
     const isClosed = ['closed', 'rejected'].includes(feedback.status);
     const userReplyCount = feedback.responses?.filter((r) => r.sender_type === 'user').length ?? 0;
+
+    // A deep-linked ticket (from a notification/email) should open expanded, not just scroll into view collapsed.
+    useEffect(() => {
+        if (isHighlighted) setOpen(true);
+    }, [isHighlighted]);
 
     const updateStatus = (status) => {
         router.patch(route('admin.feedbacks.status', feedback.id), { status }, { preserveScroll: true });
@@ -91,7 +96,12 @@ function FeedbackItem({ feedback }) {
     };
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div
+            id={`ticket-${feedback.id}`}
+            className={`rounded-lg border bg-white shadow-sm transition dark:bg-gray-800 ${
+                isHighlighted ? 'border-indigo-400 ring-2 ring-indigo-400 dark:border-indigo-500 dark:ring-indigo-500' : 'border-gray-200 dark:border-gray-700'
+            }`}
+        >
             <button onClick={() => setOpen((v) => !v)} className="flex w-full items-start gap-3 p-4 text-left">
                 <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -231,6 +241,18 @@ export default function Feedbacks({ feedbacks, filters }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [category, setCategory] = useState(filters.category ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
+    const [highlightedTicketId, setHighlightedTicketId] = useState(null);
+
+    useEffect(() => {
+        const ticketId = new URLSearchParams(window.location.search).get('ticket');
+        if (!ticketId) return;
+        setHighlightedTicketId(Number(ticketId));
+        const scrollTimer = setTimeout(() => {
+            document.getElementById(`ticket-${ticketId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        const clearTimer = setTimeout(() => setHighlightedTicketId(null), 3000);
+        return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+    }, []);
 
     const applyFilters = () => {
         router.get(route('admin.feedbacks'), { search, category, status }, { preserveScroll: true });
@@ -282,7 +304,7 @@ export default function Feedbacks({ feedbacks, filters }) {
                         {feedbacks.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No feedback found.</p>
                         ) : (
-                            feedbacks.data.map((f) => <FeedbackItem key={f.id} feedback={f} />)
+                            feedbacks.data.map((f) => <FeedbackItem key={f.id} feedback={f} isHighlighted={f.id === highlightedTicketId} />)
                         )}
                     </div>
 

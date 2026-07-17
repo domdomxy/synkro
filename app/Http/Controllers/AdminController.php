@@ -15,6 +15,7 @@ use App\Models\Feedback;
 use App\Events\UserSuspended;
 use App\Models\SuspensionLog;
 use App\Models\AdminLog;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -118,6 +119,26 @@ class AdminController extends Controller
         $recentUsers = User::latest()->limit(5)->get();
         $recentProjects = Project::with('owner')->latest()->limit(5)->get();
 
+        // Growth rate and "new this month" are derived purely from created_at timestamps we
+        // already store, so these are real numbers, not fabricated trend data.
+        $startOfMonth = now()->startOfMonth();
+        $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
+        $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
+        $userGrowthRate = $usersBeforeThisMonth > 0
+            ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
+            : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
+
+        // We don't track session start/end times, so a true "average session length" isn't
+        // computable from the sessions table (it only has last_activity). "Currently online"
+        // (active in the last 5 minutes) is the closest honest, real metric available.
+        $currentlyOnline = DB::table('sessions')->where('last_activity', '>=', now()->subMinutes(5)->timestamp)->count();
+
+        // A project counts as "completed" once every task in it is done. Projects with zero
+        // tasks are excluded since "all zero tasks are done" would be trivially true otherwise.
+        $completedProjects = Project::whereHas('tasks')
+            ->whereDoesntHave('tasks', fn ($q) => $q->where('status', '!=', 'done'))
+            ->count();
+
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
             'customFrom' => request('from'),
@@ -129,6 +150,7 @@ class AdminController extends Controller
                 'suspendedUsers' => User::where('is_suspended', true)->count(),
                 'admins' => User::where('role', 'admin')->count(),
                 'projects' => Project::count(),
+                'completedProjects' => $completedProjects,
                 'tasks' => Task::count(),
                 'tasksByStatus' => $tasksByStatus,
                 'chartData' => $chartData,
@@ -138,6 +160,9 @@ class AdminController extends Controller
                 'pendingResolution' => Task::where('pending_resolution', true)->count(),
                 'pendingAppeals' => SuspensionAppeal::where('status', 'pending')->count(),
                 'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
+                'newUsersThisMonth' => $newUsersThisMonth,
+                'userGrowthRate' => $userGrowthRate,
+                'currentlyOnline' => $currentlyOnline,
             ],
         ]);
     }
