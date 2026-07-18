@@ -402,8 +402,10 @@ public function suspend(Request $request, User $user)
     return back()->with('success', 'User suspended.');
 }
 
-    public function liftSuspension(User $user)
+    public function liftSuspension(Request $request, User $user)
     {
+        $request->validate(['reason' => 'nullable|string|max:2000']);
+
         $user->update([
             'is_suspended' => false,
             'suspended_until' => null,
@@ -416,13 +418,16 @@ public function suspend(Request $request, User $user)
             'lifted_by' => auth()->id(),
         ]);
 
-        AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user);
+        AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})" . ($request->reason ? ": {$request->reason}" : ''), $user);
 
         NotificationMailer::send(
             $user,
             'account.suspension_lifted',
             'Your suspension has been lifted',
-            ["Good news, your Synkro account suspension has been lifted. You can log in again right away."],
+            array_filter([
+                "Good news, your Synkro account suspension has been lifted. You can log in again right away.",
+                $request->reason ? "Note from our team: {$request->reason}" : null,
+            ]),
             url(route('login', [], false)),
             'Log In'
         );
@@ -588,12 +593,15 @@ public function suspend(Request $request, User $user)
 
     public function reviewAppeal(Request $request, SuspensionAppeal $appeal)
     {
-        $request->validate(['status' => 'required|in:reviewed,dismissed']);
+        $request->validate([
+            'status' => 'required|in:reviewed,dismissed',
+            'reason' => 'nullable|string|max:2000',
+        ]);
         $appeal->update(['status' => $request->status]);
 
         AdminLog::log(
             $request->status === 'reviewed' ? 'appeal.reviewed' : 'appeal.dismissed',
-            ($request->status === 'reviewed' ? 'Reviewed' : 'Dismissed') . " {$appeal->user?->name}'s suspension appeal",
+            ($request->status === 'reviewed' ? 'Reviewed' : 'Dismissed') . " {$appeal->user?->name}'s suspension appeal" . ($request->reason ? ": {$request->reason}" : ''),
             $appeal
         );
 
@@ -602,11 +610,12 @@ public function suspend(Request $request, User $user)
                 $appeal->user,
                 'account.appeal_reviewed',
                 'Your appeal has been reviewed',
-                [
+                array_filter([
                     $request->status === 'reviewed'
                         ? 'Your suspension appeal has been reviewed by our team.'
                         : 'Your suspension appeal has been dismissed.',
-                ],
+                    $request->reason ? "Reason: {$request->reason}" : null,
+                ]),
                 url(route('login', [], false)),
                 'Log In'
             );

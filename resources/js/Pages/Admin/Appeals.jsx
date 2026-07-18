@@ -21,9 +21,14 @@ function SearchIcon() {
 
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
+    const [reason, setReason] = useState('');
 
-    const updateStatus = (status) => {
-        router.patch(route('admin.appeals.review', appeal.id), { status }, { preserveScroll: true });
+    const updateStatus = (status, requireReason = false) => {
+        if (requireReason && !reason.trim()) {
+            alert('Please add a reason before continuing — it will be included in the email sent to the user.');
+            return;
+        }
+        router.patch(route('admin.appeals.review', appeal.id), { status, reason }, { preserveScroll: true });
     };
 
     return (
@@ -74,12 +79,29 @@ function AppealItem({ appeal }) {
                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{appeal.message}</p>
                     </div>
 
+                    <div>
+                        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                            Reason (included in the email sent to {appeal.user?.name ?? 'the user'})
+                        </label>
+                        <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={2}
+                            placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
+                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                        />
+                    </div>
+
                     <div className="flex flex-wrap gap-2">
                         {appeal.user?.is_suspended && (
                             <button
                                 onClick={() => {
+                                    if (!reason.trim()) {
+                                        alert('Please add a reason before continuing — it will be included in the email sent to the user.');
+                                        return;
+                                    }
                                     if (confirm(`Lift ${appeal.user.name}'s suspension and mark this appeal as reviewed?`)) {
-                                        router.post(route('admin.users.lift-suspension', appeal.user.id), {}, {
+                                        router.post(route('admin.users.lift-suspension', appeal.user.id), { reason }, {
                                             preserveScroll: true,
                                             onSuccess: () => updateStatus('reviewed'),
                                         });
@@ -101,7 +123,7 @@ function AppealItem({ appeal }) {
                             Mark Reviewed
                         </button>
                         <button
-                            onClick={() => updateStatus('dismissed')}
+                            onClick={() => updateStatus('dismissed', true)}
                             className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                                 appeal.status === 'dismissed'
                                     ? 'bg-red-600 text-white'

@@ -24,7 +24,10 @@ class Feedback extends Model
 
     public function responses(): HasMany
     {
-        return $this->hasMany(FeedbackResponse::class)->latest();
+        // Oldest-first so the conversation reads top-to-bottom chronologically, on both
+        // the admin ticket view and the public tracking page (both just .map() this
+        // relationship directly, so ordering it here covers both consistently).
+        return $this->hasMany(FeedbackResponse::class)->oldest();
     }
     public function attachments()
     {
