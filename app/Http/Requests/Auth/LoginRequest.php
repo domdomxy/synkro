@@ -54,7 +54,7 @@ class LoginRequest extends FormRequest
         // Password was correct; check if account is deactivated and reactivate
         $user = Auth::user();
         if (! $user->is_active) {
-            $user->update(['is_active' => true]);
+            $user->update(['is_active' => true, 'active_status_changed_at' => now()]);
         }
 
         RateLimiter::clear($this->throttleKey());

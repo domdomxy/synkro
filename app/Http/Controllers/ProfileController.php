@@ -239,7 +239,7 @@ class ProfileController extends Controller
             ]
         );
 
-        $user->update(['is_active' => false]);
+        $user->update(['is_active' => false, 'active_status_changed_at' => now()]);
 
         Auth::logout();
         $request->session()->invalidate();

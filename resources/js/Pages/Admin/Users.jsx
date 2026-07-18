@@ -228,11 +228,11 @@ export default function Users({ users, stats, filters }) {
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.total} sub={`${stats.newUsersThisMonth} new this month`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.total} />
-                        <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
-                        <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />
-                        <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
-                        <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
-                        <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
+                        <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} pct={stats.activeTrend} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
+                        <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} pct={stats.inactiveTrend} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />
+                        <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} pct={stats.suspendedTrend} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
+                        <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} pct={stats.adminsTrend} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
+                        <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} pct={stats.verifiedTrend} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
                         <StatCard label="Unverified" value={stats.unverified} sub={`${stats.unverifiedRatio}% of all users`} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.unverified} />
                         <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New signups this month" icon={statIcons.newThisMonth} />
                     </div>

@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until',
-'suspension_reason','suspended_by','email_preferences'],'must_change_password','temp_password_expires_at','notification_preferences',)]
+'suspension_reason','suspended_by','email_preferences','active_status_changed_at','role_changed_at'],'must_change_password','temp_password_expires_at','notification_preferences',)]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {   
@@ -58,6 +58,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'must_change_password' => 'boolean',
             'temp_password_expires_at' => 'datetime',
             'notification_preferences' => 'array',
+            'active_status_changed_at' => 'datetime',
+            'role_changed_at' => 'datetime',
         ];
     }
     public function pinnedTasks()

@@ -216,16 +216,25 @@ class AdminController extends Controller
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
         $users = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();
 
-        // Same honest, created_at-derived growth rate as the dashboard's Total Users card.
-        // Only the total is purely additive over time; active/inactive/suspended/admin/verified
-        // states aren't timestamped when they change, so a trend % for those wouldn't be real —
-        // those get a plain composition ratio ("X% of all users") instead of a colored trend.
+        // Real month-over-month trends. Total is purely additive (created_at). Active/inactive
+        // and admin role now have their own change timestamps (active_status_changed_at,
+        // role_changed_at — see the 2026_07_18 migration), suspensions already had real
+        // timestamps via suspension_logs (created_at/lifted_at), and verification already had
+        // email_verified_at. Unverified has no "became unverified" event to track (verification
+        // isn't revocable here), so it stays a plain composition ratio rather than a fabricated
+        // trend.
         $startOfMonth = now()->startOfMonth();
-        $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
         $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
+        $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
         $userGrowthRate = $usersBeforeThisMonth > 0
             ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
             : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
+
+        $activeTrend = $this->monthOverMonthChange(User::where('is_active', true)->where('is_suspended', false), 'active_status_changed_at');
+        $inactiveTrend = $this->monthOverMonthChange(User::where('is_active', false), 'active_status_changed_at');
+        $adminsTrend = $this->monthOverMonthChange(User::where('role', 'admin'), 'role_changed_at');
+        $suspendedTrend = $this->monthOverMonthChange(SuspensionLog::query(), 'created_at');
+        $verifiedTrend = $this->monthOverMonthChange(User::whereNotNull('email_verified_at'), 'email_verified_at');
 
         $totalUsers = User::count();
         $activeUsers = User::where('is_active', true)->where('is_suspended', false)->count();
@@ -240,14 +249,19 @@ class AdminController extends Controller
             'total' => $totalUsers,
             'active' => $activeUsers,
             'activeRatio' => $ratio($activeUsers),
+            'activeTrend' => $activeTrend['change'],
             'inactive' => $inactiveUsers,
             'inactiveRatio' => $ratio($inactiveUsers),
+            'inactiveTrend' => $inactiveTrend['change'],
             'suspended' => $suspendedUsers,
             'suspendedRatio' => $ratio($suspendedUsers),
+            'suspendedTrend' => $suspendedTrend['change'],
             'admins' => $adminUsers,
             'adminsRatio' => $ratio($adminUsers),
+            'adminsTrend' => $adminsTrend['change'],
             'verified' => $verifiedUsers,
             'verifiedRatio' => $ratio($verifiedUsers),
+            'verifiedTrend' => $verifiedTrend['change'],
             'unverified' => $unverifiedUsers,
             'unverifiedRatio' => $ratio($unverifiedUsers),
             'newUsersThisMonth' => $newUsersThisMonth,
@@ -257,7 +271,23 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'role', 'status', 'verified', 'per_page', 'sort', 'direction']),
+            // Explicit keys with defaults, not $request->only([...]) — when no query params are
+            // present, only() returns an empty PHP array, which json_encode serializes as a JSON
+            // array ([]) rather than an object ({}), since PHP can't tell the two apart when empty.
+            // On the frontend that made `filters.sort` resolve to the inherited Array.prototype.sort
+            // *function* instead of undefined, which useState() treats as a lazy initializer and
+            // calls with no valid `this` — throwing "Cannot convert undefined or null to object".
+            // Always including every key guarantees a non-empty associative array, which always
+            // encodes as a real JSON object.
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'role' => $request->input('role', 'all'),
+                'status' => $request->input('status', 'all'),
+                'verified' => $request->input('verified', 'all'),
+                'per_page' => (string) $this->perPage($request, 10),
+                'sort' => $request->input('sort', 'name'),
+                'direction' => $direction,
+            ],
         ]);
     }
 
@@ -284,7 +314,15 @@ class AdminController extends Controller
 
         return Inertia::render('Admin/Projects', [
             'projects' => $projects,
-            'filters' => $request->only(['search', 'per_page', 'sort', 'direction']),
+            // See users() above for why this must be explicit keys, not $request->only([...]) —
+            // an empty array serializes as JSON [] instead of {}, which broke `filters.sort` on
+            // the frontend (it resolved to the inherited Array.prototype.sort function).
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'per_page' => (string) $this->perPage($request, 10),
+                'sort' => $request->input('sort', 'name'),
+                'direction' => $direction,
+            ],
         ]);
     }
 
@@ -404,7 +442,14 @@ public function suspend(Request $request, User $user)
 
         return Inertia::render('Admin/SuspensionLogs', [
             'logs' => $logs,
-            'filters' => $request->only(['search', 'status', 'per_page', 'sort', 'direction']),
+            // See users() above for why this must be explicit keys, not $request->only([...]).
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'status' => $request->input('status', 'all'),
+                'per_page' => (string) $this->perPage($request, 10),
+                'sort' => $request->input('sort', 'created_at'),
+                'direction' => $direction,
+            ],
         ]);
     }
 
@@ -446,7 +491,15 @@ public function suspend(Request $request, User $user)
         return Inertia::render('Admin/Logs', [
             'logs' => $logs,
             'actionCatalog' => AdminLog::actionCatalog(),
-            'filters' => $request->only(['search', 'action', 'from', 'to', 'per_page']),
+            // Explicit keys, not $request->only([...]) — see users() above. No key here collides
+            // with an Array.prototype method today, but this avoids the landmine entirely.
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'action' => $request->input('action', 'all'),
+                'from' => $request->input('from', ''),
+                'to' => $request->input('to', ''),
+                'per_page' => (string) $this->perPage($request, 10),
+            ],
         ]);
     }
 
@@ -456,7 +509,7 @@ public function suspend(Request $request, User $user)
             return back()->withErrors(['error' => "You can't change your own role."]);
         }
         $newRole = $user->role === 'admin' ? 'user' : 'admin';
-        $user->update(['role' => $newRole]);
+        $user->update(['role' => $newRole, 'role_changed_at' => now()]);
         AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
         return back()->with('success', 'Role updated.');
     }
@@ -508,7 +561,7 @@ public function suspend(Request $request, User $user)
 
         return Inertia::render('Admin/Appeals', [
             'appeals' => $appeals,
-            'filters' => $request->only(['search']),
+            'filters' => ['search' => $request->input('search', '')],
         ]);
     }
 
