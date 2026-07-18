@@ -24,20 +24,33 @@ const statPillIcons = {
     inactive: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM18 8l4 4m0-4l-4 4" /></svg>,
     suspended: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728" /></svg>,
     admins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    unverified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
 
-function StatPill({ label, value, accent, icon }) {
+function StatPill({ label, value, sub, pct, accent, icon }) {
     return (
-        <div className="rounded-2xl bg-white p-5 shadow dark:bg-gray-800">
+        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-start justify-between">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+                <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+                    <p className={`mt-1 text-3xl font-semibold ${accent ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+                    {(sub || pct !== undefined) && (
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                            {sub}
+                            {pct !== undefined && (
+                                <span className={`ml-1.5 font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                                    {pct > 0 ? '+' : ''}{pct}%
+                                </span>
+                            )}
+                        </p>
+                    )}
+                </div>
                 {icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 ${accent ?? 'text-gray-500 dark:text-gray-400'}`}>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accent ?? 'text-gray-400 dark:text-gray-400'}`}>
                         {icon}
                     </div>
                 )}
             </div>
-            <p className={`mt-2.5 text-3xl font-bold tracking-tight ${accent ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
         </div>
     );
 }
@@ -174,31 +187,32 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
 }
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { role: 'all', status: 'all', per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { role: 'all', status: 'all', verified: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
     const [search, setSearch] = useState(filters.search ?? '');
     const [roleFilter, setRoleFilter] = useState(filters.role ?? 'all');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
+    const [verifiedFilter, setVerifiedFilter] = useState(filters.verified ?? 'all');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
     const [suspendTarget, setSuspendTarget] = useState(null);
 
     const applyFilters = () => {
-        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
-        setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setPerPage(DEFAULT_PER_PAGE);
+        setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setVerifiedFilter('all'); setPerPage(DEFAULT_PER_PAGE);
         router.get(route('admin.users'));
     };
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
-    const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all';
+    const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all' || verifiedFilter !== 'all';
 
     const toggleRole = (user) => {
         const action = user.role === 'admin' ? 'demote to a regular user' : 'promote to admin';
@@ -227,12 +241,13 @@ export default function Users({ users, stats, filters }) {
             <div className="py-12">
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
 
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                        <StatPill label="Total Users" value={stats.total} icon={statPillIcons.total} />
-                        <StatPill label="Active" value={stats.active} accent="text-green-600 dark:text-green-400" icon={statPillIcons.active} />
-                        <StatPill label="Inactive" value={stats.inactive} accent="text-gray-500 dark:text-gray-400" icon={statPillIcons.inactive} />
-                        <StatPill label="Suspended" value={stats.suspended} accent="text-red-600 dark:text-red-400" icon={statPillIcons.suspended} />
-                        <StatPill label="Admins" value={stats.admins} accent="text-purple-600 dark:text-purple-400" icon={statPillIcons.admins} />
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        <StatPill label="Total Users" value={stats.total} sub="Registered platform accounts" pct={stats.userGrowthRate} icon={statPillIcons.total} />
+                        <StatPill label="Active" value={stats.active} sub="Not suspended or deactivated" accent="text-green-600 dark:text-green-400" icon={statPillIcons.active} />
+                        <StatPill label="Inactive" value={stats.inactive} sub="Deactivated by the user" accent="text-gray-500 dark:text-gray-400" icon={statPillIcons.inactive} />
+                        <StatPill label="Suspended" value={stats.suspended} sub="Currently under suspension" accent="text-red-600 dark:text-red-400" icon={statPillIcons.suspended} />
+                        <StatPill label="Admins" value={stats.admins} sub="Users with elevated access" accent="text-purple-600 dark:text-purple-400" icon={statPillIcons.admins} />
+                        <StatPill label="Unverified" value={stats.unverified} sub="Haven't confirmed their email" accent="text-amber-600 dark:text-amber-400" icon={statPillIcons.unverified} />
                     </div>
 
                     <div>
@@ -259,6 +274,11 @@ export default function Users({ users, stats, filters }) {
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                                 <option value="suspended">Suspended</option>
+                            </select>
+                            <select value={verifiedFilter} onChange={(e) => setVerifiedFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                <option value="all">Verified & Unverified</option>
+                                <option value="verified">Verified Only</option>
+                                <option value="unverified">Unverified Only</option>
                             </select>
                             <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                             {hasActiveFilters && (
@@ -295,6 +315,21 @@ export default function Users({ users, stats, filters }) {
                                                             {isSelf && <span className="ml-1.5 text-xs font-normal text-gray-400">(you)</span>}
                                                         </p>
                                                         <p className="truncate text-gray-500 dark:text-gray-400">{user.email}</p>
+                                                        {user.email_verified_at ? (
+                                                            <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Verified
+                                                            </span>
+                                                        ) : (
+                                                            <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" title="Hasn't clicked the verification link in their email yet">
+                                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Unverified
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>

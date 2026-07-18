@@ -51,18 +51,30 @@ function StatusDonut({ tasksByStatus, total, size = 140, strokeWidth = 15 }) {
     );
 }
 
-function StatCard({ label, value, accent, icon }) {
+function StatCard({ label, value, sub, pct, accentColor, icon }) {
     return (
-        <div className="rounded-2xl bg-white p-4 shadow dark:bg-gray-800">
-            <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+                    <p className={`mt-1 text-3xl font-semibold ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+                    {(sub || pct !== undefined) && (
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                            {sub}
+                            {pct !== undefined && (
+                                <span className={`ml-1.5 font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                                    {pct > 0 ? '+' : ''}{pct}%
+                                </span>
+                            )}
+                        </p>
+                    )}
+                </div>
                 {icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${accent ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
                         {icon}
                     </div>
                 )}
             </div>
-            <p className={`mt-2 text-3xl font-bold tracking-tight ${accent ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
         </div>
     );
 }
@@ -195,14 +207,14 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard label="Total Users" value={stats.users} accent icon={statIcons.users} />
-                        <StatCard label="Admins" value={stats.admins} icon={statIcons.admins} />
-                        <StatCard label="Projects" value={stats.projects} icon={statIcons.projects} />
-                        <StatCard label="Tasks" value={stats.tasks} icon={statIcons.tasks} />
-                        <StatCard label="New This Month" value={stats.newUsersThisMonth} icon={statIcons.newThisMonth} />
-                        <StatCard label="Growth Rate" value={`${stats.userGrowthRate > 0 ? '+' : ''}${stats.userGrowthRate}%`} icon={statIcons.growth} />
-                        <StatCard label="Currently Online" value={stats.currentlyOnline} icon={statIcons.online} />
-                        <StatCard label="Completed Projects" value={stats.completedProjects} icon={statIcons.completed} />
+                        <StatCard label="Total Users" value={stats.users} sub={`${stats.activeUsers} active · ${stats.inactiveUsers} inactive`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.users} />
+                        <StatCard label="Admins" value={stats.admins} sub="Users with elevated platform access" icon={statIcons.admins} />
+                        <StatCard label="Projects" value={stats.projects} sub="Total projects created" pct={stats.projectGrowthRate} icon={statIcons.projects} />
+                        <StatCard label="Tasks" value={stats.tasks} sub={`${stats.tasksByStatus.done ?? 0} completed`} pct={stats.taskGrowthRate} icon={statIcons.tasks} />
+                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New user signups this month" icon={statIcons.newThisMonth} />
+                        <StatCard label="Growth Rate" value={`${stats.userGrowthRate > 0 ? '+' : ''}${stats.userGrowthRate}%`} sub="User growth vs last month" accentColor={stats.userGrowthRate > 0 ? 'text-green-600 dark:text-green-400' : stats.userGrowthRate < 0 ? 'text-red-600 dark:text-red-400' : undefined} icon={statIcons.growth} />
+                        <StatCard label="Currently Online" value={stats.currentlyOnline} sub="Active in the last 5 minutes" icon={statIcons.online} />
+                        <StatCard label="Completed Projects" value={stats.completedProjects} sub="Every task in the project is done" icon={statIcons.completed} />
                     </div>
 
                     <AttentionPanel items={attentionItems} />

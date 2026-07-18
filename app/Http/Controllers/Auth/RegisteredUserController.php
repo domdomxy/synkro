@@ -60,6 +60,10 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('projects.index', absolute: false));
+        // Redirect to /dashboard (not /projects) so the 'verified' middleware gate applies
+        // immediately, same as it does on every login after this one. Redirecting somewhere
+        // ungated here was letting a brand-new unverified user use the app freely until their
+        // next login, instead of hitting the verify-email screen right away.
+        return redirect(route('dashboard', absolute: false));
     }
 }

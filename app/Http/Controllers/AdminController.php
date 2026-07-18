@@ -120,13 +120,22 @@ class AdminController extends Controller
         $recentProjects = Project::with('owner')->latest()->limit(5)->get();
 
         // Growth rate and "new this month" are derived purely from created_at timestamps we
-        // already store, so these are real numbers, not fabricated trend data.
+        // already store, so these are real numbers, not fabricated trend data. We only have
+        // creation dates, not historical snapshots of is_active/is_suspended/role/etc, so a
+        // trend % is only honest for counts that are purely additive over time (users,
+        // projects, tasks) — not for the active/inactive/suspended/admin breakdowns.
         $startOfMonth = now()->startOfMonth();
-        $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
-        $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
-        $userGrowthRate = $usersBeforeThisMonth > 0
-            ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
-            : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
+
+        $growthRate = function (string $model) use ($startOfMonth) {
+            $before = $model::where('created_at', '<', $startOfMonth)->count();
+            $newThisMonth = $model::where('created_at', '>=', $startOfMonth)->count();
+            $rate = $before > 0 ? round($newThisMonth / $before * 100, 1) : ($newThisMonth > 0 ? 100.0 : 0.0);
+            return [$newThisMonth, $rate];
+        };
+
+        [$newUsersThisMonth, $userGrowthRate] = $growthRate(User::class);
+        [, $projectGrowthRate] = $growthRate(Project::class);
+        [, $taskGrowthRate] = $growthRate(Task::class);
 
         // We don't track session start/end times, so a true "average session length" isn't
         // computable from the sessions table (it only has last_activity). "Currently online"
@@ -162,6 +171,8 @@ class AdminController extends Controller
                 'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
                 'newUsersThisMonth' => $newUsersThisMonth,
                 'userGrowthRate' => $userGrowthRate,
+                'projectGrowthRate' => $projectGrowthRate,
+                'taskGrowthRate' => $taskGrowthRate,
                 'currentlyOnline' => $currentlyOnline,
             ],
         ]);
@@ -184,6 +195,14 @@ class AdminController extends Controller
             };
         }
 
+        if ($request->verified && $request->verified !== 'all') {
+            match ($request->verified) {
+                'verified' => $query->whereNotNull('email_verified_at'),
+                'unverified' => $query->whereNull('email_verified_at'),
+                default => null,
+            };
+        }
+
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
@@ -193,18 +212,30 @@ class AdminController extends Controller
 
         $users = $query->orderBy('name')->paginate($this->perPage($request, 10))->withQueryString();
 
+        // Same honest, created_at-derived growth rate as the dashboard's Total Users card.
+        // Only the total is purely additive over time; active/inactive/suspended/admin/verified
+        // states aren't timestamped when they change, so a trend % for those wouldn't be real.
+        $startOfMonth = now()->startOfMonth();
+        $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
+        $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
+        $userGrowthRate = $usersBeforeThisMonth > 0
+            ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
+            : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
+
         $stats = [
             'total' => User::count(),
             'active' => User::where('is_active', true)->where('is_suspended', false)->count(),
             'inactive' => User::where('is_active', false)->count(),
             'suspended' => User::where('is_suspended', true)->count(),
             'admins' => User::where('role', 'admin')->count(),
+            'unverified' => User::whereNull('email_verified_at')->count(),
+            'userGrowthRate' => $userGrowthRate,
         ];
 
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'role', 'status', 'per_page']),
+            'filters' => $request->only(['search', 'role', 'status', 'verified', 'per_page']),
         ]);
     }
 

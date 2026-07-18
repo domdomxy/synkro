@@ -146,7 +146,6 @@ class FeedbackController extends Controller
         return response()->json(['success' => true, 'status' => 'pending']);
     }
 
-    /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */
     /**
      * Deep-links to one ticket on the admin feedback list. Reuses the existing search filter
      * (which already matches tracking_id) so the ticket is guaranteed to be on page 1 even
@@ -157,6 +156,7 @@ class FeedbackController extends Controller
         return url(route('admin.feedbacks', ['ticket' => $feedback->id, 'search' => $feedback->tracking_id], false));
     }
 
+    /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */
     private function notifyAdminsNewTicket(Feedback $feedback): void
     {
         $admins = User::where('role', 'admin')->get();
