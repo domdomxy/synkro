@@ -14,7 +14,7 @@ export default function Show({ invitation, rejoinBlocked }) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
                 <Head title="Invitation" />
-                <div className="w-full max-w-xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                <div className="w-full max-w-2xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
                         <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -43,7 +43,7 @@ export default function Show({ invitation, rejoinBlocked }) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
                 <Head title="Invitation" />
-                <div className="w-full max-w-xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                <div className="w-full max-w-2xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
                     <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
                         accepted ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}>
@@ -79,7 +79,7 @@ export default function Show({ invitation, rejoinBlocked }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
             <Head title="Project Invitation" />
-            <div className="w-full max-w-xl rounded-lg bg-white p-10 shadow dark:bg-gray-800">
+            <div className="w-full max-w-2xl rounded-lg bg-white p-10 shadow dark:bg-gray-800">
                 <div className="mb-6 flex justify-center">
                     <ApplicationLogo className="h-12 w-12 fill-current text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -93,7 +93,7 @@ export default function Show({ invitation, rejoinBlocked }) {
 
                 {invitation.project.description && (
                     <div
-                        className="mt-5 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-md bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-5 max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         dangerouslySetInnerHTML={{ __html: invitation.project.description }}
                     />
                 )}

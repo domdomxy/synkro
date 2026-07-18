@@ -117,6 +117,7 @@ function getDetails(log) {
             oldValue: val.old ?? '-',
             newValue: val.new ?? '-',
             isChange: true,
+            isHtml: key === 'description',
         }));
     }
 
@@ -126,6 +127,7 @@ function getDetails(log) {
             oldValue: val.old ?? '-',
             newValue: val.new ?? '-',
             isChange: true,
+            isHtml: key === 'description',
         }));
     }
 
@@ -220,20 +222,50 @@ function LogRow({ log }) {
                         {details.map((item, i) => (
                             <div key={i}>
                                 {item.isChange ? (
-                                    <div>
-                                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
-                                        <div className="mt-1 flex items-center gap-2 text-sm">
-                                            <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 line-through dark:bg-red-900/40 dark:text-red-400">
-                                                {item.oldValue || '-'}
-                                            </span>
-                                            <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                            <span className="rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                {item.newValue || '-'}
-                                            </span>
+                                    item.isHtml ? (
+                                        <div>
+                                            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                            <div className="mt-1.5 space-y-2">
+                                                <div className="rounded-md border border-red-100 bg-red-50/50 p-2.5 dark:border-red-900 dark:bg-red-950/20">
+                                                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">Previous</p>
+                                                    <div
+                                                        className="max-w-none whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: item.oldValue && item.oldValue !== '-'
+                                                                ? item.oldValue
+                                                                : '<span class="italic text-gray-400">Empty</span>',
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="rounded-md border border-green-100 bg-green-50/50 p-2.5 dark:border-green-900 dark:bg-green-950/20">
+                                                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-green-500 dark:text-green-400">Updated</p>
+                                                    <div
+                                                        className="max-w-none whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: item.newValue && item.newValue !== '-'
+                                                                ? item.newValue
+                                                                : '<span class="italic text-gray-400">Empty</span>',
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div>
+                                            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                            <div className="mt-1 flex items-center gap-2 text-sm">
+                                                <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 line-through dark:bg-red-900/40 dark:text-red-400">
+                                                    {item.oldValue || '-'}
+                                                </span>
+                                                <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                                <span className="rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                                                    {item.newValue || '-'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>

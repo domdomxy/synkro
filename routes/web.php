@@ -39,7 +39,6 @@ Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middlewa
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::post('/appeal', [SuspensionAppealController::class, 'store'])
-    ->middleware('throttle:3,60') // 3 attempts per 60 minutes per IP
     ->name('appeal.store');
 
 Route::get('/appeal', function () {

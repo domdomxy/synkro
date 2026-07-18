@@ -16,6 +16,35 @@ function SearchIcon() {
     );
 }
 
+function Icon({ path, className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+        </svg>
+    );
+}
+
+const ICON_PATHS = {
+    minus: 'M20 12H4',
+    check: 'M5 13l4 4L19 7',
+    swap: 'M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4',
+    lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4',
+    pencil: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+    close_or_x: 'M6 18L18 6M6 6l12 12',
+    dot: 'M12 12h.01',
+};
+
+const actionIconConfig = {
+    'user.suspended': { path: ICON_PATHS.minus, color: 'text-red-500' },
+    'user.suspension_lifted': { path: ICON_PATHS.check, color: 'text-green-500' },
+    'user.role_changed': { path: ICON_PATHS.swap, color: 'text-purple-500' },
+    'user.password_reset': { path: ICON_PATHS.lock, color: 'text-amber-500' },
+    'appeal.reviewed': { path: ICON_PATHS.check, color: 'text-teal-500' },
+    'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
+    'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
+    'ticket.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
+};
+
 const actionColors = {
     'user.suspended': 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
     'user.suspension_lifted': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -26,6 +55,67 @@ const actionColors = {
     'ticket.status_changed': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     'ticket.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
 };
+
+function timeAgo(dateString) {
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return null;
+}
+
+function AdminLogRow({ log, actionCatalog }) {
+    const [open, setOpen] = useState(false);
+    const iconConfig = actionIconConfig[log.action] ?? { path: ICON_PATHS.dot, color: 'text-gray-400' };
+    const relative = timeAgo(log.created_at);
+    const description = log.description ?? '';
+    const isLong = description.length > 100;
+
+    return (
+        <li className="border-b dark:border-gray-700 last:border-0">
+            <button
+                onClick={() => isLong && setOpen((v) => !v)}
+                className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${isLong ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
+            >
+                <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
+                    <Icon path={iconConfig.path} className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Avatar user={log.admin} size="h-5 w-5" />
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                            {log.admin?.name ?? 'Deleted admin'}
+                        </span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${actionColors[log.action] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                            {actionCatalog[log.action] ?? log.action}
+                        </span>
+                    </div>
+                    {description && (
+                        <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400 ${open ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+                            {description}
+                        </p>
+                    )}
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        {relative && <span className="ml-1.5 text-gray-300 dark:text-gray-600">· {relative}</span>}
+                    </p>
+                </div>
+                {isLong && (
+                    <svg
+                        className={`mt-1 h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                )}
+            </button>
+        </li>
+    );
+}
 
 const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
@@ -66,7 +156,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
         }>
             <Head title="Administration Logs" />
             <div className="py-12">
-                <div className="mx-auto max-w-6xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-end gap-3">
                         <div className="relative">
@@ -120,43 +210,27 @@ export default function Logs({ logs, actionCatalog, filters }) {
                     </p>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-                                <tr>
-                                    <th className="px-6 py-3">Admin</th>
-                                    <th className="px-6 py-3">Action</th>
-                                    <th className="px-6 py-3">Description</th>
-                                    <th className="px-6 py-3">When</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y dark:divide-gray-700">
-                                {logs.data.map((log) => (
-                                    <tr key={log.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                        <td className="px-6 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar user={log.admin} size="h-7 w-7" />
-                                                <span className="truncate text-gray-700 dark:text-gray-300">{log.admin?.name ?? 'Deleted admin'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <span className={`rounded-full px-2 py-1 text-xs ${actionColors[log.action] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                {actionCatalog[log.action] ?? log.action}
-                                            </span>
-                                        </td>
-                                        <td className="max-w-md truncate px-6 py-3 text-gray-500 dark:text-gray-400" title={log.description}>{log.description}</td>
-                                        <td className="whitespace-nowrap px-6 py-3 text-gray-500 dark:text-gray-400">
-                                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {logs.data.length === 0 && (
-                                    <tr><td colSpan={4} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">No administration activity matches your filters.</td></tr>
+                        {logs.data.length === 0 ? (
+                            <div className="px-6 py-10 text-center">
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                    {hasActiveFilters ? 'No administration activity matches your filters.' : 'No administration activity recorded yet.'}
+                                </p>
+                                {hasActiveFilters && (
+                                    <button onClick={clearFilters} className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                                        Clear filters
+                                    </button>
                                 )}
-                            </tbody>
-                        </table>
+                            </div>
+                        ) : (
+                            <ul>
+                                {logs.data.map((log) => (
+                                    <AdminLogRow key={log.id} log={log} actionCatalog={actionCatalog} />
+                                ))}
+                            </ul>
+                        )}
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>

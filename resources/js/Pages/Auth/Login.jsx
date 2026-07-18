@@ -30,7 +30,11 @@ function SuspensionNotice({ suspension }) {
         });
     };
 
-    const {passwordExpired } = usePage().props;
+    const { passwordExpired, flash } = usePage().props;
+    const justSubmitted = appealForm.recentlySuccessful || Boolean(flash?.success);
+    const hasAppealFeedback = justSubmitted || Boolean(
+        appealForm.errors.limit || appealForm.errors.email || appealForm.errors.message
+    );
 
     if (passwordExpired) {
         return (
@@ -86,13 +90,22 @@ function SuspensionNotice({ suspension }) {
 
                 {suspension.reason && (
                     <div className="px-5 py-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason given</p>
-                        <p className="mt-1.5 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{suspension.reason}</p>
+                        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            Reason given
+                        </p>
+                        <div className="mt-2 rounded-md border-l-2 border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900/40">
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                {suspension.reason}
+                            </p>
+                        </div>
                     </div>
                 )}
 
                 <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-700">
-                    {!showAppeal ? (
+                    {!showAppeal && !hasAppealFeedback ? (
                         <button
                             onClick={() => setShowAppeal(true)}
                             className="flex w-full items-center justify-between text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
@@ -105,18 +118,26 @@ function SuspensionNotice({ suspension }) {
                                 </svg>
                             </span>
                         </button>
-                    ) : appealForm.recentlySuccessful ? (
+                    ) : justSubmitted ? (
                         <div className="flex items-start gap-2.5 rounded-lg bg-green-50 p-3 dark:bg-green-950/30">
                             <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                             <p className="text-sm text-green-700 dark:text-green-400">
-                                Appeal submitted. We'll review it and get back to you as soon as possible.
+                                {flash?.success || "Appeal submitted. We'll review it and get back to you as soon as possible."}
                             </p>
                         </div>
                     ) : (
                         <form onSubmit={submitAppeal} className="space-y-3">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Submit an appeal</p>
+                            {appealForm.errors.limit && (
+                                <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
+                                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                    </svg>
+                                    <p className="text-sm text-red-700 dark:text-red-400">{appealForm.errors.limit}</p>
+                                </div>
+                            )}
                             <div>
                                 <InputLabel htmlFor="appeal-email" value="Account email" className="text-xs" />
                                 <TextInput
@@ -142,7 +163,7 @@ function SuspensionNotice({ suspension }) {
                                 <InputError message={appealForm.errors.message} className="mt-1" />
                             </div>
                             <div className="flex items-center gap-3 pt-1">
-                                <PrimaryButton disabled={appealForm.processing}>
+                                <PrimaryButton disabled={appealForm.processing || !!appealForm.errors.limit}>
                                     {appealForm.processing ? 'Sending...' : 'Submit Appeal'}
                                 </PrimaryButton>
                                 <button

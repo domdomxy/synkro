@@ -309,7 +309,7 @@ function HeaderIconButton({ onClick, href, title, children }) {
 
 function ProjectInfoModal({ show, onClose, project }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="3xl">
             <div className="flex max-h-[80vh] flex-col">
                 <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
                     <div className="min-w-0">
