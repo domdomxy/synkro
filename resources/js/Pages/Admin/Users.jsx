@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
+import StatCard from '@/Components/StatCard';
+import SortableHeader from '@/Components/SortableHeader';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
@@ -18,42 +20,16 @@ function SearchIcon() {
     );
 }
 
-const statPillIcons = {
+const statIcons = {
     total: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a4 4 0 10-4-4" /></svg>,
     active: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM17 9l2 2 4-4" /></svg>,
     inactive: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM18 8l4 4m0-4l-4 4" /></svg>,
     suspended: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728" /></svg>,
     admins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    verified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" /></svg>,
     unverified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    newThisMonth: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>,
 };
-
-function StatPill({ label, value, sub, pct, accent, icon }) {
-    return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-                    <p className={`mt-1 text-3xl font-semibold ${accent ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-                    {(sub || pct !== undefined) && (
-                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                            {sub}
-                            {pct !== undefined && (
-                                <span className={`ml-1.5 font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                    {pct > 0 ? '+' : ''}{pct}%
-                                </span>
-                            )}
-                        </p>
-                    )}
-                </div>
-                {icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accent ?? 'text-gray-400 dark:text-gray-400'}`}>
-                        {icon}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
 
 function timeRemaining(dateString) {
     const ms = new Date(dateString) - new Date();
@@ -187,7 +163,7 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
 }
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { role: 'all', status: 'all', verified: 'all', per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { role: 'all', status: 'all', verified: 'all', per_page: DEFAULT_PER_PAGE, sort: 'name', direction: 'asc' };
 
 export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
@@ -196,20 +172,29 @@ export default function Users({ users, stats, filters }) {
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     const [verifiedFilter, setVerifiedFilter] = useState(filters.verified ?? 'all');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
+    const [sort, setSort] = useState(filters.sort ?? 'name');
+    const [direction, setDirection] = useState(filters.direction ?? 'asc');
     const [suspendTarget, setSuspendTarget] = useState(null);
 
     const applyFilters = () => {
-        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
-        setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setVerifiedFilter('all'); setPerPage(DEFAULT_PER_PAGE);
+        setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setVerifiedFilter('all'); setPerPage(DEFAULT_PER_PAGE); setSort('name'); setDirection('asc');
         router.get(route('admin.users'));
     };
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSort = (column) => {
+        const newDirection = sort === column && direction === 'asc' ? 'desc' : 'asc';
+        setSort(column);
+        setDirection(newDirection);
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort: column, direction: newDirection }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all' || verifiedFilter !== 'all';
@@ -241,13 +226,15 @@ export default function Users({ users, stats, filters }) {
             <div className="py-12">
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
 
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                        <StatPill label="Total Users" value={stats.total} sub="Registered platform accounts" pct={stats.userGrowthRate} icon={statPillIcons.total} />
-                        <StatPill label="Active" value={stats.active} sub="Not suspended or deactivated" accent="text-green-600 dark:text-green-400" icon={statPillIcons.active} />
-                        <StatPill label="Inactive" value={stats.inactive} sub="Deactivated by the user" accent="text-gray-500 dark:text-gray-400" icon={statPillIcons.inactive} />
-                        <StatPill label="Suspended" value={stats.suspended} sub="Currently under suspension" accent="text-red-600 dark:text-red-400" icon={statPillIcons.suspended} />
-                        <StatPill label="Admins" value={stats.admins} sub="Users with elevated access" accent="text-purple-600 dark:text-purple-400" icon={statPillIcons.admins} />
-                        <StatPill label="Unverified" value={stats.unverified} sub="Haven't confirmed their email" accent="text-amber-600 dark:text-amber-400" icon={statPillIcons.unverified} />
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard label="Total Users" value={stats.total} sub={`${stats.newUsersThisMonth} new this month`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.total} />
+                        <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
+                        <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />
+                        <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
+                        <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
+                        <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
+                        <StatCard label="Unverified" value={stats.unverified} sub={`${stats.unverifiedRatio}% of all users`} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.unverified} />
+                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New signups this month" icon={statIcons.newThisMonth} />
                     </div>
 
                     <div>
@@ -294,10 +281,10 @@ export default function Users({ users, stats, filters }) {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
-                                    <th className="px-6 py-3">User</th>
-                                    <th className="px-6 py-3">Role</th>
+                                    <SortableHeader label="User" column="name" sort={sort} direction={direction} onSort={handleSort} />
+                                    <SortableHeader label="Role" column="role" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Joined</th>
+                                    <SortableHeader label="Joined" column="joined" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>

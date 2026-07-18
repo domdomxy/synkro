@@ -210,11 +210,16 @@ class AdminController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate($this->perPage($request, 10))->withQueryString();
+        // Whitelisted so `sort` can't be used to order by an arbitrary column.
+        $sortable = ['name' => 'name', 'email' => 'email', 'role' => 'role', 'joined' => 'created_at', 'verified' => 'email_verified_at'];
+        $sort = $sortable[$request->sort] ?? 'name';
+        $direction = $request->direction === 'desc' ? 'desc' : 'asc';
+        $users = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();
 
         // Same honest, created_at-derived growth rate as the dashboard's Total Users card.
         // Only the total is purely additive over time; active/inactive/suspended/admin/verified
-        // states aren't timestamped when they change, so a trend % for those wouldn't be real.
+        // states aren't timestamped when they change, so a trend % for those wouldn't be real —
+        // those get a plain composition ratio ("X% of all users") instead of a colored trend.
         $startOfMonth = now()->startOfMonth();
         $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
         $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
@@ -222,20 +227,37 @@ class AdminController extends Controller
             ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
             : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
 
+        $totalUsers = User::count();
+        $activeUsers = User::where('is_active', true)->where('is_suspended', false)->count();
+        $inactiveUsers = User::where('is_active', false)->count();
+        $suspendedUsers = User::where('is_suspended', true)->count();
+        $adminUsers = User::where('role', 'admin')->count();
+        $verifiedUsers = User::whereNotNull('email_verified_at')->count();
+        $unverifiedUsers = User::whereNull('email_verified_at')->count();
+        $ratio = fn (int $part) => $totalUsers > 0 ? round($part / $totalUsers * 100, 1) : 0;
+
         $stats = [
-            'total' => User::count(),
-            'active' => User::where('is_active', true)->where('is_suspended', false)->count(),
-            'inactive' => User::where('is_active', false)->count(),
-            'suspended' => User::where('is_suspended', true)->count(),
-            'admins' => User::where('role', 'admin')->count(),
-            'unverified' => User::whereNull('email_verified_at')->count(),
+            'total' => $totalUsers,
+            'active' => $activeUsers,
+            'activeRatio' => $ratio($activeUsers),
+            'inactive' => $inactiveUsers,
+            'inactiveRatio' => $ratio($inactiveUsers),
+            'suspended' => $suspendedUsers,
+            'suspendedRatio' => $ratio($suspendedUsers),
+            'admins' => $adminUsers,
+            'adminsRatio' => $ratio($adminUsers),
+            'verified' => $verifiedUsers,
+            'verifiedRatio' => $ratio($verifiedUsers),
+            'unverified' => $unverifiedUsers,
+            'unverifiedRatio' => $ratio($unverifiedUsers),
+            'newUsersThisMonth' => $newUsersThisMonth,
             'userGrowthRate' => $userGrowthRate,
         ];
 
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'role', 'status', 'verified', 'per_page']),
+            'filters' => $request->only(['search', 'role', 'status', 'verified', 'per_page', 'sort', 'direction']),
         ]);
     }
 
@@ -254,11 +276,15 @@ class AdminController extends Controller
             });
         }
 
-        $projects = $query->orderBy('name')->paginate($this->perPage($request, 10))->withQueryString();
+        // Whitelisted so `sort` can't be used to order by an arbitrary column.
+        $sortable = ['name' => 'name', 'joined' => 'created_at', 'members' => 'members_count', 'tasks' => 'tasks_count'];
+        $sort = $sortable[$request->sort] ?? 'name';
+        $direction = $request->direction === 'desc' ? 'desc' : 'asc';
+        $projects = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Admin/Projects', [
             'projects' => $projects,
-            'filters' => $request->only(['search', 'per_page']),
+            'filters' => $request->only(['search', 'per_page', 'sort', 'direction']),
         ]);
     }
 
@@ -370,11 +396,15 @@ public function suspend(Request $request, User $user)
             };
         }
 
-        $logs = $query->latest()->paginate($this->perPage($request, 10))->withQueryString();
+        // Whitelisted so `sort` can't be used to order by an arbitrary column.
+        $sortable = ['created_at' => 'created_at', 'suspended_until' => 'suspended_until'];
+        $sort = $sortable[$request->sort] ?? 'created_at';
+        $direction = $request->direction === 'asc' ? 'asc' : 'desc';
+        $logs = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Admin/SuspensionLogs', [
             'logs' => $logs,
-            'filters' => $request->only(['search', 'status', 'per_page']),
+            'filters' => $request->only(['search', 'status', 'per_page', 'sort', 'direction']),
         ]);
     }
 

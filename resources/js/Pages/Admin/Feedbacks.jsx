@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import BackButton from '@/Components/BackButton';
+import Linkify from '@/Components/Linkify';
 
 const categoryConfig = {
     bug: {
@@ -132,7 +133,7 @@ function FeedbackItem({ feedback, isHighlighted }) {
                 <div className="border-t border-gray-100 p-4 space-y-4 dark:border-gray-700">
                     <div>
                         <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">Original message</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{feedback.message}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={feedback.message} /></p>
                     </div>
 
                     {(feedback.attachment_path || feedback.attachments?.length > 0) && (
@@ -192,7 +193,7 @@ function FeedbackItem({ feedback, isHighlighted }) {
                                                 : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
                                         }`}
                                     >
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{r.message}</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={r.message} /></p>
                                         <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                             {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : feedback.name}
                                             {r.sender_type === 'user' && <span className="ml-1 italic">(user)</span>}

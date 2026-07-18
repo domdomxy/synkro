@@ -42,6 +42,7 @@ class FeedbackController extends Controller
         }
 
         $this->notifyAdminsNewTicket($feedback);
+        $this->notifySubmitterNewTicket($feedback);
 
         return redirect()->route('feedback.page')
             ->with('feedback_tracking_id', $feedback->tracking_id);
@@ -154,6 +155,32 @@ class FeedbackController extends Controller
     private function adminFeedbackUrl(Feedback $feedback): string
     {
         return url(route('admin.feedbacks', ['ticket' => $feedback->id, 'search' => $feedback->tracking_id], false));
+    }
+
+    /**
+     * Confirms receipt to the person who submitted the ticket, with their tracking ID.
+     * Guests aren't registered users (no email_preferences row to check), so — same as
+     * FeedbackAdminController::notifySubmitter() for status-change/reply emails — this
+     * always sends unconditionally rather than going through EmailPreferences::wants(),
+     * which would incorrectly return false for an email with no matching User account.
+     */
+    private function notifySubmitterNewTicket(Feedback $feedback): void
+    {
+        try {
+            Mail::to($feedback->email)->queue(new SynkroNotificationMail(
+                $feedback->name,
+                "We've received your ticket ({$feedback->tracking_id})",
+                [
+                    "Thanks for reaching out! We've received your {$feedback->category} ticket \"{$feedback->subject}\" and will get back to you soon.",
+                    "Your tracking ID is {$feedback->tracking_id} — use it on the tracking page to follow this ticket's status or add replies.",
+                ],
+                url(route('feedback.page', [], false)),
+                'Track Your Ticket',
+                footerNote: 'This email was generated automatically. Please do not reply directly; use the button above to continue the conversation on your ticket.',
+            ));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */

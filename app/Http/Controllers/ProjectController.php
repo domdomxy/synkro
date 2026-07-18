@@ -57,7 +57,7 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
 
         $project = Project::create([
             ...$validated,
@@ -117,7 +117,7 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
 
         $changes = [];
         foreach (['name', 'description'] as $field) {

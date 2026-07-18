@@ -4,6 +4,7 @@ import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import SortableHeader from '@/Components/SortableHeader';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -17,27 +18,38 @@ function SearchIcon() {
 }
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { status: 'all', per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { status: 'all', per_page: DEFAULT_PER_PAGE, sort: 'created_at', direction: 'desc' };
 
 export default function SuspensionLogs({ logs, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [status, setStatus] = useState(filters?.status ?? 'all');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
+    const [sort, setSort] = useState(filters?.sort ?? 'created_at');
+    const [direction, setDirection] = useState(filters?.direction ?? 'desc');
 
     const applyFilters = () => {
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
         setSearch('');
         setStatus('all');
         setPerPage(DEFAULT_PER_PAGE);
+        setSort('created_at');
+        setDirection('desc');
         router.get(route('admin.suspension-logs'));
     };
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSort = (column) => {
+        const newDirection = sort === column && direction === 'desc' ? 'asc' : 'desc';
+        setSort(column);
+        setDirection(newDirection);
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort: column, direction: newDirection }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || status !== 'all';
@@ -92,7 +104,7 @@ export default function SuspensionLogs({ logs, filters }) {
                                     <th className="px-6 py-3">User</th>
                                     <th className="px-6 py-3">Suspended By</th>
                                     <th className="px-6 py-3">Reason</th>
-                                    <th className="px-6 py-3">Until</th>
+                                    <SortableHeader label="Until" column="suspended_until" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Status</th>
                                 </tr>
                             </thead>

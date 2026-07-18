@@ -55,7 +55,7 @@ class TaskController extends Controller
 
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
         // Allow-list matches ProjectController's project-description sanitization for consistency.
-        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
 
         $task = $project->tasks()->create($validated);
  
@@ -109,7 +109,7 @@ class TaskController extends Controller
         ]);
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
-        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p>');
+        $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
  
         if (! empty($validated['assigned_to']) && ! $task->project->members()->where('user_id', $validated['assigned_to'])->exists()) {
             return back()->withErrors(['assigned_to' => 'That user is not a member of this project.']);

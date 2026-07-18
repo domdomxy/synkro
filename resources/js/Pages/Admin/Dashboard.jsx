@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
+import StatCard from '@/Components/StatCard';
 import { Head, Link, router } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useState } from 'react';
@@ -48,34 +49,6 @@ function StatusDonut({ tasksByStatus, total, size = 140, strokeWidth = 15 }) {
             <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 dark:fill-gray-100" style={{ fontSize: 26, fontWeight: 700 }}>{total}</text>
             <text x="50%" y="62%" textAnchor="middle" className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 10 }}>Tasks</text>
         </svg>
-    );
-}
-
-function StatCard({ label, value, sub, pct, accentColor, icon }) {
-    return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-                    <p className={`mt-1 text-3xl font-semibold ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-                    {(sub || pct !== undefined) && (
-                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                            {sub}
-                            {pct !== undefined && (
-                                <span className={`ml-1.5 font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                    {pct > 0 ? '+' : ''}{pct}%
-                                </span>
-                            )}
-                        </p>
-                    )}
-                </div>
-                {icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
-                        {icon}
-                    </div>
-                )}
-            </div>
-        </div>
     );
 }
 

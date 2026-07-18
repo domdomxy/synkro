@@ -221,7 +221,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const saveEdit = (e) => {
         e.preventDefault();
         if (!confirm('Save changes to this task?')) return;
-        editForm.patch(route('tasks.update', task.id), { onSuccess: () => setIsEditing(false) });
+        editForm.patch(route('tasks.update', task.id), {
+            onSuccess: () => {
+                // Without this, isDirty stays true after a successful save (it's compared
+                // against the form's original mount-time defaults, which Inertia doesn't
+                // update automatically), so reopening edit right after saving would show
+                // Save Changes as active again with nothing new to save.
+                editForm.setDefaults();
+                setIsEditing(false);
+            },
+        });
     };
 
     const addFiles = (e) => {
@@ -385,8 +394,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <TextInput id={`due-${task.id}`} type="datetime-local" step="1" value={editForm.data.due_date} onChange={(e) => editForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
                     </div>
                     <div className="flex gap-2">
-                        <PrimaryButton disabled={editForm.processing}>Save Changes</PrimaryButton>
-                        <button type="button" onClick={() => setIsEditing(false)} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
+                        <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
+                        <button type="button" onClick={() => { editForm.reset(); setIsEditing(false); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
                     </div>
                 </form>
             ) : (

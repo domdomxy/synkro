@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
+import SortableHeader from '@/Components/SortableHeader';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
@@ -17,24 +18,33 @@ function SearchIcon() {
 }
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { per_page: DEFAULT_PER_PAGE, sort: 'name', direction: 'asc' };
 
 export default function Projects({ projects, filters }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
+    const [sort, setSort] = useState(filters.sort ?? 'name');
+    const [direction, setDirection] = useState(filters.direction ?? 'asc');
 
     const applyFilters = () => {
-        router.get(route('admin.projects'), cleanParams({ search, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.projects'), cleanParams({ search, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
-        setSearch(''); setPerPage(DEFAULT_PER_PAGE);
+        setSearch(''); setPerPage(DEFAULT_PER_PAGE); setSort('name'); setDirection('asc');
         router.get(route('admin.projects'));
     };
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.projects'), cleanParams({ search, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.projects'), cleanParams({ search, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSort = (column) => {
+        const newDirection = sort === column && direction === 'asc' ? 'desc' : 'asc';
+        setSort(column);
+        setDirection(newDirection);
+        router.get(route('admin.projects'), cleanParams({ search, per_page: perPage, sort: column, direction: newDirection }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     return (
@@ -77,10 +87,10 @@ export default function Projects({ projects, filters }) {
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
                                     <th className="px-6 py-3">ID</th>
-                                    <th className="px-6 py-3">Name</th>
+                                    <SortableHeader label="Name" column="name" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Owner</th>
-                                    <th className="px-6 py-3">Members</th>
-                                    <th className="px-6 py-3">Tasks</th>
+                                    <SortableHeader label="Members" column="members" sort={sort} direction={direction} onSort={handleSort} />
+                                    <SortableHeader label="Tasks" column="tasks" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Activity</th>
                                 </tr>
                             </thead>

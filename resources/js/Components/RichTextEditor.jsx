@@ -155,6 +155,13 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     // on tags that are actually in the server's allow-list.
     useEffect(() => {
         document.execCommand('styleWithCSS', false, true);
+        // Same reasoning, for line breaks: without this, most browsers wrap each Enter press in a
+        // <div> (Chrome/Edge) — which the backend's strip_tags allow-list doesn't include, since it
+        // only allows <br>/<p> for block content. That was silently deleting every line break on
+        // save (strip_tags removes disallowed tags but doesn't replace them with anything), making
+        // multi-line descriptions collapse into one run-on line. Forcing <br> for Enter keeps output
+        // consistent across browsers and inside the server's existing allow-list.
+        document.execCommand('defaultParagraphSeparator', false, 'br');
     }, []);
 
     const updateActiveStates = useCallback(() => {

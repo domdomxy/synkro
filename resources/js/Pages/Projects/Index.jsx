@@ -290,7 +290,7 @@ export default function Index({ projects, showingArchived }) {
                                             </span>
                                         </div>
                                         <div
-                                            className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-900 dark:text-gray-100"
+                                            className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100"
                                             dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
                                         />
 
