@@ -404,7 +404,7 @@ public function suspend(Request $request, User $user)
 
     public function liftSuspension(Request $request, User $user)
     {
-        $request->validate(['reason' => 'nullable|string|max:2000']);
+        $request->validate(['reason' => 'required|string|max:2000']);
 
         $user->update([
             'is_suspended' => false,
@@ -595,7 +595,7 @@ public function suspend(Request $request, User $user)
     {
         $request->validate([
             'status' => 'required|in:reviewed,dismissed',
-            'reason' => 'nullable|string|max:2000',
+            'reason' => 'required|string|max:2000',
         ]);
         $appeal->update(['status' => $request->status]);
 

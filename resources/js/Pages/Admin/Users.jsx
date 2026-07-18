@@ -7,6 +7,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
+import LiftSuspensionModal from '@/Components/LiftSuspensionModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import { cleanParams } from '@/utils/queryParams';
@@ -175,6 +176,7 @@ export default function Users({ users, stats, filters }) {
     const [sort, setSort] = useState(filters.sort ?? 'name');
     const [direction, setDirection] = useState(filters.direction ?? 'asc');
     const [suspendTarget, setSuspendTarget] = useState(null);
+    const [liftTarget, setLiftTarget] = useState(null);
 
     const applyFilters = () => {
         router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
@@ -205,10 +207,7 @@ export default function Users({ users, stats, filters }) {
         router.patch(route('admin.users.toggle-role', user.id), {}, { preserveScroll: true });
     };
 
-    const liftSuspension = (user) => {
-        if (!confirm(`Lift the suspension on ${user.name}? They'll be able to log in immediately.`)) return;
-        router.post(route('admin.users.lift-suspension', user.id), {}, { preserveScroll: true });
-    };
+    const liftSuspension = (user) => setLiftTarget(user);
 
     const resetPassword = (user) => {
         if (!confirm(`Reset ${user.name}'s password? A new temporary password will be emailed to them, expiring in 24 hours.`)) return;
@@ -364,6 +363,11 @@ export default function Users({ users, stats, filters }) {
                 user={suspendTarget}
                 show={suspendTarget !== null}
                 onClose={() => setSuspendTarget(null)}
+            />
+            <LiftSuspensionModal
+                user={liftTarget}
+                show={liftTarget !== null}
+                onClose={() => setLiftTarget(null)}
             />
         </AuthenticatedLayout>
     );
