@@ -87,7 +87,7 @@ function SuspensionNotice({ suspension }) {
                 {suspension.reason && (
                     <div className="px-5 py-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason given</p>
-                        <p className="mt-1.5 text-sm text-gray-700 dark:text-gray-300">{suspension.reason}</p>
+                        <p className="mt-1.5 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{suspension.reason}</p>
                     </div>
                 )}
 

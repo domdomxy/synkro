@@ -69,7 +69,7 @@ function AppealItem({ appeal }) {
                                     : 'Permanent'}
                             </p>
                             {appeal.user.suspension_reason && (
-                                <p className="mt-1 text-red-600 dark:text-red-400">Reason: {appeal.user.suspension_reason}</p>
+                                <p className="mt-1 whitespace-pre-wrap text-red-600 dark:text-red-400">Reason: {appeal.user.suspension_reason}</p>
                             )}
                         </div>
                     )}
