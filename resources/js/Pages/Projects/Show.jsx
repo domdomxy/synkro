@@ -327,6 +327,7 @@ function ProjectInfoModal({ show, onClose, project }) {
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Description</p>
                     <div
                         className="mt-2 whitespace-pre-wrap break-words text-base text-gray-900 dark:text-gray-100"
+                        style={{ tabSize: 4 }}
                         dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
                     />
                 </div>

@@ -30,6 +30,27 @@ class AdminController extends Controller
         return max(1, min($perPage, 500));
     }
 
+    /**
+     * Real month-over-month change for an already-scoped query (e.g. "currently active
+     * users"), based on a timestamp column that records when a row entered that scope
+     * (active_status_changed_at, role_changed_at, a log table's created_at, etc). Mirrors
+     * the created_at-based growth rate in dashboard(), generalized to work with any query
+     * + column instead of being hardcoded to a model's created_at.
+     */
+    private function monthOverMonthChange($query, string $column): array
+    {
+        $startOfMonth = now()->startOfMonth();
+        // Clone before each count — the same builder can't be reused across two different
+        // where() calls without the second corrupting the first's conditions.
+        $before = (clone $query)->where($column, '<', $startOfMonth)->count();
+        $thisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count();
+        $change = $before > 0
+            ? round($thisMonth / $before * 100, 1)
+            : ($thisMonth > 0 ? 100.0 : 0.0);
+
+        return ['change' => $change];
+    }
+
     private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
         if ($range === 'custom' && $from && $to) {

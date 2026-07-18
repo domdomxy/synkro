@@ -15,8 +15,11 @@ use App\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'password', 'role','is_active','avatar_path','is_suspended','suspended_until',
-'suspension_reason','suspended_by','email_preferences','active_status_changed_at','role_changed_at'],'must_change_password','temp_password_expires_at','notification_preferences',)]
+#[Fillable([
+    'name', 'email', 'password', 'role', 'is_active', 'avatar_path', 'is_suspended', 'suspended_until',
+    'suspension_reason', 'suspended_by', 'email_preferences', 'active_status_changed_at', 'role_changed_at',
+    'must_change_password', 'temp_password_expires_at', 'notification_preferences',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {   
