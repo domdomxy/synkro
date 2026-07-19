@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useMemo, useState } from 'react';
+import { localDateTimeToIso } from '@/utils/datetime';
 
 const statusLabels = {
     todo: 'To Do',
@@ -320,13 +321,14 @@ function ReminderCard({ r, overdue, onDismiss, onRemove }) {
 }
 
 function RemindersPanel({ reminders }) {
-    const { data, setData, post, processing, reset, errors } = useForm({
+    const { data, setData, post, processing, reset, errors, transform } = useForm({
         title: '', note: '', remind_at: '', repeat_interval: 'none',
     });
     const [showForm, setShowForm] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
+        transform((data) => ({ ...data, remind_at: localDateTimeToIso(data.remind_at) }));
         post(route('reminders.store'), { onSuccess: () => { reset(); setShowForm(false); } });
     };
 

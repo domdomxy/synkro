@@ -4,6 +4,7 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
+import { localDateTimeToIso } from '@/utils/datetime';
 
 const DURATION_OPTIONS = [
     { value: '1', label: '1 day' },
@@ -20,9 +21,11 @@ export default function SuspendModal({ user, show, onClose }) {
     const submit = (e) => {
         e.preventDefault();
         if (!confirm(`Suspend ${user?.name}? ${form.data.duration === 'permanent' ? 'This will be permanent until manually lifted.' : ''}`)) return;
-        form.post(route('admin.users.suspend', user.id), {
-            onSuccess: () => { form.reset(); onClose(); },
-        });
+        form
+            .transform((data) => ({ ...data, custom_date: localDateTimeToIso(data.custom_date) }))
+            .post(route('admin.users.suspend', user.id), {
+                onSuccess: () => { form.reset(); onClose(); },
+            });
     };
 
     return (
