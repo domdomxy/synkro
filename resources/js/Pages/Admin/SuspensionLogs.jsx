@@ -4,7 +4,6 @@ import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
-import SortableHeader from '@/Components/SortableHeader';
 import FilterSelect from '@/Components/FilterSelect';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
@@ -15,6 +14,93 @@ function SearchIcon() {
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
+    );
+}
+
+function ChevronIcon({ open }) {
+    return (
+        <svg
+            className={`mt-1 h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+        >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+    );
+}
+
+function StatusIcon({ lifted, className }) {
+    return lifted ? (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+    ) : (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+        </svg>
+    );
+}
+
+function SuspensionLogRow({ log }) {
+    const [open, setOpen] = useState(false);
+    const lifted = Boolean(log.lifted_at);
+
+    return (
+        <li className="border-b dark:border-gray-700 last:border-0">
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="flex w-full items-start gap-3 px-6 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            >
+                <span className={`mt-0.5 shrink-0 ${lifted ? 'text-green-500' : 'text-red-500'}`}>
+                    <StatusIcon lifted={lifted} className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Avatar user={log.user} size="h-5 w-5" />
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.user?.name ?? 'Deleted user'}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${
+                            lifted
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                        }`}>
+                            {lifted ? 'Lifted' : 'Active'}
+                        </span>
+                    </div>
+                    <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400 ${open ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+                        {log.reason || <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        Suspended {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        {log.suspended_by?.name && <span> by {log.suspended_by.name}</span>}
+                    </p>
+                </div>
+                <ChevronIcon open={open} />
+            </button>
+
+            {open && (
+                <div className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+                    <dl className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Until</dt>
+                            <dd className="text-sm text-gray-700 dark:text-gray-300">
+                                {log.suspended_until
+                                    ? new Date(log.suspended_until).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+                                    : 'Permanent'}
+                            </dd>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</dt>
+                            <dd className="text-sm text-gray-700 dark:text-gray-300">
+                                {lifted
+                                    ? (log.lifted_by
+                                        ? `Lifted ${new Date(log.lifted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })} by ${log.lifted_by.name}`
+                                        : `Automatically lifted ${new Date(log.lifted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`)
+                                    : 'Still active'}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            )}
+        </li>
     );
 }
 
@@ -44,13 +130,6 @@ export default function SuspensionLogs({ logs, filters }) {
     const handlePerPageChange = (value) => {
         setPerPage(value);
         router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
-    };
-
-    const handleSort = (column) => {
-        const newDirection = sort === column && direction === 'desc' ? 'asc' : 'desc';
-        setSort(column);
-        setDirection(newDirection);
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort: column, direction: newDirection }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const hasActiveFilters = search !== '' || status !== 'all';
@@ -89,6 +168,22 @@ export default function SuspensionLogs({ logs, filters }) {
                                 { value: 'lifted', label: 'Lifted' },
                             ]}
                         />
+                        <FilterSelect
+                            value={`${sort}:${direction}`}
+                            onChange={(v) => {
+                                const [col, dir] = v.split(':');
+                                setSort(col);
+                                setDirection(dir);
+                                router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort: col, direction: dir }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+                            }}
+                            className="w-48"
+                            options={[
+                                { value: 'created_at:desc', label: 'Newest first' },
+                                { value: 'created_at:asc', label: 'Oldest first' },
+                                { value: 'suspended_until:asc', label: 'Ends soonest' },
+                                { value: 'suspended_until:desc', label: 'Ends latest' },
+                            ]}
+                        />
                         <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>
@@ -100,48 +195,24 @@ export default function SuspensionLogs({ logs, filters }) {
                     </p>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-                                <tr>
-                                    <th className="px-6 py-3">User</th>
-                                    <th className="px-6 py-3">Suspended By</th>
-                                    <th className="px-6 py-3">Reason</th>
-                                    <SortableHeader label="Until" column="suspended_until" sort={sort} direction={direction} onSort={handleSort} />
-                                    <th className="px-6 py-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y dark:divide-gray-700">
-                                {logs.data.map((log) => (
-                                    <tr key={log.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                        <td className="px-6 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar user={log.user} size="h-7 w-7" />
-                                                <span className="truncate text-gray-700 dark:text-gray-300">{log.user?.name ?? 'Deleted user'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3 text-gray-500 dark:text-gray-400">{log.suspended_by?.name}</td>
-                                        <td className="max-w-xs truncate px-6 py-3 text-gray-500 dark:text-gray-400" title={log.reason}>{log.reason}</td>
-                                        <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
-                                            {log.suspended_until ? new Date(log.suspended_until).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Permanent'}
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            {log.lifted_at ? (
-                                                <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700 dark:bg-green-900 dark:text-green-300">
-                                                    {log.lifted_by
-                                                        ? `Lifted ${new Date(log.lifted_at).toLocaleDateString(undefined, { dateStyle: 'medium' })} by ${log.lifted_by.name}`
-                                                        : `Automatically lifted on ${new Date(log.lifted_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}`}
-                                                </span>
-                                            ) : (
-                                                <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-700 dark:bg-red-900 dark:text-red-300">Active</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {logs.data.length === 0 && (
-                                    <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">No suspension history matches your filters.</td></tr>
+                        {logs.data.length === 0 ? (
+                            <div className="px-6 py-10 text-center">
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                    {hasActiveFilters ? 'No suspension history matches your filters.' : 'No suspension history recorded yet.'}
+                                </p>
+                                {hasActiveFilters && (
+                                    <button onClick={clearFilters} className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                                        Clear filters
+                                    </button>
                                 )}
-                            </tbody>
-                        </table>
+                            </div>
+                        ) : (
+                            <ul>
+                                {logs.data.map((log) => (
+                                    <SuspensionLogRow key={log.id} log={log} />
+                                ))}
+                            </ul>
+                        )}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
                             <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                             <Pagination meta={logs} />
