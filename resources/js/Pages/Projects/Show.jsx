@@ -9,6 +9,7 @@ import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
+import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -308,6 +309,11 @@ function HeaderIconButton({ onClick, href, title, children }) {
 }
 
 function ProjectInfoModal({ show, onClose, project }) {
+    const formatTimestamp = (dateString) => {
+        if (!dateString) return null;
+        return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    };
+
     return (
         <Modal show={show} onClose={onClose} maxWidth="3xl">
             <div className="flex max-h-[80vh] flex-col">
@@ -315,6 +321,20 @@ function ProjectInfoModal({ show, onClose, project }) {
                     <div className="min-w-0">
                         <h2 className="break-words text-lg font-semibold text-gray-900 dark:text-gray-100">{project.name}</h2>
                         <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Project ID: {project.id}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
+                            <span className="flex items-center gap-1">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Created {formatTimestamp(project.created_at)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Last updated {formatTimestamp(project.updated_at)}
+                            </span>
+                        </div>
                     </div>
                     <button onClick={onClose} className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -421,7 +441,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const submitTask = (e) => {
         e.preventDefault();
-        taskForm.post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
+        taskForm
+            .transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }))
+            .post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
     const removeMember = (member) => {
