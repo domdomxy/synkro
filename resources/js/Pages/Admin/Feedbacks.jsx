@@ -76,7 +76,7 @@ function CategoryBadge({ category }) {
 
 function FeedbackItem({ feedback, isHighlighted }) {
     const [open, setOpen] = useState(false);
-    const responseForm = useForm({ message: '' });
+    const updateForm = useForm({ status: feedback.status, message: '' });
     const isClosed = ['closed', 'rejected'].includes(feedback.status);
     const userReplyCount = feedback.responses?.filter((r) => r.sender_type === 'user').length ?? 0;
 
@@ -85,15 +85,11 @@ function FeedbackItem({ feedback, isHighlighted }) {
         if (isHighlighted) setOpen(true);
     }, [isHighlighted]);
 
-    const updateStatus = (status) => {
-        router.patch(route('admin.feedbacks.status', feedback.id), { status }, { preserveScroll: true });
-    };
-
-    const submitResponse = (e) => {
+    const submitUpdate = (e) => {
         e.preventDefault();
-        responseForm.post(route('admin.feedbacks.respond', feedback.id), {
+        updateForm.patch(route('admin.feedbacks.update', feedback.id), {
             preserveScroll: true,
-            onSuccess: () => responseForm.reset(),
+            onSuccess: () => updateForm.setData('message', ''),
         });
     };
 
@@ -158,14 +154,15 @@ function FeedbackItem({ feedback, isHighlighted }) {
                     )}
 
                     <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Update Status</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Status</p>
                         <div className="flex flex-wrap gap-2">
                             {['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => (
                                 <button
                                     key={s}
-                                    onClick={() => updateStatus(s)}
+                                    type="button"
+                                    onClick={() => updateForm.setData('status', s)}
                                     className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition ${
-                                        feedback.status === s
+                                        updateForm.data.status === s
                                             ? 'bg-indigo-600 text-white'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                                     }`}
@@ -174,9 +171,9 @@ function FeedbackItem({ feedback, isHighlighted }) {
                                 </button>
                             ))}
                         </div>
-                        {isClosed && (
-                            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                                This ticket is {feedback.status}; the user can no longer reply. Reopen by changing the status if needed.
+                        {updateForm.data.status !== feedback.status && (
+                            <p className="mt-2 text-xs text-indigo-500 dark:text-indigo-400">
+                                Staged: {feedback.status} → {updateForm.data.status}. Add a message below and send to apply it.
                             </p>
                         )}
                     </div>
@@ -207,29 +204,31 @@ function FeedbackItem({ feedback, isHighlighted }) {
                         </div>
                     )}
 
-                    {isClosed ? (
+                    {isClosed && updateForm.data.status === feedback.status ? (
                         <div className="rounded-md bg-gray-50 p-3 dark:bg-gray-900/50">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                This ticket is {feedback.status}. Change the status above to reopen it before replying.
+                                This ticket is {feedback.status}. Change the status above to reopen it before sending a message.
                             </p>
                         </div>
                     ) : (
-                        <form onSubmit={submitResponse} className="space-y-2">
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Send Response</p>
+                        <form onSubmit={submitUpdate} className="space-y-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                Message <span className="normal-case text-gray-400">(required to save any change, including status)</span>
+                            </p>
                             <textarea
-                                value={responseForm.data.message}
-                                onChange={(e) => responseForm.setData('message', e.target.value)}
-                                placeholder="Write a response to this feedback..."
+                                value={updateForm.data.message}
+                                onChange={(e) => updateForm.setData('message', e.target.value)}
+                                placeholder="Write a message to send with this update..."
                                 rows={3}
                                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
-                            {responseForm.errors.message && <p className="text-xs text-red-500">{responseForm.errors.message}</p>}
+                            {updateForm.errors.message && <p className="text-xs text-red-500">{updateForm.errors.message}</p>}
                             <button
                                 type="submit"
-                                disabled={responseForm.processing}
+                                disabled={updateForm.processing || !updateForm.data.message.trim()}
                                 className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                             >
-                                Send Response
+                                {updateForm.data.status !== feedback.status ? 'Update Status & Send' : 'Send Message'}
                             </button>
                         </form>
                     )}

@@ -127,8 +127,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/projects', [AdminController::class, 'projects'])->name('projects');
     Route::delete('/projects/{project}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
     Route::get('/feedbacks', [FeedbackAdminController::class, 'index'])->name('feedbacks');
-    Route::patch('/feedbacks/{feedback}/status', [FeedbackAdminController::class, 'updateStatus'])->name('feedbacks.status');
-    Route::post('/feedbacks/{feedback}/respond', [FeedbackAdminController::class, 'respond'])->name('feedbacks.respond');
+    Route::patch('/feedbacks/{feedback}', [FeedbackAdminController::class, 'update'])->name('feedbacks.update');
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');

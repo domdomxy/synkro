@@ -133,16 +133,6 @@ function AppealItem({ appeal }) {
                             </button>
                         )}
                         <button
-                            onClick={() => updateStatus('reviewed', true)}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                                appeal.status === 'reviewed'
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                            }`}
-                        >
-                            Mark Reviewed
-                        </button>
-                        <button
                             onClick={() => updateStatus('dismissed', true)}
                             className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                                 appeal.status === 'dismissed'

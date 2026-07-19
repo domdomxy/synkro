@@ -34,64 +34,67 @@ class FeedbackAdminController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Feedback $feedback)
+    /**
+     * Combines what used to be two separate actions (updateStatus + respond) into one, so
+     * a status change and a message are always sent to the submitter as a single email
+     * instead of two back-to-back ones for what's really one action on the admin's part.
+     * A message is required even when the status isn't changing, so every update always
+     * has something worth emailing about.
+     */
+    public function update(Request $request, Feedback $feedback)
     {
+        $wasClosed = in_array($feedback->status, ['closed', 'rejected']);
+
         $validated = $request->validate([
             'status' => 'required|in:pending,reviewing,accepted,rejected,closed',
-        ]);
-
-        $oldStatus = $feedback->status;
-        $feedback->update($validated);
-
-        if ($oldStatus !== $validated['status']) {
-            \App\Support\AdminAlerts::broadcastRefresh();
-
-            AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']}", $feedback);
-
-            $lines = ["The status of your ticket \"{$feedback->subject}\" has been updated."];
-
-            if ($validated['status'] === 'closed') {
-                $lines[] = 'If you have further questions, you can reopen it from the tracking page.';
-            }
-
-            $this->notifySubmitter(
-                $feedback,
-                "Ticket status updated ({$feedback->tracking_id})",
-                $lines,
-                highlight: ['label' => 'Status', 'content' => ucfirst($validated['status'])],
-            );
-        }
-
-        return back()->with('success', 'Status updated.');
-    }
-
-    public function respond(Request $request, Feedback $feedback)
-    {
-        if (in_array($feedback->status, ['closed', 'rejected'])) {
-            return back()->withErrors(['message' => 'This ticket is closed. Change its status to respond.']);
-        }
-
-        $validated = $request->validate([
             'message' => 'required|string|max:2000',
         ]);
 
+        $stillClosed = in_array($validated['status'], ['closed', 'rejected']);
+        if ($wasClosed && $stillClosed) {
+            return back()->withErrors(['message' => 'This ticket is closed. Reopen it (change the status) to respond.']);
+        }
+
+        $oldStatus = $feedback->status;
+        $statusChanged = $oldStatus !== $validated['status'];
+
+        $feedback->update(['status' => $validated['status']]);
+
         FeedbackResponse::create([
-            ...$validated,
+            'message' => $validated['message'],
             'feedback_id' => $feedback->id,
             'admin_id' => Auth::id(),
             'sender_type' => 'admin',
         ]);
 
+        if ($statusChanged) {
+            \App\Support\AdminAlerts::broadcastRefresh();
+
+            AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']}", $feedback);
+        }
         AdminLog::log('ticket.responded', "Responded to ticket {$feedback->tracking_id} (\"{$feedback->subject}\")", $feedback);
+
+        $lines = $statusChanged
+            ? ["The status of your ticket \"{$feedback->subject}\" has been updated, and support added a message:"]
+            : ["Support responded to your ticket \"{$feedback->subject}\":"];
+
+        if ($statusChanged && $validated['status'] === 'closed') {
+            $lines[] = 'If you have further questions, you can reopen it from the tracking page.';
+        }
 
         $this->notifySubmitter(
             $feedback,
-            "Support replied to your ticket ({$feedback->tracking_id})",
-            ["Support responded to your ticket \"{$feedback->subject}\":"],
-            highlight: ['label' => null, 'content' => $validated['message']],
+            $statusChanged
+                ? "Ticket updated ({$feedback->tracking_id})"
+                : "Support replied to your ticket ({$feedback->tracking_id})",
+            $lines,
+            highlight: [
+                'label' => $statusChanged ? 'Status: '.ucfirst($validated['status']) : null,
+                'content' => $validated['message'],
+            ],
         );
 
-        return back()->with('success', 'Response sent.');
+        return back()->with('success', 'Ticket updated.');
     }
 
     /**
