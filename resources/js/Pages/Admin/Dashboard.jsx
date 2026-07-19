@@ -3,7 +3,8 @@ import Avatar from '@/Components/Avatar';
 import StatCard from '@/Components/StatCard';
 import { Head, Link, router } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useEcho } from '@laravel/echo-react';
 
 const statusLabels = { todo: 'To Do', in_progress: 'In Progress', submitted: 'Submitted', in_review: 'In Review', done: 'Done' };
 const statusColors = { todo: 'bg-gray-400', in_progress: 'bg-blue-500', submitted: 'bg-yellow-500', in_review: 'bg-purple-500', done: 'bg-green-500' };
@@ -147,6 +148,19 @@ function RecentPanel({ title, viewAllHref, viewAllLabel, children }) {
 export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = stats.tasks;
 
+    const [liveCounts, setLiveCounts] = useState({
+        pendingAppeals: stats.pendingAppeals,
+        pendingFeedbacks: stats.pendingFeedbacks,
+    });
+
+    useEffect(() => {
+        setLiveCounts({ pendingAppeals: stats.pendingAppeals, pendingFeedbacks: stats.pendingFeedbacks });
+    }, [stats.pendingAppeals, stats.pendingFeedbacks]);
+
+    useEcho('admin-alerts', ['.alerts.updated'], (payload) => {
+        setLiveCounts({ pendingAppeals: payload.pendingAppeals, pendingFeedbacks: payload.pendingFeedbacks });
+    });
+
     const dateRangeLabel = (() => {
         if (range === 'custom' && customFrom && customTo) return `${new Date(customFrom).toLocaleDateString(undefined, { dateStyle: 'medium' })} – ${new Date(customTo).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
         if (range === 'today') return new Date().toLocaleDateString(undefined, { dateStyle: 'full' });
@@ -156,8 +170,8 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
     const attentionItems = [
         { label: 'Tasks with pending submission decisions', count: stats.pendingResolution, icon: statIcons.warning, color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
-        { label: 'Suspension appeals awaiting review', count: stats.pendingAppeals, icon: statIcons.appeal, color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400', href: route('admin.appeals') },
-        { label: 'Feedback tickets awaiting review', count: stats.pendingFeedbacks, icon: statIcons.feedback, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400', href: route('admin.feedbacks') },
+        { label: 'Suspension appeals awaiting review', count: liveCounts.pendingAppeals, icon: statIcons.appeal, color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400', href: route('admin.appeals') },
+        { label: 'Feedback tickets awaiting review', count: liveCounts.pendingFeedbacks, icon: statIcons.feedback, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400', href: route('admin.feedbacks') },
     ];
 
     return (

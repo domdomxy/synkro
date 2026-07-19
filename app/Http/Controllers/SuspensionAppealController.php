@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SuspensionAppeal;
 use App\Models\User;
+use App\Support\DeviceTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -22,7 +23,7 @@ class SuspensionAppealController extends Controller
 
         if (RateLimiter::tooManyAttempts($throttleKey, 1)) {
             $seconds = RateLimiter::availableIn($throttleKey);
-            $cooldownEndsAt = now()->addSeconds($seconds);
+            $cooldownEndsAt = now()->addSeconds($seconds)->setTimezone(DeviceTimezone::resolve($request));
 
             return back()
                 ->withErrors([
@@ -52,6 +53,8 @@ class SuspensionAppealController extends Controller
             'user_id' => $user->id,
             'message' => $request->message,
         ]);
+
+        \App\Support\AdminAlerts::broadcastRefresh();
 
         return back()
             ->with('success', 'Your appeal has been submitted. We will review it as soon as possible.')

@@ -17,3 +17,7 @@ Broadcast::channel('project.{project}', function ($user, Project $project) {
 Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+Broadcast::channel('admin-alerts', function ($user) {
+    return $user->role === 'admin';
+});

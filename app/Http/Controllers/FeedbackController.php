@@ -44,6 +44,8 @@ class FeedbackController extends Controller
         $this->notifyAdminsNewTicket($feedback);
         $this->notifySubmitterNewTicket($feedback);
 
+        \App\Support\AdminAlerts::broadcastRefresh();
+
         return redirect()->route('feedback.page')
             ->with('feedback_tracking_id', $feedback->tracking_id);
     }

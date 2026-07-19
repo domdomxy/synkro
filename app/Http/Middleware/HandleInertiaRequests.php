@@ -52,9 +52,7 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 return [
-                    'hasPending' =>
-                        Feedback::whereIn('status', ['pending', 'reviewing'])->exists() ||
-                        SuspensionAppeal::where('status', 'pending')->exists(),
+                    'hasPending' => \App\Support\AdminAlerts::hasPending(),
                 ];
             })(),
         ];

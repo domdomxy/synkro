@@ -169,6 +169,8 @@ class AdminController extends Controller
             ->whereDoesntHave('tasks', fn ($q) => $q->where('status', '!=', 'done'))
             ->count();
 
+        $alertCounts = \App\Support\AdminAlerts::counts();
+
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
             'customFrom' => request('from'),
@@ -188,8 +190,8 @@ class AdminController extends Controller
                 'recentUsers' => $recentUsers,
                 'recentProjects' => $recentProjects,
                 'pendingResolution' => Task::where('pending_resolution', true)->count(),
-                'pendingAppeals' => SuspensionAppeal::where('status', 'pending')->count(),
-                'pendingFeedbacks' => Feedback::whereIn('status', ['pending', 'reviewing'])->count(),
+                'pendingAppeals' => $alertCounts['pendingAppeals'],
+                'pendingFeedbacks' => $alertCounts['pendingFeedbacks'],
                 'newUsersThisMonth' => $newUsersThisMonth,
                 'userGrowthRate' => $userGrowthRate,
                 'projectGrowthRate' => $projectGrowthRate,
@@ -602,6 +604,8 @@ public function suspend(Request $request, User $user)
             'reason' => 'required|string|max:2000',
         ]);
         $appeal->update(['status' => $request->status]);
+
+        \App\Support\AdminAlerts::broadcastRefresh();
 
         AdminLog::log(
             $request->status === 'reviewed' ? 'appeal.reviewed' : 'appeal.dismissed',

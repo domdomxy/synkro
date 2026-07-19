@@ -6,13 +6,25 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import NotificationBell from '@/Components/NotificationBell';
 import FlashMessages from '@/Components/FlashMessages';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useEcho } from '@laravel/echo-react';
 import SuspensionListener from '@/Components/SuspensionListener';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { adminAlerts } = usePage().props;
+    const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
+
+    useEffect(() => {
+        setHasPendingAlert(adminAlerts?.hasPending ?? false);
+    }, [adminAlerts]);
+
+    useEcho(
+        user.role === 'admin' ? 'admin-alerts' : null,
+        ['.alerts.updated'],
+        (payload) => setHasPendingAlert(Boolean(payload.hasPending))
+    );
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -39,7 +51,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <NavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
                                             Admin
                                         </NavLink>
-                                        {adminAlerts?.hasPending && (
+                                        {hasPendingAlert && (
                                             <span className="pointer-events-none absolute -right-1 top-5 h-2 w-2 rounded-full bg-red-500" />
                                         )}
                                     </div>
@@ -130,7 +142,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
                                     Admin
                                 </ResponsiveNavLink>
-                                {adminAlerts?.hasPending && (
+                                {hasPendingAlert && (
                                     <span className="pointer-events-none absolute right-4 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-500" />
                                 )}
                             </div>

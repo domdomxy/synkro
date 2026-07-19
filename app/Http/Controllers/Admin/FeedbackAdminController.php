@@ -44,6 +44,8 @@ class FeedbackAdminController extends Controller
         $feedback->update($validated);
 
         if ($oldStatus !== $validated['status']) {
+            \App\Support\AdminAlerts::broadcastRefresh();
+
             AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']}", $feedback);
 
             $lines = ["The status of your ticket \"{$feedback->subject}\" has been updated."];
