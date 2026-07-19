@@ -40,8 +40,6 @@ const actionIconConfig = {
     'user.suspension_lifted': { path: ICON_PATHS.check, color: 'text-green-500' },
     'user.role_changed': { path: ICON_PATHS.swap, color: 'text-purple-500' },
     'user.password_reset': { path: ICON_PATHS.lock, color: 'text-amber-500' },
-    'appeal.approved': { path: ICON_PATHS.check, color: 'text-teal-500' },
-    'appeal.rejected': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
     'appeal.reviewed': { path: ICON_PATHS.check, color: 'text-teal-500' },
     'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
     'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
@@ -53,8 +51,6 @@ const actionColors = {
     'user.suspension_lifted': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     'user.role_changed': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
     'user.password_reset': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-    'appeal.approved': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
-    'appeal.rejected': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     'appeal.reviewed': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
     'appeal.dismissed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     'ticket.status_changed': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
@@ -78,13 +74,14 @@ function AdminLogRow({ log, actionCatalog }) {
     const iconConfig = actionIconConfig[log.action] ?? { path: ICON_PATHS.dot, color: 'text-gray-400' };
     const relative = timeAgo(log.created_at);
     const description = log.description ?? '';
-    const isLong = description.length > 100;
+    const reason = log.reason ?? '';
+    const hasReason = reason.trim().length > 0;
 
     return (
         <li className="border-b dark:border-gray-700 last:border-0">
             <button
-                onClick={() => isLong && setOpen((v) => !v)}
-                className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${isLong ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
+                onClick={() => hasReason && setOpen((v) => !v)}
+                className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasReason ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
                 <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
                     <Icon path={iconConfig.path} className="h-4 w-4" />
@@ -100,16 +97,31 @@ function AdminLogRow({ log, actionCatalog }) {
                         </span>
                     </div>
                     {description && (
-                        <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400 ${open ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                             {description}
                         </p>
                     )}
-                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                    {hasReason && !open && (
+                        <p className="mt-1 text-xs italic text-gray-400 dark:text-gray-500">
+                            Click to view reason
+                        </p>
+                    )}
+                    {hasReason && open && (
+                        <div className="mt-2 rounded-md border-l-2 border-indigo-300 bg-indigo-50/60 py-2 pl-3 pr-2 dark:border-indigo-700 dark:bg-indigo-950/20">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-indigo-400 dark:text-indigo-500">
+                                Reason given
+                            </p>
+                            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                {reason}
+                            </p>
+                        </div>
+                    )}
+                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                         {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         {relative && <span className="ml-1.5 text-gray-300 dark:text-gray-600">· {relative}</span>}
                     </p>
                 </div>
-                {isLong && (
+                {hasReason && (
                     <svg
                         className={`mt-1 h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminLog extends Model
 {
-    protected $fillable = ['admin_id', 'action', 'description', 'target_type', 'target_id'];
+    protected $fillable = ['admin_id', 'action', 'description', 'reason', 'target_type', 'target_id'];
 
     public function admin(): BelongsTo
     {
@@ -18,13 +18,17 @@ class AdminLog extends Model
     /**
      * Record an administration action for the audit log.
      * $target is any Eloquent model the action was performed on (user, feedback, appeal, etc).
+     * $reason is optional, admin-supplied free text (e.g. why a suspension was lifted) — kept
+     * separate from $description so the UI can always show the summary while hiding the
+     * (potentially long, sensitive, or user-quoted) reason until the log entry is expanded.
      */
-    public static function log(string $action, string $description, ?Model $target = null): self
+    public static function log(string $action, string $description, ?Model $target = null, ?string $reason = null): self
     {
         return self::create([
             'admin_id' => Auth::id(),
             'action' => $action,
             'description' => $description,
+            'reason' => $reason,
             'target_type' => $target ? class_basename($target) : null,
             'target_id' => $target?->getKey(),
         ]);
@@ -38,10 +42,8 @@ class AdminLog extends Model
             'user.suspension_lifted' => 'Suspension lifted',
             'user.role_changed' => 'Role changed',
             'user.password_reset' => 'Password reset',
-            'appeal.approved' => 'Appeal approved',
-            'appeal.rejected' => 'Appeal rejected',
-            'appeal.reviewed' => 'Appeal reviewed (legacy)',
-            'appeal.dismissed' => 'Appeal dismissed (legacy)',
+            'appeal.reviewed' => 'Appeal reviewed',
+            'appeal.dismissed' => 'Appeal dismissed',
             'ticket.status_changed' => 'Ticket status changed',
             'ticket.responded' => 'Ticket responded to',
         ];
