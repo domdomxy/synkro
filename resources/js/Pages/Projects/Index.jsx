@@ -250,7 +250,9 @@ export default function Index({ projects, showingArchived }) {
                             )}
                         </div>
                         {!showingArchived && (
-                            <PrimaryButton onClick={() => setShowCreateModal(true)}>New Project</PrimaryButton>
+                            <button onClick={() => setShowCreateModal(true)} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                New Project
+                            </button>
                         )}
                     </div>
 

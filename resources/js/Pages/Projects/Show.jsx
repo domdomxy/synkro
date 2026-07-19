@@ -547,7 +547,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 <option value="tester">Tester</option>
                                             </select>
                                         </div>
-                                        <PrimaryButton disabled={memberForm.processing}>Add</PrimaryButton>
+                                        <button type="submit" disabled={memberForm.processing} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                            Add
+                                        </button>
                                     </form>
                                 </div>
                             )}
