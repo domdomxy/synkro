@@ -441,9 +441,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const submitTask = (e) => {
         e.preventDefault();
-        taskForm
-            .transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }))
-            .post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
+        taskForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
+        taskForm.post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
     const removeMember = (member) => {

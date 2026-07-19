@@ -21,11 +21,10 @@ export default function SuspendModal({ user, show, onClose }) {
     const submit = (e) => {
         e.preventDefault();
         if (!confirm(`Suspend ${user?.name}? ${form.data.duration === 'permanent' ? 'This will be permanent until manually lifted.' : ''}`)) return;
-        form
-            .transform((data) => ({ ...data, custom_date: localDateTimeToIso(data.custom_date) }))
-            .post(route('admin.users.suspend', user.id), {
-                onSuccess: () => { form.reset(); onClose(); },
-            });
+        form.transform((data) => ({ ...data, custom_date: localDateTimeToIso(data.custom_date) }));
+        form.post(route('admin.users.suspend', user.id), {
+            onSuccess: () => { form.reset(); onClose(); },
+        });
     };
 
     return (

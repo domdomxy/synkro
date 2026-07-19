@@ -222,18 +222,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const saveEdit = (e) => {
         e.preventDefault();
         if (!confirm('Save changes to this task?')) return;
-        editForm
-            .transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }))
-            .patch(route('tasks.update', task.id), {
-                onSuccess: () => {
-                    // Without this, isDirty stays true after a successful save (it's compared
-                    // against the form's original mount-time defaults, which Inertia doesn't
-                    // update automatically), so reopening edit right after saving would show
-                    // Save Changes as active again with nothing new to save.
-                    editForm.setDefaults();
-                    setIsEditing(false);
-                },
-            });
+        editForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
+        editForm.patch(route('tasks.update', task.id), {
+            onSuccess: () => {
+                // Without this, isDirty stays true after a successful save (it's compared
+                // against the form's original mount-time defaults, which Inertia doesn't
+                // update automatically), so reopening edit right after saving would show
+                // Save Changes as active again with nothing new to save.
+                editForm.setDefaults();
+                setIsEditing(false);
+            },
+        });
     };
 
     const addFiles = (e) => {
