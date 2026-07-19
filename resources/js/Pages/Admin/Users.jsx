@@ -10,6 +10,7 @@ import SuspendModal from '@/Components/SuspendModal';
 import LiftSuspensionModal from '@/Components/LiftSuspensionModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import FilterSelect from '@/Components/FilterSelect';
 import { cleanParams } from '@/utils/queryParams';
 
 
@@ -250,22 +251,37 @@ export default function Users({ users, stats, filters }) {
                                     className="w-64 pl-9"
                                 />
                             </div>
-                            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                <option value="all">All Roles</option>
-                                <option value="admin">Admin</option>
-                                <option value="user">User</option>
-                            </select>
-                            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="suspended">Suspended</option>
-                            </select>
-                            <select value={verifiedFilter} onChange={(e) => setVerifiedFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                <option value="all">Verified & Unverified</option>
-                                <option value="verified">Verified Only</option>
-                                <option value="unverified">Unverified Only</option>
-                            </select>
+                            <FilterSelect
+                                value={roleFilter}
+                                onChange={setRoleFilter}
+                                className="w-36"
+                                options={[
+                                    { value: 'all', label: 'All Roles' },
+                                    { value: 'admin', label: 'Admin' },
+                                    { value: 'user', label: 'User' },
+                                ]}
+                            />
+                            <FilterSelect
+                                value={statusFilter}
+                                onChange={setStatusFilter}
+                                className="w-44"
+                                options={[
+                                    { value: 'all', label: 'All Statuses' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' },
+                                    { value: 'suspended', label: 'Suspended' },
+                                ]}
+                            />
+                            <FilterSelect
+                                value={verifiedFilter}
+                                onChange={setVerifiedFilter}
+                                className="w-52"
+                                options={[
+                                    { value: 'all', label: 'Verified & Unverified' },
+                                    { value: 'verified', label: 'Verified Only' },
+                                    { value: 'unverified', label: 'Unverified Only' },
+                                ]}
+                            />
                             <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                             {hasActiveFilters && (
                                 <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear filters</button>

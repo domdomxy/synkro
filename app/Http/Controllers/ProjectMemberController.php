@@ -69,11 +69,6 @@ class ProjectMemberController extends Controller
             'role' => $validated['role'],
         ]);
 
-        ProjectActivityLog::log($project, 'invitation_sent', [
-            'target_name' => $user->name,
-            'role' => $validated['role'],
-        ]);
-
         $inviteUrl = route('invitations.show', $invitation->token, false);
 
         $notification = UserNotification::create([
@@ -104,16 +99,7 @@ class ProjectMemberController extends Controller
     public function destroyInvitation(ProjectInvitation $invitation)
     {
         $this->authorize('manageMembers', $invitation->project);
-
-        if ($invitation->status !== 'pending') {
-            return back()->withErrors(['error' => 'Only pending invitations can be cancelled.']);
-        }
-
-        // Soft-revoke rather than delete: the invitation link/email/notification already sent
-        // to the user needs somewhere real to resolve to, so it can explain the invite was
-        // cancelled instead of just 404ing on them.
-        $invitation->update(['status' => 'revoked']);
-
+        $invitation->delete();
         return back()->with('success', 'Invitation cancelled.');
     }
 
@@ -162,17 +148,13 @@ class ProjectMemberController extends Controller
         return back()->with('success', 'Role updated.');
     }
 
-    public function destroy(Request $request, Project $project, User $user)
+    public function destroy(Project $project, User $user)
     {
         $this->authorize('manageMembers', $project);
 
         if ($project->owner_id === $user->id) {
             return back()->withErrors(['error' => 'Cannot remove the project owner.']);
         }
-
-        $validated = $request->validate([
-            'reason' => 'required|string|max:2000',
-        ]);
 
         $member = $project->members()->where('user_id', $user->id)->first();
         $role = $member?->pivot->role;
@@ -198,22 +180,18 @@ class ProjectMemberController extends Controller
             $user,
             'project.removed',
             "You were removed from {$project->name}",
-            [
-                "You've been removed from the project \"{$project->name}\".",
-                "Reason: {$validated['reason']}",
-            ]
+            ["You've been removed from the project \"{$project->name}\"."]
         );
 
         ProjectActivityLog::log($project, 'member_removed', [
             'target_name' => $user->name,
             'role' => $role,
-            'reason' => $validated['reason'],
         ]);
 
         return back()->with('success', 'Member removed.');
     }
 
-    public function leave(Project $project)
+    public function leave(Request $request, Project $project)
     {
         $member = $project->members()->where('user_id', Auth::id())->first();
 
@@ -225,8 +203,13 @@ class ProjectMemberController extends Controller
             return back()->withErrors(['error' => 'Transfer ownership before leaving this project.']);
         }
 
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
         $leavingRole = $member->pivot->role;
         $leavingName = Auth::user()->name;
+        $reason = $validated['reason'];
 
         $this->freezeOrReset($project, Auth::id());
 
@@ -235,6 +218,7 @@ class ProjectMemberController extends Controller
         ProjectActivityLog::log($project, 'member_left', [
             'target_name' => $leavingName,
             'role' => $leavingRole,
+            'reason' => $reason,
         ]);
 
         $recipients = $project->members()
@@ -255,6 +239,18 @@ class ProjectMemberController extends Controller
             } catch (\Throwable $e) {
                 report($e);
             }
+
+            NotificationMailer::send(
+                $recipient,
+                'project.member_left',
+                "{$leavingName} left {$project->name}",
+                [
+                    "{$leavingName} ({$leavingRole}) left \"{$project->name}\" (ID {$project->id}).",
+                    "Reason given: \"{$reason}\"",
+                ],
+                url(route('projects.show', $project->id, false)),
+                'View Project'
+            );
         }
 
         return redirect()->route('projects.index')->with('success', 'You left the project.');

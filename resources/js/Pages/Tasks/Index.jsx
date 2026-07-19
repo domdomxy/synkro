@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
+import FilterSelect from '@/Components/FilterSelect';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -155,15 +156,12 @@ export default function Index({ tasks }) {
                                 className="w-72 pl-9"
                             />
                         </div>
-                        <select
+                        <FilterSelect
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            {Object.entries(statusOptions).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
-                        </select>
+                            onChange={setStatusFilter}
+                            className="w-44"
+                            options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                        />
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear

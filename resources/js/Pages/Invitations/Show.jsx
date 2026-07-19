@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 
-export default function Show({ invitation, rejoinBlocked, revoked }) {
+export default function Show({ invitation, rejoinBlocked }) {
     const acceptForm = useForm({});
     const denyForm = useForm({});
 
@@ -10,39 +10,11 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
         if (confirm('Decline this invitation?')) denyForm.post(route('invitations.deny', invitation.token));
     };
 
-    if (revoked) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
-                <Head title="Invitation" />
-                <div className="w-full max-w-3xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
-                        </svg>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-300">
-                        This invitation to <span className="font-medium text-gray-900 dark:text-gray-100">{invitation.project.name}</span> was cancelled
-                        by the project owner or a manager.
-                    </p>
-                    <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                        Ask them to send you a new invitation if this was unexpected.
-                    </p>
-
-                    <div className="mt-6 flex justify-center gap-3">
-                        <Link href={route('projects.index')} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                            Back to Projects
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     if (rejoinBlocked) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
                 <Head title="Invitation" />
-                <div className="w-full max-w-3xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                <div className="w-full max-w-2xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
                         <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -71,7 +43,7 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
                 <Head title="Invitation" />
-                <div className="w-full max-w-3xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
+                <div className="w-full max-w-2xl rounded-lg bg-white p-10 text-center shadow dark:bg-gray-800">
                     <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
                         accepted ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}>
@@ -107,7 +79,7 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
             <Head title="Project Invitation" />
-            <div className="w-full max-w-3xl rounded-lg bg-white p-10 shadow dark:bg-gray-800">
+            <div className="w-full max-w-2xl rounded-lg bg-white p-10 shadow dark:bg-gray-800">
                 <div className="mb-6 flex justify-center">
                     <ApplicationLogo className="h-12 w-12 fill-current text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -120,13 +92,10 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 <p className="mt-1 text-center text-sm text-gray-400 dark:text-gray-500">Project ID: {invitation.project_id}</p>
 
                 {invitation.project.description && (
-                    <div className="mt-6">
-                        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Project description</p>
-                        <div
-                            className="max-h-80 min-h-[88px] overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-gray-100 bg-gray-50 p-5 text-sm leading-relaxed text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            dangerouslySetInnerHTML={{ __html: invitation.project.description }}
-                        />
-                    </div>
+                    <div
+                        className="mt-5 max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        dangerouslySetInnerHTML={{ __html: invitation.project.description }}
+                    />
                 )}
 
                 <p className="mt-5 text-center text-base text-gray-500 dark:text-gray-400">

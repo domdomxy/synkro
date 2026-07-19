@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
+import FilterSelect from '@/Components/FilterSelect';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
@@ -22,7 +23,6 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
-    const decided = appeal.status !== 'pending';
 
     const updateStatus = (status, requireReason = false) => {
         if (requireReason && !reason.trim()) {
@@ -107,15 +107,9 @@ function AppealItem({ appeal }) {
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={2}
-                            disabled={decided}
                             placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
-                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
+                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
                         />
-                        {decided && (
-                            <p className="mt-1.5 text-xs text-indigo-500/80 dark:text-indigo-400/70">
-                                This appeal has already been marked <span className="font-medium capitalize">{appeal.status}</span> — a new reason can't be added.
-                            </p>
-                        )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -133,16 +127,14 @@ function AppealItem({ appeal }) {
                                         });
                                     }
                                 }}
-                                disabled={decided}
-                                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500"
                             >
                                 Lift Suspension & Mark Reviewed
                             </button>
                         )}
                         <button
                             onClick={() => updateStatus('reviewed', true)}
-                            disabled={decided}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                                 appeal.status === 'reviewed'
                                     ? 'bg-green-600 text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
@@ -152,8 +144,7 @@ function AppealItem({ appeal }) {
                         </button>
                         <button
                             onClick={() => updateStatus('dismissed', true)}
-                            disabled={decided}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                                 appeal.status === 'dismissed'
                                     ? 'bg-red-600 text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
@@ -203,16 +194,17 @@ export default function Appeals({ appeals, filters }) {
                         <button onClick={applySearch} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
                             Filter
                         </button>
-                        <select
+                        <FilterSelect
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="reviewed">Reviewed</option>
-                            <option value="dismissed">Dismissed</option>
-                        </select>
+                            onChange={setStatusFilter}
+                            className="w-44"
+                            options={[
+                                { value: 'all', label: 'All Statuses' },
+                                { value: 'pending', label: 'Pending' },
+                                { value: 'reviewed', label: 'Reviewed' },
+                                { value: 'dismissed', label: 'Dismissed' },
+                            ]}
+                        />
                         {pendingCount > 0 && (
                             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                                 {pendingCount} pending

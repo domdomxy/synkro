@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import SortableHeader from '@/Components/SortableHeader';
+import FilterSelect from '@/Components/FilterSelect';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -78,15 +79,16 @@ export default function SuspensionLogs({ logs, filters }) {
                                 className="w-72 pl-9"
                             />
                         </div>
-                        <select
+                        <FilterSelect
                             value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="all">All Statuses</option>
-                            <option value="active">Currently Suspended</option>
-                            <option value="lifted">Lifted</option>
-                        </select>
+                            onChange={setStatus}
+                            className="w-48"
+                            options={[
+                                { value: 'all', label: 'All Statuses' },
+                                { value: 'active', label: 'Currently Suspended' },
+                                { value: 'lifted', label: 'Lifted' },
+                            ]}
+                        />
                         <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>

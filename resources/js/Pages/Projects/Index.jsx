@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
+import FilterSelect from '@/Components/FilterSelect';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -230,17 +231,18 @@ export default function Index({ projects, showingArchived }) {
                                     className="w-72 pl-9"
                                 />
                             </div>
-                            <select
+                            <FilterSelect
                                 value={roleFilter}
-                                onChange={(e) => setRoleFilter(e.target.value)}
-                                className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            >
-                                <option value="all">All Roles</option>
-                                <option value="owner">Owner</option>
-                                <option value="manager">Manager</option>
-                                <option value="member">Member</option>
-                                <option value="tester">Tester</option>
-                            </select>
+                                onChange={setRoleFilter}
+                                className="w-36"
+                                options={[
+                                    { value: 'all', label: 'All Roles' },
+                                    { value: 'owner', label: 'Owner' },
+                                    { value: 'manager', label: 'Manager' },
+                                    { value: 'member', label: 'Member' },
+                                    { value: 'tester', label: 'Tester' },
+                                ]}
+                            />
                             {hasActiveFilters && (
                                 <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                     Clear

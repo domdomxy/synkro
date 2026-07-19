@@ -3,6 +3,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import Linkify from '@/Components/Linkify';
+import FilterSelect from '@/Components/FilterSelect';
 
 const categoryConfig = {
     bug: {
@@ -283,18 +284,27 @@ export default function Feedbacks({ feedbacks, filters }) {
                             placeholder="Search by ID, subject, email..."
                             className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 w-64"
                         />
-                        <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            <option value="">All Categories</option>
-                            {Object.entries(categoryConfig).map(([v, { label }]) => (
-                                <option key={v} value={v}>{label}</option>
-                            ))}
-                        </select>
-                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            <option value="">All Statuses</option>
-                            {['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => (
-                                <option key={s} value={s} className="capitalize">{s}</option>
-                            ))}
-                        </select>
+                        <FilterSelect
+                            value={category}
+                            onChange={setCategory}
+                            className="w-44"
+                            options={[
+                                { value: '', label: 'All Categories' },
+                                ...Object.entries(categoryConfig).map(([v, { label }]) => ({ value: v, label })),
+                            ]}
+                        />
+                        <FilterSelect
+                            value={status}
+                            onChange={setStatus}
+                            className="w-44"
+                            options={[
+                                { value: '', label: 'All Statuses' },
+                                ...['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => ({
+                                    value: s,
+                                    label: s.charAt(0).toUpperCase() + s.slice(1),
+                                })),
+                            ]}
+                        />
                         <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {(search || category || status) && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>

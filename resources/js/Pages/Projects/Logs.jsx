@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
+import FilterSelect from '@/Components/FilterSelect';
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -21,7 +22,18 @@ const actionLabels = {
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
     task_reopened: 'Task Reopened',
+    invitation_sent: 'Invitation Sent',
+    invitation_accepted: 'Invitation Accepted',
+    invitation_denied: 'Invitation Denied',
 };
+
+/** Fallback for any action not explicitly mapped above: "some_action" -> "Some Action". */
+function formatActionLabel(action) {
+    return action
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
 
 const fieldLabels = {
     title: 'Title',
@@ -73,9 +85,9 @@ const actionIconConfig = {
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
-    invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
-    invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
+    invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
+    invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
 };
 
 function describeLog(log) {
@@ -87,7 +99,7 @@ function describeLog(log) {
         case 'project_updated': return `${actor} updated the project`;
         case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
         case 'member_removed': return `${actor} removed ${d.target_name} (${d.role})`;
-        case 'member_left': return `${d.target_name ?? actor} (${d.role}) left the project`;
+        case 'member_left': return d.reason ? `${d.target_name ?? actor} (${d.role}) left the project — "${d.reason}"` : `${d.target_name ?? actor} (${d.role}) left the project`;
         case 'role_changed': return `${actor} changed ${d.target_name}'s role from ${d.old_role} to ${d.new_role}`;
         case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;
@@ -100,11 +112,9 @@ function describeLog(log) {
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
         case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
-        case 'invitation_accepted': return d.inviter_name
-            ? `${actor} accepted an invitation from ${d.inviter_name} and joined as ${d.role}`
-            : `${actor} accepted the invitation and joined as ${d.role}`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
-        default: return `${actor} performed ${log.action}`;
+        case 'invitation_accepted': return `${d.target_name ?? actor} accepted the invitation and joined as ${d.role}`;
+        default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
 
@@ -167,18 +177,11 @@ function getDetails(log) {
         ].filter((r) => r.value);
     }
 
-    if (log.action === 'member_removed') {
+    if (log.action === 'member_removed' || log.action === 'member_left') {
         return [
             { label: 'User', value: d.target_name },
             { label: 'Role', value: d.role },
             { label: 'Reason', value: d.reason },
-        ].filter((r) => r.value);
-    }
-
-    if (log.action === 'member_left') {
-        return [
-            { label: 'User', value: d.target_name },
-            { label: 'Role', value: d.role },
         ].filter((r) => r.value);
     }
 
@@ -283,7 +286,7 @@ function LogRow({ log }) {
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
-                                        <dd className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">{item.value}</dd>
+                                        <dd className="break-words text-sm text-gray-700 dark:text-gray-300">{item.value}</dd>
                                     </div>
                                 )}
                             </div>
@@ -333,18 +336,21 @@ export default function Logs({ project, logs }) {
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
-                        <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            <option value="all">All Users</option>
-                            {users.map((u) => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
-                        </select>
-                        <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            <option value="all">All Actions</option>
-                            {actions.map((a) => (
-                                <option key={a} value={a}>{actionLabels[a] ?? a}</option>
-                            ))}
-                        </select>
+                        <FilterSelect
+                            value={userFilter}
+                            onChange={setUserFilter}
+                            className="w-44"
+                            options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name }))]}
+                        />
+                        <FilterSelect
+                            value={actionFilter}
+                            onChange={setActionFilter}
+                            className="w-52"
+                            options={[
+                                { value: 'all', label: 'All Actions' },
+                                ...actions.map((a) => ({ value: a, label: actionLabels[a] ?? formatActionLabel(a) })),
+                            ]}
+                        />
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear

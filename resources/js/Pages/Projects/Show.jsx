@@ -8,7 +8,6 @@ import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
-import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -331,27 +330,52 @@ function ProjectInfoModal({ show, onClose, project }) {
                         style={{ tabSize: 4 }}
                         dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
                     />
-
-                    <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 dark:border-gray-700">
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Created on</p>
-                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                {new Date(project.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Last updated on</p>
-                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                {new Date(project.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="flex justify-end border-t border-gray-100 p-4 dark:border-gray-700">
                     <SecondaryButton onClick={onClose}>Close</SecondaryButton>
                 </div>
             </div>
+        </Modal>
+    );
+}
+
+function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="md">
+            <form onSubmit={onSubmit} className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Leave "{project.name}"?
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Let the project owner and managers know why you're leaving — it helps them plan around it.
+                </p>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="leave-reason" value="Reason for leaving" />
+                    <textarea
+                        id="leave-reason"
+                        value={form.data.reason}
+                        onChange={(e) => form.setData('reason', e.target.value)}
+                        rows={3}
+                        autoFocus
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        placeholder="e.g. Moving to a different project, workload, no longer relevant to my role..."
+                    />
+                    <InputError message={form.errors.reason} className="mt-1" />
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
+                    <button
+                        type="submit"
+                        disabled={form.processing}
+                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                    >
+                        {form.processing ? 'Leaving...' : 'Leave Project'}
+                    </button>
+                </div>
+            </form>
         </Modal>
     );
 }
@@ -369,9 +393,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
 
     const memberForm = useForm({ email: '', role: 'member' });
     const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '' });
+    const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
         router.reload({ only: ['project'] });
@@ -398,8 +424,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         taskForm.post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
-    const [removeMemberTarget, setRemoveMemberTarget] = useState(null);
-    const removeMember = (member) => setRemoveMemberTarget(member);
+    const removeMember = (member) => {
+        if (confirm(`Remove ${member.name} from this project?`)) {
+            router.delete(route('projects.members.destroy', [project.id, member.id]));
+        }
+    };
 
     const changeRole = (member, newRole) => {
         if (newRole === member.pivot.role) return;
@@ -408,7 +437,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     };
 
     const leaveProject = () => {
-        if (confirm(`Leave "${project.name}"?`)) router.delete(route('projects.leave', project.id));
+        leaveForm.reset('reason');
+        leaveForm.clearErrors();
+        setShowLeaveModal(true);
+    };
+
+    const submitLeave = (e) => {
+        e.preventDefault();
+        leaveForm.delete(route('projects.leave', project.id), {
+            onSuccess: () => setShowLeaveModal(false),
+        });
     };
 
     const clearTaskFilters = () => { setTaskSearch(''); setStatusFilter('all'); };
@@ -650,11 +688,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             </div>
 
             <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
-            <RemoveMemberModal
+            <LeaveProjectModal
+                show={showLeaveModal}
+                onClose={() => setShowLeaveModal(false)}
                 project={project}
-                member={removeMemberTarget}
-                show={removeMemberTarget !== null}
-                onClose={() => setRemoveMemberTarget(null)}
+                form={leaveForm}
+                onSubmit={submitLeave}
             />
         </AuthenticatedLayout>
     );
