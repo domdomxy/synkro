@@ -54,6 +54,7 @@ class AuthenticatedSessionController extends Controller
                     'until' => $user->suspended_until?->toIso8601String(),
                     'permanent' => $user->suspended_until === null,
                     'user_id' => $user->id,
+                    'email' => $user->email,
                 ];
 
                 Auth::logout();
@@ -98,6 +99,7 @@ class AuthenticatedSessionController extends Controller
             'until' => $user->suspended_until?->toIso8601String(),
             'permanent' => $user->suspended_until === null,
             'user_id' => $user->id,
+            'email' => $user->email,
         ] : null;
 
         Auth::guard('web')->logout();

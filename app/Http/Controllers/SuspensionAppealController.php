@@ -11,19 +11,23 @@ class SuspensionAppealController extends Controller
 {
     public function store(Request $request)
     {
-        // IP-based limit (3 submissions per 60 minutes), handled here instead of via
-        // route middleware so a limited request comes back as a normal Inertia error
-        // shown inline on the appeal card, rather than a bare 429 error page.
-        $throttleKey = 'appeal-submit:' . $request->ip();
+        // Keyed by email, not IP. An appeal is inherently tied to one specific account —
+        // one email maps to exactly one account — so limiting by IP was both too loose
+        // (shared networks/VPNs let the same person route around it) and too strict
+        // (two different suspended accounts appealing from the same connection would
+        // wrongly block each other). Checked before validation, same as the old IP
+        // check was, so a throttled request comes back as a normal Inertia error shown
+        // inline on the appeal card rather than a bare 429 page.
+        $throttleKey = 'appeal-submit:' . strtolower((string) $request->input('email'));
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+        if (RateLimiter::tooManyAttempts($throttleKey, 1)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             $cooldownEndsAt = now()->addSeconds($seconds);
 
             return back()
                 ->withErrors([
                     'limit' => sprintf(
-                        "You've reached the limit of 3 appeal submissions per hour. Please wait %s before trying again (available at %s).",
+                        "You can only submit one appeal every 6 hours. Please wait %s before trying again (available at %s).",
                         $this->formatDuration($seconds),
                         $cooldownEndsAt->format('g:i A')
                     ),
@@ -36,26 +40,12 @@ class SuspensionAppealController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
-        RateLimiter::hit($throttleKey, 3600);
+        RateLimiter::hit($throttleKey, 6 * 3600);
 
         $user = User::where('email', $request->email)->first();
 
         if (! $user->is_suspended) {
             return back()->withErrors(['email' => 'This account is not currently suspended.']);
-        }
-
-        // Limits repeated appeal spam while still letting someone follow up same-day if their
-        // situation changes; 6 hours is generous enough for a genuine second attempt without
-        // being so long it feels punitive.
-        $lastAppeal = SuspensionAppeal::where('user_id', $user->id)->latest()->first();
-        if ($lastAppeal && $lastAppeal->created_at->gt(now()->subHours(6))) {
-            $nextAllowedAt = $lastAppeal->created_at->addHours(6);
-
-            return back()
-                ->withErrors([
-                    'email' => "You can only submit one appeal every 6 hours. You can submit another appeal at {$nextAllowedAt->format('M j, Y g:i A')}.",
-                ])
-                ->with('suspension', $this->suspensionPayload($user));
         }
 
         SuspensionAppeal::create([
@@ -89,6 +79,7 @@ class SuspensionAppealController extends Controller
             'until' => $user->suspended_until?->toIso8601String(),
             'permanent' => $user->suspended_until === null,
             'user_id' => $user->id,
+            'email' => $user->email,
         ];
     }
 

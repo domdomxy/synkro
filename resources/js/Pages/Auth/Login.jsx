@@ -21,7 +21,7 @@ function timeRemaining(dateString) {
 
 function SuspensionNotice({ suspension }) {
     const [showAppeal, setShowAppeal] = useState(false);
-    const appealForm = useForm({ email: '', message: '' });
+    const appealForm = useForm({ email: suspension?.email ?? '', message: '' });
 
     const submitAppeal = (e) => {
         e.preventDefault();
@@ -144,9 +144,8 @@ function SuspensionNotice({ suspension }) {
                                     id="appeal-email"
                                     type="email"
                                     value={appealForm.data.email}
-                                    onChange={(e) => appealForm.setData('email', e.target.value)}
-                                    className="mt-1 block w-full text-sm"
-                                    placeholder="you@example.com"
+                                    disabled
+                                    className="mt-1 block w-full cursor-not-allowed bg-gray-50 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                                 />
                                 <InputError message={appealForm.errors.email} className="mt-1" />
                             </div>
