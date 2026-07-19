@@ -123,9 +123,14 @@ class TaskController extends Controller
         $changes = [];
  
         foreach (['title', 'description', 'due_date'] as $field) {
-            $old = $field === 'due_date' ? $task->due_date?->toDateTimeString() : $task->{$field};
-            $new = $field === 'due_date' ? $validated['due_date'] : $validated[$field];
- 
+            if ($field === 'due_date') {
+                $old = $task->due_date?->toDateTimeString();
+                $new = $validated['due_date'] ? \Illuminate\Support\Carbon::parse($validated['due_date'])->toDateTimeString() : null;
+            } else {
+                $old = $task->{$field};
+                $new = $validated[$field];
+            }
+
             if ((string) $old !== (string) $new) {
                 $changes[$field] = ['old' => $old, 'new' => $new];
             }
