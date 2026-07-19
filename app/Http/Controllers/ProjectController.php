@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Support\NotificationMailer;
+use App\Support\Linkifier;
 use Illuminate\Support\Str;
 
 class ProjectController extends Controller
@@ -58,6 +59,7 @@ class ProjectController extends Controller
         ]);
 
         $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = Linkifier::linkify($validated['description']);
 
         $project = Project::create([
             ...$validated,
@@ -118,6 +120,7 @@ class ProjectController extends Controller
         ]);
 
         $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = Linkifier::linkify($validated['description']);
 
         $changes = [];
         foreach (['name', 'description'] as $field) {

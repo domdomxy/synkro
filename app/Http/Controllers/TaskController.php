@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
  
 use App\Events\CommentPosted;
+use App\Support\Linkifier;
 use App\Events\TaskAssigned;
 use App\Events\TaskDone;
 use App\Events\TaskReviewed;
@@ -56,6 +57,7 @@ class TaskController extends Controller
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
         // Allow-list matches ProjectController's project-description sanitization for consistency.
         $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = Linkifier::linkify($validated['description']);
 
         $task = $project->tasks()->create($validated);
  
@@ -110,6 +112,7 @@ class TaskController extends Controller
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
         $validated['description'] = strip_tags($validated['description'] ?? '', '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = Linkifier::linkify($validated['description']);
  
         if (! empty($validated['assigned_to']) && ! $task->project->members()->where('user_id', $validated['assigned_to'])->exists()) {
             return back()->withErrors(['assigned_to' => 'That user is not a member of this project.']);

@@ -7,6 +7,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
+import Linkify from '@/Components/Linkify';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -735,7 +736,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">{comment.body}</p>
+                                                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100"><Linkify text={comment.body} /></p>
                                             </div>
                                             <div className="mt-1 flex items-center gap-2 px-1">
                                                 <span className="text-[11px] text-gray-400 dark:text-gray-500">
