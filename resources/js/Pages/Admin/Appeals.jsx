@@ -6,10 +6,15 @@ import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import { Link } from '@inertiajs/react';
 
-const statusStyles = {
-    pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    reviewed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    dismissed: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+const outcomeBadge = (appeal) => {
+    if (appeal.status === 'pending') {
+        return { label: 'Pending', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' };
+    }
+    if (appeal.outcome === 'rejected') {
+        return { label: 'Rejected', className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' };
+    }
+    // Covers outcome === 'approved' and any legacy reviewed row with no outcome set.
+    return { label: 'Approved', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' };
 };
 
 function SearchIcon() {
@@ -23,13 +28,14 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
+    const badge = outcomeBadge(appeal);
 
-    const updateStatus = (status, requireReason = false) => {
-        if (requireReason && !reason.trim()) {
+    const decide = (outcome) => {
+        if (!reason.trim()) {
             alert('Please add a reason before continuing — it will be included in the email sent to the user.');
             return;
         }
-        router.patch(route('admin.appeals.review', appeal.id), { status, reason }, { preserveScroll: true });
+        router.patch(route('admin.appeals.review', appeal.id), { outcome, reason }, { preserveScroll: true });
     };
 
     return (
@@ -40,8 +46,8 @@ function AppealItem({ appeal }) {
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                             {appeal.user?.name ?? 'Unknown user'}
                         </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusStyles[appeal.status]}`}>
-                            {appeal.status}
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>
+                            {badge.label}
                         </span>
                         {!appeal.user?.is_suspended && (
                             <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
@@ -96,53 +102,71 @@ function AppealItem({ appeal }) {
                         </p>
                     </div>
 
-                    <div className="rounded-md border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
-                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-indigo-500 dark:text-indigo-400">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Your reason (included in the email sent to {appeal.user?.name ?? 'the user'})
-                        </label>
-                        <textarea
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            rows={2}
-                            placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
-                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-                        />
-                    </div>
+                    {appeal.status === 'pending' ? (
+                        <div className="rounded-md border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
+                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-indigo-500 dark:text-indigo-400">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Your reason (included in the email sent to {appeal.user?.name ?? 'the user'})
+                            </label>
+                            <textarea
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                rows={2}
+                                placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                            />
+                        </div>
+                    ) : appeal.admin_reason ? (
+                        <div className={`rounded-md border p-3 ${
+                            badge.label === 'Rejected'
+                                ? 'border-red-100 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20'
+                                : 'border-green-100 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
+                        }`}>
+                            <p className={`mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide ${
+                                badge.label === 'Rejected' ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'
+                            }`}>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Your reason (sent to {appeal.user?.name ?? 'the user'})
+                            </p>
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                {appeal.admin_reason}
+                            </p>
+                        </div>
+                    ) : null}
 
-                    <div className="flex flex-wrap gap-2">
-                        {appeal.user?.is_suspended && (
+                    {appeal.status === 'pending' && (
+                        <div className="flex flex-wrap gap-2">
+                            {appeal.user?.is_suspended && (
+                                <button
+                                    onClick={() => {
+                                        if (!reason.trim()) {
+                                            alert('Please add a reason before continuing — it will be included in the email sent to the user.');
+                                            return;
+                                        }
+                                        if (confirm(`Lift ${appeal.user.name}'s suspension and mark this appeal as reviewed?`)) {
+                                            router.post(route('admin.users.lift-suspension', appeal.user.id), { reason }, {
+                                                preserveScroll: true,
+                                                onSuccess: () => decide('approved'),
+                                            });
+                                        }
+                                    }}
+                                    className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500"
+                                >
+                                    Lift Suspension
+                                </button>
+                            )}
                             <button
-                                onClick={() => {
-                                    if (!reason.trim()) {
-                                        alert('Please add a reason before continuing — it will be included in the email sent to the user.');
-                                        return;
-                                    }
-                                    if (confirm(`Lift ${appeal.user.name}'s suspension and mark this appeal as reviewed?`)) {
-                                        router.post(route('admin.users.lift-suspension', appeal.user.id), { reason }, {
-                                            preserveScroll: true,
-                                            onSuccess: () => updateStatus('reviewed'),
-                                        });
-                                    }
-                                }}
-                                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500"
+                                onClick={() => decide('rejected')}
+                                className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             >
-                                Lift Suspension & Mark Reviewed
+                                Reject
                             </button>
-                        )}
-                        <button
-                            onClick={() => updateStatus('dismissed', true)}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                                appeal.status === 'dismissed'
-                                    ? 'bg-red-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                            }`}
-                        >
-                            Dismiss
-                        </button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -155,7 +179,13 @@ export default function Appeals({ appeals, filters }) {
 
     const applySearch = () => router.get(route('admin.appeals'), { search, status: statusFilter !== 'all' ? statusFilter : undefined }, { preserveState: true });
 
-    const filtered = statusFilter === 'all' ? appeals : appeals.filter((a) => a.status === statusFilter);
+    const filtered = appeals.filter((a) => {
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'pending') return a.status === 'pending';
+        if (statusFilter === 'approved') return a.status === 'reviewed' && a.outcome !== 'rejected';
+        if (statusFilter === 'rejected') return a.status === 'reviewed' && a.outcome === 'rejected';
+        return true;
+    });
     const pendingCount = appeals.filter((a) => a.status === 'pending').length;
 
     return (
@@ -191,8 +221,8 @@ export default function Appeals({ appeals, filters }) {
                             options={[
                                 { value: 'all', label: 'All Statuses' },
                                 { value: 'pending', label: 'Pending' },
-                                { value: 'reviewed', label: 'Reviewed' },
-                                { value: 'dismissed', label: 'Dismissed' },
+                                { value: 'approved', label: 'Approved' },
+                                { value: 'rejected', label: 'Rejected' },
                             ]}
                         />
                         {pendingCount > 0 && (

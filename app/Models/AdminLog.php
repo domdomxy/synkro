@@ -38,8 +38,10 @@ class AdminLog extends Model
             'user.suspension_lifted' => 'Suspension lifted',
             'user.role_changed' => 'Role changed',
             'user.password_reset' => 'Password reset',
-            'appeal.reviewed' => 'Appeal reviewed',
-            'appeal.dismissed' => 'Appeal dismissed',
+            'appeal.approved' => 'Appeal approved',
+            'appeal.rejected' => 'Appeal rejected',
+            'appeal.reviewed' => 'Appeal reviewed (legacy)',
+            'appeal.dismissed' => 'Appeal dismissed (legacy)',
             'ticket.status_changed' => 'Ticket status changed',
             'ticket.responded' => 'Ticket responded to',
         ];

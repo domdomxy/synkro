@@ -65,9 +65,6 @@ function SuspensionLogRow({ log }) {
                             {lifted ? 'Lifted' : 'Active'}
                         </span>
                     </div>
-                    <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400 ${open ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
-                        {log.reason || <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
-                    </p>
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                         Suspended {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         {log.suspended_by?.name && <span> by {log.suspended_by.name}</span>}
@@ -79,6 +76,12 @@ function SuspensionLogRow({ log }) {
             {open && (
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
                     <dl className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason</dt>
+                            <dd className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">
+                                {log.reason || <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
+                            </dd>
+                        </div>
                         <div className="flex items-baseline gap-2">
                             <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Until</dt>
                             <dd className="text-sm text-gray-700 dark:text-gray-300">
