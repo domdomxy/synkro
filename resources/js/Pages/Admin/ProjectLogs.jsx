@@ -74,6 +74,8 @@ const actionIconConfig = {
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
+    invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
+    invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
 };
 
 function describeLog(log) {
@@ -98,6 +100,10 @@ function describeLog(log) {
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
         case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
+        case 'invitation_accepted': return d.inviter_name
+            ? `${actor} accepted an invitation from ${d.inviter_name} and joined as ${d.role}`
+            : `${actor} accepted the invitation and joined as ${d.role}`;
+        case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
         default: return `${actor} performed ${log.action}`;
     }
 }

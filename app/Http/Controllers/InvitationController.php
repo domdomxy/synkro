@@ -51,9 +51,9 @@ class InvitationController extends Controller
         $invitation->project->members()->attach(Auth::id(), ['role' => $invitation->role]);
         $invitation->update(['status' => 'accepted']);
 
-        ProjectActivityLog::log($invitation->project, 'member_added', [
-            'target_name' => Auth::user()->name,
+        ProjectActivityLog::log($invitation->project, 'invitation_accepted', [
             'role' => $invitation->role,
+            'inviter_name' => $invitation->invitedBy?->name,
         ]);
 
         $inviter = $invitation->invitedBy;

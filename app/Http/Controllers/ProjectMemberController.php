@@ -69,6 +69,11 @@ class ProjectMemberController extends Controller
             'role' => $validated['role'],
         ]);
 
+        ProjectActivityLog::log($project, 'invitation_sent', [
+            'target_name' => $user->name,
+            'role' => $validated['role'],
+        ]);
+
         $inviteUrl = route('invitations.show', $invitation->token, false);
 
         $notification = UserNotification::create([
