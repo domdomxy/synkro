@@ -406,21 +406,44 @@ public function suspend(Request $request, User $user)
 
     public function liftSuspension(Request $request, User $user)
     {
-        $request->validate(['reason' => 'required|string|max:2000']);
-
-        $user->update([
-            'is_suspended' => false,
-            'suspended_until' => null,
-            'suspension_reason' => null,
-            'suspended_by' => null,
+        $request->validate([
+            'reason' => 'required|string|max:2000',
+            'appeal_id' => 'nullable|exists:suspension_appeals,id',
         ]);
 
-        SuspensionLog::where('user_id', $user->id)->whereNull('lifted_at')->latest()->first()?->update([
-            'lifted_at' => now(),
-            'lifted_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($request, $user) {
+            $user->update([
+                'is_suspended' => false,
+                'suspended_until' => null,
+                'suspension_reason' => null,
+                'suspended_by' => null,
+            ]);
 
-        AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user, $request->reason);
+            SuspensionLog::where('user_id', $user->id)->whereNull('lifted_at')->latest()->first()?->update([
+                'lifted_at' => now(),
+                'lifted_by' => auth()->id(),
+            ]);
+
+            AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user, $request->reason);
+
+            // Optionally mark the appeal that prompted this as reviewed in the same
+            // transaction — previously the frontend fired this as a second, separate
+            // request chained onto this one's onSuccess, which meant the suspension
+            // could get lifted while the appeal silently stayed "Pending" if that
+            // second request didn't fire or failed. Doing it here makes the two
+            // updates atomic: either both happen, or neither does.
+            if ($request->appeal_id) {
+                $appeal = SuspensionAppeal::where('id', $request->appeal_id)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($appeal) {
+                    $appeal->update(['status' => 'reviewed']);
+                    AdminLog::log('appeal.reviewed', "Reviewed {$user->name}'s suspension appeal", $appeal, $request->reason);
+                }
+            }
+        });
 
         NotificationMailer::send(
             $user,
