@@ -78,15 +78,17 @@ export default function Settings({ project, role }) {
             <div className="py-12">
                 <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
 
-                    <Link
-                        href={route('projects.logs', project.id)}
-                        className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        View Activity Logs
-                    </Link>
+                    <div className="flex justify-end">
+                        <Link
+                            href={route('projects.logs', project.id)}
+                            className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-teal-500 dark:bg-teal-700 dark:hover:bg-teal-600"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            View Activity Logs
+                        </Link>
+                    </div>
 
                     <SectionCard
                         title="Edit Project"

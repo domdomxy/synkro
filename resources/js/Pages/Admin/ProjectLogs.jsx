@@ -301,6 +301,8 @@ function LogRow({ log }) {
 export default function Logs({ project, logs }) {
     const [userFilter, setUserFilter] = useState('all');
     const [actionFilter, setActionFilter] = useState('all');
+    const [page, setPage] = useState(1);
+    const PER_PAGE = 15;
 
     const users = useMemo(() => {
         const map = new Map();
@@ -313,6 +315,7 @@ export default function Logs({ project, logs }) {
     const clearFilters = () => {
         setUserFilter('all');
         setActionFilter('all');
+        setPage(1);
     };
 
     const filtered = logs.filter((l) => {
@@ -320,6 +323,10 @@ export default function Logs({ project, logs }) {
         if (actionFilter !== 'all' && l.action !== actionFilter) return false;
         return true;
     });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    const currentPage = Math.min(page, totalPages);
+    const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
     const hasActiveFilters = userFilter !== 'all' || actionFilter !== 'all';
 
@@ -338,13 +345,13 @@ export default function Logs({ project, logs }) {
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FilterSelect
                             value={userFilter}
-                            onChange={setUserFilter}
+                            onChange={(v) => { setUserFilter(v); setPage(1); }}
                             className="w-44"
                             options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name }))]}
                         />
                         <FilterSelect
                             value={actionFilter}
-                            onChange={setActionFilter}
+                            onChange={(v) => { setActionFilter(v); setPage(1); }}
                             className="w-52"
                             options={[
                                 { value: 'all', label: 'All Actions' },
@@ -378,12 +385,36 @@ export default function Logs({ project, logs }) {
                             </div>
                         ) : (
                             <ul>
-                                {filtered.map((log) => (
+                                {paginated.map((log) => (
                                     <LogRow key={log.id} log={log} />
                                 ))}
                             </ul>
                         )}
                     </div>
+
+                    {filtered.length > PER_PAGE && (
+                        <div className="mt-4 flex items-center justify-between">
+                            <p className="text-sm text-gray-400 dark:text-gray-500">
+                                Page {currentPage} of {totalPages}
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>
