@@ -99,7 +99,16 @@ class ProjectMemberController extends Controller
     public function destroyInvitation(ProjectInvitation $invitation)
     {
         $this->authorize('manageMembers', $invitation->project);
-        $invitation->delete();
+
+        if ($invitation->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending invitations can be cancelled.']);
+        }
+
+        // Soft-revoke rather than delete: the invitation link/email/notification already sent
+        // to the user needs somewhere real to resolve to, so it can explain the invite was
+        // cancelled instead of just 404ing on them.
+        $invitation->update(['status' => 'revoked']);
+
         return back()->with('success', 'Invitation cancelled.');
     }
 
@@ -148,13 +157,17 @@ class ProjectMemberController extends Controller
         return back()->with('success', 'Role updated.');
     }
 
-    public function destroy(Project $project, User $user)
+    public function destroy(Request $request, Project $project, User $user)
     {
         $this->authorize('manageMembers', $project);
 
         if ($project->owner_id === $user->id) {
             return back()->withErrors(['error' => 'Cannot remove the project owner.']);
         }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:2000',
+        ]);
 
         $member = $project->members()->where('user_id', $user->id)->first();
         $role = $member?->pivot->role;
@@ -180,12 +193,16 @@ class ProjectMemberController extends Controller
             $user,
             'project.removed',
             "You were removed from {$project->name}",
-            ["You've been removed from the project \"{$project->name}\"."]
+            [
+                "You've been removed from the project \"{$project->name}\".",
+                "Reason: {$validated['reason']}",
+            ]
         );
 
         ProjectActivityLog::log($project, 'member_removed', [
             'target_name' => $user->name,
             'role' => $role,
+            'reason' => $validated['reason'],
         ]);
 
         return back()->with('success', 'Member removed.');

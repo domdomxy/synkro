@@ -27,6 +27,7 @@ class InvitationController extends Controller
         return Inertia::render('Invitations/Show', [
             'invitation' => $invitation,
             'rejoinBlocked' => $rejoinBlocked,
+            'revoked' => $invitation->status === 'revoked',
         ]);
     }
 
@@ -37,6 +38,10 @@ class InvitationController extends Controller
 
         if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
             return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+        }
+
+        if ($invitation->status === 'revoked') {
+            return back()->withErrors(['error' => "This invitation to \"{$invitation->project->name}\" was cancelled by the project owner or a manager."]);
         }
 
         if ($invitation->status !== 'pending') {
@@ -87,6 +92,10 @@ class InvitationController extends Controller
 
         if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
             return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+        }
+
+        if ($invitation->status === 'revoked') {
+            return back()->withErrors(['error' => "This invitation to \"{$invitation->project->name}\" was cancelled by the project owner or a manager."]);
         }
 
         if ($invitation->status !== 'pending') {

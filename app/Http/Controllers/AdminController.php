@@ -593,6 +593,10 @@ public function suspend(Request $request, User $user)
 
     public function reviewAppeal(Request $request, SuspensionAppeal $appeal)
     {
+        if ($appeal->status !== 'pending') {
+            return back()->withErrors(['error' => 'This appeal has already been decided and can\'t be changed.']);
+        }
+
         $request->validate([
             'status' => 'required|in:reviewed,dismissed',
             'reason' => 'required|string|max:2000',

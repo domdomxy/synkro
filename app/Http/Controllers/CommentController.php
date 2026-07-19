@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Task;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Events\CommentPosted;
 use App\Events\CommentDeleted;
+use App\Events\TaskCommented;
+use App\Support\NotificationMailer;
 
 class CommentController extends Controller
 {
@@ -25,6 +28,34 @@ class CommentController extends Controller
         ]);
 
         broadcast(new CommentPosted($comment))->toOthers();
+
+        if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
+            $notification = UserNotification::create([
+                'user_id' => $task->assigned_to,
+                'type' => 'task_commented',
+                'message' => Auth::user()->name . " commented on \"{$task->title}\"",
+                'url' => $url,
+            ]);
+
+            try {
+                broadcast(new TaskCommented($comment, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            $preview = \Illuminate\Support\Str::limit($validated['body'], 200);
+
+            NotificationMailer::send(
+                $task->assignee,
+                'task.commented',
+                Auth::user()->name . " commented on \"{$task->title}\"",
+                [Auth::user()->name . " commented on your task \"{$task->title}\": \"{$preview}\""],
+                url($url),
+                'View Task'
+            );
+        }
 
         return back()->with('success', 'Comment added.');
     }

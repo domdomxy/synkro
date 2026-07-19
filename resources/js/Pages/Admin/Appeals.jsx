@@ -22,6 +22,7 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
+    const decided = appeal.status !== 'pending';
 
     const updateStatus = (status, requireReason = false) => {
         if (requireReason && !reason.trim()) {
@@ -106,9 +107,15 @@ function AppealItem({ appeal }) {
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={2}
+                            disabled={decided}
                             placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
-                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
                         />
+                        {decided && (
+                            <p className="mt-1.5 text-xs text-indigo-500/80 dark:text-indigo-400/70">
+                                This appeal has already been marked <span className="font-medium capitalize">{appeal.status}</span> — a new reason can't be added.
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -126,14 +133,16 @@ function AppealItem({ appeal }) {
                                         });
                                     }
                                 }}
-                                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500"
+                                disabled={decided}
+                                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 Lift Suspension & Mark Reviewed
                             </button>
                         )}
                         <button
                             onClick={() => updateStatus('reviewed', true)}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                            disabled={decided}
+                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                 appeal.status === 'reviewed'
                                     ? 'bg-green-600 text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
@@ -143,7 +152,8 @@ function AppealItem({ appeal }) {
                         </button>
                         <button
                             onClick={() => updateStatus('dismissed', true)}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                            disabled={decided}
+                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                 appeal.status === 'dismissed'
                                     ? 'bg-red-600 text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'

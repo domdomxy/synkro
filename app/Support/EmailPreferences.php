@@ -39,6 +39,7 @@ class EmailPreferences
                     'task.unassigned' => 'A task was taken away from you',
                     'task.updated' => 'A task assigned to you was updated',
                     'task.deleted' => 'A task assigned to you was deleted',
+                    'task.commented' => 'Someone commented on a task assigned to you',
                     'task.review_needed' => 'A task is waiting for your review (testers)',
                     'task.approved' => 'Your submission was approved',
                     'task.rejected' => 'Your submission was sent back for changes',

@@ -161,7 +161,15 @@ function getDetails(log) {
         ].filter((r) => r.value);
     }
 
-    if (log.action === 'member_removed' || log.action === 'member_left') {
+    if (log.action === 'member_removed') {
+        return [
+            { label: 'User', value: d.target_name },
+            { label: 'Role', value: d.role },
+            { label: 'Reason', value: d.reason },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'member_left') {
         return [
             { label: 'User', value: d.target_name },
             { label: 'Role', value: d.role },
@@ -269,7 +277,7 @@ function LogRow({ log }) {
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
-                                        <dd className="break-words text-sm text-gray-700 dark:text-gray-300">{item.value}</dd>
+                                        <dd className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">{item.value}</dd>
                                     </div>
                                 )}
                             </div>

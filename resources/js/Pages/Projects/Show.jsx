@@ -8,6 +8,7 @@ import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
+import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -330,6 +331,21 @@ function ProjectInfoModal({ show, onClose, project }) {
                         style={{ tabSize: 4 }}
                         dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
                     />
+
+                    <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+                        <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Created on</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                {new Date(project.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Last updated on</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                {new Date(project.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex justify-end border-t border-gray-100 p-4 dark:border-gray-700">
@@ -382,11 +398,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         taskForm.post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
-    const removeMember = (member) => {
-        if (confirm(`Remove ${member.name} from this project?`)) {
-            router.delete(route('projects.members.destroy', [project.id, member.id]));
-        }
-    };
+    const [removeMemberTarget, setRemoveMemberTarget] = useState(null);
+    const removeMember = (member) => setRemoveMemberTarget(member);
 
     const changeRole = (member, newRole) => {
         if (newRole === member.pivot.role) return;
@@ -637,6 +650,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             </div>
 
             <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
+            <RemoveMemberModal
+                project={project}
+                member={removeMemberTarget}
+                show={removeMemberTarget !== null}
+                onClose={() => setRemoveMemberTarget(null)}
+            />
         </AuthenticatedLayout>
     );
 }
