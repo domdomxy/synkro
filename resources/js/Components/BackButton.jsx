@@ -4,12 +4,14 @@ export default function BackButton({ href, label = 'Back' }) {
     return (
         <Link
             href={href}
-            className="inline-flex items-center gap-2 rounded-md bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+            aria-label={label}
+            title={label}
+            className="inline-flex items-center gap-2 rounded-full p-2 text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 sm:rounded-md sm:bg-gray-800 sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:text-white sm:shadow sm:hover:bg-gray-700 sm:dark:bg-gray-700 sm:dark:hover:bg-gray-600"
         >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <svg className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            {label}
+            <span className="hidden sm:inline">{label}</span>
         </Link>
     );
 }
