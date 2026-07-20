@@ -624,19 +624,45 @@ public function suspend(Request $request, User $user)
         }
 
         $request->validate([
-            'status' => 'required|in:reviewed,dismissed',
+            'outcome' => 'required|in:approved,rejected',
             'reason' => 'required|string|max:2000',
         ]);
-        $appeal->update(['status' => $request->status]);
+
+        // Accepting an appeal and lifting the underlying suspension are done as one
+        // atomic decision here, so the two can never drift apart (e.g. an appeal
+        // marked "approved" while the user is still locked out).
+        DB::transaction(function () use ($request, $appeal) {
+            $appeal->update([
+                'status' => 'reviewed',
+                'outcome' => $request->outcome,
+                'admin_reason' => $request->reason,
+            ]);
+
+            AdminLog::log(
+                $request->outcome === 'approved' ? 'appeal.reviewed' : 'appeal.dismissed',
+                ($request->outcome === 'approved' ? 'Approved' : 'Rejected') . " {$appeal->user?->name}'s suspension appeal",
+                $appeal,
+                $request->reason
+            );
+
+            if ($request->outcome === 'approved' && $appeal->user && $appeal->user->is_suspended) {
+                $appeal->user->update([
+                    'is_suspended' => false,
+                    'suspended_until' => null,
+                    'suspension_reason' => null,
+                    'suspended_by' => null,
+                ]);
+
+                SuspensionLog::where('user_id', $appeal->user_id)->whereNull('lifted_at')->latest()->first()?->update([
+                    'lifted_at' => now(),
+                    'lifted_by' => auth()->id(),
+                ]);
+
+                AdminLog::log('user.suspension_lifted', "Lifted suspension for {$appeal->user->name} ({$appeal->user->email})", $appeal->user, $request->reason);
+            }
+        });
 
         \App\Support\AdminAlerts::broadcastRefresh();
-
-        AdminLog::log(
-            $request->status === 'reviewed' ? 'appeal.reviewed' : 'appeal.dismissed',
-            ($request->status === 'reviewed' ? 'Reviewed' : 'Dismissed') . " {$appeal->user?->name}'s suspension appeal",
-            $appeal,
-            $request->reason
-        );
 
         if ($appeal->user) {
             NotificationMailer::send(
@@ -644,9 +670,9 @@ public function suspend(Request $request, User $user)
                 'account.appeal_reviewed',
                 'Your appeal has been reviewed',
                 array_filter([
-                    $request->status === 'reviewed'
-                        ? 'Your suspension appeal has been reviewed by our team.'
-                        : 'Your suspension appeal has been dismissed.',
+                    $request->outcome === 'approved'
+                        ? 'Your appeal was reviewed and accepted. Your suspension has been lifted and you can log in again right away.'
+                        : 'Your appeal was reviewed and rejected.',
                     $request->reason ? "Reason: {$request->reason}" : null,
                 ]),
                 url(route('login', [], false)),

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SuspensionAppeal extends Model
 {
-    protected $fillable = ['user_id', 'message', 'status', 'outcome', 'admin_reason'];
+    protected $fillable = ['user_id', 'message', 'status', 'outcome', 'admin_reason', 'auto_resolved'];
 
     public function user()
     {

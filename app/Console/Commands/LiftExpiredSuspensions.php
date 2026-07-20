@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Models\SuspensionAppeal;
 use App\Models\SuspensionLog;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -32,6 +33,18 @@ class LiftExpiredSuspensions extends Command
                 ?->update([
                     'lifted_at' => now(),
                     'lifted_by' => null, // null = system/automatic, distinguishes from an admin manually lifting it
+                ]);
+
+            // A pending appeal shouldn't sit there forever waiting on an admin once
+            // the suspension it's appealing has already run out on its own — resolve
+            // it automatically so the appeals queue stays accurate.
+            SuspensionAppeal::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'reviewed',
+                    'outcome' => 'approved',
+                    'admin_reason' => 'Suspension was lifted automatically after the suspension duration ended.',
+                    'auto_resolved' => true,
                 ]);
         }
 
