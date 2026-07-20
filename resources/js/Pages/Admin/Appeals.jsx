@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
+import Linkify from '@/Components/Linkify';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
@@ -96,7 +97,7 @@ function AppealItem({ appeal }) {
                             {appeal.user.suspension_reason && (
                                 <div className="mt-2 rounded-md border-l-2 border-red-300 bg-white/60 px-3 py-2 dark:border-red-700 dark:bg-black/10">
                                     <p className="text-[10px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">Reason given at the time</p>
-                                    <p className="mt-0.5 whitespace-pre-wrap text-red-700 dark:text-red-300">{appeal.user.suspension_reason}</p>
+                                    <p className="mt-0.5 whitespace-pre-wrap text-red-700 dark:text-red-300"><Linkify text={appeal.user.suspension_reason} /></p>
                                 </div>
                             )}
                         </div>
@@ -110,7 +111,7 @@ function AppealItem({ appeal }) {
                             Appeal message from {appeal.user?.name ?? 'the user'}
                         </p>
                         <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                            {appeal.message}
+                            <Linkify text={appeal.message} />
                         </p>
                     </div>
 
@@ -170,7 +171,7 @@ function AppealItem({ appeal }) {
                                     : appeal.outcome === 'approved' ? 'Accepted — suspension lifted' : 'Rejected'}
                             </p>
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                {appeal.admin_reason || 'No reason was given.'}
+                                {appeal.admin_reason ? <Linkify text={appeal.admin_reason} /> : 'No reason was given.'}
                             </p>
                         </div>
                     )}

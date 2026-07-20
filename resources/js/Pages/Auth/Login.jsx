@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import Linkify from '@/Components/Linkify';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
@@ -98,7 +99,7 @@ function SuspensionNotice({ suspension }) {
                         </p>
                         <div className="mt-2 rounded-md border-l-2 border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900/40">
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                {suspension.reason}
+                                <Linkify text={suspension.reason} />
                             </p>
                         </div>
                     </div>

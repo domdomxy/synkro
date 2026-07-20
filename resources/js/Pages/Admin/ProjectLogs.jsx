@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import Linkify from '@/Components/Linkify';
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -286,7 +287,9 @@ function LogRow({ log }) {
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
-                                        <dd className="break-words text-sm text-gray-700 dark:text-gray-300">{item.value}</dd>
+                                        <dd className="break-words text-sm text-gray-700 dark:text-gray-300">
+                                            {item.label === 'Reason' ? <Linkify text={item.value} /> : item.value}
+                                        </dd>
                                     </div>
                                 )}
                             </div>

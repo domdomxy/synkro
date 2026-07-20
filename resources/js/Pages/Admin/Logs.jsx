@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
+import Linkify from '@/Components/Linkify';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -112,7 +113,7 @@ function AdminLogRow({ log, actionCatalog }) {
                                 Reason given
                             </p>
                             <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                {reason}
+                                <Linkify text={reason} />
                             </p>
                         </div>
                     )}

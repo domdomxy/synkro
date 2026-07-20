@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
+import Linkify from '@/Components/Linkify';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -79,7 +80,7 @@ function SuspensionLogRow({ log }) {
                         <div className="flex items-baseline gap-2">
                             <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason</dt>
                             <dd className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">
-                                {log.reason || <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
+                                {log.reason ? <Linkify text={log.reason} /> : <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
                             </dd>
                         </div>
                         <div className="flex items-baseline gap-2">
