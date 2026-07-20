@@ -20,10 +20,24 @@ export default function AuthenticatedLayout({ header, children }) {
         setHasPendingAlert(adminAlerts?.hasPending ?? false);
     }, [adminAlerts]);
 
+    // useEcho always subscribes on mount, even when given a falsy channel
+    // name (it does not skip subscribing, it just subscribes to the literal
+    // string "private-null"), so it can't be disabled by passing null. Since
+    // React hooks can't be called conditionally either, we always pass a
+    // real channel name and instead gate the *effect* of the event on the
+    // user's role inside the callback.
     useEcho(
-        user.role === 'admin' ? 'admin-alerts' : null,
+        'admin-alerts',
         ['.alerts.updated'],
-        (payload) => setHasPendingAlert(Boolean(payload.hasPending))
+        (payload) => {
+            if (user.role !== 'admin') {
+                return;
+            }
+
+            setHasPendingAlert(Boolean(payload.hasPending));
+        },
+        [],
+        user.role === 'admin' ? 'private' : 'public'
     );
 
     return (
