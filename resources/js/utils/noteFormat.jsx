@@ -47,8 +47,9 @@ export function NoteList({ note, className = '', itemClassName = '' }) {
 
 // Flat, single-line preview for collapsed/compact contexts: strips bold
 // markers and joins multiple lines with a bullet separator.
-export function notePreview(note) {
-    return noteLines(note)
+export function notePreview(note, maxChars = 120) {
+    const text = noteLines(note)
         .map((line) => line.replace(/\*\*/g, ''))
         .join(' • ');
+    return text.length > maxChars ? text.slice(0, maxChars).trimEnd() + '…' : text;
 }

@@ -389,9 +389,9 @@ function AlarmRow({ r, now, onDelete }) {
     return (
         <li
             onClick={() => r.note && setExpanded((v) => !v)}
-            className={`group rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''}`}
+            className={`group overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''}`}
         >
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-1.5">
                         <span className={`text-3xl font-light tabular-nums leading-none ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'}`}>
@@ -406,7 +406,7 @@ function AlarmRow({ r, now, onDelete }) {
                     </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex w-full shrink-0 items-center justify-end gap-3 sm:w-auto">
                     <span className={`text-[11px] font-medium tabular-nums ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
                         {label}
                     </span>
