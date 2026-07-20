@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect, useMemo, useState } from 'react';
 import { localDateTimeToIso } from '@/utils/datetime';
+import { NoteList, notePreview } from '@/utils/noteFormat';
 
 const statusLabels = {
     todo: 'To Do',
@@ -289,6 +290,11 @@ function timeLeftParts(remindAt, now) {
 
 function timeLeftLabel(remindAt, now, { short = false } = {}) {
     const { days, hours, minutes, overdue } = timeLeftParts(remindAt, now);
+
+    if (!overdue && days === 0 && hours === 0 && minutes === 0) {
+        return short ? '<1m' : 'less than 1 minute';
+    }
+
     const segs = [];
     if (days > 0) segs.push(`${days}${short ? 'd' : ` day${days === 1 ? '' : 's'}`}`);
     if (hours > 0 || days > 0) segs.push(`${hours}${short ? 'h' : ` hour${hours === 1 ? '' : 's'}`}`);
@@ -297,52 +303,63 @@ function timeLeftLabel(remindAt, now, { short = false } = {}) {
     return overdue ? `Overdue ${short ? text : `by ${text}`}` : `${short ? 'in ' : ''}${text}`;
 }
 
-function AlarmRow({ r, now, onDismiss, onRemove }) {
+function AlarmRow({ r, now, onDelete }) {
     const { time, ampm } = formatAlarmTime(r.remind_at);
     const { overdue } = timeLeftParts(r.remind_at, now);
     const label = timeLeftLabel(r.remind_at, now, { short: true });
+    const [expanded, setExpanded] = useState(false);
 
     return (
-        <li className="group flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70">
-            <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1.5">
-                    <span className={`text-3xl font-light tabular-nums leading-none ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'}`}>
-                        {time}
-                    </span>
-                    <span className={`text-sm font-semibold ${overdue ? 'text-red-400 dark:text-red-400/80' : 'text-gray-400 dark:text-gray-500'}`}>
-                        {ampm}
-                    </span>
+        <li
+            onClick={() => r.note && setExpanded((v) => !v)}
+            className={`group rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''}`}
+        >
+            <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1.5">
+                        <span className={`text-3xl font-light tabular-nums leading-none ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'}`}>
+                            {time}
+                        </span>
+                        <span className={`text-sm font-semibold ${overdue ? 'text-red-400 dark:text-red-400/80' : 'text-gray-400 dark:text-gray-500'}`}>
+                            {ampm}
+                        </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
+                        {REPEAT_LABELS[r.repeat_interval]} &middot; {r.title}
+                    </p>
                 </div>
-                <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
-                    {REPEAT_LABELS[r.repeat_interval]} &middot; {r.title}
-                </p>
+
+                <div className="flex shrink-0 items-center gap-3">
+                    <span className={`text-[11px] font-medium tabular-nums ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                        {label}
+                    </span>
+
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                        role="switch"
+                        aria-checked="true"
+                        title="Delete reminder"
+                        className="relative h-6 w-10 shrink-0 rounded-full bg-indigo-600 transition-colors hover:bg-red-500"
+                    >
+                        <span className="absolute left-0.5 top-0.5 h-5 w-5 translate-x-4 rounded-full bg-white shadow transition-transform" />
+                    </button>
+                </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
-                <span className={`text-[11px] font-medium tabular-nums ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {label}
-                </span>
-
-                <button
-                    onClick={onDismiss}
-                    role="switch"
-                    aria-checked="true"
-                    title="Turn off"
-                    className="relative h-6 w-10 shrink-0 rounded-full bg-indigo-600 transition-colors hover:bg-indigo-500"
-                >
-                    <span className="absolute left-0.5 top-0.5 h-5 w-5 translate-x-4 rounded-full bg-white shadow transition-transform" />
-                </button>
-
-                <button
-                    onClick={onRemove}
-                    title="Delete"
-                    className="rounded p-1 text-gray-300 opacity-0 transition hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:text-red-400"
-                >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+            {r.note && (
+                <div className="mt-2 pl-0.5">
+                    {expanded ? (
+                        <NoteList note={r.note} className="text-xs text-gray-500 dark:text-gray-400" />
+                    ) : (
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                            {notePreview(r.note)}
+                        </p>
+                    )}
+                    <p className="mt-0.5 text-[10px] font-medium text-indigo-500 dark:text-indigo-400">
+                        {expanded ? 'Show less' : 'Show more'}
+                    </p>
+                </div>
+            )}
         </li>
     );
 }
@@ -365,7 +382,6 @@ function RemindersPanel({ reminders }) {
         post(route('reminders.store'), { onSuccess: () => { reset(); setShowForm(false); } });
     };
 
-    const dismiss = (id) => router.patch(route('reminders.dismiss', id), {}, { preserveScroll: true });
     const remove = (id) => { if (confirm('Delete this reminder?')) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
 
     const sorted = useMemo(
@@ -427,9 +443,9 @@ function RemindersPanel({ reminders }) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set</p>
                 </div>
             ) : (
-                <ul className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
                     {sorted.map((r) => (
-                        <AlarmRow key={r.id} r={r} now={now} onDismiss={() => dismiss(r.id)} onRemove={() => remove(r.id)} />
+                        <AlarmRow key={r.id} r={r} now={now} onDelete={() => remove(r.id)} />
                     ))}
                 </ul>
             )}

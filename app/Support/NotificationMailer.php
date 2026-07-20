@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Mail;
 
 class NotificationMailer
 {
-    public static function send(User $user, string $key, string $subject, array $lines, ?string $actionUrl = null, ?string $actionText = null): void
+    public static function send(User $user, string $key, string $subject, array $lines, ?string $actionUrl = null, ?string $actionText = null, ?array $highlight = null, ?string $footerNote = null): void
     {
         if (! EmailPreferences::wants($user, $key)) {
             return;
@@ -16,7 +16,7 @@ class NotificationMailer
 
         try {
             Mail::to($user->email)->queue(
-                new SynkroNotificationMail($user->name, $subject, $lines, $actionUrl, $actionText)
+                new SynkroNotificationMail($user->name, $subject, $lines, $actionUrl, $actionText, $highlight, $footerNote)
             );
         } catch (\Throwable $e) {
             report($e);

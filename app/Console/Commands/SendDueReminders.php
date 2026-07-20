@@ -6,6 +6,7 @@ use App\Events\ReminderDue;
 use App\Models\Reminder;
 use App\Models\UserNotification;
 use App\Support\NotificationMailer;
+use App\Support\NoteFormatter;
 use Illuminate\Console\Command;
 
 class SendDueReminders extends Command
@@ -25,7 +26,7 @@ class SendDueReminders extends Command
             $notification = UserNotification::create([
                 'user_id' => $reminder->user_id,
                 'type' => 'reminder',
-                'message' => "⏰ {$reminder->title}" . ($reminder->note ? ": {$reminder->note}" : ''),
+                'message' => $reminder->note ? "{$reminder->title}\n{$reminder->note}" : $reminder->title,
                 'url' => route('dashboard', [], false),
             ]);
 
@@ -40,9 +41,10 @@ class SendDueReminders extends Command
                     $reminder->user,
                     'reminders.due',
                     "Reminder: {$reminder->title}",
-                    [$reminder->note ? "{$reminder->title}: {$reminder->note}" : $reminder->title],
+                    ["It's time for this reminder."],
                     url(route('dashboard', [], false)),
-                    'View Dashboard'
+                    'View Dashboard',
+                    $reminder->note ? ['label' => 'Note', 'content' => NoteFormatter::toHtml($reminder->note), 'html' => true] : null
                 );
             }
 

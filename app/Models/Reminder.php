@@ -17,7 +17,7 @@ class Reminder extends Model
     public function notification(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(UserNotification::class, 'user_id', 'user_id')
-            ->where('message', 'like', "⏰ Reminder: {$this->title}%");
+            ->where('message', 'like', "{$this->title}%");
     }
 }
 

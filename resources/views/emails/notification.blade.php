@@ -53,7 +53,11 @@
                                     {{ $highlight['label'] }}
                                 </p>
                             @endif
-                            <p style="margin:0; font-size:15px; color:#374151; line-height:1.6; white-space:pre-line;">{{ $highlight['content'] }}</p>
+                            @if (!empty($highlight['html']))
+                                <div style="margin:0; font-size:15px; color:#374151; line-height:1.6;">{!! $highlight['content'] !!}</div>
+                            @else
+                                <p style="margin:0; font-size:15px; color:#374151; line-height:1.6; white-space:pre-line;">{{ $highlight['content'] }}</p>
+                            @endif
                         </td>
                     </tr>
                 </table>

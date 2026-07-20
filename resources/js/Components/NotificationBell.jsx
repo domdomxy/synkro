@@ -1,6 +1,7 @@
 import { usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
+import { NoteList } from '@/utils/noteFormat';
 
 const categoryMap = {
     task_assigned: 'assignments',
@@ -123,6 +124,12 @@ function relativeTime(dateString) {
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function splitMessage(message) {
+    const idx = message.indexOf('\n');
+    if (idx === -1) return { title: message, description: null };
+    return { title: message.slice(0, idx), description: message.slice(idx + 1) };
+}
+
 export default function NotificationBell() {
     const { auth, notifications } = usePage().props;
     const [open, setOpen] = useState(false);
@@ -201,7 +208,7 @@ export default function NotificationBell() {
                 message = `You were removed from "${payload.project_name}"`;
                 url = '/projects';
             } else if (payload.type === 'reminder') {
-                message = `⏰ ${payload.title}${payload.note ? ' : ' + payload.note : ''}`;
+                message = payload.note ? `${payload.title}\n${payload.note}` : payload.title;
                 url = '/dashboard';
             } else if (payload.type === 'feedback_replied') {
                 message = `${payload.submitter_name} replied to ticket "${payload.subject}"`;
@@ -348,10 +355,11 @@ export default function NotificationBell() {
                         )}
                         {visibleItems.map((note) => {
                             const style = typeStyles[note.type] ?? typeStyles.task_assigned;
+                            const { title, description } = splitMessage(note.message);
                             return (
                                 <div
                                     key={note.id}
-                                    className={`flex items-start gap-2 border-b border-gray-50 px-4 py-3 dark:border-gray-700/50 ${
+                                    className={`group flex items-start gap-2 border-b border-gray-50 px-4 py-3 transition hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 ${
                                         !note.read_at ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
                                     }`}
                                 >
@@ -361,11 +369,17 @@ export default function NotificationBell() {
                                                 {style.icon}
                                             </svg>
                                         </span>
-                                        <span className="flex-1">
-                                            <span className={`block text-sm ${!note.read_at ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}>
-                                                {note.message}
+                                        <span className="min-w-0 flex-1">
+                                            <span className={`block truncate text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                                                {title}
                                             </span>
-                                            <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
+                                            {description && (
+                                                <NoteList
+                                                    note={description}
+                                                    className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                />
+                                            )}
+                                            <span className="mt-1 block text-[11px] text-gray-400 dark:text-gray-500">
                                                 {relativeTime(note.created_at)}
                                             </span>
                                         </span>
@@ -374,7 +388,7 @@ export default function NotificationBell() {
                                     <button
                                         onClick={() => deleteNotification(note.id)}
                                         title="Delete notification"
-                                        className="mt-1 shrink-0 rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700"
+                                        className="mt-1 shrink-0 rounded p-1 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700"
                                     >
                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
