@@ -23,6 +23,6 @@ class SynkroNotificationMail extends Mailable
     public function build()
     {
         return $this->subject($this->subjectLine)
-            ->markdown('emails.notification');
+            ->view('emails.notification');
     }
 }

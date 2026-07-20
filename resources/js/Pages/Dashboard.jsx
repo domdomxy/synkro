@@ -267,6 +267,13 @@ function CalendarView({ tasks }) {
 
 const REPEAT_LABELS = { none: 'Once', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
 
+function toDatetimeLocalValue(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function formatAlarmTime(dateStr) {
     const d = new Date(dateStr);
     let h = d.getHours();
@@ -308,6 +315,76 @@ function AlarmRow({ r, now, onDelete }) {
     const { overdue } = timeLeftParts(r.remind_at, now);
     const label = timeLeftLabel(r.remind_at, now, { short: true });
     const [expanded, setExpanded] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const editForm = useForm({
+        title: r.title,
+        note: r.note ?? '',
+        remind_at: toDatetimeLocalValue(r.remind_at),
+        repeat_interval: r.repeat_interval,
+    });
+
+    const saveEdit = (e) => {
+        e.preventDefault();
+        editForm.transform((data) => ({ ...data, remind_at: localDateTimeToIso(data.remind_at) }));
+        editForm.patch(route('reminders.update', r.id), {
+            preserveScroll: true,
+            onSuccess: () => setIsEditing(false),
+        });
+    };
+
+    if (isEditing) {
+        return (
+            <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
+                <form onSubmit={saveEdit} className="space-y-2">
+                    <input
+                        type="text"
+                        placeholder="Reminder title..."
+                        value={editForm.data.title}
+                        onChange={(e) => editForm.setData('title', e.target.value)}
+                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        autoFocus
+                    />
+                    {editForm.errors.title && <p className="text-xs text-red-500">{editForm.errors.title}</p>}
+                    <textarea
+                        placeholder="Optional note..."
+                        value={editForm.data.note}
+                        onChange={(e) => editForm.setData('note', e.target.value)}
+                        rows={2}
+                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                    />
+                    <div className="flex gap-2">
+                        <input
+                            type="datetime-local"
+                            value={editForm.data.remind_at}
+                            onChange={(e) => editForm.setData('remind_at', e.target.value)}
+                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        />
+                        <select
+                            value={editForm.data.repeat_interval}
+                            onChange={(e) => editForm.setData('repeat_interval', e.target.value)}
+                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        >
+                            {Object.entries(REPEAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                    </div>
+                    {editForm.errors.remind_at && <p className="text-xs text-red-500">{editForm.errors.remind_at}</p>}
+                    <div className="flex gap-2">
+                        <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                            Save
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsEditing(false)}
+                            className="flex-1 rounded-md bg-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </li>
+        );
+    }
 
     return (
         <li
@@ -333,6 +410,16 @@ function AlarmRow({ r, now, onDelete }) {
                     <span className={`text-[11px] font-medium tabular-nums ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
                         {label}
                     </span>
+
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                        title="Edit reminder"
+                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
 
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(); }}

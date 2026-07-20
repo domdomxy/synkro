@@ -22,6 +22,23 @@ class ReminderController extends Controller
         return back()->with('success', 'Reminder set.');
     }
 
+    public function update(Request $request, Reminder $reminder)
+    {
+        abort_unless($reminder->user_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'note' => 'nullable|string',
+            'remind_at' => 'required|date|after:now',
+            'repeat_interval' => 'nullable|in:none,daily,weekly,monthly',
+        ]);
+
+        // Reset notified_at so an edited reminder still fires at its (possibly new) time.
+        $reminder->update([...$validated, 'notified_at' => null]);
+
+        return back()->with('success', 'Reminder updated.');
+    }
+
     public function dismiss(Reminder $reminder)
     {
         abort_unless($reminder->user_id === Auth::id(), 403);
