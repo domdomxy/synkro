@@ -782,12 +782,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     value={commentForm.data.body}
                                     onChange={(e) => commentForm.setData('body', e.target.value)}
                                     placeholder="Write a comment..."
+                                    title="Tip: [label](url) turns into a clickable link"
                                     className="block w-full rounded-full border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
                                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
                             </div>
                             <button
-                                tyfpe="submit"
+                                type="submit"
                                 disabled={commentForm.processing || !commentForm.data.body.trim()}
                                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
                             >

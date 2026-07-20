@@ -188,6 +188,9 @@ function ReplyBox({ feedback, trackingId, email, onReplySent }) {
                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             />
             {error && <p className="text-xs text-red-500">{error}</p>}
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+                Tip: <code className="rounded bg-gray-100 px-1 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link.
+            </p>
             <button
                 type="submit"
                 disabled={sending || !message.trim()}
@@ -513,6 +516,9 @@ export default function Feedback({ flash }) {
                                             placeholder="Describe your feedback in detail..."
                                         />
                                         {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
+                                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                            Tip: <code className="rounded bg-gray-100 px-1 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link.
+                                        </p>
                                     </div>
 
                                     <div>

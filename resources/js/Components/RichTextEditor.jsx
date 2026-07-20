@@ -469,6 +469,17 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10 5h9M6 5h1m6 14H6a2 2 0 01-2-2V9m5-4L7 15" />
                     </svg>
                 </ToolbarButton>
+
+                <Divider />
+
+                <span
+                    className="flex h-7 w-7 shrink-0 cursor-help items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                    title="Tip: [label](https://example.com) turns into a clickable link"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
             </div>
         </div>
     );

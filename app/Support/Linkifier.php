@@ -5,13 +5,19 @@ namespace App\Support;
 class Linkifier
 {
     /**
-     * Turns bare http(s)/www URLs in $html into real, clickable <a> tags.
+     * Turns links in $html into real, clickable <a> tags. Supports two forms:
+     *   - Markdown-style: [Open a ticket](https://example.com/feedback) — custom label text
+     *   - Bare URLs: https://example.com or www.example.com — shown as-is
      *
      * Safe by construction:
      * - Splits on tags first and only touches text nodes, so existing markup
-     *   (and anything inside an attribute) is never altered.
-     * - The URL pattern excludes quotes and angle brackets, so a match can
-     *   never break out of the href="..." attribute or inject a new tag.
+     *   (and anything inside an attribute) is never altered. Because of that
+     *   split, a text node can never contain a literal "<", so the markdown
+     *   link's label capture (which allows most characters) can't smuggle in
+     *   an unescaped tag either.
+     * - Both URL forms exclude quotes and angle brackets, and the markdown
+     *   form's URL additionally excludes parens, so a match can never break
+     *   out of the href="..." attribute or the surrounding (...) syntax.
      * - Only ever produces http(s):// hrefs (a bare "www." match is given an
      *   https:// prefix), so a javascript: or data: URL can't be produced.
      *
@@ -31,15 +37,26 @@ class Linkifier
             return $html;
         }
 
-        $urlPattern = '/(https?:\/\/[^\s<>"\']+|www\.[^\s<>"\']+)/i';
+        // Group 1+2: markdown [label](url). Group 3: bare URL. Tried in that order so a
+        // markdown link's URL (inside parens) isn't also caught by the bare-URL branch.
+        $linkPattern = '/\[([^\]]+)\]\((https?:\/\/[^\s()<>"\']+|www\.[^\s()<>"\']+)\)|(https?:\/\/[^\s<>"\')]+|www\.[^\s<>"\')]+)/i';
+        $class = 'text-indigo-600 underline hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300';
 
         foreach ($parts as &$part) {
             if ($part === '' || $part[0] === '<') {
                 continue; // an existing tag — leave it untouched
             }
 
-            $part = preg_replace_callback($urlPattern, function ($m) {
-                $url = $m[0];
+            $part = preg_replace_callback($linkPattern, function ($m) use ($class) {
+                if (isset($m[1]) && $m[1] !== '') {
+                    $label = $m[1];
+                    $url = $m[2];
+                    $href = str_starts_with($url, 'www.') ? "https://{$url}" : $url;
+
+                    return "<a href=\"{$href}\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" class=\"{$class}\">{$label}</a>";
+                }
+
+                $url = $m[3];
                 // Trim common trailing punctuation that's almost always part of the
                 // surrounding sentence, not the URL (e.g. "check example.com.").
                 $trailing = '';
@@ -48,7 +65,6 @@ class Linkifier
                     $trailing = $tm[2];
                 }
                 $href = str_starts_with($url, 'www.') ? "https://{$url}" : $url;
-                $class = 'text-indigo-600 underline hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300';
 
                 return "<a href=\"{$href}\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" class=\"{$class}\">{$url}</a>{$trailing}";
             }, $part);
