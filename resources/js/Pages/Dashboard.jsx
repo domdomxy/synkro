@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { localDateTimeToIso } from '@/utils/datetime';
 
 const statusLabels = {
@@ -266,55 +266,82 @@ function CalendarView({ tasks }) {
 
 const REPEAT_LABELS = { none: 'Once', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
 
-function RepeatIcon({ className = 'h-3 w-3' }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-    );
+function formatAlarmTime(dateStr) {
+    const d = new Date(dateStr);
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return { time: `${h}:${String(m).padStart(2, '0')}`, ampm };
 }
 
-function ReminderCard({ r, overdue, onDismiss, onRemove }) {
+function timeLeftParts(remindAt, now) {
+    const diffMs = new Date(remindAt) - now;
+    const overdue = diffMs < 0;
+    const abs = Math.abs(diffMs);
+    const totalMinutes = Math.floor(abs / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    return { days, hours, minutes, overdue };
+}
+
+function timeLeftLabel(remindAt, now, { short = false } = {}) {
+    const { days, hours, minutes, overdue } = timeLeftParts(remindAt, now);
+    const segs = [];
+    if (days > 0) segs.push(`${days}${short ? 'd' : ` day${days === 1 ? '' : 's'}`}`);
+    if (hours > 0 || days > 0) segs.push(`${hours}${short ? 'h' : ` hour${hours === 1 ? '' : 's'}`}`);
+    if (days === 0) segs.push(`${minutes}${short ? 'm' : ` minute${minutes === 1 ? '' : 's'}`}`);
+    const text = segs.join(' ');
+    return overdue ? `Overdue ${short ? text : `by ${text}`}` : `${short ? 'in ' : ''}${text}`;
+}
+
+function AlarmRow({ r, now, onDismiss, onRemove }) {
+    const { time, ampm } = formatAlarmTime(r.remind_at);
+    const { overdue } = timeLeftParts(r.remind_at, now);
+    const label = timeLeftLabel(r.remind_at, now, { short: true });
+
     return (
-        <li className={`rounded-lg border p-3 transition ${
-            overdue
-                ? 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20'
-                : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'
-        }`}>
-            <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                    overdue ? 'bg-red-100 text-red-500 dark:bg-red-900/40 dark:text-red-400' : 'bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400'
-                }`}>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <li className="group flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70">
+            <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-1.5">
+                    <span className={`text-3xl font-light tabular-nums leading-none ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'}`}>
+                        {time}
+                    </span>
+                    <span className={`text-sm font-semibold ${overdue ? 'text-red-400 dark:text-red-400/80' : 'text-gray-400 dark:text-gray-500'}`}>
+                        {ampm}
+                    </span>
+                </div>
+                <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
+                    {REPEAT_LABELS[r.repeat_interval]} &middot; {r.title}
+                </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+                <span className={`text-[11px] font-medium tabular-nums ${overdue ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    {label}
+                </span>
+
+                <button
+                    onClick={onDismiss}
+                    role="switch"
+                    aria-checked="true"
+                    title="Turn off"
+                    className="relative h-6 w-10 shrink-0 rounded-full bg-indigo-600 transition-colors hover:bg-indigo-500"
+                >
+                    <span className="absolute left-0.5 top-0.5 h-5 w-5 translate-x-4 rounded-full bg-white shadow transition-transform" />
+                </button>
+
+                <button
+                    onClick={onRemove}
+                    title="Delete"
+                    className="rounded p-1 text-gray-300 opacity-0 transition hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:text-red-400"
+                >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{r.title}</p>
-                    {r.note && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{r.note}</p>}
-                    <div className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs ${overdue ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                        <span>{new Date(r.remind_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                        {r.repeat_interval !== 'none' && (
-                            <span className="flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                                <RepeatIcon className="h-2.5 w-2.5" /> {REPEAT_LABELS[r.repeat_interval]}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                    {overdue && (
-                        <button onClick={onDismiss} title="Dismiss" className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </button>
-                    )}
-                    <button onClick={onRemove} title="Delete" className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+                </button>
             </div>
         </li>
     );
@@ -325,6 +352,12 @@ function RemindersPanel({ reminders }) {
         title: '', note: '', remind_at: '', repeat_interval: 'none',
     });
     const [showForm, setShowForm] = useState(false);
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(id);
+    }, []);
 
     const submit = (e) => {
         e.preventDefault();
@@ -335,9 +368,11 @@ function RemindersPanel({ reminders }) {
     const dismiss = (id) => router.patch(route('reminders.dismiss', id), {}, { preserveScroll: true });
     const remove = (id) => { if (confirm('Delete this reminder?')) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
 
-    const now = new Date();
-    const overdue = reminders.filter((r) => new Date(r.remind_at) < now);
-    const upcoming = reminders.filter((r) => new Date(r.remind_at) >= now);
+    const sorted = useMemo(
+        () => [...reminders].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)),
+        [reminders]
+    );
+    const nextUp = sorted.find((r) => new Date(r.remind_at) >= now);
 
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
@@ -362,6 +397,12 @@ function RemindersPanel({ reminders }) {
                 </button>
             </div>
 
+            {nextUp && !showForm && (
+                <p className="mb-4 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Next reminder {timeLeftLabel(nextUp.remind_at, now)}
+                </p>
+            )}
+
             {showForm && (
                 <form onSubmit={submit} className="mb-4 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
                     <input type="text" placeholder="Reminder title..." value={data.title} onChange={(e) => setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
@@ -378,7 +419,7 @@ function RemindersPanel({ reminders }) {
                 </form>
             )}
 
-            {overdue.length === 0 && upcoming.length === 0 ? (
+            {sorted.length === 0 ? (
                 <div className="flex flex-col items-center py-6 text-center">
                     <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -386,28 +427,11 @@ function RemindersPanel({ reminders }) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set</p>
                 </div>
             ) : (
-                <div className="max-h-96 space-y-4 overflow-y-auto pr-1">
-                    {overdue.length > 0 && (
-                        <div>
-                            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-red-500">Overdue</p>
-                            <ul className="space-y-2">
-                                {overdue.map((r) => (
-                                    <ReminderCard key={r.id} r={r} overdue onDismiss={() => dismiss(r.id)} onRemove={() => remove(r.id)} />
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {upcoming.length > 0 && (
-                        <div>
-                            {overdue.length > 0 && <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Upcoming</p>}
-                            <ul className="space-y-2">
-                                {upcoming.map((r) => (
-                                    <ReminderCard key={r.id} r={r} overdue={false} onRemove={() => remove(r.id)} />
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
+                <ul className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                    {sorted.map((r) => (
+                        <AlarmRow key={r.id} r={r} now={now} onDismiss={() => dismiss(r.id)} onRemove={() => remove(r.id)} />
+                    ))}
+                </ul>
             )}
         </div>
     );
