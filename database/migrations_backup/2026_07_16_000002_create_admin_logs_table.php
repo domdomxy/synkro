@@ -13,9 +13,6 @@ return new class extends Migration
             $table->foreignId('admin_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('action');
             $table->text('description');
-            // The admin-supplied reason, kept separate from `description` so the UI
-            // can show the summary while hiding the reason until expanded.
-            $table->text('reason')->nullable();
             $table->string('target_type')->nullable();
             $table->unsignedBigInteger('target_id')->nullable();
             $table->timestamps();

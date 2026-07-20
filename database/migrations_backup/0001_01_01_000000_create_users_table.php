@@ -18,9 +18,7 @@ return new class extends Migration
 
             // Global platform role, separate from the per-project role in project_user.
             $table->string('role')->default('user'); // user | admin
-            $table->timestamp('role_changed_at')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('active_status_changed_at')->nullable();
             $table->string('avatar_path')->nullable();
 
             // Notification opt-outs, keyed by event type; see EmailPreferences / NotificationPreferences.

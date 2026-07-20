@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('invited_user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('invited_by')->constrained('users')->cascadeOnDelete();
             $table->string('role');
-            $table->enum('status', ['pending', 'accepted', 'denied', 'revoked'])->default('pending');
+            $table->enum('status', ['pending', 'accepted', 'denied'])->default('pending');
             $table->string('token', 64)->unique();
             $table->timestamps();
         });

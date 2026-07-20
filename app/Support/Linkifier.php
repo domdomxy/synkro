@@ -72,4 +72,40 @@ class Linkifier
 
         return implode('', $parts);
     }
+
+    /**
+     * Reverses linkify(): turns any <a href="URL" ...>LABEL</a> anchor back into the
+     * markdown-style `[LABEL](URL)` text that linkify() itself knows how to rebuild.
+     *
+     * Why this exists: descriptions get re-submitted through strip_tags() (which
+     * allow-lists <b>/<i>/<span>/etc but not <a>, since letting arbitrary <a ...>
+     * attributes through unsanitized would be an XSS hole) every time they're saved,
+     * including on an edit of content that was already linkified on a previous save.
+     * Without this step, strip_tags() would delete the <a> wrapper but leave the
+     * inert label text behind — silently turning a working link back into plain text
+     * on every subsequent edit. Calling this first converts any existing anchors back
+     * into plain markdown text, so strip_tags() has nothing to strip and linkify()
+     * re-creates the exact same anchor afterward.
+     *
+     * Any markup nested inside the label is stripped in the process — linkify() only
+     * ever produces plain-text link bodies, so there's normally nothing nested there,
+     * but this keeps a stray tag from leaking into the markdown form either way.
+     */
+    public static function unlinkify(?string $html): ?string
+    {
+        if ($html === null || $html === '') {
+            return $html;
+        }
+
+        return preg_replace_callback(
+            '/<a\s+[^>]*href\s*=\s*"([^"]*)"[^>]*>(.*?)<\/a>/is',
+            function ($m) {
+                $href = $m[1];
+                $label = trim(strip_tags($m[2]));
+
+                return $label === '' ? $href : "[{$label}]({$href})";
+            },
+            $html
+        );
+    }
 }
