@@ -196,7 +196,7 @@ export default function Index({ tasks }) {
                                         className={`absolute right-3 top-3 z-10 rounded-md p-1.5 transition disabled:opacity-50 ${
                                             task.is_pinned
                                                 ? 'text-amber-500 opacity-100'
-                                                : 'text-gray-300 opacity-0 hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                                                : 'text-gray-300 opacity-100 hover:bg-gray-100 hover:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
                                         }`}
                                     >
                                         <PinIcon filled={!!task.is_pinned} className="h-3.5 w-3.5" />
