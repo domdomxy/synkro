@@ -300,7 +300,7 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="absolute right-0 z-50 mt-2 w-96 overflow-hidden rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                <div className="absolute -right-10 z-50 mt-2 w-96 max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:right-0">
                     <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</p>
                         <div className="flex gap-3">

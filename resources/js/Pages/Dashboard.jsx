@@ -478,7 +478,7 @@ function RemindersPanel({ reminders }) {
     const nextUp = sorted.find((r) => new Date(r.remind_at) >= now);
 
     return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+        <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
@@ -588,7 +588,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-2">
-                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                        <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
                             {stats.dueSoon.length === 0 ? (
                                 <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days.</p>
