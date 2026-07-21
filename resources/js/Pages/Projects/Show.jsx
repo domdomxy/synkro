@@ -202,7 +202,7 @@ function NoteItemRow({ item, onToggle, onRemove }) {
                     </svg>
                 )}
             </button>
-            <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-xs ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
+            <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
                 {item.text}
             </span>
             <button
@@ -286,13 +286,13 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                            <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length} &bull; {timeAgoLabel(note.updated_at)}</span>
+                        <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length} &bull; {timeAgoLabel(note.updated_at)}</span>
                         {doneCount > 0 && (
-                            <button onClick={onClearCompleted} className="text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
+                            <button onClick={onClearCompleted} className="shrink-0 whitespace-nowrap text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
                         )}
                     </div>
                 </div>
@@ -559,6 +559,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+    // Mobile swipeable panes: Notes/Invite <-> Tasks <-> Members, opening on Tasks.
+    const notesPaneRef = useRef(null);
+    const tasksPaneRef = useRef(null);
+    const membersPaneRef = useRef(null);
+
+    useEffect(() => {
+        // Open on the Tasks pane by default (mobile only; inert on desktop's grid layout).
+        tasksPaneRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }, []);
+
     const memberForm = useForm({ email: '', role: 'member' });
     const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '' });
     const leaveForm = useForm({ reason: '' });
@@ -640,7 +650,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const canLeave = !isOwner && role !== 'admin';
 
     return (
-        <AuthenticatedLayout header={
+        <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
             <div className="sticky top-16 z-30 -mx-4 -my-6 flex items-center justify-between gap-3 bg-white/95 px-4 py-4 backdrop-blur dark:bg-gray-800/95 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
                 <h2 className="min-w-0 truncate text-xl font-semibold text-gray-800 dark:text-gray-200">{project.name}</h2>
                 <div className="flex shrink-0 items-center gap-1">
@@ -668,12 +678,22 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             </div>
         }>
             <Head title={project.name} />
+            <style>{`
+                @media (min-width: 1024px) {
+                    .project-columns {
+                        display: grid;
+                        grid-template-columns: 340px minmax(0, 750px) 340px;
+                        justify-content: center;
+                        overflow: visible;
+                    }
+                }
+            `}</style>
             <div className="py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_1fr_280px]">
+                <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+                    <div className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
 
                         {/* LEFT: Invite + Notes */}
-                        <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
+                        <div ref={notesPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && (
                                 <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                     <h3 className="mb-3 text-base font-semibold dark:text-gray-100">Invite a Member</h3>
@@ -702,7 +722,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </div>
 
                         {/* MIDDLE: Tasks */}
-                        <div className="space-y-4">
+                        <div ref={tasksPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
                             {canManage && (
                                 <>
                                     <button onClick={() => setShowNewTaskForm((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
@@ -792,7 +812,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </div>
 
                         {/* RIGHT: Members */}
-                        <div className="space-y-4 lg:sticky lg:top-40 lg:self-start">
+                        <div ref={membersPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                 <div className="mb-3 flex items-center gap-2">
                                     <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
@@ -812,14 +832,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-start justify-between gap-1">
                                                         <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{member.name}</p>
-                                                        {canManage && member.id !== project.owner_id && (
-                                                            <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => removeMember(member)} />
-                                                        )}
+                                                        <div className="flex shrink-0 items-center gap-1.5">
+                                                            <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                                {member.pivot.role}
+                                                            </span>
+                                                            {canManage && member.id !== project.owner_id && (
+                                                                <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => removeMember(member)} />
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
-                                                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                        {member.pivot.role}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </li>

@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import SuspensionListener from '@/Components/SuspensionListener';
 
-export default function AuthenticatedLayout({ header, children }) {
+export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { adminAlerts } = usePage().props;
@@ -192,7 +192,7 @@ export default function AuthenticatedLayout({ header, children }) {
             <SuspensionListener />
             {header && (
                 <header className="bg-white shadow dark:bg-gray-800">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div>
+                    <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>
                 </header>
             )}
 
