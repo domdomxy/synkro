@@ -11,6 +11,7 @@ use App\Events\CommentPosted;
 use App\Events\CommentDeleted;
 use App\Events\TaskCommented;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 
 class CommentController extends Controller
 {
@@ -32,17 +33,19 @@ class CommentController extends Controller
         if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
-            $notification = UserNotification::create([
-                'user_id' => $task->assigned_to,
-                'type' => 'task_commented',
-                'message' => "New comment\n" . Auth::user()->name . " commented on \"{$task->title}\"",
-                'url' => $url,
-            ]);
+            if (NotificationPreferences::wantsType($task->assignee, 'task_commented')) {
+                $notification = UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_commented',
+                    'message' => "New comment\n" . Auth::user()->name . " commented on \"{$task->title}\"",
+                    'url' => $url,
+                ]);
 
-            try {
-                broadcast(new TaskCommented($comment, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new TaskCommented($comment, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             $preview = \Illuminate\Support\Str::limit($validated['body'], 200);

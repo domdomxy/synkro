@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Events\RemovedFromProject;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 use App\Models\ProjectInvitation;
 
 class ProjectMemberController extends Controller
@@ -71,17 +72,19 @@ class ProjectMemberController extends Controller
 
         $inviteUrl = route('invitations.show', $invitation->token, false);
 
-        $notification = UserNotification::create([
-            'user_id' => $user->id,
-            'type' => 'project_invitation',
-            'message' => "Project invitation\n{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
-            'url' => $inviteUrl,
-        ]);
+        if (NotificationPreferences::wantsType($user, 'project_invitation')) {
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'project_invitation',
+                'message' => "Project invitation\n{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
+                'url' => $inviteUrl,
+            ]);
 
-        try {
-            broadcast(new ProjectInvitationSent($user->id, $project, $validated['role'], $request->user()->name, $invitation->token, $notification->id))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+            try {
+                broadcast(new ProjectInvitationSent($user->id, $project, $validated['role'], $request->user()->name, $invitation->token, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         NotificationMailer::send(
@@ -123,17 +126,19 @@ class ProjectMemberController extends Controller
                 'new_role' => $validated['role'],          
             ]);
 
-            $notification = UserNotification::create([
-                'user_id' => $user->id,
-                'type' => 'project_role_changed',
-                'message' => "Role changed\nYour role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}",
-                'url' => route('projects.show', $project->id, false),
-            ]);
+            if (NotificationPreferences::wantsType($user, 'project_role_changed')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'project_role_changed',
+                    'message' => "Role changed\nYour role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}",
+                    'url' => route('projects.show', $project->id, false),
+                ]);
 
-            try {
-                broadcast(new ProjectRoleChanged($user->id, $project, $oldRole, $validated['role'], $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new ProjectRoleChanged($user->id, $project, $oldRole, $validated['role'], $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
             NotificationMailer::send(
                 $user,
@@ -163,17 +168,19 @@ class ProjectMemberController extends Controller
 
         $project->members()->detach($user->id);
 
-        $notification = \App\Models\UserNotification::create([
-            'user_id' => $user->id,
-            'type' => 'removed_from_project',
-            'message' => "Removed from project\nYou were removed from \"{$project->name}\"",
-            'url' => route('projects.index', [], false),
-        ]);
+        if (NotificationPreferences::wantsType($user, 'removed_from_project')) {
+            $notification = \App\Models\UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'removed_from_project',
+                'message' => "Removed from project\nYou were removed from \"{$project->name}\"",
+                'url' => route('projects.index', [], false),
+            ]);
 
-        try {
-            broadcast(new RemovedFromProject($user->id, $project, $notification->id))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+            try {
+                broadcast(new RemovedFromProject($user->id, $project, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         NotificationMailer::send(
@@ -227,17 +234,19 @@ class ProjectMemberController extends Controller
             ->get();
 
         foreach ($recipients as $recipient) {
-            $notification = UserNotification::create([
-                'user_id' => $recipient->id,
-                'type' => 'member_left',
-                'message' => "Member left\n{$leavingName} ({$leavingRole}) left \"{$project->name}\"",
-                'url' => route('projects.show', $project->id, false),
-            ]);
+            if (NotificationPreferences::wantsType($recipient, 'member_left')) {
+                $notification = UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'member_left',
+                    'message' => "Member left\n{$leavingName} ({$leavingRole}) left \"{$project->name}\"",
+                    'url' => route('projects.show', $project->id, false),
+                ]);
 
-            try {
-                broadcast(new MemberLeftProject($recipient->id, $leavingName, $leavingRole, $project, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new MemberLeftProject($recipient->id, $leavingName, $leavingRole, $project, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(

@@ -49,6 +49,11 @@ const categoryIcons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
     ),
+    administration: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+    ),
 };
 
 const notificationTitles = {
@@ -56,6 +61,7 @@ const notificationTitles = {
     reviews: 'Reviews',
     membership: 'Project Membership',
     reminders: 'Reminders',
+    administration: 'Administration',
 };
 
 function Toggle({ enabled, onClick }) {
@@ -121,7 +127,7 @@ function CategoryCard({ groupKey, title, items, preferences, onToggle, onToggleA
         </div>
     );
 }
-export default function Settings({ emailCatalog, emailPreferences, notificationCatalog, notificationPreferences }) {
+export default function Settings({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults }) {
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
     const [theme, setThemeState] = useState(getStoredTheme());
@@ -144,10 +150,14 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
         e.preventDefault();
         emailForm.patch(route('settings.email'));
     };
+    const resetEmailToDefaults = () => {
+        emailForm.setData('preferences', { ...emailDefaults });
+    };
     const emailCatalogKeys = Object.values(emailCatalog).flatMap((group) => Object.keys(group.items));
     const emailTotalKeys = emailCatalogKeys.length;
     const emailTotalEnabled = emailCatalogKeys.filter((key) => emailForm.data.preferences[key]).length;
     const emailHasChanges = JSON.stringify(emailForm.data.preferences) !== JSON.stringify(emailPreferences);
+    const emailAtDefaults = JSON.stringify(emailForm.data.preferences) === JSON.stringify(emailDefaults);
 
     // --- Notification preferences (in-app bell) ---
     const toggleNotification = (key, value) => {
@@ -162,10 +172,14 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
         e.preventDefault();
         notificationForm.patch(route('settings.notifications'));
     };
+    const resetNotificationsToDefaults = () => {
+        notificationForm.setData('preferences', { ...notificationDefaults });
+    };
     const notificationKeys = Object.keys(notificationCatalog);
     const notificationTotalEnabled = notificationKeys.filter((key) => notificationForm.data.preferences[key]).length;
     const notificationAllOn = notificationTotalEnabled === notificationKeys.length;
     const notificationHasChanges = JSON.stringify(notificationForm.data.preferences) !== JSON.stringify(notificationPreferences);
+    const notificationAtDefaults = JSON.stringify(notificationForm.data.preferences) === JSON.stringify(notificationDefaults);
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Settings</h2>}>
@@ -243,13 +257,23 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                 {notificationHasChanges ? 'You have unsaved changes' : notificationForm.recentlySuccessful ? 'All changes saved' : 'No changes yet'}
                             </span>
-                            <button
-                                type="submit"
-                                disabled={notificationForm.processing || !notificationHasChanges}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                            >
-                                Save Preferences
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={resetNotificationsToDefaults}
+                                    disabled={notificationAtDefaults}
+                                    className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+                                >
+                                    Reset to defaults
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={notificationForm.processing || !notificationHasChanges}
+                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                >
+                                    Save Preferences
+                                </button>
+                            </div>
                         </div>
                     </form>
 
@@ -296,6 +320,14 @@ export default function Settings({ emailCatalog, emailPreferences, notificationC
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
                                 )}
+                                <button
+                                    type="button"
+                                    onClick={resetEmailToDefaults}
+                                    disabled={emailAtDefaults}
+                                    className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+                                >
+                                    Reset to defaults
+                                </button>
                                 <button
                                     type="submit"
                                     disabled={emailForm.processing || !emailHasChanges}

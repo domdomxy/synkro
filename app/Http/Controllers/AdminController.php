@@ -7,6 +7,7 @@ use App\Models\SuspensionAppeal;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -577,17 +578,19 @@ public function suspend(Request $request, User $user)
         AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
 
         if ($newRole === 'admin') {
-            $notification = UserNotification::create([
-                'user_id' => $user->id,
-                'type' => 'admin_status_changed',
-                'message' => "Promoted to admin\nYou were granted administrator access on Synkro.",
-                'url' => route('admin.dashboard', [], false),
-            ]);
+            if (NotificationPreferences::wantsType($user, 'admin_status_changed')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'admin_status_changed',
+                    'message' => "Promoted to admin\nYou were granted administrator access on Synkro.",
+                    'url' => route('admin.dashboard', [], false),
+                ]);
 
-            try {
-                broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(
@@ -599,17 +602,19 @@ public function suspend(Request $request, User $user)
                 'Go to Admin Dashboard'
             );
         } else {
-            $notification = UserNotification::create([
-                'user_id' => $user->id,
-                'type' => 'admin_status_changed',
-                'message' => "Removed from admin\nYour administrator access on Synkro was removed.",
-                'url' => route('dashboard', [], false),
-            ]);
+            if (NotificationPreferences::wantsType($user, 'admin_status_changed')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'admin_status_changed',
+                    'message' => "Removed from admin\nYour administrator access on Synkro was removed.",
+                    'url' => route('dashboard', [], false),
+                ]);
 
-            try {
-                broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(

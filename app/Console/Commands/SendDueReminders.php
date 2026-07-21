@@ -6,6 +6,7 @@ use App\Events\ReminderDue;
 use App\Models\Reminder;
 use App\Models\UserNotification;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 use App\Support\NoteFormatter;
 use Illuminate\Console\Command;
 
@@ -23,17 +24,19 @@ class SendDueReminders extends Command
             ->get();
 
         foreach ($due as $reminder) {
-            $notification = UserNotification::create([
-                'user_id' => $reminder->user_id,
-                'type' => 'reminder',
-                'message' => $reminder->note ? "{$reminder->title}\n{$reminder->note}" : $reminder->title,
-                'url' => route('dashboard', [], false),
-            ]);
+            if (NotificationPreferences::wantsType($reminder->user, 'reminder')) {
+                $notification = UserNotification::create([
+                    'user_id' => $reminder->user_id,
+                    'type' => 'reminder',
+                    'message' => $reminder->note ? "{$reminder->title}\n{$reminder->note}" : $reminder->title,
+                    'url' => route('dashboard', [], false),
+                ]);
 
-            try {
-                broadcast(new ReminderDue($reminder->user_id, $reminder->title, $reminder->note, $notification->id));
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new ReminderDue($reminder->user_id, $reminder->title, $reminder->note, $notification->id));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             if ($reminder->user) {

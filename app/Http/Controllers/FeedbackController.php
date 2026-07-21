@@ -7,6 +7,7 @@ use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -230,19 +231,22 @@ class FeedbackController extends Controller
         $url = $this->adminFeedbackUrl($feedback);
 
         foreach ($admins as $admin) {
-            // In-app bell notification: always created, same as every other notification type
-            // in this app (email preferences only gate the email send below, not the bell).
-            $notification = UserNotification::create([
-                'user_id' => $admin->id,
-                'type' => 'feedback_replied',
-                'message' => "Feedback reply\n{$feedback->name} replied to ticket \"{$feedback->subject}\"",
-                'url' => $url,
-            ]);
+            // In-app bell notification: now gated on the admin's 'administration'
+            // NotificationPreferences category (previously always created regardless
+            // of the in-app toggle; email preferences below are unaffected either way).
+            if (NotificationPreferences::wantsType($admin, 'feedback_replied')) {
+                $notification = UserNotification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'feedback_replied',
+                    'message' => "Feedback reply\n{$feedback->name} replied to ticket \"{$feedback->subject}\"",
+                    'url' => $url,
+                ]);
 
-            try {
-                broadcast(new FeedbackReplied($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new FeedbackReplied($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             if (! \App\Support\EmailPreferences::wants($admin, 'admin.ticket_reply')) {

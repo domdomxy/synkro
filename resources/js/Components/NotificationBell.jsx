@@ -12,6 +12,7 @@ const categoryMap = {
     task_commented: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
+    task_reopened: 'reviews',
     task_done: 'reviews',
     task_review_needed: 'reviews',
     member_left: 'membership',
@@ -46,6 +47,11 @@ const typeStyles = {
         bg: 'bg-amber-100 dark:bg-amber-900',
         text: 'text-amber-600 dark:text-amber-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />,
+    },
+    task_reopened: {
+        bg: 'bg-amber-100 dark:bg-amber-900',
+        text: 'text-amber-600 dark:text-amber-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
     task_done: {
         bg: 'bg-green-100 dark:bg-green-900',

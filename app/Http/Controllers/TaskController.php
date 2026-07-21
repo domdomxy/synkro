@@ -17,6 +17,7 @@ use App\Models\Task;
 use App\Models\TaskDeliverable;
 use App\Models\UserNotification;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -76,17 +77,19 @@ class TaskController extends Controller
  
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
-            $notification = UserNotification::create([
-                'user_id' => $task->assigned_to,
-                'type' => 'task_assigned',
-                'message' => "Task assigned\nYou were assigned a new task: \"{$task->title}\"",
-                'url' => $url,
-            ]);
+            if (NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+                $notification = UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_assigned',
+                    'message' => "Task assigned\nYou were assigned a new task: \"{$task->title}\"",
+                    'url' => $url,
+                ]);
  
-            try {
-                broadcast(new TaskAssigned($task, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new TaskAssigned($task, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
  
             NotificationMailer::send(
@@ -171,17 +174,19 @@ class TaskController extends Controller
                     'new_assignee' => $newAssignee?->name,
                 ]);
  
-                $notification = UserNotification::create([
-                    'user_id' => $task->assigned_to,
-                    'type' => 'task_assigned',
-                    'message' => "Task assigned\nYou were assigned a task: \"{$task->title}\"",
-                    'url' => $url,
-                ]);
- 
-                try {
-                    broadcast(new TaskAssigned($task, $notification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
+                if (NotificationPreferences::wantsType($newAssignee, 'task_assigned')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $task->assigned_to,
+                        'type' => 'task_assigned',
+                        'message' => "Task assigned\nYou were assigned a task: \"{$task->title}\"",
+                        'url' => $url,
+                    ]);
+
+                    try {
+                        broadcast(new TaskAssigned($task, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
  
                 NotificationMailer::send(
@@ -201,21 +206,23 @@ class TaskController extends Controller
  
             if ($previousAssignee && $previousAssignee !== $task->assigned_to) {
                 $projectUrl = route('projects.show', $task->project_id, false);
- 
-                $notification = UserNotification::create([
-                    'user_id' => $previousAssignee,
-                    'type' => 'task_unassigned',
-                    'message' => "Removed from task\nYou were removed from task \"{$task->title}\"",
-                    'url' => $projectUrl,
-                ]);
- 
-                try {
-                    broadcast(new TaskUnassigned($previousAssignee, $task, $notification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
-                }
- 
                 $previousUser = \App\Models\User::find($previousAssignee);
+
+                if ($previousUser && NotificationPreferences::wantsType($previousUser, 'task_unassigned')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $previousAssignee,
+                        'type' => 'task_unassigned',
+                        'message' => "Removed from task\nYou were removed from task \"{$task->title}\"",
+                        'url' => $projectUrl,
+                    ]);
+
+                    try {
+                        broadcast(new TaskUnassigned($previousAssignee, $task, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
                 if ($previousUser) {
                     NotificationMailer::send(
                         $previousUser,
@@ -230,17 +237,19 @@ class TaskController extends Controller
         } elseif ($contentChanged && $task->assigned_to) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
-            $notification = UserNotification::create([
-                'user_id' => $task->assigned_to,
-                'type' => 'task_updated',
-                'message' => "Task updated\n\"{$task->title}\" was updated",
-                'url' => $url,
-            ]);
+            if (NotificationPreferences::wantsType($task->assignee, 'task_updated')) {
+                $notification = UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_updated',
+                    'message' => "Task updated\n\"{$task->title}\" was updated",
+                    'url' => $url,
+                ]);
  
-            try {
-                broadcast(new TaskUpdated($task->assigned_to, $task, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+                try {
+                    broadcast(new TaskUpdated($task->assigned_to, $task, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
  
             NotificationMailer::send(
@@ -271,21 +280,23 @@ class TaskController extends Controller
             $projectUrl = route('projects.show', $projectId, false);
  
             $notification = null;
-            try {
-                $notification = UserNotification::create([
-                    'user_id' => $assigneeId,
-                    'type' => 'task_deleted',
-                    'message' => "Task deleted\n\"{$taskTitle}\" was deleted from {$projectName}.",
-                    'url' => $projectUrl,
-                ]);
-            } catch (\Throwable $e) {
-                report($e);
-            }
- 
-            try {
-                broadcast(new TaskDeleted($assigneeId, $taskTitle, $projectName, $projectId, $notification?->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
+            if (NotificationPreferences::wantsType($assignee, 'task_deleted')) {
+                try {
+                    $notification = UserNotification::create([
+                        'user_id' => $assigneeId,
+                        'type' => 'task_deleted',
+                        'message' => "Task deleted\n\"{$taskTitle}\" was deleted from {$projectName}.",
+                        'url' => $projectUrl,
+                    ]);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+
+                try {
+                    broadcast(new TaskDeleted($assigneeId, $taskTitle, $projectName, $projectId, $notification?->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
  
             if ($assignee) {
@@ -364,19 +375,21 @@ class TaskController extends Controller
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
             foreach ($testers as $tester) {
-                $notification = UserNotification::create([
-                    'user_id' => $tester->id,
-                    'type' => 'task_review_needed',
-                    'message' => "Review needed\n\"{$task->title}\" is waiting for your review",
-                    'url' => $url,
-                ]);
- 
-                try {
-                    broadcast(new TaskReviewNeeded($tester->id, $task, $notification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
+                if (NotificationPreferences::wantsType($tester, 'task_review_needed')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $tester->id,
+                        'type' => 'task_review_needed',
+                        'message' => "Review needed\n\"{$task->title}\" is waiting for your review",
+                        'url' => $url,
+                    ]);
+
+                    try {
+                        broadcast(new TaskReviewNeeded($tester->id, $task, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
- 
+
                 NotificationMailer::send(
                     $tester,
                     'task.review_needed',
@@ -463,17 +476,21 @@ class TaskController extends Controller
         $message = "{$decisionTitle}\n\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
-        $notification = UserNotification::create([
-            'user_id' => $task->assigned_to,
-            'type' => $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected',
-            'message' => $message,
-            'url' => $url,
-        ]);
- 
-        try {
-            broadcast(new TaskReviewed($task, $validated['decision'], $validated['feedback'] ?? null, $notification->id))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+        $decisionType = $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected';
+
+        if (NotificationPreferences::wantsType($task->assignee, $decisionType)) {
+            $notification = UserNotification::create([
+                'user_id' => $task->assigned_to,
+                'type' => $decisionType,
+                'message' => $message,
+                'url' => $url,
+            ]);
+
+            try {
+                broadcast(new TaskReviewed($task, $validated['decision'], $validated['feedback'] ?? null, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
  
         if ($task->assignee) {
@@ -499,19 +516,21 @@ class TaskController extends Controller
                 ->get();
  
             foreach ($recipients as $recipient) {
-                $doneNotification = UserNotification::create([
-                    'user_id' => $recipient->id,
-                    'type' => 'task_done',
-                    'message' => "Task completed\n\"{$task->title}\" was marked done",
-                    'url' => $url,
-                ]);
- 
-                try {
-                    broadcast(new TaskDone($recipient->id, $task, $doneNotification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
+                if (NotificationPreferences::wantsType($recipient, 'task_done')) {
+                    $doneNotification = UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'task_done',
+                        'message' => "Task completed\n\"{$task->title}\" was marked done",
+                        'url' => $url,
+                    ]);
+
+                    try {
+                        broadcast(new TaskDone($recipient->id, $task, $doneNotification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
- 
+
                 NotificationMailer::send(
                     $recipient,
                     'task.done',
@@ -605,12 +624,14 @@ class TaskController extends Controller
         if ($task->assignee) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
-            $notification = UserNotification::create([
-                'user_id' => $task->assigned_to,
-                'type' => 'task_reopened',
-                'message' => "Task reopened\n\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
-                'url' => $url,
-            ]);
+            if (NotificationPreferences::wantsType($task->assignee, 'task_reopened')) {
+                UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_reopened',
+                    'message' => "Task reopened\n\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
+                    'url' => $url,
+                ]);
+            }
  
             NotificationMailer::send(
                 $task->assignee,

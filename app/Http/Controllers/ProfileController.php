@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Storage;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
 use App\Mail\SynkroNotificationMail;
 use Illuminate\Support\Facades\Mail;
 
@@ -123,17 +124,19 @@ class ProfileController extends Controller
                 ->get();
 
             foreach ($recipients as $recipient) {
-                $notification = \App\Models\UserNotification::create([
-                    'user_id' => $recipient->id,
-                    'type' => 'member_left',
-                    'message' => "Member left\n{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
-                    'url' => route('projects.show', $project->id, false),
-                ]);
+                if (NotificationPreferences::wantsType($recipient, 'member_left')) {
+                    $notification = \App\Models\UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'member_left',
+                        'message' => "Member left\n{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
+                        'url' => route('projects.show', $project->id, false),
+                    ]);
 
-                try {
-                    broadcast(new \App\Events\MemberLeftProject($recipient->id, $user->name, $role ?? 'member', $project, $notification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
+                    try {
+                        broadcast(new \App\Events\MemberLeftProject($recipient->id, $user->name, $role ?? 'member', $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
             }
         }
@@ -220,12 +223,14 @@ class ProfileController extends Controller
             $role = $project->roleFor($user) ?? 'member';
 
             foreach ($recipients as $recipient) {
-                \App\Models\UserNotification::create([
-                    'user_id' => $recipient->id,
-                    'type' => 'member_left',
-                    'message' => "Member left\n{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
-                    'url' => route('projects.show', $project->id, false),
-                ]);
+                if (NotificationPreferences::wantsType($recipient, 'member_left')) {
+                    \App\Models\UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'member_left',
+                        'message' => "Member left\n{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
+                        'url' => route('projects.show', $project->id, false),
+                    ]);
+                }
             }
         }
 
