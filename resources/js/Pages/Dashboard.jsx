@@ -451,6 +451,82 @@ function AlarmRow({ r, now, onDelete }) {
     );
 }
 
+function DueSoonPanel({ dueSoon }) {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    const sorted = useMemo(
+        () => [...dueSoon].sort((a, b) => new Date(a.due_date) - new Date(b.due_date)),
+        [dueSoon]
+    );
+
+    return (
+        <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
+                {sorted.length > 0 && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                        {sorted.length}
+                    </span>
+                )}
+            </div>
+
+            {sorted.length === 0 ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                    <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days</p>
+                </div>
+            ) : (
+                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                    {sorted.map((task) => {
+                        const { overdue } = timeLeftParts(task.due_date, now);
+                        const relative = timeLeftLabel(task.due_date, now, { short: true });
+                        return (
+                            <li key={task.id}>
+                                <Link
+                                    href={`${route('projects.show', task.project_id)}?task=${task.id}`}
+                                    className={`block rounded-md border-l-4 bg-gray-50 p-3 transition hover:bg-gray-100 dark:bg-gray-900/40 dark:hover:bg-gray-900/70 ${
+                                        overdue ? 'border-l-red-500' : 'border-l-orange-400'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <p className="min-w-0 truncate font-medium text-gray-800 dark:text-gray-200">{task.title}</p>
+                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                            overdue
+                                                ? 'bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400'
+                                                : 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400'
+                                        }`}>
+                                            {relative}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">{task.project?.name}</p>
+                                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                        <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        {new Date(task.due_date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </p>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </div>
+    );
+}
+
 function RemindersPanel({ reminders }) {
     const { data, setData, post, processing, reset, errors, transform } = useForm({
         title: '', note: '', remind_at: '', repeat_interval: 'none',
@@ -588,26 +664,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-2">
-                        <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
-                            {stats.dueSoon.length === 0 ? (
-                                <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days.</p>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {stats.dueSoon.map((task) => (
-                                        <li key={task.id}>
-                                            <Link href={`${route('projects.show', task.project_id)}?task=${task.id}`} className="block rounded-md border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
-                                                <p className="truncate font-medium text-gray-800 dark:text-gray-200">{task.title}</p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500">{task.project?.name}</p>
-                                                <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                                                    {new Date(task.due_date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                                </p>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
+                        <DueSoonPanel dueSoon={stats.dueSoon} />
 
                         <RemindersPanel reminders={stats.reminders} />
                     </div>
