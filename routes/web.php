@@ -62,6 +62,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notes/{note}', [ProjectNoteController::class, 'update'])->name('projects.notes.update');
     Route::delete('/notes/{note}', [ProjectNoteController::class, 'destroy'])->name('projects.notes.destroy');
     Route::delete('/projects/{project}/notes', [ProjectNoteController::class, 'clearAll'])->name('projects.notes.clear');
+    Route::post('/notes/{note}/items', [ProjectNoteController::class, 'addItem'])->name('projects.notes.items.add');
+    Route::patch('/notes/{note}/items/{itemId}/toggle', [ProjectNoteController::class, 'toggleItem'])->name('projects.notes.items.toggle');
+    Route::delete('/notes/{note}/items/completed', [ProjectNoteController::class, 'clearCompletedItems'])->name('projects.notes.items.clear-completed');
+    Route::delete('/notes/{note}/items/{itemId}', [ProjectNoteController::class, 'removeItem'])->name('projects.notes.items.remove');
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');

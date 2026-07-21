@@ -10,7 +10,6 @@ import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
-import { NoteList, notePreview, noteLines } from '@/utils/noteFormat';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -183,49 +182,141 @@ function NoteKebabMenu({ onEdit, onDelete }) {
     );
 }
 
-function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCancelEdit, onDelete }) {
-    const [expanded, setExpanded] = useState(false);
-    const isLong = noteLines(note.content).length > 1 || note.content.length > 140;
+function NoteItemRow({ item, onToggle, onRemove }) {
+    return (
+        <li className="group/item flex items-start gap-2 py-1">
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-pressed={item.done}
+                aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                    item.done
+                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        : 'border-gray-300 bg-white hover:border-indigo-400 dark:border-gray-600 dark:bg-gray-900'
+                }`}
+            >
+                {item.done && (
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                )}
+            </button>
+            <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-xs ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
+                {item.text}
+            </span>
+            <button
+                type="button"
+                onClick={onRemove}
+                title="Remove item"
+                className="shrink-0 rounded p-0.5 text-gray-300 opacity-0 transition hover:text-red-500 group-hover/item:opacity-100 dark:text-gray-600"
+            >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </li>
+    );
+}
 
-    if (isEditing) {
-        return (
-            <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
-                <form onSubmit={onSubmitEdit} className="space-y-2">
-                    <input type="text" placeholder="Title (optional)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
-                    <textarea value={editForm.data.content} onChange={(e) => editForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <div className="flex gap-2">
-                        <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save</button>
-                        <button type="button" onClick={onCancelEdit} className="flex-1 rounded-md bg-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
-                    </div>
-                </form>
-            </li>
-        );
-    }
+function NoteEditForm({ editForm, onSubmit, onCancel }) {
+    const setItemText = (index, text) => {
+        const items = [...editForm.data.items];
+        items[index] = { ...items[index], text };
+        editForm.setData('items', items);
+    };
+    const addBlankItem = () => editForm.setData('items', [...editForm.data.items, { id: null, text: '' }]);
+    const removeItem = (index) => editForm.setData('items', editForm.data.items.filter((_, i) => i !== index));
 
     return (
-        <li
-            onClick={() => setExpanded((v) => !v)}
-            className="group cursor-pointer overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70"
-        >
+        <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
+            <form onSubmit={onSubmit} className="space-y-2">
+                <input type="text" placeholder="Title (e.g. Authentication)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
+                <div className="space-y-1.5">
+                    {editForm.data.items.map((item, index) => (
+                        <div key={item.id ?? `new-${index}`} className="flex items-center gap-1.5">
+                            <input
+                                type="text"
+                                value={item.text}
+                                onChange={(e) => setItemText(index, e.target.value)}
+                                placeholder="Checklist item"
+                                className="block w-full rounded-md border-gray-300 text-xs shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                            {editForm.data.items.length > 1 && (
+                                <button type="button" onClick={() => removeItem(index)} className="shrink-0 rounded p-1 text-gray-400 hover:text-red-500">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <button type="button" onClick={addBlankItem} className="text-xs font-medium text-indigo-500 hover:underline">+ Add item</button>
+                <InputError message={editForm.errors.items} />
+                <div className="flex gap-2 pt-1">
+                    <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save</button>
+                    <button type="button" onClick={onCancel} className="flex-1 rounded-md bg-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                </div>
+            </form>
+        </li>
+    );
+}
+
+function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCancelEdit, onDelete, onToggleItem, onRemoveItem, onAddItem, onClearCompleted }) {
+    const [quickAdd, setQuickAdd] = useState('');
+    const items = note.content ?? [];
+    const doneCount = items.filter((i) => i.done).length;
+    const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+
+    if (isEditing) {
+        return <NoteEditForm editForm={editForm} onSubmit={onSubmitEdit} onCancel={onCancelEdit} />;
+    }
+
+    const submitQuickAdd = (e) => {
+        e.preventDefault();
+        const text = quickAdd.trim();
+        if (!text) return;
+        onAddItem(text);
+        setQuickAdd('');
+    };
+
+    return (
+        <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                    {note.title && <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>}
-                    <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{timeAgoLabel(note.updated_at)}</p>
+                    <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                        <div className="h-1 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length} &bull; {timeAgoLabel(note.updated_at)}</span>
+                        {doneCount > 0 && (
+                            <button onClick={onClearCompleted} className="text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
+                        )}
+                    </div>
                 </div>
                 <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
             </div>
-            <div className="mt-1.5 pl-0.5">
-                {expanded ? (
-                    <NoteList note={note.content} className="text-xs text-gray-500 dark:text-gray-400" />
-                ) : (
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{notePreview(note.content)}</p>
-                )}
-                {isLong && (
-                    <p className="mt-0.5 text-[10px] font-medium text-indigo-500 dark:text-indigo-400">
-                        {expanded ? 'Show less' : 'Show more'}
-                    </p>
-                )}
-            </div>
+
+            <ul className="mt-2 divide-y divide-gray-100 pl-0.5 dark:divide-gray-800">
+                {items.map((item) => (
+                    <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
+                ))}
+            </ul>
+
+            <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-center gap-1.5">
+                <svg className="h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <input
+                    type="text"
+                    value={quickAdd}
+                    onChange={(e) => setQuickAdd(e.target.value)}
+                    placeholder="Add item..."
+                    className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
+                />
+            </form>
         </li>
     );
 }
@@ -234,8 +325,8 @@ function NotesPanel({ project, myNotes }) {
     const [editingId, setEditingId] = useState(null);
     const [showNewForm, setShowNewForm] = useState(false);
 
-    const newForm = useForm({ title: '', content: '' });
-    const editForm = useForm({ title: '', content: '' });
+    const newForm = useForm({ title: '', itemsText: '' });
+    const editForm = useForm({ title: '', items: [] });
 
     const sorted = useMemo(
         () => [...myNotes].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
@@ -244,12 +335,21 @@ function NotesPanel({ project, myNotes }) {
 
     const submitNew = (e) => {
         e.preventDefault();
-        newForm.post(route('projects.notes.store', project.id), { onSuccess: () => { newForm.reset(); setShowNewForm(false); } });
+        newForm.transform((data) => ({
+            title: data.title,
+            items: data.itemsText.split(/\r\n|\r|\n/).map((l) => l.trim()).filter((l) => l.length > 0),
+        }));
+        newForm.post(route('projects.notes.store', project.id), {
+            onSuccess: () => { newForm.reset(); setShowNewForm(false); },
+        });
     };
 
     const startEdit = (note) => {
         setEditingId(note.id);
-        editForm.setData({ title: note.title ?? '', content: note.content });
+        editForm.setData({
+            title: note.title ?? '',
+            items: (note.content ?? []).map((i) => ({ id: i.id, text: i.text })),
+        });
     };
 
     const submitEdit = (e, noteId) => {
@@ -257,10 +357,15 @@ function NotesPanel({ project, myNotes }) {
         editForm.patch(route('projects.notes.update', noteId), { onSuccess: () => setEditingId(null) });
     };
 
-    const deleteNote = (noteId) => { if (confirm('Delete this note?')) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
+    const deleteNote = (noteId) => { if (confirm('Delete this checklist?')) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
+
+    const toggleItem = (noteId, itemId) => router.patch(route('projects.notes.items.toggle', [noteId, itemId]), {}, { preserveScroll: true });
+    const removeItem = (noteId, itemId) => router.delete(route('projects.notes.items.remove', [noteId, itemId]), { preserveScroll: true });
+    const addItem = (noteId, text) => router.post(route('projects.notes.items.add', noteId), { text }, { preserveScroll: true });
+    const clearCompletedItems = (noteId) => router.delete(route('projects.notes.items.clear-completed', noteId), { preserveScroll: true });
 
     const clearAll = () => {
-        if (confirm('Clear all your notes on this project? This cannot be undone.')) {
+        if (confirm('Clear all your checklists on this project? This cannot be undone.')) {
             router.delete(route('projects.notes.clear', project.id));
         }
     };
@@ -271,7 +376,7 @@ function NotesPanel({ project, myNotes }) {
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
                         </svg>
                     </div>
                     <span className="text-sm font-semibold dark:text-gray-100">My Notes</span>
@@ -285,7 +390,7 @@ function NotesPanel({ project, myNotes }) {
                             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                             </svg>
-                            New Note
+                            New Checklist
                         </>
                     )}
                 </button>
@@ -300,23 +405,23 @@ function NotesPanel({ project, myNotes }) {
 
             {showNewForm && (
                 <form onSubmit={submitNew} className="mb-4 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
-                    <input type="text" placeholder="Title (optional)" value={newForm.data.title} onChange={(e) => newForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
-                    <textarea placeholder="Write your note... (one point per line, **bold** supported)" value={newForm.data.content} onChange={(e) => newForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <InputError message={newForm.errors.content} />
-                    <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save Note</button>
+                    <input type="text" placeholder="Title (e.g. Authentication)" value={newForm.data.title} onChange={(e) => newForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
+                    <textarea placeholder="One checklist item per line" value={newForm.data.itemsText} onChange={(e) => newForm.setData('itemsText', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <InputError message={newForm.errors.items} />
+                    <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save Checklist</button>
                 </form>
             )}
 
             {sorted.length === 0 && !showNewForm ? (
                 <div className="flex flex-col items-center py-6 text-center">
                     <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
                     </svg>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">No notes yet</p>
-                    <p className="text-xs text-gray-300 dark:text-gray-600">Jot down anything private about this project</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">No checklists yet</p>
+                    <p className="text-xs text-gray-300 dark:text-gray-600">Jot down a to-do list private to you on this project</p>
                 </div>
             ) : (
-                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <ul className="max-h-96 space-y-2 overflow-y-auto pr-1">
                     {sorted.map((note) => (
                         <NoteCard
                             key={note.id}
@@ -327,6 +432,10 @@ function NotesPanel({ project, myNotes }) {
                             onSubmitEdit={(e) => submitEdit(e, note.id)}
                             onCancelEdit={() => setEditingId(null)}
                             onDelete={() => deleteNote(note.id)}
+                            onToggleItem={(itemId) => toggleItem(note.id, itemId)}
+                            onRemoveItem={(itemId) => removeItem(note.id, itemId)}
+                            onAddItem={(text) => addItem(note.id, text)}
+                            onClearCompleted={() => clearCompletedItems(note.id)}
                         />
                     ))}
                 </ul>
