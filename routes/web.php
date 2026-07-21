@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
+    Route::get('/projects/{project}/deliverables', [ProjectController::class, 'deliverables'])->name('projects.deliverables');
+    Route::get('/projects/{project}/deliverables/download', [ProjectController::class, 'downloadDeliverables'])->name('projects.deliverables.download');
     Route::post('/projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
     Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::post('/projects/{project}/pin', [ProjectController::class, 'pin'])->name('projects.pin');

@@ -9,6 +9,16 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    /**
+     * Safe replacement for range(0, $count). PHP 8.3 throws a ValueError from
+     * range() when $count is 0 (step 1 is no longer "less than" a zero span),
+     * which happens whenever a custom date range covers a single day/week/month.
+     */
+    private function indices(int $count): array
+    {
+        return $count > 0 ? range(0, $count) : [0];
+    }
+
     private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
         if ($range === 'custom' && $from && $to) {
@@ -26,7 +36,7 @@ class DashboardController extends Controller
                         'start' => $day->copy()->startOfDay(),
                         'end' => $day->copy()->endOfDay(),
                     ];
-                }, range(0, $totalDays));
+                }, $this->indices($totalDays));
             }
 
             if ($totalDays <= 180) {
@@ -40,7 +50,7 @@ class DashboardController extends Controller
                         'start' => $weekStart->copy()->startOfDay(),
                         'end' => $weekEnd,
                     ];
-                }, range(0, $weeks));
+                }, $this->indices($weeks));
             }
 
             // Monthly buckets for long ranges
@@ -53,7 +63,7 @@ class DashboardController extends Controller
                     'start' => $monthStart,
                     'end' => $monthEnd,
                 ];
-            }, range(0, $months));
+            }, $this->indices($months));
         }
 
         return match ($range) {

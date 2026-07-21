@@ -98,6 +98,8 @@ class EmailPreferences
             'account.suspension_lifted',
             'account.appeal_reviewed',
             'account.email_changed_security_alert',
+            'account.admin_granted',
+            'account.admin_revoked',
         ];
     }
 

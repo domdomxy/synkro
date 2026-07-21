@@ -35,7 +35,7 @@ class CommentController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_commented',
-                'message' => Auth::user()->name . " commented on \"{$task->title}\"",
+                'message' => "New comment\n" . Auth::user()->name . " commented on \"{$task->title}\"",
                 'url' => $url,
             ]);
 

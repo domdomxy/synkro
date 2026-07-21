@@ -74,7 +74,7 @@ class ProjectMemberController extends Controller
         $notification = UserNotification::create([
             'user_id' => $user->id,
             'type' => 'project_invitation',
-            'message' => "{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
+            'message' => "Project invitation\n{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
             'url' => $inviteUrl,
         ]);
 
@@ -126,7 +126,7 @@ class ProjectMemberController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'project_role_changed',
-                'message' => "Your role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}",
+                'message' => "Role changed\nYour role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}",
                 'url' => route('projects.show', $project->id, false),
             ]);
 
@@ -166,7 +166,7 @@ class ProjectMemberController extends Controller
         $notification = \App\Models\UserNotification::create([
             'user_id' => $user->id,
             'type' => 'removed_from_project',
-            'message' => "You were removed from \"{$project->name}\"",
+            'message' => "Removed from project\nYou were removed from \"{$project->name}\"",
             'url' => route('projects.index', [], false),
         ]);
 
@@ -230,7 +230,7 @@ class ProjectMemberController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $recipient->id,
                 'type' => 'member_left',
-                'message' => "{$leavingName} ({$leavingRole}) left \"{$project->name}\"",
+                'message' => "Member left\n{$leavingName} ({$leavingRole}) left \"{$project->name}\"",
                 'url' => route('projects.show', $project->id, false),
             ]);
 

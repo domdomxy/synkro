@@ -235,7 +235,7 @@ class FeedbackController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $admin->id,
                 'type' => 'feedback_replied',
-                'message' => "{$feedback->name} replied to ticket \"{$feedback->subject}\"",
+                'message' => "Feedback reply\n{$feedback->name} replied to ticket \"{$feedback->subject}\"",
                 'url' => $url,
             ]);
 

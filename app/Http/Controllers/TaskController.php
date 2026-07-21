@@ -79,7 +79,7 @@ class TaskController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_assigned',
-                'message' => "You were assigned a new task: \"{$task->title}\"",
+                'message' => "Task assigned\nYou were assigned a new task: \"{$task->title}\"",
                 'url' => $url,
             ]);
  
@@ -174,7 +174,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_assigned',
-                    'message' => "You were assigned a task: \"{$task->title}\"",
+                    'message' => "Task assigned\nYou were assigned a task: \"{$task->title}\"",
                     'url' => $url,
                 ]);
  
@@ -205,7 +205,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $previousAssignee,
                     'type' => 'task_unassigned',
-                    'message' => "You were removed from task \"{$task->title}\"",
+                    'message' => "Removed from task\nYou were removed from task \"{$task->title}\"",
                     'url' => $projectUrl,
                 ]);
  
@@ -233,7 +233,7 @@ class TaskController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_updated',
-                'message' => "Task \"{$task->title}\" was updated",
+                'message' => "Task updated\n\"{$task->title}\" was updated",
                 'url' => $url,
             ]);
  
@@ -275,7 +275,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $assigneeId,
                     'type' => 'task_deleted',
-                    'message' => "\"{$taskTitle}\" was deleted from {$projectName}.",
+                    'message' => "Task deleted\n\"{$taskTitle}\" was deleted from {$projectName}.",
                     'url' => $projectUrl,
                 ]);
             } catch (\Throwable $e) {
@@ -367,7 +367,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $tester->id,
                     'type' => 'task_review_needed',
-                    'message' => "\"{$task->title}\" is waiting for your review",
+                    'message' => "Review needed\n\"{$task->title}\" is waiting for your review",
                     'url' => $url,
                 ]);
  
@@ -459,7 +459,8 @@ class TaskController extends Controller
         ]);
  
         $decisionLabel = $validated['decision'] === 'approve' ? 'approved' : 'sent back for changes';
-        $message = "\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
+        $decisionTitle = $validated['decision'] === 'approve' ? 'Task approved' : 'Changes requested';
+        $message = "{$decisionTitle}\n\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
         $notification = UserNotification::create([
@@ -501,7 +502,7 @@ class TaskController extends Controller
                 $doneNotification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_done',
-                    'message' => "\"{$task->title}\" was marked done",
+                    'message' => "Task completed\n\"{$task->title}\" was marked done",
                     'url' => $url,
                 ]);
  
@@ -607,7 +608,7 @@ class TaskController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => 'task_reopened',
-                'message' => "\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
+                'message' => "Task reopened\n\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
                 'url' => $url,
             ]);
  

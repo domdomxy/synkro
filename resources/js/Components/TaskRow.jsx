@@ -573,7 +573,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 Last Submission update {formatDue(task.updated_at)}
                             </span>
                         )}
-                        {task.deliverables?.some((d) => d.type === 'file') && (
+                        {task.status !== 'done' && task.deliverables?.some((d) => d.type === 'file') && (
                             <a
                                 href={route('tasks.download', task.id)}
                                 className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -725,14 +725,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         <>
                                             <div className={`rounded-2xl px-3.5 py-2 ${
                                                 comment.is_feedback
-                                                    ? 'bg-purple-50 dark:bg-purple-950/30'
+                                                    ? 'bg-amber-50 dark:bg-amber-950/30'
                                                     : 'bg-gray-100 dark:bg-gray-700/60'
                                             }`}>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
                                                     {!!comment.is_feedback && (
-                                                        <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                                                            Tester Feedback
+                                                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                                                            Requested changes
                                                         </span>
                                                     )}
                                                 </div>

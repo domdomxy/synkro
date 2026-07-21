@@ -222,6 +222,61 @@ class ProjectController extends Controller
         return back()->with('success', 'Project pinned.');
     }
 
+    public function deliverables(Project $project)
+    {
+        $this->authorize('view', $project);
+
+        $tasks = $project->tasks()
+            ->where('status', 'done')
+            ->with('deliverables', 'assignee')
+            ->orderBy('title')
+            ->get();
+
+        return Inertia::render('Projects/Deliverables', [
+            'project' => $project,
+            'tasks' => $tasks,
+        ]);
+    }
+
+    public function downloadDeliverables(Project $project)
+    {
+        $this->authorize('view', $project);
+
+        $tasks = $project->tasks()->where('status', 'done')->with('deliverables')->get();
+
+        $files = $tasks->flatMap(fn ($task) => $task->deliverables
+            ->where('type', 'file')
+            ->map(fn ($d) => ['task' => $task, 'deliverable' => $d]));
+
+        if ($files->isEmpty()) {
+            return back()->withErrors(['error' => 'No files to download.']);
+        }
+
+        $zipFileName = Str::slug($project->name) . '-deliverables.zip';
+        $zipPath = storage_path('app/tmp/' . uniqid() . '-' . $zipFileName);
+
+        if (! is_dir(dirname($zipPath))) {
+            mkdir(dirname($zipPath), 0755, true);
+        }
+
+        $zip = new \ZipArchive();
+        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        foreach ($files as $entry) {
+            $fullPath = storage_path('app/public/' . $entry['deliverable']->path);
+            if (! file_exists($fullPath)) {
+                continue;
+            }
+
+            $folder = Str::slug($entry['task']->title) ?: 'task-' . $entry['task']->id;
+            $zip->addFile($fullPath, "{$folder}/{$entry['deliverable']->original_name}");
+        }
+
+        $zip->close();
+
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
     public function unpin(Project $project)
     {
         $project->members()->updateExistingPivot(Auth::id(), ['pinned' => false]);

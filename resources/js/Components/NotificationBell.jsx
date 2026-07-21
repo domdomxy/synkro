@@ -2,6 +2,7 @@ import { usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
 import { NoteList } from '@/utils/noteFormat';
+import FilterSelect from '@/Components/FilterSelect';
 
 const categoryMap = {
     task_assigned: 'assignments',
@@ -21,6 +22,8 @@ const categoryMap = {
     project_invitation: 'membership',
     invitation_accepted: 'membership',
     invitation_denied: 'membership',
+    feedback_replied: 'administration',
+    admin_status_changed: 'administration',
 };
 
 const typeStyles = {
@@ -114,6 +117,11 @@ const typeStyles = {
         text: 'text-indigo-600 dark:text-indigo-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
     },
+    admin_status_changed: {
+        bg: 'bg-purple-100 dark:bg-purple-900',
+        text: 'text-purple-600 dark:text-purple-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />,
+    },
 };
 
 function relativeTime(dateString) {
@@ -163,6 +171,7 @@ export default function NotificationBell() {
             '.reminder.due',
             '.project.removed',
             '.feedback.replied',
+            '.admin.status-changed',
         ],
         (payload) => {
             let message;
@@ -170,54 +179,60 @@ export default function NotificationBell() {
             let type = payload.type;
 
             if (payload.type === 'member_left') {
-                message = `${payload.member_name} (${payload.role}) left "${payload.project_name}"`;
+                message = `Member left\n${payload.member_name} (${payload.role}) left "${payload.project_name}"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_invitation') {
-                message = `${payload.inviter_name} invited you to join "${payload.project_name}" as ${payload.role}`;
+                message = `Project invitation\n${payload.inviter_name} invited you to join "${payload.project_name}" as ${payload.role}`;
                 url = `/invitations/${payload.token}`;
             } else if (payload.type === 'invitation_accepted') {
-                message = `${payload.accepted_by} accepted your invitation to "${payload.project_name}"`;
+                message = `Invitation accepted\n${payload.accepted_by} accepted your invitation to "${payload.project_name}"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'invitation_denied') {
-                message = `${payload.denied_by} declined your invitation to "${payload.project_name}"`;
+                message = `Invitation declined\n${payload.denied_by} declined your invitation to "${payload.project_name}"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_role_changed') {
-                message = `Your role in "${payload.project_name}" changed from ${payload.old_role} to ${payload.new_role}`;
+                message = `Role changed\nYour role in "${payload.project_name}" changed from ${payload.old_role} to ${payload.new_role}`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_done') {
-                message = `"${payload.title}" was marked done`;
+                message = `Task completed\n"${payload.title}" was marked done`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_review_needed') {
-                message = `"${payload.title}" is waiting for your review`;
+                message = `Review needed\n"${payload.title}" is waiting for your review`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_updated') {
-                message = `Task "${payload.title}" was updated`;
+                message = `Task updated\nTask "${payload.title}" was updated`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_unassigned') {
-                message = `You were removed from task "${payload.title}"`;
+                message = `Removed from task\nYou were removed from task "${payload.title}"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_commented') {
-                message = `${payload.commenter_name} commented on "${payload.title}"`;
+                message = `New comment\n${payload.commenter_name} commented on "${payload.title}"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
                 // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }
                 type = 'task_deleted';
-                message = payload.message;
+                message = payload.message.includes('\n') ? payload.message : `Task deleted\n${payload.message}`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'removed_from_project') {
-                message = `You were removed from "${payload.project_name}"`;
+                message = `Removed from project\nYou were removed from "${payload.project_name}"`;
                 url = '/projects';
             } else if (payload.type === 'reminder') {
                 message = payload.note ? `${payload.title}\n${payload.note}` : payload.title;
                 url = '/dashboard';
             } else if (payload.type === 'feedback_replied') {
-                message = `${payload.submitter_name} replied to ticket "${payload.subject}"`;
+                message = `Feedback reply\n${payload.submitter_name} replied to ticket "${payload.subject}"`;
                 url = '/admin/feedbacks';
+            } else if (payload.type === 'admin_status_changed') {
+                message = payload.new_role === 'admin'
+                    ? 'Promoted to admin\nYou were granted administrator access on Synkro.'
+                    : 'Removed from admin\nYour administrator access on Synkro was removed.';
+                url = payload.new_role === 'admin' ? '/admin' : '/dashboard';
             } else if (payload.decision) {
-                message = `"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
+                const decisionTitle = payload.decision === 'approve' ? 'Task approved' : 'Changes requested';
+                message = `${decisionTitle}\n"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else {
-                message = `You were assigned a new task: "${payload.title}"`;
+                message = `Task assigned\nYou were assigned a new task: "${payload.title}"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             }
 
@@ -300,7 +315,7 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="absolute -right-10 z-50 mt-2 w-96 max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:right-0">
+                <div className="absolute -right-10 z-50 mt-2 w-96 max-w-[calc(100vw-1rem)] rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:right-0">
                     <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</p>
                         <div className="flex gap-3">
@@ -331,20 +346,23 @@ export default function NotificationBell() {
                                 {option}
                             </button>
                         ))}
-                        <select
+                        <FilterSelect
                             value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className="ml-auto rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="all">All Categories</option>
-                            <option value="assignments">Assignments</option>
-                            <option value="reviews">Reviews</option>
-                            <option value="membership">Membership</option>
-                            <option value="reminders">Reminders</option>
-                        </select>
+                            onChange={setCategory}
+                            className="ml-auto w-40"
+                            buttonClassName="py-1 text-xs"
+                            options={[
+                                { value: 'all', label: 'All Categories' },
+                                { value: 'assignments', label: 'Assignments' },
+                                { value: 'reviews', label: 'Reviews' },
+                                { value: 'membership', label: 'Membership' },
+                                { value: 'reminders', label: 'Reminders' },
+                                ...(auth.user.role === 'admin' ? [{ value: 'administration', label: 'Administration' }] : []),
+                            ]}
+                        />
                     </div>
 
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-96 overflow-y-auto rounded-b-lg">
                         {visibleItems.length === 0 && (
                             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                                 <svg className="h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

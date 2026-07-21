@@ -126,7 +126,7 @@ class ProfileController extends Controller
                 $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
-                    'message' => "{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
+                    'message' => "Member left\n{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -223,7 +223,7 @@ class ProfileController extends Controller
                 \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
-                    'message' => "{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
+                    'message' => "Member left\n{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
                     'url' => route('projects.show', $project->id, false),
                 ]);
             }

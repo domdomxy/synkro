@@ -119,7 +119,7 @@ function TasksByStatusCard({ tasksByStatus, total }) {
                         const count = tasksByStatus[key] ?? 0;
                         const pct = total ? Math.round((count / total) * 100) : 0;
                         return (
-                            <li key={key} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
+                            <li key={key} className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors first:pt-0 last:pb-0 hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                 <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
                                 <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
                                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
@@ -193,6 +193,8 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         </Link>
                     </div>
 
+                    <AttentionPanel items={attentionItems} />
+
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.users} sub={`${stats.activeUsers} active · ${stats.inactiveUsers} inactive`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.users} />
                         <StatCard label="Admins" value={stats.admins} sub="Users with elevated platform access" icon={statIcons.admins} />
@@ -203,8 +205,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Currently Online" value={stats.currentlyOnline} sub="Active in the last 5 minutes" icon={statIcons.online} />
                         <StatCard label="Completed Projects" value={stats.completedProjects} sub="Every task in the project is done" icon={statIcons.completed} />
                     </div>
-
-                    <AttentionPanel items={attentionItems} />
 
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">

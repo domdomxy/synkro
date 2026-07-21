@@ -13,8 +13,10 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Models\Feedback;
 use App\Events\UserSuspended;
+use App\Events\AdminStatusChanged;
 use App\Models\SuspensionLog;
 use App\Models\AdminLog;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
@@ -51,6 +53,16 @@ class AdminController extends Controller
         return ['change' => $change];
     }
 
+    /**
+     * Safe replacement for range(0, $count). PHP 8.3 throws a ValueError from
+     * range() when $count is 0 (step 1 is no longer "less than" a zero span),
+     * which happens whenever a custom date range covers a single day/week/month.
+     */
+    private function indices(int $count): array
+    {
+        return $count > 0 ? range(0, $count) : [0];
+    }
+
     private function buckets(string $range, ?string $from = null, ?string $to = null): array
     {
         if ($range === 'custom' && $from && $to) {
@@ -68,7 +80,7 @@ class AdminController extends Controller
                         'start' => $day->copy()->startOfDay(),
                         'end' => $day->copy()->endOfDay(),
                     ];
-                }, range(0, $totalDays));
+                }, $this->indices($totalDays));
             }
 
             if ($totalDays <= 180) {
@@ -82,7 +94,7 @@ class AdminController extends Controller
                         'start' => $weekStart->copy()->startOfDay(),
                         'end' => $weekEnd,
                     ];
-                }, range(0, $weeks));
+                }, $this->indices($weeks));
             }
 
             // Monthly buckets for long ranges
@@ -95,7 +107,7 @@ class AdminController extends Controller
                     'start' => $monthStart,
                     'end' => $monthEnd,
                 ];
-            }, range(0, $months));
+            }, $this->indices($months));
         }
 
         return match ($range) {
@@ -563,6 +575,53 @@ public function suspend(Request $request, User $user)
         $newRole = $user->role === 'admin' ? 'user' : 'admin';
         $user->update(['role' => $newRole, 'role_changed_at' => now()]);
         AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
+
+        if ($newRole === 'admin') {
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'admin_status_changed',
+                'message' => "Promoted to admin\nYou were granted administrator access on Synkro.",
+                'url' => route('admin.dashboard', [], false),
+            ]);
+
+            try {
+                broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            NotificationMailer::send(
+                $user,
+                'account.admin_granted',
+                'You were granted administrator access',
+                ['You were granted administrator access on Synkro.'],
+                url(route('admin.dashboard', [], false)),
+                'Go to Admin Dashboard'
+            );
+        } else {
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'admin_status_changed',
+                'message' => "Removed from admin\nYour administrator access on Synkro was removed.",
+                'url' => route('dashboard', [], false),
+            ]);
+
+            try {
+                broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            NotificationMailer::send(
+                $user,
+                'account.admin_revoked',
+                'Your administrator access was removed',
+                ['Your administrator access on Synkro was removed.'],
+                url(route('dashboard', [], false)),
+                'Go to Dashboard'
+            );
+        }
+
         return back()->with('success', 'Role updated.');
     }
 
