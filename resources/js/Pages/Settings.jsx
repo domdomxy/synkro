@@ -64,6 +64,37 @@ const notificationTitles = {
     administration: 'Administration',
 };
 
+// Section nav (left sidebar), same pattern as Profile/Edit.jsx's section nav.
+const settingsNavItems = [
+    {
+        id: 'appearance',
+        label: 'Appearance',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'in-app-notifications',
+        label: 'In-App Notifications',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+        ),
+    },
+    {
+        id: 'email-notifications',
+        label: 'Email Notifications',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        ),
+    },
+];
+
 function Toggle({ enabled, onClick }) {
     return (
         <button
@@ -185,10 +216,30 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Settings</h2>}>
             <Head title="Settings" />
             <div className="py-12">
-                <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+
+                        {/* Section nav */}
+                        <nav className="hidden lg:block">
+                            <div className="sticky top-24 space-y-1">
+                                {settingsNavItems.map((s) => (
+                                    <a
+                                        key={s.id}
+                                        href={`#${s.id}`}
+                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                    >
+                                        <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                        {s.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </nav>
+
+                        {/* Sections */}
+                        <div className="space-y-6">
 
                     {/* Appearance */}
-                    <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                    <div id="appearance" className="scroll-mt-24 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <div className="mb-4 flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -216,7 +267,7 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                     </div>
 
                     {/* In-App Notifications */}
-                    <form onSubmit={submitNotifications} className="space-y-4">
+                    <form id="in-app-notifications" onSubmit={submitNotifications} className="scroll-mt-24 space-y-4">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">In-App Notifications</h3>
@@ -278,7 +329,7 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                     </form>
 
                     {/* Email Notifications */}
-                    <form onSubmit={submitEmail} className="space-y-6">
+                    <form id="email-notifications" onSubmit={submitEmail} className="scroll-mt-24 space-y-6">
                         <div>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -338,6 +389,8 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             </div>
                         </div>
                     </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>
