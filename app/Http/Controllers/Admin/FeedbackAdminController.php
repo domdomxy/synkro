@@ -90,7 +90,8 @@ class FeedbackAdminController extends Controller
             $lines,
             highlight: [
                 'label' => $statusChanged ? 'Status: '.ucfirst($validated['status']) : null,
-                'content' => $validated['message'],
+                'content' => \App\Support\NoteFormatter::toHtml($validated['message']),
+                'html' => true,
             ],
         );
 

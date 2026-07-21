@@ -202,7 +202,7 @@ class FeedbackController extends Controller
                     ["{$feedback->name} submitted a new {$feedback->category} ticket:"],
                     $this->adminFeedbackUrl($feedback),
                     'View Ticket',
-                    highlight: ['label' => $feedback->subject, 'content' => $feedback->message],
+                    highlight: ['label' => $feedback->subject, 'content' => \App\Support\NoteFormatter::toHtml($feedback->message), 'html' => true],
                 ));
             } catch (\Throwable $e) {
                 report($e);
@@ -256,7 +256,7 @@ class FeedbackController extends Controller
                     ["{$feedback->name} replied to their ticket \"{$feedback->subject}\":"],
                     $url,
                     'View Ticket',
-                    highlight: ['label' => null, 'content' => $message],
+                    highlight: ['label' => null, 'content' => \App\Support\NoteFormatter::toHtml($message), 'html' => true],
                 ));
             } catch (\Throwable $e) {
                 report($e);
