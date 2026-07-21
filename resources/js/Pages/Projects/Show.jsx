@@ -10,6 +10,7 @@ import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
+import { NoteList, notePreview, noteLines } from '@/utils/noteFormat';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -144,42 +145,102 @@ function MemberActionsMenu({ currentRole, onChangeRole, onRemove }) {
     );
 }
 
+function timeAgoLabel(dateStr) {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
 function NoteKebabMenu({ onEdit, onDelete }) {
-    const MENU_WIDTH = 128;
+    const MENU_WIDTH = 176;
     const { open, setOpen, coords, btnRef, menuRef, toggle } = useFixedDropdown(MENU_WIDTH);
 
     return (
         <>
-            <button ref={btnRef} onClick={toggle} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+            <button
+                ref={btnRef}
+                onClick={(e) => { e.stopPropagation(); toggle(); }}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                 </svg>
             </button>
             {open && (
                 <div ref={menuRef} style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }} className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
-                    <button onClick={() => { setOpen(false); onEdit(); }} className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Edit</button>
-                    <button onClick={() => { setOpen(false); onDelete(); }} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">Delete</button>
+                    <button onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }} className="block w-full px-4 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Edit</button>
+                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                    <button onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">Delete</button>
                 </div>
             )}
         </>
     );
 }
 
+function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCancelEdit, onDelete }) {
+    const [expanded, setExpanded] = useState(false);
+    const isLong = noteLines(note.content).length > 1 || note.content.length > 140;
+
+    if (isEditing) {
+        return (
+            <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
+                <form onSubmit={onSubmitEdit} className="space-y-2">
+                    <input type="text" placeholder="Title (optional)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
+                    <textarea value={editForm.data.content} onChange={(e) => editForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <div className="flex gap-2">
+                        <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save</button>
+                        <button type="button" onClick={onCancelEdit} className="flex-1 rounded-md bg-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                    </div>
+                </form>
+            </li>
+        );
+    }
+
+    return (
+        <li
+            onClick={() => setExpanded((v) => !v)}
+            className="group cursor-pointer overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70"
+        >
+            <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    {note.title && <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>}
+                    <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{timeAgoLabel(note.updated_at)}</p>
+                </div>
+                <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
+            </div>
+            <div className="mt-1.5 pl-0.5">
+                {expanded ? (
+                    <NoteList note={note.content} className="text-xs text-gray-500 dark:text-gray-400" />
+                ) : (
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{notePreview(note.content)}</p>
+                )}
+                {isLong && (
+                    <p className="mt-0.5 text-[10px] font-medium text-indigo-500 dark:text-indigo-400">
+                        {expanded ? 'Show less' : 'Show more'}
+                    </p>
+                )}
+            </div>
+        </li>
+    );
+}
+
 function NotesPanel({ project, myNotes }) {
-    const [open, setOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [expandedId, setExpandedId] = useState(null);
-    const panelRef = useRef(null);
+    const [showNewForm, setShowNewForm] = useState(false);
 
     const newForm = useForm({ title: '', content: '' });
     const editForm = useForm({ title: '', content: '' });
-    const [showNewForm, setShowNewForm] = useState(false);
 
-    useEffect(() => {
-        const handler = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false); };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
+    const sorted = useMemo(
+        () => [...myNotes].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
+        [myNotes]
+    );
 
     const submitNew = (e) => {
         e.preventDefault();
@@ -196,7 +257,7 @@ function NotesPanel({ project, myNotes }) {
         editForm.patch(route('projects.notes.update', noteId), { onSuccess: () => setEditingId(null) });
     };
 
-    const deleteNote = (noteId) => { if (confirm('Delete this note?')) router.delete(route('projects.notes.destroy', noteId)); };
+    const deleteNote = (noteId) => { if (confirm('Delete this note?')) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
 
     const clearAll = () => {
         if (confirm('Clear all your notes on this project? This cannot be undone.')) {
@@ -205,96 +266,70 @@ function NotesPanel({ project, myNotes }) {
     };
 
     return (
-        <div className="relative" ref={panelRef}>
-            <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <div className="flex items-center gap-2">
-                    <svg className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+        <div className="min-w-0 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
                     <span className="text-sm font-semibold dark:text-gray-100">My Notes</span>
-                    {myNotes.length > 0 && (
-                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{myNotes.length}</span>
+                    {sorted.length > 0 && (
+                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{sorted.length}</span>
                     )}
                 </div>
-                <svg className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-
-            {open && (
-                <div className="absolute right-0 z-10 mt-1 w-full rounded-lg bg-white p-4 shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
-                    <div className="mb-3 flex items-center justify-between">
-                        <p className="text-xs text-gray-400 dark:text-gray-500">Visible only to you</p>
-                        <div className="flex items-center gap-3">
-                            {myNotes.length > 0 && <button onClick={clearAll} className="text-xs font-medium text-red-500 hover:underline">Clear all</button>}
-                            <button onClick={() => setShowNewForm((v) => !v)} className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-500">
-                                {showNewForm ? 'Cancel' : (
-                                    <>
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        New Note
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {showNewForm && (
-                        <form onSubmit={submitNew} className="mb-3 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
-                            <input type="text" placeholder="Title (optional)" value={newForm.data.title} onChange={(e) => newForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                            <textarea placeholder="Write your note..." value={newForm.data.content} onChange={(e) => newForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
-                            <InputError message={newForm.errors.content} />
-                            <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save Note</button>
-                        </form>
+                <button onClick={() => setShowNewForm((v) => !v)} className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-500">
+                    {showNewForm ? 'Cancel' : (
+                        <>
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Note
+                        </>
                     )}
+                </button>
+            </div>
 
-                    <div className="max-h-64 space-y-2 overflow-y-auto">
-                        {myNotes.length === 0 && !showNewForm && (
-                            <div className="flex flex-col items-center py-6 text-center">
-                                <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No notes yet</p>
-                                <p className="text-xs text-gray-300 dark:text-gray-600">Jot down anything private about this project</p>
-                            </div>
-                        )}
-                        {myNotes.map((note) => {
-                            const isLong = note.content.length > 140;
-                            const isExpanded = expandedId === note.id;
-                            return (
-                                <div key={note.id} className="rounded-md border border-gray-100 p-3 transition hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600">
-                                    {editingId === note.id ? (
-                                        <form onSubmit={(e) => submitEdit(e, note.id)} className="space-y-2">
-                                            <input type="text" placeholder="Title (optional)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                                            <textarea value={editForm.data.content} onChange={(e) => editForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
-                                            <div className="flex gap-2">
-                                                <button type="submit" disabled={editForm.processing} className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500">Save</button>
-                                                <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
-                                            </div>
-                                        </form>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0 flex-1">
-                                                    {note.title && <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title}</p>}
-                                                    <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{new Date(note.updated_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</p>
-                                                </div>
-                                                <NoteKebabMenu onEdit={() => startEdit(note)} onDelete={() => deleteNote(note.id)} />
-                                            </div>
-                                            <p className={`mt-1.5 break-words text-sm text-gray-600 dark:text-gray-400 ${!isExpanded && isLong ? 'line-clamp-3' : ''}`}>{note.content}</p>
-                                            {isLong && (
-                                                <button onClick={() => setExpandedId(isExpanded ? null : note.id)} className="mt-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                                                    {isExpanded ? 'Show less' : 'Show more'}
-                                                </button>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+            {sorted.length > 0 && !showNewForm && (
+                <p className="mb-4 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+                    <span>Visible only to you</span>
+                    <button onClick={clearAll} className="font-medium text-red-500 hover:underline">Clear all</button>
+                </p>
+            )}
+
+            {showNewForm && (
+                <form onSubmit={submitNew} className="mb-4 space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                    <input type="text" placeholder="Title (optional)" value={newForm.data.title} onChange={(e) => newForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
+                    <textarea placeholder="Write your note... (one point per line, **bold** supported)" value={newForm.data.content} onChange={(e) => newForm.setData('content', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <InputError message={newForm.errors.content} />
+                    <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save Note</button>
+                </form>
+            )}
+
+            {sorted.length === 0 && !showNewForm ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                    <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">No notes yet</p>
+                    <p className="text-xs text-gray-300 dark:text-gray-600">Jot down anything private about this project</p>
                 </div>
+            ) : (
+                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                    {sorted.map((note) => (
+                        <NoteCard
+                            key={note.id}
+                            note={note}
+                            isEditing={editingId === note.id}
+                            editForm={editForm}
+                            onStartEdit={() => startEdit(note)}
+                            onSubmitEdit={(e) => submitEdit(e, note.id)}
+                            onCancelEdit={() => setEditingId(null)}
+                            onDelete={() => deleteNote(note.id)}
+                        />
+                    ))}
+                </ul>
             )}
         </div>
     );
