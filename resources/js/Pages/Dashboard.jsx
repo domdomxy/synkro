@@ -248,7 +248,7 @@ function CalendarView({ tasks }) {
                         const dayTasks = tasksByDay[key] ?? [];
                         const isToday = key === today;
                         return (
-                            <div key={i} className={`min-h-10 rounded-md border p-1 ${isToday ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' : 'border-gray-100 dark:border-gray-700'}`}>
+                            <div key={i} className={`min-h-10 rounded-md border p-1 transition-colors ${isToday ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'}`}>
                                 <p className={`text-right text-xs ${isToday ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{d.getDate()}</p>
                                 {dayTasks.slice(0, 2).map((t) => (
                                     <Link key={t.id} href={`${route('projects.show', t.project_id)}?task=${t.id}`} className="mt-0.5 block truncate rounded bg-indigo-100 px-1 text-[10px] text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300" title={t.title}>
@@ -642,25 +642,34 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
 
-                    <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
-                        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
-                            <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} />
-                            <div className="w-full max-w-xs space-y-2">
-                                {Object.entries(statusLabels).map(([key, label]) => {
-                                    const count = stats.tasksByStatus[key] ?? 0;
-                                    const pct = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
-                                    return (
-                                        <div key={key} className="flex items-center gap-3">
-                                            <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
-                                            <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
-                                            <span className="w-9 text-right text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
-                                        </div>
-                                    );
-                                })}
+                    <div className="grid gap-6 xl:grid-cols-2">
+                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
+                            <div className="flex flex-col items-center gap-6 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
+                                <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} size={140} strokeWidth={16} />
+                                <div className="w-full max-w-xs space-y-1">
+                                    {Object.entries(statusLabels).map(([key, label]) => {
+                                        const count = stats.tasksByStatus[key] ?? 0;
+                                        const pct = totalTasks ? Math.round((count / totalTasks) * 100) : 0;
+                                        return (
+                                            <div key={key} className="rounded-md px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusColors[key]}`} />
+                                                    <span className="flex-1 text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{count}</span>
+                                                    <span className="w-9 text-right text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
+                                                </div>
+                                                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                                    <div className={`h-full rounded-full ${statusColors[key]} transition-[width] duration-300`} style={{ width: `${pct}%` }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
+
+                        <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-2">
@@ -706,8 +715,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-
-                    <CalendarView tasks={stats.calendarTasks} />
                 </div>
             </div>
         </AuthenticatedLayout>
