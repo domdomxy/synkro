@@ -114,4 +114,31 @@ class User extends Authenticatable implements MustVerifyEmail
             'Verify Email Address'
         );
     }
+
+    /**
+     * Send the branded Synkro password reset email instead of Laravel's default
+     * plain notification, so it matches every other outbound email.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->getEmailForPasswordReset(),
+        ], false));
+
+        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
+        NotificationMailer::send(
+            $this,
+            'account.password_reset',
+            'Reset your password',
+            [
+                'You are receiving this email because we received a password reset request for your account.',
+                "This password reset link will expire in {$expireMinutes} minutes.",
+                'If you did not request a password reset, no further action is required.',
+            ],
+            $resetUrl,
+            'Reset Password'
+        );
+    }
 }
