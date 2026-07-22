@@ -178,6 +178,34 @@ class DashboardController extends Controller
     }
 
     /**
+     * Actions that never show in the main feed: preference-update noise that
+     * isn't meaningful activity, and login/logout events which get their own
+     * dedicated Login History view instead (see loginHistory() below).
+     */
+    private const EXCLUDED_ACCOUNT_ACTIONS = [
+        'email_preferences_updated',
+        'notification_preferences_updated',
+        'logged_in',
+        'logged_out',
+    ];
+
+    /**
+     * Raw DB::table() rows come back with created_at as a bare "Y-m-d H:i:s"
+     * string with no timezone marker. Eloquent models auto-cast this to a
+     * Carbon instance (in APP_TIMEZONE, which is UTC) and serialize it to
+     * JSON with a trailing 'Z'. Skipping that cast here meant the frontend's
+     * `new Date(dateString)` parsed the bare string as browser-local time
+     * instead of UTC, shifting every timestamp by the local UTC offset (e.g.
+     * an action performed seconds ago showed as "1h ago" for a UTC+1 user).
+     * Re-parsing as UTC and emitting proper ISO 8601 fixes that everywhere
+     * this feed is displayed.
+     */
+    private function toIsoUtc(string $rawDateTime): string
+    {
+        return \Carbon\Carbon::parse($rawDateTime, 'UTC')->toJSON();
+    }
+
+    /**
      * Personal activity feed: everything this user has done — both their
      * project activity (ProjectActivityLog, across every project they're in)
      * and their account activity (AccountActivityLog: logins, profile edits,
@@ -196,7 +224,8 @@ class DashboardController extends Controller
 
         $accountLogs = DB::table('account_activity_logs')
             ->select('id', DB::raw("'account' as source"), DB::raw('NULL as project_id'), 'action', 'details', 'created_at')
-            ->where('user_id', $user->id);
+            ->where('user_id', $user->id)
+            ->whereNotIn('action', self::EXCLUDED_ACCOUNT_ACTIONS);
 
         if ($action !== 'all') {
             $projectLogs->where('action', $action);
@@ -223,7 +252,7 @@ class DashboardController extends Controller
             'source' => $row->source,
             'action' => $row->action,
             'details' => $row->details ? json_decode($row->details, true) : null,
-            'created_at' => $row->created_at,
+            'created_at' => $this->toIsoUtc($row->created_at),
             'project' => $row->project_id ? [
                 'id' => $row->project_id,
                 'name' => $projectNames[$row->project_id] ?? 'Unknown Project',
@@ -238,6 +267,45 @@ class DashboardController extends Controller
             'filters' => [
                 'action' => $action,
                 'project' => $projectFilter,
+                'per_page' => (string) $this->perPage($request, 10),
+            ],
+        ]);
+    }
+
+    /**
+     * Login History: a focused view of just this user's logged_in/logged_out
+     * events, split out of the main activity feed so signing in and out
+     * (routine, high-frequency) doesn't drown out actual project/account
+     * activity. Reached via a button on the Activity Logs page.
+     */
+    public function loginHistory(Request $request)
+    {
+        $user = Auth::user();
+        $action = $request->input('action', 'all');
+
+        $query = DB::table('account_activity_logs')
+            ->where('user_id', $user->id)
+            ->whereIn('action', ['logged_in', 'logged_out']);
+
+        if ($action !== 'all') {
+            $query->where('action', $action);
+        }
+
+        $logs = $query->orderByDesc('created_at')
+            ->paginate($this->perPage($request, 10))
+            ->withQueryString();
+
+        $logs->getCollection()->transform(fn ($row) => [
+            'id' => $row->id,
+            'action' => $row->action,
+            'details' => $row->details ? json_decode($row->details, true) : null,
+            'created_at' => $this->toIsoUtc($row->created_at),
+        ]);
+
+        return Inertia::render('LoginHistory', [
+            'logs' => $logs,
+            'filters' => [
+                'action' => $action,
                 'per_page' => (string) $this->perPage($request, 10),
             ],
         ]);

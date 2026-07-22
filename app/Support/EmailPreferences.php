@@ -14,6 +14,7 @@ class EmailPreferences
             'account' => [
                 'label' => 'Account',
                 'items' => [
+                    'account.logged_in' => 'You signed in to your account',
                     'account.email_changed' => 'Your email address was changed',
                     'account.password_changed' => 'Your password was changed',
                     'account.deactivated' => 'Your account was deactivated',

@@ -113,7 +113,7 @@
                 <div style="border-top:1px solid #f0f1f5; padding-top:20px;">
                     @if (!empty($footerNote))
                         <p style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
-                            {{ $footerNote }}
+                            {!! \App\Support\NoteFormatter::line($footerNote) !!}
                         </p>
                     @else
                         <p style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">

@@ -33,18 +33,14 @@ const actionLabels = {
     comment_added: 'Comment Added',
     comment_edited: 'Comment Edited',
     comment_deleted: 'Comment Deleted',
-    // Account activity
+    // Account activity (logged_in/logged_out live in the separate Login History view instead)
     account_created: 'Account Created',
-    logged_in: 'Logged In',
-    logged_out: 'Logged Out',
     password_changed: 'Password Changed',
     password_reset: 'Password Reset',
     profile_updated: 'Profile Updated',
     avatar_updated: 'Avatar Updated',
     avatar_removed: 'Avatar Removed',
     account_deactivated: 'Account Deactivated',
-    email_preferences_updated: 'Email Preferences Updated',
-    notification_preferences_updated: 'Notification Preferences Updated',
 };
 
 /** Fallback for any action not explicitly mapped above: "some_action" -> "Some Action". */
@@ -120,16 +116,12 @@ const actionIconConfig = {
     comment_edited: { path: ICON_PATHS.chat, color: 'text-blue-500' },
     comment_deleted: { path: ICON_PATHS.chat, color: 'text-red-500' },
     account_created: { path: ICON_PATHS.build, color: 'text-green-500' },
-    logged_in: { path: ICON_PATHS.check, color: 'text-green-500' },
-    logged_out: { path: ICON_PATHS.logout, color: 'text-gray-400' },
     password_changed: { path: ICON_PATHS.lock, color: 'text-amber-500' },
     password_reset: { path: ICON_PATHS.lock, color: 'text-amber-500' },
     profile_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
     avatar_updated: { path: ICON_PATHS.person, color: 'text-blue-500' },
     avatar_removed: { path: ICON_PATHS.person, color: 'text-amber-500' },
     account_deactivated: { path: ICON_PATHS.minus, color: 'text-red-500' },
-    email_preferences_updated: { path: ICON_PATHS.bell, color: 'text-purple-500' },
-    notification_preferences_updated: { path: ICON_PATHS.bell, color: 'text-purple-500' },
 };
 
 /** This feed is always "your" actions, so the actor is always addressed as "You". */
@@ -161,16 +153,12 @@ function describeLog(log) {
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
         case 'account_created': return `${actor} created your account`;
-        case 'logged_in': return `${actor} logged in`;
-        case 'logged_out': return `${actor} logged out`;
         case 'password_changed': return `${actor} changed your password`;
         case 'password_reset': return `${actor} reset your password`;
         case 'profile_updated': return `${actor} updated your profile`;
         case 'avatar_updated': return `${actor} updated your profile photo`;
         case 'avatar_removed': return `${actor} removed your profile photo`;
         case 'account_deactivated': return `${actor} deactivated your account`;
-        case 'email_preferences_updated': return `${actor} updated your email preferences`;
-        case 'notification_preferences_updated': return `${actor} updated your notification preferences`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
@@ -422,11 +410,19 @@ export default function ActivityLogs({ logs, userProjects, filters }) {
 
     return (
         <AuthenticatedLayout header={
-            <div className="flex items-center gap-4">
-                <BackButton href={route('dashboard')} label="Back to Dashboard" />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    Activity Logs
-                </h2>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <BackButton href={route('dashboard')} label="Back to Dashboard" />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        Activity Logs
+                    </h2>
+                </div>
+                <a
+                    href={route('activity.login-history')}
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    Login History
+                </a>
             </div>
         }>
             <Head title="Activity Logs" />

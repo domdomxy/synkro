@@ -46,6 +46,7 @@ Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middlewa
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/activity', [DashboardController::class, 'activity'])->middleware(['auth', 'verified'])->name('activity.index');
+Route::get('/activity/login-history', [DashboardController::class, 'loginHistory'])->middleware(['auth', 'verified'])->name('activity.login-history');
 
 Route::post('/appeal', [SuspensionAppealController::class, 'store'])
     ->name('appeal.store');
