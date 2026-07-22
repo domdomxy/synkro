@@ -44,6 +44,7 @@ function timeAgo(dateString) {
 
 function formatDuration(seconds) {
     if (seconds === null || seconds === undefined) return null;
+    if (seconds < 0) seconds = 0; // guards against rows saved before the backend fix
     if (seconds < 60) return 'less than a minute';
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);

@@ -120,8 +120,12 @@ class AuthenticatedSessionController extends Controller
         $sessionStartedAt = $request->session()->get('session_started_at');
 
         AccountActivityLog::log('logged_out', [
+            // Carbon 3 changed diffInSeconds() to return a *signed* difference by default (Carbon
+            // 2 always returned an absolute value). Since session_started_at is always earlier than
+            // now(), this was silently coming back negative — and the frontend's `seconds < 60`
+            // check treats any negative number as "less than a minute", no matter the real duration.
             'duration_seconds' => $sessionStartedAt
-                ? now()->diffInSeconds(\Carbon\Carbon::parse($sessionStartedAt))
+                ? now()->diffInSeconds(\Carbon\Carbon::parse($sessionStartedAt), absolute: true)
                 : null,
         ]);
 
