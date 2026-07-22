@@ -46,6 +46,9 @@ class AdminLog extends Model
             'appeal.dismissed' => 'Appeal dismissed',
             'ticket.status_changed' => 'Ticket status changed',
             'ticket.responded' => 'Ticket responded to',
+            'category.created' => 'Feedback category created',
+            'category.updated' => 'Feedback category updated',
+            'category.deleted' => 'Feedback category deleted',
         ];
     }
 }

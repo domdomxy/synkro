@@ -16,6 +16,7 @@ use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ProjectNoteController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\FeedbackAdminController;
+use App\Http\Controllers\Admin\FeedbackCategoryController;
 use App\Http\Controllers\FeedbackPageController;
 use App\Http\Controllers\SuspensionAppealController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -145,6 +146,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/projects/{project}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
     Route::get('/feedbacks', [FeedbackAdminController::class, 'index'])->name('feedbacks');
     Route::patch('/feedbacks/{feedback}', [FeedbackAdminController::class, 'update'])->name('feedbacks.update');
+    Route::post('/feedback-categories', [FeedbackCategoryController::class, 'store'])->name('feedback-categories.store');
+    Route::patch('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'update'])->name('feedback-categories.update');
+    Route::delete('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'destroy'])->name('feedback-categories.destroy');
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');

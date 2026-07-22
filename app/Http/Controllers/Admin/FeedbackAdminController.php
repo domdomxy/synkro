@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\SynkroNotificationMail;
 use App\Models\AdminLog;
 use App\Models\Feedback;
+use App\Models\FeedbackCategory;
 use App\Models\FeedbackResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +32,7 @@ class FeedbackAdminController extends Controller
         return Inertia::render('Admin/Feedbacks', [
             'feedbacks' => $feedbacks,
             'filters' => $request->only(['category', 'status', 'search']),
+            'categories' => FeedbackCategory::orderBy('sort_order')->get(['id', 'key', 'label', 'icon']),
         ]);
     }
 

@@ -46,6 +46,9 @@ const actionIconConfig = {
     'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
     'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
     'ticket.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
+    'category.created': { path: ICON_PATHS.check, color: 'text-teal-500' },
+    'category.updated': { path: ICON_PATHS.pencil, color: 'text-amber-500' },
+    'category.deleted': { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
 };
 
 const actionColors = {
@@ -57,6 +60,9 @@ const actionColors = {
     'appeal.dismissed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     'ticket.status_changed': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     'ticket.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
+    'category.created': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
+    'category.updated': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+    'category.deleted': 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 function timeAgo(dateString) {

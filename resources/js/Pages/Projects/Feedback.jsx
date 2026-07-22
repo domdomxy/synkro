@@ -468,10 +468,8 @@ export default function Feedback({ flash, categories }) {
                                     </div>
 
                                     <div>
-                                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Category {selectedCategory && <span className="font-normal text-gray-400">· {selectedCategory.label}</span>}
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                                        <div className="flex flex-wrap gap-2">
                                             {categories.map((c) => {
                                                 const isSelected = data.category === c.key;
                                                 return (
@@ -479,29 +477,14 @@ export default function Feedback({ flash, categories }) {
                                                         key={c.key}
                                                         type="button"
                                                         onClick={() => setData('category', c.key)}
-                                                        className={`group relative flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center text-xs font-medium transition ${
+                                                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                                                             isSelected
-                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm dark:bg-indigo-950 dark:text-indigo-300'
-                                                                : 'border-gray-200 text-gray-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-800 dark:hover:bg-gray-700'
+                                                                ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+                                                                : 'border-gray-200 text-gray-600 hover:border-indigo-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-800 dark:hover:bg-gray-700'
                                                         }`}
                                                     >
-                                                        {isSelected && (
-                                                            <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-white">
-                                                                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                            </span>
-                                                        )}
-                                                        <span
-                                                            className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-                                                                isSelected
-                                                                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                                                                    : 'bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-500 dark:bg-gray-700 dark:text-gray-400'
-                                                            }`}
-                                                        >
-                                                            <CategoryIcon icon={c.icon} className="h-4.5 w-4.5" />
-                                                        </span>
-                                                        <span className="leading-tight">{c.label}</span>
+                                                        <CategoryIcon icon={c.icon} className="h-4 w-4" />
+                                                        {c.label}
                                                     </button>
                                                 );
                                             })}
