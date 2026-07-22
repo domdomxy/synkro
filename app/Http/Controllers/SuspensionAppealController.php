@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\SuspensionAppeal;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Support\DeviceTimezone;
+use App\Support\EmailPreferences;
+use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -49,16 +52,59 @@ class SuspensionAppealController extends Controller
             return back()->withErrors(['email' => 'This account is not currently suspended.']);
         }
 
-        SuspensionAppeal::create([
+        $appeal = SuspensionAppeal::create([
             'user_id' => $user->id,
             'message' => $request->message,
         ]);
+
+        $this->notifyAdminsNewAppeal($appeal, $user);
 
         \App\Support\AdminAlerts::broadcastRefresh();
 
         return back()
             ->with('success', 'Your appeal has been submitted. We will review it as soon as possible.')
             ->with('suspension', $this->suspensionPayload($user));
+    }
+
+    /** Admins can opt out via Settings → both Email Notifications and In-App Notifications → Admin Alerts. */
+    private function notifyAdminsNewAppeal(SuspensionAppeal $appeal, User $user): void
+    {
+        $admins = User::where('role', 'admin')->get();
+        $url = url(route('admin.appeals', [], false));
+
+        foreach ($admins as $admin) {
+            if (NotificationPreferences::wantsType($admin, 'appeal_created')) {
+                $notification = UserNotification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'appeal_created',
+                    'message' => "New appeal submitted\n{$user->name} submitted a suspension appeal",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new \App\Events\AppealCreated($admin->id, $appeal->id, $user->name, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            if (! EmailPreferences::wants($admin, 'admin.appeal_created')) {
+                continue;
+            }
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($admin->email)->queue(new \App\Mail\SynkroNotificationMail(
+                    $admin->name,
+                    'New suspension appeal submitted',
+                    ["{$user->name} ({$user->email}) submitted a suspension appeal:"],
+                    $url,
+                    'View Appeal',
+                    highlight: ['label' => 'Appeal message', 'content' => \App\Support\NoteFormatter::toHtml($appeal->message), 'html' => true],
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     /**

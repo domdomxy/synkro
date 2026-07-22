@@ -186,12 +186,28 @@ class FeedbackController extends Controller
         }
     }
 
-    /** Admins can opt out via Settings → Email Notifications → Admin Alerts. */
+    /** Admins can opt out via Settings → both Email Notifications and In-App Notifications → Admin Alerts. */
     private function notifyAdminsNewTicket(Feedback $feedback): void
     {
         $admins = User::where('role', 'admin')->get();
+        $url = $this->adminFeedbackUrl($feedback);
 
         foreach ($admins as $admin) {
+            if (NotificationPreferences::wantsType($admin, 'ticket_created')) {
+                $notification = UserNotification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'ticket_created',
+                    'message' => "New ticket submitted\n{$feedback->name} submitted a new {$feedback->category} ticket: \"{$feedback->subject}\"",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new \App\Events\TicketCreated($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             if (! \App\Support\EmailPreferences::wants($admin, 'admin.ticket_created')) {
                 continue;
             }
@@ -201,7 +217,7 @@ class FeedbackController extends Controller
                     $admin->name,
                     "New ticket submitted ({$feedback->tracking_id})",
                     ["{$feedback->name} submitted a new {$feedback->category} ticket:"],
-                    $this->adminFeedbackUrl($feedback),
+                    $url,
                     'View Ticket',
                     highlight: ['label' => $feedback->subject, 'content' => \App\Support\NoteFormatter::toHtml($feedback->message), 'html' => true],
                 ));

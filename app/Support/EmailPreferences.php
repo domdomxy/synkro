@@ -70,6 +70,7 @@ class EmailPreferences
                 'items' => [
                     'admin.ticket_reply' => 'A user replied to a ticket you responded to',
                     'admin.ticket_created' => 'A new feedback ticket was submitted',
+                    'admin.appeal_created' => 'A new suspension appeal was submitted',
                 ],
             ];
         }

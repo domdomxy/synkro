@@ -18,7 +18,7 @@ class NotificationPreferences
         ];
 
         if ($user?->role === 'admin') {
-            $catalog['administration'] = 'Ticket replies and feedback status changes';
+            $catalog['administration'] = 'New tickets, new appeals, ticket replies, and feedback status changes';
         }
 
         return $catalog;
@@ -59,6 +59,8 @@ class NotificationPreferences
             'reminder' => 'reminders',
             'feedback_replied' => 'administration',
             'admin_status_changed' => 'administration',
+            'ticket_created' => 'administration',
+            'appeal_created' => 'administration',
         ];
     }
 

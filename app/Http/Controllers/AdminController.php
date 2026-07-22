@@ -403,15 +403,19 @@ public function suspend(Request $request, User $user)
         $user,
         'account.suspended',
         'Your account has been suspended',
-        array_filter([
+        [
             $suspendedUntil
                 ? "Your account has been suspended until {$suspendedUntil->format('M j, Y g:i A')}."
                 : 'Your account has been suspended indefinitely.',
-            "Reason: {$request->reason}",
             "If you believe this was a mistake, you can submit an appeal using the button below.",
-        ]),
+        ],
         url(route('appeal.page', [], false)),
-        'Submit an Appeal'
+        'Submit an Appeal',
+        highlight: $request->reason ? [
+            'label' => 'Reason',
+            'content' => \App\Support\NoteFormatter::toHtml($request->reason),
+            'html' => true,
+        ] : null,
     );
 
     return back()->with('success', 'User suspended.');
@@ -462,12 +466,16 @@ public function suspend(Request $request, User $user)
             $user,
             'account.suspension_lifted',
             'Your suspension has been lifted',
-            array_filter([
+            [
                 "Good news, your Synkro account suspension has been lifted. You can log in again right away.",
-                $request->reason ? "Note from our team: {$request->reason}" : null,
-            ]),
+            ],
             url(route('login', [], false)),
-            'Log In'
+            'Log In',
+            highlight: $request->reason ? [
+                'label' => 'Note from our team',
+                'content' => \App\Support\NoteFormatter::toHtml($request->reason),
+                'html' => true,
+            ] : null,
         );
 
         return back()->with('success', 'Suspension lifted.');

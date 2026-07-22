@@ -25,6 +25,8 @@ const categoryMap = {
     invitation_denied: 'membership',
     feedback_replied: 'administration',
     admin_status_changed: 'administration',
+    ticket_created: 'administration',
+    appeal_created: 'administration',
 };
 
 const typeStyles = {
@@ -128,6 +130,16 @@ const typeStyles = {
         text: 'text-purple-600 dark:text-purple-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />,
     },
+    ticket_created: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />,
+    },
+    appeal_created: {
+        bg: 'bg-amber-100 dark:bg-amber-900',
+        text: 'text-amber-600 dark:text-amber-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />,
+    },
 };
 
 function relativeTime(dateString) {
@@ -178,6 +190,8 @@ export default function NotificationBell() {
             '.project.removed',
             '.feedback.replied',
             '.admin.status-changed',
+            '.ticket.created',
+            '.appeal.created',
         ],
         (payload) => {
             let message;
@@ -233,6 +247,12 @@ export default function NotificationBell() {
                     ? 'Promoted to admin\nYou were granted administrator access on Synkro.'
                     : 'Removed from admin\nYour administrator access on Synkro was removed.';
                 url = payload.new_role === 'admin' ? '/admin' : '/dashboard';
+            } else if (payload.type === 'ticket_created') {
+                message = `New ticket submitted\n${payload.submitter_name} submitted a new ticket "${payload.subject}"`;
+                url = '/admin/feedbacks';
+            } else if (payload.type === 'appeal_created') {
+                message = `New appeal submitted\n${payload.user_name} submitted a suspension appeal`;
+                url = '/admin/appeals';
             } else if (payload.decision) {
                 const decisionTitle = payload.decision === 'approve' ? 'Task approved' : 'Changes requested';
                 message = `${decisionTitle}\n"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
