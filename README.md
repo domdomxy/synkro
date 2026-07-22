@@ -1,58 +1,87 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Synkro
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Synkro is a role-based project management web app: projects, tasks, deliverables,
+notifications, and a built-in support/appeal system, backed by an admin console for
+oversight and moderation.
 
-## About Laravel
+Built with Laravel 13, Inertia.js, and React.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Projects & tasks**
+- Role-based project membership — Owner, Manager, Member, Tester — with per-project permissions
+- Task lifecycle: To Do → In Progress → Submitted → In Review → Done, with reopen/reject flow
+- File and link deliverables per task, with ZIP export of a project's submitted work
+- Per-project notes/checklists, comments, pinning, and archiving
+- Member invitations and ownership transfer
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**Notifications & activity**
+- In-app notification bell plus emailed notifications (queued), with per-notification-type
+  preferences
+- Optional real-time updates over WebSockets (Laravel Reverb) — live notifications, project
+  updates, and admin alerts
+- Personal activity feed, login history, and account activity log
+- Personal dashboard with task/project stats and an activity chart (day/week/month/custom range)
 
-## Learning Laravel
+**Support & moderation**
+- Help & Feedback center: submit tickets, track status by ID, threaded replies
+- Suspension system with a user-facing appeal flow and admin review
+- Admin console: manage users, feedback tickets, project logs, suspension logs, and
+  platform-wide analytics
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tech stack
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Backend:** Laravel 13 (PHP 8.3+), Inertia.js, Laravel Reverb (WebSockets), Sanctum
+- **Frontend:** React, Tailwind CSS, Recharts, Headless UI
+- **Build tooling:** Vite
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Requirements
 
-## Agentic Development
+- PHP 8.3+
+- Composer
+- Node.js + npm
+- A database supported by Laravel (SQLite by default, see `.env.example`)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Getting started
 
 ```bash
-composer require laravel/boost --dev
+git clone https://github.com/domdomxy/synkro.git
+cd synkro
 
-php artisan boost:install
+composer run setup
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`composer run setup` installs PHP and JS dependencies, copies `.env.example` to `.env`,
+generates the app key, runs migrations, and builds frontend assets.
 
-## Contributing
+Then start everything (Laravel server, queue worker, log viewer, and Vite dev server) with:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer run dev
+```
 
-## Code of Conduct
+The app will be available at the URL in `APP_URL` (`http://localhost:8000` by default).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Notes on configuration
 
-## Security Vulnerabilities
+- **Queue worker:** notification emails are queued (`QUEUE_CONNECTION=database` by default), so
+  a queue worker must be running for emails to actually send — `composer run dev` already
+  includes one.
+- **Mail:** defaults to the `log` driver, so outgoing emails are written to the log instead of
+  sent. Configure a real mail driver in `.env` to send actual emails.
+- **Real-time features:** `BROADCAST_CONNECTION` defaults to `log` (no live updates). To enable
+  real-time notifications and project updates, configure Reverb credentials in `.env` and run:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+  ```bash
+  php artisan reverb:start
+  ```
+
+## Testing
+
+```bash
+composer run test
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

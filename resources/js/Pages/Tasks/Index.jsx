@@ -145,7 +145,7 @@ export default function Index({ tasks }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-6 flex flex-wrap items-center gap-3">
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon />
                             </div>
@@ -153,7 +153,7 @@ export default function Index({ tasks }) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search by task or project name..."
-                                className="w-72 pl-9"
+                                className="w-full pl-9 sm:w-72"
                             />
                         </div>
                         <FilterSelect

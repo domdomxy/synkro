@@ -98,7 +98,7 @@ function ProjectActionsMenu({ project, showingArchived, onPin, onUnpin, onArchiv
                 ref={btnRef}
                 onClick={toggle}
                 title="More actions"
-                className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-gray-400 opacity-100 transition hover:bg-gray-100 hover:text-gray-600 sm:text-gray-300 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 dark:sm:text-gray-600"
             >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
@@ -219,8 +219,8 @@ export default function Index({ projects, showingArchived }) {
                     </div>
 
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="relative">
+                        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                            <div className="relative w-full sm:w-auto">
                                 <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                     <SearchIcon />
                                 </div>
@@ -228,7 +228,7 @@ export default function Index({ projects, showingArchived }) {
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search by project name or owner..."
-                                    className="w-72 pl-9"
+                                    className="w-full pl-9 sm:w-72"
                                 />
                             </div>
                             <FilterSelect
