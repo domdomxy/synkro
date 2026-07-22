@@ -37,9 +37,9 @@
             <td align="center" style="padding:48px 40px 0;">
                 <table role="presentation" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="width:64px; height:64px; background-color:#4f46e5; border-radius:18px; text-align:center; vertical-align:middle;">
-                            <div style="width:64px; height:64px; line-height:64px; text-align:center; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:26px; font-weight:800; color:#ffffff;">
-                                S
+                        <td style="height:56px; padding:0 24px; background-color:#4f46e5; border-radius:14px; text-align:center; vertical-align:middle;">
+                            <div style="height:56px; line-height:56px; text-align:center; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:22px; font-weight:800; letter-spacing:0.3px; color:#ffffff; white-space:nowrap;">
+                                Synkro
                             </div>
                         </td>
                     </tr>

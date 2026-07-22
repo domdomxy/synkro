@@ -55,7 +55,7 @@ class ProfileController extends Controller
                     'Your email address was changed',
                     [
                         "Your Synkro account email was changed from {$oldEmail} to {$newEmail}.",
-                        "If you didn't make this change, please contact support immediately.",
+                        "If you didn't make this change, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
                     ]
                 ));
             } catch (\Throwable $e) {
@@ -146,7 +146,7 @@ class ProfileController extends Controller
             'Your account has been deleted',
             [
                 'Your Synkro account and associated data have been permanently deleted.',
-                "If you didn't request this, please contact support immediately.",
+                "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
         );
         Auth::logout();
