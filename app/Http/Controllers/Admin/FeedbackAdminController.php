@@ -70,9 +70,10 @@ class FeedbackAdminController extends Controller
         if ($statusChanged) {
             \App\Support\AdminAlerts::broadcastRefresh();
 
-            AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']}", $feedback);
+            AdminLog::log('ticket.status_changed', "Changed ticket {$feedback->tracking_id} status from {$oldStatus} to {$validated['status']} and responded", $feedback);
+        } else {
+            AdminLog::log('ticket.responded', "Responded to ticket {$feedback->tracking_id} (\"{$feedback->subject}\")", $feedback);
         }
-        AdminLog::log('ticket.responded', "Responded to ticket {$feedback->tracking_id} (\"{$feedback->subject}\")", $feedback);
 
         $lines = $statusChanged
             ? ["The status of your ticket \"{$feedback->subject}\" has been updated, and support added a message:"]
