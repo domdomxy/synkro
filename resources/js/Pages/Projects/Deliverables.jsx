@@ -17,7 +17,33 @@ function getExtension(name) {
 
 function FileTypeIcon({ name, className = 'h-4 w-4' }) {
     const ext = getExtension(name);
+    const base = name?.replace(/\.[^./]+$/, '') ?? '';
+    const isReadme = /^readme$/i.test(base);
 
+    if (isReadme || ['md', 'markdown'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.5c-1.6-1-4.2-1.4-6-1v12.5c1.8-.4 4.4 0 6 1 1.6-1 4.2-1.4 6-1V5.5c-1.8-.4-4.4 0-6 1z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.5v12.5" />
+            </svg>
+        );
+    }
+    if (['ppt', 'pptx', 'key', 'odp'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 5h16a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM8 20h8m-4-4v4"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.3 8.3l4 2.7-4 2.7V8.3z" />
+            </svg>
+        );
+    }
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
         return (
             <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
