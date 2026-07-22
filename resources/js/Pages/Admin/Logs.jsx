@@ -6,6 +6,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
 import Linkify from '@/Components/Linkify';
+import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -158,6 +159,12 @@ export default function Logs({ logs, actionCatalog, filters }) {
         router.get(route('admin.logs'), cleanParams({ search, action, from, to, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
+    const applyDateRange = (newFrom, newTo) => {
+        setFrom(newFrom);
+        setTo(newTo);
+        router.get(route('admin.logs'), cleanParams({ search, action, from: newFrom, to: newTo, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+    };
+
     const hasActiveFilters = search !== '' || action !== 'all' || from !== '' || to !== '';
 
     return (
@@ -193,24 +200,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
                                 ...Object.entries(actionCatalog).map(([key, label]) => ({ value: key, label })),
                             ]}
                         />
-                        <div>
-                            <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500">From</label>
-                            <input
-                                type="date"
-                                value={from}
-                                onChange={(e) => setFrom(e.target.value)}
-                                className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500">To</label>
-                            <input
-                                type="date"
-                                value={to}
-                                onChange={(e) => setTo(e.target.value)}
-                                className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            />
-                        </div>
+                        <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
                         <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="pb-2 text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>

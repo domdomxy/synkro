@@ -238,6 +238,18 @@ class DashboardController extends Controller
             $accountLogs->whereRaw('1 = 0');
         }
 
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        if ($from) {
+            $projectLogs->whereDate('created_at', '>=', $from);
+            $accountLogs->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $projectLogs->whereDate('created_at', '<=', $to);
+            $accountLogs->whereDate('created_at', '<=', $to);
+        }
+
         $logs = $projectLogs->unionAll($accountLogs)
             ->orderByDesc('created_at')
             ->paginate($this->perPage($request, 10))
@@ -267,6 +279,8 @@ class DashboardController extends Controller
             'filters' => [
                 'action' => $action,
                 'project' => $projectFilter,
+                'from' => $from ?? '',
+                'to' => $to ?? '',
                 'per_page' => (string) $this->perPage($request, 10),
             ],
         ]);
@@ -291,6 +305,16 @@ class DashboardController extends Controller
             $query->where('action', $action);
         }
 
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
         $logs = $query->orderByDesc('created_at')
             ->paginate($this->perPage($request, 10))
             ->withQueryString();
@@ -306,6 +330,8 @@ class DashboardController extends Controller
             'logs' => $logs,
             'filters' => [
                 'action' => $action,
+                'from' => $from ?? '',
+                'to' => $to ?? '',
                 'per_page' => (string) $this->perPage($request, 10),
             ],
         ]);

@@ -3,6 +3,7 @@ import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -94,23 +95,28 @@ const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function LoginHistory({ logs, filters }) {
     const [action, setAction] = useState(filters?.action ?? 'all');
+    const [from, setFrom] = useState(filters?.from ?? '');
+    const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
     const applyFilters = (overrides = {}) => {
-        const next = { action, per_page: perPage, ...overrides };
+        const next = { action, from, to, per_page: perPage, ...overrides };
         router.get(route('activity.login-history'), cleanParams(next, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const handleActionChange = (v) => { setAction(v); applyFilters({ action: v }); };
     const handlePerPageChange = (v) => { setPerPage(v); applyFilters({ per_page: v }); };
+    const handleDateRangeApply = (newFrom, newTo) => { setFrom(newFrom); setTo(newTo); applyFilters({ from: newFrom, to: newTo }); };
 
     const clearFilters = () => {
         setAction('all');
+        setFrom('');
+        setTo('');
         setPerPage(DEFAULT_PER_PAGE);
         router.get(route('activity.login-history'));
     };
 
-    const hasActiveFilters = action !== 'all';
+    const hasActiveFilters = action !== 'all' || from !== '' || to !== '';
 
     return (
         <AuthenticatedLayout header={
@@ -134,6 +140,7 @@ export default function LoginHistory({ logs, filters }) {
                                 ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
                             ]}
                         />
+                        <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear

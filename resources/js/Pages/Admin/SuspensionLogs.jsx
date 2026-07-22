@@ -6,6 +6,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
 import Linkify from '@/Components/Linkify';
+import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -114,17 +115,27 @@ const FILTER_DEFAULTS = { status: 'all', per_page: DEFAULT_PER_PAGE, sort: 'crea
 export default function SuspensionLogs({ logs, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [status, setStatus] = useState(filters?.status ?? 'all');
+    const [from, setFrom] = useState(filters?.from ?? '');
+    const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
     const [sort, setSort] = useState(filters?.sort ?? 'created_at');
     const [direction, setDirection] = useState(filters?.direction ?? 'desc');
 
     const applyFilters = () => {
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
+    };
+
+    const applyDateRange = (newFrom, newTo) => {
+        setFrom(newFrom);
+        setTo(newTo);
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from: newFrom, to: newTo, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
         setSearch('');
         setStatus('all');
+        setFrom('');
+        setTo('');
         setPerPage(DEFAULT_PER_PAGE);
         setSort('created_at');
         setDirection('desc');
@@ -133,10 +144,10 @@ export default function SuspensionLogs({ logs, filters }) {
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: value, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
-    const hasActiveFilters = search !== '' || status !== 'all';
+    const hasActiveFilters = search !== '' || status !== 'all' || from !== '' || to !== '';
 
     return (
         <AuthenticatedLayout header={
@@ -178,7 +189,7 @@ export default function SuspensionLogs({ logs, filters }) {
                                 const [col, dir] = v.split(':');
                                 setSort(col);
                                 setDirection(dir);
-                                router.get(route('admin.suspension-logs'), cleanParams({ search, status, per_page: perPage, sort: col, direction: dir }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+                                router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort: col, direction: dir }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
                             }}
                             className="w-48"
                             options={[
@@ -188,6 +199,7 @@ export default function SuspensionLogs({ logs, filters }) {
                                 { value: 'suspended_until:desc', label: 'Ends latest' },
                             ]}
                         />
+                        <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
                         <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>

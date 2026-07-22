@@ -498,6 +498,14 @@ public function suspend(Request $request, User $user)
             };
         }
 
+        // Date filters are inclusive on both ends and compare by day only (no time-of-day precision).
+        if ($request->from) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->to) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
         // Whitelisted so `sort` can't be used to order by an arbitrary column.
         $sortable = ['created_at' => 'created_at', 'suspended_until' => 'suspended_until'];
         $sort = $sortable[$request->sort] ?? 'created_at';
@@ -510,6 +518,8 @@ public function suspend(Request $request, User $user)
             'filters' => [
                 'search' => $request->input('search', ''),
                 'status' => $request->input('status', 'all'),
+                'from' => $request->input('from', ''),
+                'to' => $request->input('to', ''),
                 'per_page' => (string) $this->perPage($request, 10),
                 'sort' => $request->input('sort', 'created_at'),
                 'direction' => $direction,

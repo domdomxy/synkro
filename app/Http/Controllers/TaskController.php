@@ -372,26 +372,31 @@ class TaskController extends Controller
  
         if (! $wasAlreadySubmitted) {
             $testers = $task->project->members()->wherePivot('role', 'tester')->get();
+
+            $reviewers = $testers->isNotEmpty()
+                ? $testers
+                : $task->project->members()->wherePivotIn('role', ['owner', 'manager'])->where('users.id', '!=', Auth::id())->get();
+
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
- 
-            foreach ($testers as $tester) {
-                if (NotificationPreferences::wantsType($tester, 'task_review_needed')) {
+
+            foreach ($reviewers as $reviewer) {
+                if (NotificationPreferences::wantsType($reviewer, 'task_review_needed')) {
                     $notification = UserNotification::create([
-                        'user_id' => $tester->id,
+                        'user_id' => $reviewer->id,
                         'type' => 'task_review_needed',
                         'message' => "Review needed\n\"{$task->title}\" is waiting for your review",
                         'url' => $url,
                     ]);
 
                     try {
-                        broadcast(new TaskReviewNeeded($tester->id, $task, $notification->id))->toOthers();
+                        broadcast(new TaskReviewNeeded($reviewer->id, $task, $notification->id))->toOthers();
                     } catch (\Throwable $e) {
                         report($e);
                     }
                 }
 
                 NotificationMailer::send(
-                    $tester,
+                    $reviewer,
                     'task.review_needed',
                     "Review needed: {$task->title}",
                     ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) has been submitted and is waiting for your review."],

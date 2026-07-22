@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
 import Linkify from '@/Components/Linkify';
+import DateRangeFilter from '@/Components/DateRangeFilter';
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -304,6 +305,8 @@ function LogRow({ log }) {
 export default function Logs({ project, logs }) {
     const [userFilter, setUserFilter] = useState('all');
     const [actionFilter, setActionFilter] = useState('all');
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
     const [page, setPage] = useState(1);
     const PER_PAGE = 15;
 
@@ -318,12 +321,23 @@ export default function Logs({ project, logs }) {
     const clearFilters = () => {
         setUserFilter('all');
         setActionFilter('all');
+        setFrom('');
+        setTo('');
+        setPage(1);
+    };
+
+    const handleDateRangeApply = (newFrom, newTo) => {
+        setFrom(newFrom);
+        setTo(newTo);
         setPage(1);
     };
 
     const filtered = logs.filter((l) => {
         if (userFilter !== 'all' && String(l.user?.id) !== userFilter) return false;
         if (actionFilter !== 'all' && l.action !== actionFilter) return false;
+        const logDate = l.created_at?.slice(0, 10);
+        if (from && logDate < from) return false;
+        if (to && logDate > to) return false;
         return true;
     });
 
@@ -331,7 +345,7 @@ export default function Logs({ project, logs }) {
     const currentPage = Math.min(page, totalPages);
     const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
-    const hasActiveFilters = userFilter !== 'all' || actionFilter !== 'all';
+    const hasActiveFilters = userFilter !== 'all' || actionFilter !== 'all' || from !== '' || to !== '';
 
     return (
         <AuthenticatedLayout header={
@@ -361,6 +375,7 @@ export default function Logs({ project, logs }) {
                                 ...actions.map((a) => ({ value: a, label: actionLabels[a] ?? formatActionLabel(a) })),
                             ]}
                         />
+                        <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear
