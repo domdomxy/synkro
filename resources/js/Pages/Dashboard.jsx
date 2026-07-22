@@ -630,7 +630,20 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     })();
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center justify-between gap-4">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>
+                <Link
+                    href={route('activity.index')}
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Activity Logs
+                </Link>
+            </div>
+        }>
             <Head title="Dashboard" />
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">

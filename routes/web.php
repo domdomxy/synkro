@@ -45,6 +45,7 @@ Route::post('/feedback/close', [FeedbackController::class, 'close'])->middleware
 Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middleware('throttle:10,60')->name('feedback.reopen');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/activity', [DashboardController::class, 'activity'])->middleware(['auth', 'verified'])->name('activity.index');
 
 Route::post('/appeal', [SuspensionAppealController::class, 'store'])
     ->name('appeal.store');

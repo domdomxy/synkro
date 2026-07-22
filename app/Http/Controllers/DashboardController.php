@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectActivityLog;
 use App\Models\Reminder;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
@@ -164,6 +165,22 @@ class DashboardController extends Controller
                 'calendarTasks' => $calendarTasks,
                 'reminders' => $reminders,
             ],
+        ]);
+    }
+
+    /**
+     * Personal activity feed: every ProjectActivityLog entry this user has
+     * generated, across all of their projects (not just one).
+     */
+    public function activity()
+    {
+        $logs = ProjectActivityLog::where('user_id', Auth::id())
+            ->with(['project:id,name', 'user'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return Inertia::render('ActivityLogs', [
+            'logs' => $logs,
         ]);
     }
 }
