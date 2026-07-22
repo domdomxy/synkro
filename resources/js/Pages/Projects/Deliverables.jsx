@@ -11,10 +11,51 @@ function FolderIcon({ className = 'h-5 w-5' }) {
     );
 }
 
-function FileIcon({ className = 'h-4 w-4' }) {
+function getExtension(name) {
+    return name?.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function FileTypeIcon({ name, className = 'h-4 w-4' }) {
+    const ext = getExtension(name);
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        );
+    }
+    if (ext === 'pdf') {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+    }
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+        );
+    }
+    if (['doc', 'docx', 'txt', 'rtf'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h4m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+    }
+    if (['xls', 'xlsx', 'csv'].includes(ext)) {
+        return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-9 4h14a2 2 0 002-2V7a2 2 0 00-2-2h-5.586a1 1 0 01-.707-.293L9.293 3.293A1 1 0 008.586 3H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+        );
+    }
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
     );
 }
@@ -43,7 +84,7 @@ function formatSize(bytes) {
 }
 
 function TaskFolder({ task }) {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
     const files = task.deliverables.filter((d) => d.type === 'file');
     if (files.length === 0) return null;
 
@@ -62,7 +103,7 @@ function TaskFolder({ task }) {
                 <div className="pb-1.5 pl-11">
                     {files.map((f) => (
                         <div key={f.id} className="flex items-center gap-2 py-1 text-sm text-gray-600 dark:text-gray-400">
-                            <FileIcon className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
+                            <FileTypeIcon name={f.original_name} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
                             <span className="truncate">{f.original_name}</span>
                             {formatSize(f.size) && <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{formatSize(f.size)}</span>}
                         </div>

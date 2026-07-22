@@ -665,7 +665,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             </div>
                         </div>
 
-                        <ResponsiveContainer width="100%" height={240}>
+                        <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
                             <AreaChart data={stats.chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
                                 <XAxis
