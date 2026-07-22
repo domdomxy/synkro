@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
+use App\Models\ProjectActivityLog;
 use App\Models\Task;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use App\Events\CommentPosted;
 use App\Events\CommentDeleted;
 use App\Events\TaskCommented;
@@ -26,6 +28,11 @@ class CommentController extends Controller
         $comment = $task->comments()->create([
             'user_id' => Auth::id(),
             'body' => $validated['body'],
+        ]);
+
+        ProjectActivityLog::log($task->project, 'comment_added', [
+            'task_title' => $task->title,
+            'preview' => Str::limit($validated['body'], 200),
         ]);
 
         broadcast(new CommentPosted($comment))->toOthers();
@@ -67,7 +74,14 @@ class CommentController extends Controller
     {
         $this->authorize('delete', $comment);
 
-        $projectId = $comment->task->project_id;
+        $task = $comment->task;
+        $projectId = $task->project_id;
+
+        ProjectActivityLog::log($task->project, 'comment_deleted', [
+            'task_title' => $task->title,
+            'preview' => Str::limit($comment->body, 200),
+        ]);
+
         $comment->delete();
 
         broadcast(new CommentDeleted($projectId))->toOthers();
@@ -82,10 +96,21 @@ class CommentController extends Controller
             'body' => 'required|string|max:2000',
         ]);
 
+        $oldBody = $comment->body;
+
         $comment->update([
             'body' => $validated['body'],
             'edited_at' => now(),
         ]);
+
+        if ($oldBody !== $validated['body']) {
+            $task = $comment->task;
+            ProjectActivityLog::log($task->project, 'comment_edited', [
+                'task_title' => $task->title,
+                'old_preview' => Str::limit($oldBody, 200),
+                'new_preview' => Str::limit($validated['body'], 200),
+            ]);
+        }
 
         return back();
     }

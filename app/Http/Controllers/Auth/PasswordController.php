@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountActivityLog;
 use App\Support\NotificationMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,8 @@ class PasswordController extends Controller
             'must_change_password' => false,
             'temp_password_expires_at' => null,
         ]);
+
+        AccountActivityLog::log('password_changed', [], $user->id);
 
         NotificationMailer::send(
             $user,

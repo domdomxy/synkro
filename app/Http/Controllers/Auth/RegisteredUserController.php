@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountActivityLog;
 use App\Models\User;
 use App\Support\NotificationMailer;
 use Illuminate\Auth\Events\Registered;
@@ -59,6 +60,8 @@ class RegisteredUserController extends Controller
         );
 
         Auth::login($user);
+
+        AccountActivityLog::log('account_created', [], $user->id);
 
         // Redirect to /dashboard (not /projects) so the 'verified' middleware gate applies
         // immediately, same as it does on every login after this one. Redirecting somewhere

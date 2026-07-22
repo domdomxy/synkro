@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountActivityLog;
 use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
@@ -35,6 +36,8 @@ class SettingsController extends Controller
 
         $request->user()->update(['email_preferences' => $validated['preferences']]);
 
+        AccountActivityLog::log('email_preferences_updated');
+
         return back()->with('success', 'Email preferences updated.');
     }
 
@@ -46,6 +49,8 @@ class SettingsController extends Controller
         ]);
 
         $request->user()->update(['notification_preferences' => $validated['preferences']]);
+
+        AccountActivityLog::log('notification_preferences_updated');
 
         return back()->with('success', 'Notification preferences updated.');
     }

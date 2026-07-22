@@ -1,11 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import PerPageSelect from '@/Components/PerPageSelect';
+import Pagination from '@/Components/Pagination';
 import Linkify from '@/Components/Linkify';
-import { Head } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { cleanParams } from '@/utils/queryParams';
+import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 const actionLabels = {
+    // Project activity
     project_created: 'Project Created',
     project_updated: 'Project Updated',
     project_deleted: 'Project Deleted',
@@ -26,6 +30,21 @@ const actionLabels = {
     invitation_sent: 'Invitation Sent',
     invitation_accepted: 'Invitation Accepted',
     invitation_denied: 'Invitation Denied',
+    comment_added: 'Comment Added',
+    comment_edited: 'Comment Edited',
+    comment_deleted: 'Comment Deleted',
+    // Account activity
+    account_created: 'Account Created',
+    logged_in: 'Logged In',
+    logged_out: 'Logged Out',
+    password_changed: 'Password Changed',
+    password_reset: 'Password Reset',
+    profile_updated: 'Profile Updated',
+    avatar_updated: 'Avatar Updated',
+    avatar_removed: 'Avatar Removed',
+    account_deactivated: 'Account Deactivated',
+    email_preferences_updated: 'Email Preferences Updated',
+    notification_preferences_updated: 'Notification Preferences Updated',
 };
 
 /** Fallback for any action not explicitly mapped above: "some_action" -> "Some Action". */
@@ -41,6 +60,11 @@ const fieldLabels = {
     description: 'Description',
     due_date: 'Due Date',
     name: 'Project Name',
+};
+
+const profileFieldLabels = {
+    name: 'Name',
+    email: 'Email Address',
 };
 
 function Icon({ path, className }) {
@@ -66,6 +90,9 @@ const ICON_PATHS = {
     check: 'M5 13l4 4L19 7',
     dot: 'M12 12h.01',
     close_or_x: 'M6 18L18 6M6 6l12 12',
+    lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4',
+    bell: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+    chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
 };
 
 const actionIconConfig = {
@@ -89,6 +116,20 @@ const actionIconConfig = {
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
     invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
     invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
+    comment_added: { path: ICON_PATHS.chat, color: 'text-green-500' },
+    comment_edited: { path: ICON_PATHS.chat, color: 'text-blue-500' },
+    comment_deleted: { path: ICON_PATHS.chat, color: 'text-red-500' },
+    account_created: { path: ICON_PATHS.build, color: 'text-green-500' },
+    logged_in: { path: ICON_PATHS.check, color: 'text-green-500' },
+    logged_out: { path: ICON_PATHS.logout, color: 'text-gray-400' },
+    password_changed: { path: ICON_PATHS.lock, color: 'text-amber-500' },
+    password_reset: { path: ICON_PATHS.lock, color: 'text-amber-500' },
+    profile_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
+    avatar_updated: { path: ICON_PATHS.person, color: 'text-blue-500' },
+    avatar_removed: { path: ICON_PATHS.person, color: 'text-amber-500' },
+    account_deactivated: { path: ICON_PATHS.minus, color: 'text-red-500' },
+    email_preferences_updated: { path: ICON_PATHS.bell, color: 'text-purple-500' },
+    notification_preferences_updated: { path: ICON_PATHS.bell, color: 'text-purple-500' },
 };
 
 /** This feed is always "your" actions, so the actor is always addressed as "You". */
@@ -116,6 +157,20 @@ function describeLog(log) {
         case 'invitation_denied': return `${actor} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
         case 'invitation_accepted': return `${actor} accepted the invitation and joined as ${d.role}`;
+        case 'comment_added': return `${actor} commented on "${d.task_title}"`;
+        case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
+        case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
+        case 'account_created': return `${actor} created your account`;
+        case 'logged_in': return `${actor} logged in`;
+        case 'logged_out': return `${actor} logged out`;
+        case 'password_changed': return `${actor} changed your password`;
+        case 'password_reset': return `${actor} reset your password`;
+        case 'profile_updated': return `${actor} updated your profile`;
+        case 'avatar_updated': return `${actor} updated your profile photo`;
+        case 'avatar_removed': return `${actor} removed your profile photo`;
+        case 'account_deactivated': return `${actor} deactivated your account`;
+        case 'email_preferences_updated': return `${actor} updated your email preferences`;
+        case 'notification_preferences_updated': return `${actor} updated your notification preferences`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
@@ -147,6 +202,34 @@ function getDetails(log) {
             isChange: true,
             isHtml: key === 'description',
         }));
+    }
+
+    if (log.action === 'profile_updated' && d.changes) {
+        return Object.entries(d.changes).map(([key, val]) => ({
+            label: profileFieldLabels[key] ?? key,
+            oldValue: val.old ?? '-',
+            newValue: val.new ?? '-',
+            isChange: true,
+        }));
+    }
+
+    if (log.action === 'comment_added' || log.action === 'comment_deleted') {
+        return [
+            { label: 'Task', value: d.task_title },
+            { label: 'Comment', value: d.preview },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'comment_edited') {
+        return [
+            { label: 'Task', value: d.task_title },
+            d.old_preview !== undefined && d.new_preview !== undefined && {
+                label: 'Comment',
+                oldValue: d.old_preview || '-',
+                newValue: d.new_preview || '-',
+                isChange: true,
+            },
+        ].filter(Boolean);
     }
 
     if (log.action === 'task_assigned') {
@@ -223,9 +306,13 @@ function LogRow({ log }) {
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                         {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         {relative && <span className="text-gray-300 dark:text-gray-600">· {relative}</span>}
-                        {log.project && (
+                        {log.project ? (
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                                 {log.project.name}
+                            </span>
+                        ) : (
+                            <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                Account
                             </span>
                         )}
                     </p>
@@ -307,37 +394,31 @@ function LogRow({ log }) {
     );
 }
 
-export default function ActivityLogs({ logs }) {
-    const [projectFilter, setProjectFilter] = useState('all');
-    const [actionFilter, setActionFilter] = useState('all');
-    const [page, setPage] = useState(1);
-    const PER_PAGE = 15;
+const DEFAULT_PER_PAGE = 10;
+const FILTER_DEFAULTS = { action: 'all', project: 'all', per_page: DEFAULT_PER_PAGE };
 
-    const projects = useMemo(() => {
-        const map = new Map();
-        logs.forEach((l) => l.project && map.set(l.project.id, l.project.name));
-        return Array.from(map, ([id, name]) => ({ id, name }));
-    }, [logs]);
+export default function ActivityLogs({ logs, userProjects, filters }) {
+    const [action, setAction] = useState(filters?.action ?? 'all');
+    const [project, setProject] = useState(filters?.project ?? 'all');
+    const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
-    const actions = useMemo(() => [...new Set(logs.map((l) => l.action))], [logs]);
-
-    const clearFilters = () => {
-        setProjectFilter('all');
-        setActionFilter('all');
-        setPage(1);
+    const applyFilters = (overrides = {}) => {
+        const next = { action, project, per_page: perPage, ...overrides };
+        router.get(route('activity.index'), cleanParams(next, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
-    const filtered = logs.filter((l) => {
-        if (projectFilter !== 'all' && String(l.project?.id) !== projectFilter) return false;
-        if (actionFilter !== 'all' && l.action !== actionFilter) return false;
-        return true;
-    });
+    const handleActionChange = (v) => { setAction(v); applyFilters({ action: v }); };
+    const handleProjectChange = (v) => { setProject(v); applyFilters({ project: v }); };
+    const handlePerPageChange = (v) => { setPerPage(v); applyFilters({ per_page: v }); };
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-    const currentPage = Math.min(page, totalPages);
-    const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+    const clearFilters = () => {
+        setAction('all');
+        setProject('all');
+        setPerPage(DEFAULT_PER_PAGE);
+        router.get(route('activity.index'));
+    };
 
-    const hasActiveFilters = projectFilter !== 'all' || actionFilter !== 'all';
+    const hasActiveFilters = action !== 'all' || project !== 'all';
 
     return (
         <AuthenticatedLayout header={
@@ -353,18 +434,18 @@ export default function ActivityLogs({ logs }) {
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FilterSelect
-                            value={projectFilter}
-                            onChange={(v) => { setProjectFilter(v); setPage(1); }}
+                            value={project}
+                            onChange={handleProjectChange}
                             className="w-44"
-                            options={[{ value: 'all', label: 'All Projects' }, ...projects.map((p) => ({ value: String(p.id), label: p.name }))]}
+                            options={[{ value: 'all', label: 'All Projects' }, ...userProjects.map((p) => ({ value: String(p.id), label: p.name }))]}
                         />
                         <FilterSelect
-                            value={actionFilter}
-                            onChange={(v) => { setActionFilter(v); setPage(1); }}
-                            className="w-52"
+                            value={action}
+                            onChange={handleActionChange}
+                            className="w-56"
                             options={[
                                 { value: 'all', label: 'All Actions' },
-                                ...actions.map((a) => ({ value: a, label: actionLabels[a] ?? formatActionLabel(a) })),
+                                ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
                             ]}
                         />
                         {hasActiveFilters && (
@@ -374,19 +455,17 @@ export default function ActivityLogs({ logs }) {
                         )}
                     </div>
 
-                    {logs.length > 0 && (
-                        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                            {filtered.length} of {logs.length} event{logs.length > 1 ? 's' : ''}
-                        </p>
-                    )}
+                    <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
+                        {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
+                    </p>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        {filtered.length === 0 ? (
+                        {logs.data.length === 0 ? (
                             <div className="px-6 py-10 text-center">
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
-                                    {logs.length === 0 ? 'No activity recorded yet.' : 'No activity matches your filters.'}
+                                    {hasActiveFilters ? 'No activity matches your filters.' : 'No activity recorded yet.'}
                                 </p>
-                                {logs.length > 0 && hasActiveFilters && (
+                                {hasActiveFilters && (
                                     <button onClick={clearFilters} className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                                         Clear filters
                                     </button>
@@ -394,36 +473,17 @@ export default function ActivityLogs({ logs }) {
                             </div>
                         ) : (
                             <ul>
-                                {paginated.map((log) => (
-                                    <LogRow key={log.id} log={log} />
+                                {logs.data.map((log) => (
+                                    <LogRow key={`${log.source}-${log.id}`} log={log} />
                                 ))}
                             </ul>
                         )}
                     </div>
 
-                    {filtered.length > PER_PAGE && (
-                        <div className="mt-4 flex items-center justify-between">
-                            <p className="text-sm text-gray-400 dark:text-gray-500">
-                                Page {currentPage} of {totalPages}
-                            </p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={logs} />
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

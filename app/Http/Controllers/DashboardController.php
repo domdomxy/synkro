@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProjectActivityLog;
+use App\Models\Project;
 use App\Models\Reminder;
 use App\Models\Task;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -168,19 +170,76 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Personal activity feed: every ProjectActivityLog entry this user has
-     * generated, across all of their projects (not just one).
-     */
-    public function activity()
+    private function perPage(Request $request, int $default): int
     {
-        $logs = ProjectActivityLog::where('user_id', Auth::id())
-            ->with(['project:id,name', 'user'])
+        $perPage = (int) $request->input('per_page', $default);
+
+        return max(1, min($perPage, 500));
+    }
+
+    /**
+     * Personal activity feed: everything this user has done — both their
+     * project activity (ProjectActivityLog, across every project they're in)
+     * and their account activity (AccountActivityLog: logins, profile edits,
+     * password changes, etc). The two live in separate tables, so they're
+     * combined here with a SQL union and paginated as one server-side feed.
+     */
+    public function activity(Request $request)
+    {
+        $user = Auth::user();
+        $action = $request->input('action', 'all');
+        $projectFilter = $request->input('project', 'all');
+
+        $projectLogs = DB::table('project_activity_logs')
+            ->select('id', DB::raw("'project' as source"), 'project_id', 'action', 'details', 'created_at')
+            ->where('user_id', $user->id);
+
+        $accountLogs = DB::table('account_activity_logs')
+            ->select('id', DB::raw("'account' as source"), DB::raw('NULL as project_id'), 'action', 'details', 'created_at')
+            ->where('user_id', $user->id);
+
+        if ($action !== 'all') {
+            $projectLogs->where('action', $action);
+            $accountLogs->where('action', $action);
+        }
+
+        if ($projectFilter !== 'all') {
+            $projectLogs->where('project_id', $projectFilter);
+            // Account-level actions aren't tied to a project, so a project filter excludes them entirely.
+            $accountLogs->whereRaw('1 = 0');
+        }
+
+        $logs = $projectLogs->unionAll($accountLogs)
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate($this->perPage($request, 10))
+            ->withQueryString();
+
+        // Only hydrate project names for the rows on this page, not the whole table.
+        $projectIds = collect($logs->items())->pluck('project_id')->filter()->unique()->values();
+        $projectNames = Project::whereIn('id', $projectIds)->pluck('name', 'id');
+
+        $logs->getCollection()->transform(fn ($row) => [
+            'id' => $row->id,
+            'source' => $row->source,
+            'action' => $row->action,
+            'details' => $row->details ? json_decode($row->details, true) : null,
+            'created_at' => $row->created_at,
+            'project' => $row->project_id ? [
+                'id' => $row->project_id,
+                'name' => $projectNames[$row->project_id] ?? 'Unknown Project',
+            ] : null,
+        ]);
 
         return Inertia::render('ActivityLogs', [
             'logs' => $logs,
+            'userProjects' => $user->projects()->orderBy('projects.name')->get(['projects.id', 'projects.name'])
+                ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])
+                ->values(),
+            'filters' => [
+                'action' => $action,
+                'project' => $projectFilter,
+                'per_page' => (string) $this->perPage($request, 10),
+            ],
         ]);
     }
 }

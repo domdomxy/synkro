@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\AccountActivityLog;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $oldEmail = $user->getOriginal('email');
+        $oldName = $user->getOriginal('name');
         $newEmail = $request->validated()['email'];
         $emailChanged = $oldEmail !== $newEmail;
 
@@ -46,6 +48,17 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        $changes = [];
+        if ($user->wasChanged('name')) {
+            $changes['name'] = ['old' => $oldName, 'new' => $user->name];
+        }
+        if ($user->wasChanged('email')) {
+            $changes['email'] = ['old' => $oldEmail, 'new' => $newEmail];
+        }
+        if (! empty($changes)) {
+            AccountActivityLog::log('profile_updated', ['changes' => $changes]);
+        }
 
         if ($emailChanged) {
             // Security alert goes to the OLD address (that's the account that might be compromised).
@@ -170,6 +183,8 @@ class ProfileController extends Controller
 
         $user->update(['avatar_path' => $request->file('avatar')->store('avatars', 'public')]);
 
+        AccountActivityLog::log('avatar_updated');
+
         return Redirect::route('profile.edit')->with('success', 'Avatar updated.');
     }
 
@@ -180,6 +195,7 @@ class ProfileController extends Controller
         if ($user->avatar_path) {
             Storage::disk('public')->delete($user->avatar_path);
             $user->update(['avatar_path' => null]);
+            AccountActivityLog::log('avatar_removed');
         }
 
         return Redirect::route('profile.edit')->with('success', 'Avatar removed.');
@@ -245,6 +261,8 @@ class ProfileController extends Controller
         );
 
         $user->update(['is_active' => false, 'active_status_changed_at' => now()]);
+
+        AccountActivityLog::log('account_deactivated', [], $user->id);
 
         Auth::logout();
         $request->session()->invalidate();
