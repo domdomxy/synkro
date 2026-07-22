@@ -102,11 +102,6 @@ function AdminLogRow({ log, actionCatalog }) {
                             {description}
                         </p>
                     )}
-                    {hasReason && !open && (
-                        <p className="mt-1 text-xs italic text-gray-400 dark:text-gray-500">
-                            Click to view reason
-                        </p>
-                    )}
                     {hasReason && open && (
                         <div className="mt-2 rounded-md border-l-2 border-indigo-300 bg-indigo-50/60 py-2 pl-3 pr-2 dark:border-indigo-700 dark:bg-indigo-950/20">
                             <p className="text-[10px] font-medium uppercase tracking-wide text-indigo-400 dark:text-indigo-500">

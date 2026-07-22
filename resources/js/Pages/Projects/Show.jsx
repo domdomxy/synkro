@@ -324,7 +324,7 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
 function NotesPanel({ project, myNotes }) {
     const [editingId, setEditingId] = useState(null);
     const [showNewForm, setShowNewForm] = useState(false);
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
 
     const newForm = useForm({ title: '', itemsText: '' });
     const editForm = useForm({ title: '', items: [] });
@@ -607,7 +607,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const submitTask = (e) => {
         e.preventDefault();
         taskForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
-        taskForm.post(route('tasks.store', project.id), { onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
+        taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
     const removeMember = (member) => {

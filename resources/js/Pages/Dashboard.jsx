@@ -651,9 +651,9 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
 
                         <div className="mb-4 grid grid-cols-3 gap-3">
-                            <div className="rounded-md bg-teal-50 p-3 text-center dark:bg-teal-950/30">
-                                <p className="text-xl font-semibold text-teal-700 dark:text-teal-400">{totals.completed}</p>
-                                <p className="text-xs text-teal-600 dark:text-teal-500">Completed</p>
+                            <div className="rounded-md bg-green-50 p-3 text-center dark:bg-green-950/30">
+                                <p className="text-xl font-semibold text-green-700 dark:text-green-400">{totals.completed}</p>
+                                <p className="text-xs text-green-600 dark:text-green-500">Tasks Completed</p>
                             </div>
                             <div className="rounded-md bg-amber-50 p-3 text-center dark:bg-amber-950/30">
                                 <p className="text-xl font-semibold text-amber-700 dark:text-amber-400">{totals.created}</p>
@@ -668,14 +668,23 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <ResponsiveContainer width="100%" height={240}>
                             <AreaChart data={stats.chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
-                                <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
+                                <XAxis
+                                    dataKey="label"
+                                    tick={{ fontSize: 11, fill: 'currentColor' }}
+                                    axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                    tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 11, fill: 'currentColor' }}
+                                    axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                    tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                    allowDecimals={false}
+                                />
                                 <Tooltip />
                                 <Legend wrapperStyle={{ color: 'currentColor' }} />
                                 <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
                                 <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                                <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
+                                <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>

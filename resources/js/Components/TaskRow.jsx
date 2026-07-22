@@ -208,8 +208,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const resolveKeepForm = useForm({ action: 'keep' });
     const resolveResetForm = useForm({ action: 'reset' });
 
-    const startTask = () => router.patch(route('tasks.start', task.id));
-    const startReview = () => router.patch(route('tasks.start-review', task.id));
+    const startTask = () => router.patch(route('tasks.start', task.id), {}, { preserveScroll: true });
+    const startReview = () => router.patch(route('tasks.start-review', task.id), {}, { preserveScroll: true });
 
     const togglePin = () => {
         setPinning(true);
@@ -225,6 +225,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         if (!confirm('Save changes to this task?')) return;
         editForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
         editForm.patch(route('tasks.update', task.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 // Without this, isDirty stays true after a successful save (it's compared
                 // against the form's original mount-time defaults, which Inertia doesn't
@@ -261,32 +262,34 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         if (!confirm(confirmMessage)) return;
         submitForm.post(route('tasks.submit', task.id), {
             forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => { submitForm.reset(); setShowAddPanel(false); },
         });
     };
 
     const removeDeliverable = (deliverableId) => {
         if (confirm('Remove this submitted item?')) {
-            router.delete(route('deliverables.destroy', deliverableId));
+            router.delete(route('deliverables.destroy', deliverableId), { preserveScroll: true });
         }
     };
 
     const sendReview = (decision) => {
         reviewForm.transform((data) => ({ ...data, decision }));
-        reviewForm.post(route('tasks.review', task.id), { onSuccess: () => reviewForm.reset() });
+        reviewForm.post(route('tasks.review', task.id), { preserveScroll: true, onSuccess: () => reviewForm.reset() });
     };
 
     const submitReopen = (e) => {
         e.preventDefault();
         if (!confirm('Send this task back for changes? It will move back to In Progress.')) return;
         reopenForm.post(route('tasks.reopen', task.id), {
+            preserveScroll: true,
             onSuccess: () => { reopenForm.reset(); setShowReopenPanel(false); },
         });
     };
 
     const submitComment = (e) => {
         e.preventDefault();
-        commentForm.post(route('comments.store', task.id), { onSuccess: () => commentForm.reset() });
+        commentForm.post(route('comments.store', task.id), { preserveScroll: true, onSuccess: () => commentForm.reset() });
     };
 
     const startEditComment = (comment) => {
@@ -297,17 +300,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const saveCommentEdit = (e, commentId) => {
         e.preventDefault();
         editCommentForm.patch(route('comments.update', commentId), {
+            preserveScroll: true,
             onSuccess: () => setEditingCommentId(null),
         });
     };
 
     const deleteComment = (commentId) => {
-        if (confirm('Delete this comment?')) router.delete(route('comments.destroy', commentId));
+        if (confirm('Delete this comment?')) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
     };
 
     const deleteTask = () => {
         if (confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
-            router.delete(route('tasks.destroy', task.id));
+            router.delete(route('tasks.destroy', task.id), { preserveScroll: true });
         }
     };
 
