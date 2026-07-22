@@ -729,18 +729,25 @@ public function suspend(Request $request, User $user)
         \App\Support\AdminAlerts::broadcastRefresh();
 
         if ($appeal->user) {
+            // Mirrors the ticket-reply email's highlight box (see FeedbackAdminController::respond)
+            // instead of burying the admin's reason in a plain text line, so the decision reads
+            // clearly rather than blending into the surrounding paragraph.
             NotificationMailer::send(
                 $appeal->user,
                 'account.appeal_reviewed',
                 'Your appeal has been reviewed',
-                array_filter([
+                [
                     $request->outcome === 'approved'
                         ? 'Your appeal was reviewed and accepted. Your suspension has been lifted and you can log in again right away.'
                         : 'Your appeal was reviewed and rejected.',
-                    $request->reason ? "Reason: {$request->reason}" : null,
-                ]),
+                ],
                 url(route('login', [], false)),
-                'Log In'
+                'Log In',
+                highlight: $request->reason ? [
+                    'label' => $request->outcome === 'approved' ? 'Reason for approval' : 'Reason for rejection',
+                    'content' => \App\Support\NoteFormatter::toHtml($request->reason),
+                    'html' => true,
+                ] : null,
             );
         }
 

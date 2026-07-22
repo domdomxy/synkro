@@ -277,10 +277,37 @@ export default function Feedback({ flash }) {
     const [trackResult, setTrackResult] = useState(null);
     const [trackLoading, setTrackLoading] = useState(false);
     const [submitted, setSubmitted] = useState(null);
+    const [copied, setCopied] = useState(false);
     const [previews, setPreviews] = useState([]); // [{ file, url }]
     const fileInputRef = useRef(null);
 
     const MAX_ATTACHMENTS = 5;
+
+    // navigator.clipboard requires a secure context (HTTPS or localhost) and isn't
+    // available in every mobile browser/webview, so fall back to the old
+    // execCommand approach via a temporary textarea when it's missing.
+    const copyTrackingId = async (id) => {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(id);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = id;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (e) {
+            // Clipboard write can be denied by browser permissions; fail silently,
+            // the ID is still visible on screen for the user to select manually.
+        }
+    };
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -432,8 +459,27 @@ export default function Feedback({ flash }) {
                                     </div>
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Feedback received!</h3>
                                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Your tracking ID is:</p>
-                                    <div className="mx-auto mt-3 w-fit rounded-lg bg-indigo-50 px-6 py-3 font-mono text-xl font-bold tracking-widest text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                                        {submitted}
+                                    <div className="mx-auto mt-3 flex w-fit items-center gap-2 rounded-lg bg-indigo-50 py-3 pl-6 pr-3 dark:bg-indigo-950">
+                                        <span className="font-mono text-xl font-bold tracking-widest text-indigo-700 dark:text-indigo-300">
+                                            {submitted}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => copyTrackingId(submitted)}
+                                            className="flex shrink-0 items-center rounded-md p-2 text-indigo-600 transition hover:bg-indigo-100 active:bg-indigo-200 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                                            aria-label={copied ? 'Copied' : 'Copy tracking ID'}
+                                            title={copied ? 'Copied' : 'Copy tracking ID'}
+                                        >
+                                            {copied ? (
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                </svg>
+                                            )}
+                                        </button>
                                     </div>
                                     <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
                                         Save this ID so you can use it to track your feedback status anytime.
