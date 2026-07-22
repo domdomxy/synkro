@@ -23,6 +23,19 @@ const statIcons = {
     completed: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
 
+function HeaderLogsButton({ href, title, children, label }) {
+    return (
+        <Link
+            href={href}
+            title={title}
+            className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-100 sm:px-3.5"
+        >
+            {children}
+            <span className="hidden sm:inline">{label}</span>
+        </Link>
+    );
+}
+
 function SectionHeading({ children }) {
     return <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{children}</h3>;
 }
@@ -175,7 +188,16 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     ];
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Admin Dashboard</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center justify-between gap-4">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Admin Dashboard</h2>
+                <HeaderLogsButton href={route('admin.logs')} title="Administration Logs" label="Administration Logs">
+                    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </HeaderLogsButton>
+            </div>
+        }>
             <Head title="Admin Dashboard" />
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
@@ -185,12 +207,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <Link href={route('admin.projects')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">View Projects</Link>
                         <Link href={route('admin.feedbacks')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Feedback</Link>
                         <Link href={route('admin.appeals')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Appeals</Link>
-                        <Link href={route('admin.logs')} className="ml-auto flex items-center gap-1.5 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            Administration Logs
-                        </Link>
                     </div>
 
                     <AttentionPanel items={attentionItems} />

@@ -195,23 +195,23 @@ export default function Index({ projects, showingArchived }) {
 
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
 
-                    <div className="mb-6 flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxWidth: 280 }}>
+                    <div className="mb-6 inline-flex gap-1 rounded-full bg-gray-100 p-1 dark:bg-gray-800">
                         <button
                             onClick={() => switchTab(false)}
-                            className={`flex-1 py-2 text-sm font-medium transition ${
+                            className={`rounded-full px-5 py-1.5 text-sm font-medium transition ${
                                 !showingArchived
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                             }`}
                         >
                             Active
                         </button>
                         <button
                             onClick={() => switchTab(true)}
-                            className={`flex-1 py-2 text-sm font-medium transition ${
+                            className={`rounded-full px-5 py-1.5 text-sm font-medium transition ${
                                 showingArchived
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                             }`}
                         >
                             Archived
