@@ -195,7 +195,7 @@ export default function Index({ projects, showingArchived }) {
 
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
 
-                    <div className="mb-6 inline-flex gap-1 rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+                    <div className="mb-6 inline-flex gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
                         <button
                             onClick={() => switchTab(false)}
                             className={`rounded-full px-5 py-1.5 text-sm font-medium transition ${

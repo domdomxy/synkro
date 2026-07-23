@@ -18,3 +18,13 @@ html.theme-black .recharts-default-tooltip {
 .recharts-cartesian-axis-tick-value tspan {
     fill: currentColor;
 }
+
+/* Regular dark mode never told the browser it's dark (only html.theme-black
+   did, in black-theme.css), so browser-drawn native controls like the
+   password reveal eye and the date/time picker calendar icon kept rendering
+   in their light-mode (dark) color, making them invisible against our dark
+   backgrounds. Setting color-scheme lets the browser pick the right variant
+   of these controls itself. */
+html.dark {
+    color-scheme: dark;
+}
