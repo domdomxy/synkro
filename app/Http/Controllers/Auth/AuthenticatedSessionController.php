@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AccountActivityLog;
+use App\Support\AppealRateLimiter;
 use App\Support\GeoLocator;
 use App\Support\NotificationMailer;
 use App\Support\UserAgentParser;
@@ -20,13 +21,16 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $suspension = session('suspension');
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
-            'suspension' => session('suspension'),
+            'suspension' => $suspension,
             'passwordExpired' => session('passwordExpired'),
+            'appealLimitMessage' => AppealRateLimiter::message($suspension['email'] ?? null, $request),
         ]);
     }
 

@@ -23,7 +23,7 @@ function timeRemaining(dateString) {
     return `${minutes}m remaining`;
 }
 
-function SuspensionNotice({ suspension }) {
+function SuspensionNotice({ suspension, appealLimitMessage }) {
     const [showAppeal, setShowAppeal] = useState(false);
     const appealForm = useForm({ email: suspension?.email ?? '', message: '' });
 
@@ -36,8 +36,13 @@ function SuspensionNotice({ suspension }) {
 
     const { flash } = usePage().props;
     const justSubmitted = appealForm.recentlySuccessful || Boolean(flash?.success);
+    // appealLimitMessage is known up front (from the session's suspended email), so a user who
+    // already appealed within the cooldown window sees it immediately instead of having to open
+    // and fill out the form just to be told they can't submit it. appealForm.errors.limit covers
+    // the rarer case of the cooldown starting in the brief window between page load and submit.
+    const limitMessage = appealLimitMessage || appealForm.errors.limit;
     const hasAppealFeedback = justSubmitted || Boolean(
-        appealForm.errors.limit || appealForm.errors.email || appealForm.errors.message
+        limitMessage || appealForm.errors.email || appealForm.errors.message
     );
 
     const remaining = !suspension.permanent ? timeRemaining(suspension.until) : null;
@@ -92,7 +97,17 @@ function SuspensionNotice({ suspension }) {
             )}
 
             <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
-                {!showAppeal && !hasAppealFeedback ? (
+                {limitMessage ? (
+                    <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Submit an appeal</p>
+                        <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
+                            <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                            <p className="text-sm text-red-700 dark:text-red-400">{limitMessage}</p>
+                        </div>
+                    </div>
+                ) : !showAppeal && !hasAppealFeedback ? (
                     <button
                         onClick={() => setShowAppeal(true)}
                         className="flex w-full items-center justify-between text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
@@ -117,73 +132,53 @@ function SuspensionNotice({ suspension }) {
                 ) : (
                     <form onSubmit={submitAppeal} className="space-y-3">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Submit an appeal</p>
-                        {appealForm.errors.limit ? (
-                            <>
-                                <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
-                                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                    </svg>
-                                    <p className="text-sm text-red-700 dark:text-red-400">{appealForm.errors.limit}</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAppeal(false)}
-                                    className="text-sm text-gray-500 hover:underline dark:text-gray-400"
-                                >
-                                    Cancel
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <div>
-                                    <InputLabel htmlFor="appeal-email" value="Account email" className="text-xs" />
-                                    <TextInput
-                                        id="appeal-email"
-                                        type="email"
-                                        value={appealForm.data.email}
-                                        disabled
-                                        className="mt-1 block w-full cursor-not-allowed bg-gray-50 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                                    />
-                                    <InputError message={appealForm.errors.email} className="mt-1" />
-                                </div>
-                                <div>
-                                    <div className="flex items-baseline justify-between">
-                                        <InputLabel htmlFor="appeal-message" value="Why should this be lifted?" className="text-xs" />
-                                        <span className="shrink-0 pl-3 text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
-                                            {appealForm.data.message.length}/2000
-                                        </span>
-                                    </div>
-                                    <textarea
-                                        id="appeal-message"
-                                        value={appealForm.data.message}
-                                        onChange={(e) => appealForm.setData('message', e.target.value)}
-                                        rows={3}
-                                        maxLength={2000}
-                                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        placeholder="Give us some context..."
-                                    />
-                                    <InputError message={appealForm.errors.message} className="mt-1" />
-                                </div>
-                                <div className="flex items-center gap-3 pt-1">
-                                    <PrimaryButton
-                                        disabled={appealForm.processing || !appealForm.data.message.trim()}
-                                    >
-                                        {appealForm.processing && <Spinner className="mr-2 h-3.5 w-3.5" />}
-                                        {appealForm.processing ? 'Sending...' : 'Submit Appeal'}
-                                    </PrimaryButton>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAppeal(false)}
-                                        className="text-sm text-gray-500 hover:underline dark:text-gray-400"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-400 dark:text-gray-500">
-                                    You can submit one appeal every 6 hours per account.
-                                </p>
-                            </>
-                        )}
+                        <div>
+                            <InputLabel htmlFor="appeal-email" value="Account email" className="text-xs" />
+                            <TextInput
+                                id="appeal-email"
+                                type="email"
+                                value={appealForm.data.email}
+                                disabled
+                                className="mt-1 block w-full cursor-not-allowed bg-gray-50 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                            />
+                            <InputError message={appealForm.errors.email} className="mt-1" />
+                        </div>
+                        <div>
+                            <div className="flex items-baseline justify-between">
+                                <InputLabel htmlFor="appeal-message" value="Why should this be lifted?" className="text-xs" />
+                                <span className="shrink-0 pl-3 text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+                                    {appealForm.data.message.length}/2000
+                                </span>
+                            </div>
+                            <textarea
+                                id="appeal-message"
+                                value={appealForm.data.message}
+                                onChange={(e) => appealForm.setData('message', e.target.value)}
+                                rows={3}
+                                maxLength={2000}
+                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                placeholder="Give us some context..."
+                            />
+                            <InputError message={appealForm.errors.message} className="mt-1" />
+                        </div>
+                        <div className="flex items-center gap-3 pt-1">
+                            <PrimaryButton
+                                disabled={appealForm.processing || !appealForm.data.message.trim()}
+                            >
+                                {appealForm.processing && <Spinner className="mr-2 h-3.5 w-3.5" />}
+                                {appealForm.processing ? 'Sending...' : 'Submit Appeal'}
+                            </PrimaryButton>
+                            <button
+                                type="button"
+                                onClick={() => setShowAppeal(false)}
+                                className="text-sm text-gray-500 hover:underline dark:text-gray-400"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                            You can submit one appeal every 6 hours per account.
+                        </p>
                     </form>
                 )}
             </div>
@@ -197,7 +192,7 @@ function SuspensionNotice({ suspension }) {
     );
 }
 
-export default function Login({ status, canResetPassword, passwordExpired }) {
+export default function Login({ status, canResetPassword, passwordExpired, appealLimitMessage }) {
     const { suspension } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -225,7 +220,7 @@ export default function Login({ status, canResetPassword, passwordExpired }) {
                 align="center"
             >
                 <Head title="Account Suspended" />
-                <SuspensionNotice suspension={suspension} />
+                <SuspensionNotice suspension={suspension} appealLimitMessage={appealLimitMessage} />
             </GuestLayout>
         );
     }

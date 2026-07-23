@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SuspensionAppeal;
 use App\Models\User;
 use App\Models\UserNotification;
-use App\Support\DeviceTimezone;
+use App\Support\AppealRateLimiter;
 use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
@@ -22,21 +22,12 @@ class SuspensionAppealController extends Controller
         // wrongly block each other). Checked before validation, same as the old IP
         // check was, so a throttled request comes back as a normal Inertia error shown
         // inline on the appeal card rather than a bare 429 page.
-        $throttleKey = 'appeal-submit:' . strtolower((string) $request->input('email'));
+        $email = (string) $request->input('email');
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 1)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-            $cooldownEndsAt = now()->addSeconds($seconds)->setTimezone(DeviceTimezone::resolve($request));
-
+        if ($message = AppealRateLimiter::message($email, $request)) {
             return back()
-                ->withErrors([
-                    'limit' => sprintf(
-                        "You can only submit one appeal every 6 hours. Please wait %s before trying again (available at %s).",
-                        $this->formatDuration($seconds),
-                        $cooldownEndsAt->format('g:i A')
-                    ),
-                ])
-                ->with('suspension', $this->suspensionPayload($request->input('email')));
+                ->withErrors(['limit' => $message])
+                ->with('suspension', $this->suspensionPayload($email));
         }
 
         $request->validate([
@@ -44,7 +35,7 @@ class SuspensionAppealController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
-        RateLimiter::hit($throttleKey, 6 * 3600);
+        RateLimiter::hit(AppealRateLimiter::key($email), 6 * 3600);
 
         $user = User::where('email', $request->email)->first();
 
@@ -130,28 +121,5 @@ class SuspensionAppealController extends Controller
             'user_id' => $user->id,
             'email' => $user->email,
         ];
-    }
-
-    /**
-     * Format a number of seconds as a human-readable duration, e.g. "42 minutes"
-     * or "1 hour 5 minutes".
-     */
-    private function formatDuration(int $seconds): string
-    {
-        $minutes = (int) ceil($seconds / 60);
-        $hours = intdiv($minutes, 60);
-        $remainingMinutes = $minutes % 60;
-
-        if ($hours === 0) {
-            return "{$minutes} minute" . ($minutes === 1 ? '' : 's');
-        }
-
-        $hoursPart = "{$hours} hour" . ($hours === 1 ? '' : 's');
-
-        if ($remainingMinutes === 0) {
-            return $hoursPart;
-        }
-
-        return $hoursPart . " {$remainingMinutes} minute" . ($remainingMinutes === 1 ? '' : 's');
     }
 }
