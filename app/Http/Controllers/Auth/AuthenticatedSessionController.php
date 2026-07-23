@@ -26,6 +26,7 @@ class AuthenticatedSessionController extends Controller
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
             'suspension' => session('suspension'),
+            'passwordExpired' => session('passwordExpired'),
         ]);
     }
 

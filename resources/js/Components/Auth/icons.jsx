@@ -58,3 +58,11 @@ export function EyeOffIcon(props) {
         </svg>
     );
 }
+
+export function ScaleIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M6 8l-3.5 6a3.5 3.5 0 007 0L6 8zm12 0l-3.5 6a3.5 3.5 0 007 0L18 8zM3.5 8h5M15.5 8h5M8 21h8" />
+        </svg>
+    );
+}
