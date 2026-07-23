@@ -559,7 +559,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const { auth } = usePage().props;
     const { url } = usePage();
     const canManage = ['owner', 'manager'].includes(role);
-    const canReview = ['owner', 'tester'].includes(role);
+    const canReview = ['owner', 'manager', 'tester'].includes(role);
     const isOwner = project.owner_id === auth.user.id;
 
     const [memberSearch, setMemberSearch] = useState('');

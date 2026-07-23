@@ -26,6 +26,6 @@ class TaskPolicy
     }
     public function review(User $user, Task $task): bool
     {
-        return in_array($task->project->roleFor($user), ['owner', 'tester']);
+        return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
     }
 }

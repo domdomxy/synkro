@@ -16,20 +16,21 @@
     }
 
     /* Without this, clients that auto-invert colors for dark mode (Gmail in particular)
-       independently darken the page background (#f3f4f6) and the card (#ffffff) — two
-       colors that are only *slightly* different by design in light mode — into two
-       slightly-different, low-contrast dark grays. The card ends up barely distinguishable
-       from the page around it, which combined with the large outer padding reads as a
-       small, washed-out card floating in a big dark void. Defining our own dark palette
-       here (instead of leaving it to auto-inversion) gives a real page/card contrast in
-       dark mode too, the same way it's intentional in light mode. */
+       darken the page background (#f3f4f6) and the card (#ffffff) into two different dark
+       grays. Worse: Gmail's own Android/iOS app already wraps every message in its own dark
+       card chrome, so giving our own outer wrapper a *third* distinct dark fill just creates
+       another visible seam one layer further out — a card inside a card inside Gmail's own
+       card. Making the outer background transparent lets it inherit whatever surface color
+       the client is already using, and defining the card with a thin border instead of a
+       background-color difference (the same approach Google's own emails use) gives it
+       shape without introducing another mismatched fill. */
     @media (prefers-color-scheme: dark) {
-        .email-bg { background-color:#0b0f19 !important; }
-        .email-card { background-color:#1f2937 !important; }
+        .email-bg { background-color:transparent !important; }
+        .email-card { background-color:transparent !important; border:1px solid #374151 !important; }
         .email-heading { color:#f9fafb !important; }
         .email-greeting { color:#9ca3af !important; }
         .email-line { color:#d1d5db !important; }
-        .email-highlight { background-color:#111827 !important; border-color:#374151 !important; }
+        .email-highlight { background-color:rgba(255,255,255,0.04) !important; border-color:#374151 !important; }
         .email-highlight-label { color:#818cf8 !important; }
         .email-highlight-content { color:#d1d5db !important; }
         .email-btn-cell { background-color:#4f46e5 !important; }
@@ -43,12 +44,12 @@
        client (notably some Gmail Android/iOS versions), but it does tag elements it has
        auto-darkened with a data-ogsc attribute that CSS can target — so the same overrides
        are duplicated against that selector as a second line of defense. */
-    [data-ogsc] .email-bg { background-color:#0b0f19 !important; }
-    [data-ogsc] .email-card { background-color:#1f2937 !important; }
+    [data-ogsc] .email-bg { background-color:transparent !important; }
+    [data-ogsc] .email-card { background-color:transparent !important; border:1px solid #374151 !important; }
     [data-ogsc] .email-heading { color:#f9fafb !important; }
     [data-ogsc] .email-greeting { color:#9ca3af !important; }
     [data-ogsc] .email-line { color:#d1d5db !important; }
-    [data-ogsc] .email-highlight { background-color:#111827 !important; border-color:#374151 !important; }
+    [data-ogsc] .email-highlight { background-color:rgba(255,255,255,0.04) !important; border-color:#374151 !important; }
     [data-ogsc] .email-highlight-label { color:#818cf8 !important; }
     [data-ogsc] .email-highlight-content { color:#d1d5db !important; }
     [data-ogsc] .email-btn-cell { background-color:#4f46e5 !important; }
@@ -58,7 +59,7 @@
     [data-ogsc] .email-copyright { color:#6b7280 !important; }
 </style>
 </head>
-<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<body class="email-bg" style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
 {{-- Preheader: shows in the inbox preview line, hidden in the body --}}
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all;">

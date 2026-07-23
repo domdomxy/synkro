@@ -110,7 +110,7 @@ class DashboardController extends Controller
             ->get();
 
         $reviewerProjectIds = $user->projects()
-            ->wherePivotIn('role', ['owner', 'tester'])
+            ->wherePivotIn('role', ['owner', 'manager', 'tester'])
             ->pluck('projects.id');
         $pendingReview = Task::whereIn('project_id', $reviewerProjectIds)
             ->where('status', 'submitted')
