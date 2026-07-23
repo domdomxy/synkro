@@ -69,6 +69,19 @@ function formatBytes(bytes) {
     return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
+function LinkTip() {
+    return (
+        <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>
+                <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link
+            </span>
+        </p>
+    );
+}
+
 function ReplyBox({ feedback, trackingId, email, onReplySent }) {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
@@ -132,9 +145,7 @@ function ReplyBox({ feedback, trackingId, email, onReplySent }) {
                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             />
             {error && <p className="text-xs text-red-500">{error}</p>}
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-                Tip: <code className="rounded bg-gray-100 px-1 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link.
-            </p>
+            <LinkTip />
             <button
                 type="submit"
                 disabled={sending || !message.trim()}
@@ -444,7 +455,9 @@ export default function Feedback({ flash, categories }) {
                                 <form onSubmit={submitFeedback} className="space-y-5">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Name <span className="text-red-400">*</span>
+                                            </label>
                                             <input
                                                 type="text"
                                                 value={data.name}
@@ -455,7 +468,9 @@ export default function Feedback({ flash, categories }) {
                                             {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Email <span className="text-red-400">*</span>
+                                            </label>
                                             <input
                                                 type="email"
                                                 value={data.email}
@@ -469,9 +484,9 @@ export default function Feedback({ flash, categories }) {
 
                                     <div>
                                         <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Category {selectedCategory && <span className="font-normal text-gray-400">· {selectedCategory.label}</span>}
+                                            Category <span className="text-red-400">*</span>{selectedCategory && <span className="font-normal text-gray-400"> · {selectedCategory.label}</span>}
                                         </label>
-                                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                             {categories.map((c) => {
                                                 const isSelected = data.category === c.key;
                                                 return (
@@ -479,29 +494,22 @@ export default function Feedback({ flash, categories }) {
                                                         key={c.key}
                                                         type="button"
                                                         onClick={() => setData('category', c.key)}
-                                                        className={`group relative flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center text-xs font-medium transition ${
+                                                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition ${
                                                             isSelected
-                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm dark:bg-indigo-950 dark:text-indigo-300'
-                                                                : 'border-gray-200 text-gray-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-800 dark:hover:bg-gray-700'
+                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                                                                : 'border-gray-200 text-gray-600 hover:border-indigo-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-800 dark:hover:bg-gray-700'
                                                         }`}
                                                     >
+                                                        <CategoryIcon
+                                                            icon={c.icon}
+                                                            className={`h-4 w-4 shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 dark:text-gray-500'}`}
+                                                        />
+                                                        <span className="truncate">{c.label}</span>
                                                         {isSelected && (
-                                                            <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-white">
-                                                                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                            </span>
+                                                            <svg className="ml-auto h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
                                                         )}
-                                                        <span
-                                                            className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-                                                                isSelected
-                                                                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                                                                    : 'bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-500 dark:bg-gray-700 dark:text-gray-400'
-                                                            }`}
-                                                        >
-                                                            <CategoryIcon icon={c.icon} className="h-4.5 w-4.5" />
-                                                        </span>
-                                                        <span className="leading-tight">{c.label}</span>
                                                     </button>
                                                 );
                                             })}
@@ -510,11 +518,17 @@ export default function Feedback({ flash, categories }) {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label>
+                                        <div className="flex items-baseline justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Subject <span className="text-red-400">*</span>
+                                            </label>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">{data.subject.length}/255</span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={data.subject}
                                             onChange={(e) => setData('subject', e.target.value)}
+                                            maxLength={255}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             placeholder="Brief summary of your feedback"
                                         />
@@ -522,18 +536,22 @@ export default function Feedback({ flash, categories }) {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+                                        <div className="flex items-baseline justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Message <span className="text-red-400">*</span>
+                                            </label>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">{data.message.length}/5000</span>
+                                        </div>
                                         <textarea
                                             value={data.message}
                                             onChange={(e) => setData('message', e.target.value)}
                                             rows={5}
+                                            maxLength={5000}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             placeholder="Describe your feedback in detail..."
                                         />
                                         {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
-                                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                            Tip: <code className="rounded bg-gray-100 px-1 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link.
-                                        </p>
+                                        <LinkTip />
                                     </div>
 
                                     <div>
@@ -632,6 +650,18 @@ export default function Feedback({ flash, categories }) {
                                     </button>
                                 </form>
 
+                                {!trackResult && (
+                                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-200 py-10 text-center dark:border-gray-700">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </span>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Enter the tracking ID from your submission to check its status.</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">It looks like <span className="font-mono">ABC-1234-XYZ</span> and was shown after you submitted feedback.</p>
+                                    </div>
+                                )}
+
                                 {trackResult && (
                                     trackResult.found === false ? (
                                         <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
@@ -654,57 +684,67 @@ export default function Feedback({ flash, categories }) {
                                                     {(() => {
                                                         const s = statusConfig[trackResult.feedback.status];
                                                         return s ? (
-                                                            <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${s.style}`}>
+                                                            <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${s.style}`}>
                                                                 {s.icon}
                                                                 {s.label}
                                                             </span>
                                                         ) : null;
                                                     })()}
                                                 </div>
-                                                <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400"><Linkify text={trackResult.feedback.message} /></p>
-
-                                                {(trackResult.feedback.attachment_path || trackResult.feedback.attachments?.length > 0) && (
-                                                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                                        {trackResult.feedback.attachment_path && (
-                                                            <a href={`/storage/${trackResult.feedback.attachment_path}`} target="_blank" rel="noreferrer">
-                                                                <img src={`/storage/${trackResult.feedback.attachment_path}`} alt="attachment" className="h-20 w-full rounded-md object-cover shadow" />
-                                                            </a>
-                                                        )}
-                                                        {trackResult.feedback.attachments?.map((att) => (
-                                                            <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer">
-                                                                <img src={`/storage/${att.path}`} alt={att.original_name} className="h-20 w-full rounded-md object-cover shadow" />
-                                                            </a>
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </div>
 
-                                            {trackResult.feedback.responses?.length > 0 && (
-                                                <div>
-                                                    <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Conversation</p>
-                                                    <div className="space-y-2">
-                                                        {trackResult.feedback.responses.map((r) => (
-                                                            <div
-                                                                key={r.id}
-                                                                className={`rounded-lg border p-3 ${
-                                                                    r.sender_type === 'admin'
-                                                                        ? 'border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30'
-                                                                        : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
-                                                                }`}
-                                                            >
-                                                                <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={r.message} /></p>
-                                                                <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                                    </svg>
-                                                                    {r.sender_type === 'admin' ? 'Support Team' : 'You'} ·{' '}
-                                                                    {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                                                </p>
+                                            <div>
+                                                <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Conversation</p>
+                                                <div className="space-y-2">
+                                                    {/* Original submission, styled like the reply bubbles below so the whole ticket reads as one continuous thread instead of the first message looking like unstyled leftover text */}
+                                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+                                                        <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={trackResult.feedback.message} /></p>
+
+                                                        {(trackResult.feedback.attachment_path || trackResult.feedback.attachments?.length > 0) && (
+                                                            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                                {trackResult.feedback.attachment_path && (
+                                                                    <a href={`/storage/${trackResult.feedback.attachment_path}`} target="_blank" rel="noreferrer">
+                                                                        <img src={`/storage/${trackResult.feedback.attachment_path}`} alt="attachment" className="h-20 w-full rounded-md object-cover shadow" />
+                                                                    </a>
+                                                                )}
+                                                                {trackResult.feedback.attachments?.map((att) => (
+                                                                    <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer">
+                                                                        <img src={`/storage/${att.path}`} alt={att.original_name} className="h-20 w-full rounded-md object-cover shadow" />
+                                                                    </a>
+                                                                ))}
                                                             </div>
-                                                        ))}
+                                                        )}
+
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            {trackResult.feedback.name || 'You'} ·{' '}
+                                                            {new Date(trackResult.feedback.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                        </p>
                                                     </div>
+
+                                                    {trackResult.feedback.responses?.map((r) => (
+                                                        <div
+                                                            key={r.id}
+                                                            className={`rounded-lg border p-3 ${
+                                                                r.sender_type === 'admin'
+                                                                    ? 'border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30'
+                                                                    : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
+                                                            }`}
+                                                        >
+                                                            <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={r.message} /></p>
+                                                            <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                </svg>
+                                                                {r.sender_type === 'admin' ? 'Support Team' : 'You'} ·{' '}
+                                                                {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                            </p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            )}
+                                            </div>
 
                                             <TicketActions
                                                 feedback={trackResult.feedback}

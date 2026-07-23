@@ -15,7 +15,7 @@ class FeedbackCategory extends Model
      */
     public static function iconOptions(): array
     {
-        return ['bug', 'help', 'flag', 'question', 'lightbulb', 'dot', 'star', 'chat', 'mail', 'alert'];
+        return ['bug', 'help', 'flag', 'question', 'lightbulb', 'dot', 'star', 'chat', 'mail', 'alert', 'lock', 'users'];
     }
 
     protected static function booted(): void

@@ -66,3 +66,14 @@ html.theme-black .shadow-xl {
 /* Opacity */
 html.theme-black .dark\:bg-gray-800\/95 { background-color: rgba(13, 13, 13, 0.95) !important; }
 html.theme-black .dark\:bg-gray-900\/95 { background-color: rgba(0, 0, 0, 0.95) !important; }
+
+/* Gradient hero backgrounds (public Feedback pages) use color *stops* rather than a flat
+   background-color, so the plain dark:bg-gray-900 rule above never matches them — Tailwind's
+   gradient utilities work through --tw-gradient-* custom properties instead. Overriding those
+   custom properties directly is fragile (their exact names shifted between Tailwind versions),
+   so instead just replace the whole gradient with a flat true-black fill. That's behaviorally
+   identical here anyway, since all three stops (from/via/to) are already the same gray-900. */
+html.theme-black .dark\:from-gray-900.dark\:via-gray-900.dark\:to-gray-900 {
+    background-image: none !important;
+    background-color: #000000 !important;
+}

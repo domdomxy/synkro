@@ -11,6 +11,8 @@ const ICON_PATHS = {
     chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
     mail: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
     alert: 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z',
+    lock: 'M16 10V7a4 4 0 00-8 0v3m-1 0h10a1 1 0 011 1v8a1 1 0 01-1 1H7a1 1 0 01-1-1v-8a1 1 0 011-1z',
+    users: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4zm6 2a4 4 0 10-4-4',
 };
 
 export const ICON_OPTIONS = [
@@ -23,6 +25,8 @@ export const ICON_OPTIONS = [
     { key: 'chat', label: 'Chat' },
     { key: 'mail', label: 'Mail' },
     { key: 'alert', label: 'Alert' },
+    { key: 'lock', label: 'Lock' },
+    { key: 'users', label: 'Users' },
     { key: 'dot', label: 'Other' },
 ];
 

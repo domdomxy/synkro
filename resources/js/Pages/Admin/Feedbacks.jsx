@@ -80,31 +80,6 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
             {open && (
                 <div className="border-t border-gray-100 p-4 space-y-4 dark:border-gray-700">
                     <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">Original message</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={feedback.message} /></p>
-                    </div>
-
-                    {(feedback.attachment_path || feedback.attachments?.length > 0) && (
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                Attachments {feedback.attachments?.length > 0 && `(${feedback.attachments.length + (feedback.attachment_path ? 1 : 0)})`}:
-                            </p>
-                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                {feedback.attachment_path && (
-                                    <a href={`/storage/${feedback.attachment_path}`} target="_blank" rel="noreferrer">
-                                        <img src={`/storage/${feedback.attachment_path}`} alt="attachment" className="h-24 w-full rounded-md object-cover shadow" />
-                                    </a>
-                                )}
-                                {feedback.attachments?.map((att) => (
-                                    <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer" title={att.original_name}>
-                                        <img src={`/storage/${att.path}`} alt={att.original_name} className="h-24 w-full rounded-md object-cover shadow" />
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div>
                         <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Status</p>
                         <div className="flex flex-wrap gap-2">
                             {['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => (
@@ -129,31 +104,55 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
                         )}
                     </div>
 
-                    {feedback.responses?.length > 0 && (
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Conversation</p>
-                            <div className="space-y-2">
-                                {feedback.responses.map((r) => (
-                                    <div
-                                        key={r.id}
-                                        className={`rounded-md p-3 ${
-                                            r.sender_type === 'admin'
-                                                ? 'bg-indigo-50 dark:bg-indigo-950/30'
-                                                : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
-                                        }`}
-                                    >
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={r.message} /></p>
-                                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                            {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : feedback.name}
-                                            {r.sender_type === 'user' && <span className="ml-1 italic">(user)</span>}
-                                            {' · '}
-                                            {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                        </p>
+                    <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Conversation</p>
+                        <div className="space-y-2">
+                            <div className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={feedback.message} /></p>
+
+                                {(feedback.attachment_path || feedback.attachments?.length > 0) && (
+                                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                        {feedback.attachment_path && (
+                                            <a href={`/storage/${feedback.attachment_path}`} target="_blank" rel="noreferrer">
+                                                <img src={`/storage/${feedback.attachment_path}`} alt="attachment" className="h-24 w-full rounded-md object-cover shadow" />
+                                            </a>
+                                        )}
+                                        {feedback.attachments?.map((att) => (
+                                            <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer" title={att.original_name}>
+                                                <img src={`/storage/${att.path}`} alt={att.original_name} className="h-24 w-full rounded-md object-cover shadow" />
+                                            </a>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
+
+                                <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                                    {feedback.name}
+                                    <span className="ml-1 italic">(original message)</span>
+                                    {' · '}
+                                    {new Date(feedback.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                </p>
                             </div>
+
+                            {feedback.responses?.map((r) => (
+                                <div
+                                    key={r.id}
+                                    className={`rounded-md p-3 ${
+                                        r.sender_type === 'admin'
+                                            ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                                            : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+                                    }`}
+                                >
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={r.message} /></p>
+                                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                        {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : feedback.name}
+                                        {r.sender_type === 'user' && <span className="ml-1 italic">(user)</span>}
+                                        {' · '}
+                                        {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
                     {isClosed && updateForm.data.status === feedback.status ? (
                         <div className="rounded-md bg-gray-50 p-3 dark:bg-gray-900/50">
