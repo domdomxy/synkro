@@ -97,7 +97,7 @@ function AttentionPanel({ items }) {
     const visible = items.filter((i) => i.count > 0);
     if (visible.length === 0) return null;
     return (
-        <div className="rounded-lg border border-amber-200 bg-white shadow dark:border-amber-900/40 dark:bg-gray-800">
+        <div className="overflow-hidden rounded-lg border border-amber-200 bg-white shadow dark:border-amber-900/40 dark:bg-gray-800">
             <div className="flex items-center gap-2 border-b border-amber-100 px-5 py-3 dark:border-amber-900/30">
                 <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -184,7 +184,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const attentionItems = [
         { label: 'Tasks with pending submission decisions', count: stats.pendingResolution, icon: statIcons.warning, color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
         { label: 'Suspension appeals awaiting review', count: liveCounts.pendingAppeals, icon: statIcons.appeal, color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400', href: route('admin.appeals') },
-        { label: 'Feedback tickets awaiting review', count: liveCounts.pendingFeedbacks, icon: statIcons.feedback, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400', href: route('admin.feedbacks') },
+        { label: 'Feedback tickets awaiting review', count: liveCounts.pendingFeedbacks, icon: statIcons.feedback, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400', href: route('admin.feedbacks', { status: 'pending' }) },
     ];
 
     return (

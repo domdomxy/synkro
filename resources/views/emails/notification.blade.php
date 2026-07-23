@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>{{ $subjectLine }}</title>
 <style>
     /* Gmail and most mobile clients honor media queries inside a <style> block
@@ -14,6 +14,48 @@
         .email-card { border-radius: 16px !important; width: 100% !important; }
         .email-pad-lg { padding-left: 24px !important; padding-right: 24px !important; }
     }
+
+    /* Without this, clients that auto-invert colors for dark mode (Gmail in particular)
+       independently darken the page background (#f3f4f6) and the card (#ffffff) — two
+       colors that are only *slightly* different by design in light mode — into two
+       slightly-different, low-contrast dark grays. The card ends up barely distinguishable
+       from the page around it, which combined with the large outer padding reads as a
+       small, washed-out card floating in a big dark void. Defining our own dark palette
+       here (instead of leaving it to auto-inversion) gives a real page/card contrast in
+       dark mode too, the same way it's intentional in light mode. */
+    @media (prefers-color-scheme: dark) {
+        .email-bg { background-color:#0b0f19 !important; }
+        .email-card { background-color:#1f2937 !important; }
+        .email-heading { color:#f9fafb !important; }
+        .email-greeting { color:#9ca3af !important; }
+        .email-line { color:#d1d5db !important; }
+        .email-highlight { background-color:#111827 !important; border-color:#374151 !important; }
+        .email-highlight-label { color:#818cf8 !important; }
+        .email-highlight-content { color:#d1d5db !important; }
+        .email-btn-cell { background-color:#4f46e5 !important; }
+        .email-footer-divider { border-color:#374151 !important; }
+        .email-footer-text { color:#9ca3af !important; }
+        .email-footer-text a { color:#818cf8 !important; }
+        .email-copyright { color:#6b7280 !important; }
+    }
+
+    /* Gmail's own dark-mode rewriting doesn't reliably honor prefers-color-scheme in every
+       client (notably some Gmail Android/iOS versions), but it does tag elements it has
+       auto-darkened with a data-ogsc attribute that CSS can target — so the same overrides
+       are duplicated against that selector as a second line of defense. */
+    [data-ogsc] .email-bg { background-color:#0b0f19 !important; }
+    [data-ogsc] .email-card { background-color:#1f2937 !important; }
+    [data-ogsc] .email-heading { color:#f9fafb !important; }
+    [data-ogsc] .email-greeting { color:#9ca3af !important; }
+    [data-ogsc] .email-line { color:#d1d5db !important; }
+    [data-ogsc] .email-highlight { background-color:#111827 !important; border-color:#374151 !important; }
+    [data-ogsc] .email-highlight-label { color:#818cf8 !important; }
+    [data-ogsc] .email-highlight-content { color:#d1d5db !important; }
+    [data-ogsc] .email-btn-cell { background-color:#4f46e5 !important; }
+    [data-ogsc] .email-footer-divider { border-color:#374151 !important; }
+    [data-ogsc] .email-footer-text { color:#9ca3af !important; }
+    [data-ogsc] .email-footer-text a { color:#818cf8 !important; }
+    [data-ogsc] .email-copyright { color:#6b7280 !important; }
 </style>
 </head>
 <body style="margin:0; padding:0; background-color:#f3f4f6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -24,7 +66,7 @@
 </div>
 <div style="display:none; max-height:0; overflow:hidden;">&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-bg" style="background-color:#f3f4f6;">
 <tr>
 <td align="center" class="email-outer-pad" style="padding:48px 16px;">
 
@@ -50,7 +92,7 @@
         {{-- Headline --}}
         <tr>
             <td align="center" class="email-pad-lg" style="padding:24px 40px 0;">
-                <p style="margin:0; font-size:26px; font-weight:700; color:#111827; line-height:1.3; text-align:center;">
+                <p class="email-heading" style="margin:0; font-size:26px; font-weight:700; color:#111827; line-height:1.3; text-align:center;">
                     {{ $subjectLine }}
                 </p>
             </td>
@@ -59,29 +101,29 @@
         {{-- Body --}}
         <tr>
             <td class="email-pad-lg" style="padding:20px 40px 8px;">
-                <p style="margin:0 0 16px; font-size:15px; color:#6b7280; line-height:1.6; text-align:center;">
+                <p class="email-greeting" style="margin:0 0 16px; font-size:15px; color:#6b7280; line-height:1.6; text-align:center;">
                     Hi {{ $greetingName }},
                 </p>
 
                 @foreach ($lines as $line)
-                    <p style="margin:0 0 16px; font-size:15px; color:#374151; line-height:1.65; text-align:center;">
+                    <p class="email-line" style="margin:0 0 16px; font-size:15px; color:#374151; line-height:1.65; text-align:center;">
                         {!! \App\Support\NoteFormatter::line($line) !!}
                     </p>
                 @endforeach
 
                 @if (!empty($highlight))
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 8px; background-color:#f9fafb; border:1px solid #f0f1f5; border-radius:14px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-highlight" style="margin:8px 0 8px; background-color:#f9fafb; border:1px solid #f0f1f5; border-radius:14px;">
                         <tr>
                             <td style="padding:20px 22px; text-align:left;">
                                 @if (!empty($highlight['label']))
-                                    <p style="margin:0 0 8px; font-size:11px; font-weight:700; color:#4f46e5; text-transform:uppercase; letter-spacing:.06em;">
+                                    <p class="email-highlight-label" style="margin:0 0 8px; font-size:11px; font-weight:700; color:#4f46e5; text-transform:uppercase; letter-spacing:.06em;">
                                         {{ $highlight['label'] }}
                                     </p>
                                 @endif
                                 @if (!empty($highlight['html']))
-                                    <div style="margin:0; font-size:15px; color:#374151; line-height:1.65;">{!! $highlight['content'] !!}</div>
+                                    <div class="email-highlight-content" style="margin:0; font-size:15px; color:#374151; line-height:1.65;">{!! $highlight['content'] !!}</div>
                                 @else
-                                    <p style="margin:0; font-size:15px; color:#374151; line-height:1.65; white-space:pre-line;">{!! \App\Support\NoteFormatter::line($highlight['content']) !!}</p>
+                                    <p class="email-highlight-content" style="margin:0; font-size:15px; color:#374151; line-height:1.65; white-space:pre-line;">{!! \App\Support\NoteFormatter::line($highlight['content']) !!}</p>
                                 @endif
                             </td>
                         </tr>
@@ -96,7 +138,7 @@
             <td align="center" class="email-pad-lg" style="padding:16px 40px 8px;">
                 <table role="presentation" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="border-radius:999px; background-color:#111827;">
+                        <td class="email-btn-cell" style="border-radius:999px; background-color:#111827;">
                             <a href="{{ $actionUrl }}" target="_blank" style="display:inline-block; padding:15px 36px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:999px;">
                                 {{ $actionText }}
                             </a>
@@ -110,19 +152,19 @@
         {{-- Footer --}}
         <tr>
             <td class="email-pad-lg" style="padding:36px 40px 40px;">
-                <div style="border-top:1px solid #f0f1f5; padding-top:20px;">
+                <div class="email-footer-divider" style="border-top:1px solid #f0f1f5; padding-top:20px;">
                     @if (!empty($footerNote))
-                        <p style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
+                        <p class="email-footer-text" style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
                             {!! \App\Support\NoteFormatter::line($footerNote) !!}
                         </p>
                     @else
-                        <p style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
+                        <p class="email-footer-text" style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
                             You're receiving this because you have this email type enabled.
                             Manage your preferences in your
                             <a href="{{ route('settings.edit') }}" style="color:#4f46e5; text-decoration:underline;">notification settings</a>.
                         </p>
                     @endif
-                    <p style="margin:14px 0 0; font-size:12px; color:#c1c5cd; line-height:1.6; text-align:center;">
+                    <p class="email-copyright" style="margin:14px 0 0; font-size:12px; color:#c1c5cd; line-height:1.6; text-align:center;">
                         Synkro · © {{ date('Y') }}
                     </p>
                 </div>
