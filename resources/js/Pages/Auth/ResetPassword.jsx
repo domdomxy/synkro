@@ -1,7 +1,7 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Spinner from '@/Components/Spinner';
+import AuthField from '@/Components/Auth/AuthField';
+import { MailIcon, LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 
@@ -22,72 +22,57 @@ export default function ResetPassword({ token, email }) {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout
+            icon={LockIcon}
+            eyebrow="Password reset"
+            title="Choose a new password"
+            subtitle="Make it something you haven't used before on Synkro."
+            align="center"
+        >
             <Head title="Reset Password" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
+            <form onSubmit={submit} className="space-y-4">
+                <AuthField
+                    id="email"
+                    label="Email"
+                    type="email"
+                    name="email"
+                    icon={MailIcon}
+                    value={data.email}
+                    autoComplete="username"
+                    onChange={(e) => setData('email', e.target.value)}
+                    error={errors.email}
+                />
 
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
-                    />
+                <AuthField
+                    id="password"
+                    label="Password"
+                    type="password"
+                    name="password"
+                    icon={LockIcon}
+                    value={data.password}
+                    autoComplete="new-password"
+                    isFocused={true}
+                    onChange={(e) => setData('password', e.target.value)}
+                    error={errors.password}
+                />
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
+                <AuthField
+                    id="password_confirmation"
+                    label="Confirm Password"
+                    type="password"
+                    name="password_confirmation"
+                    icon={LockIcon}
+                    value={data.password_confirmation}
+                    autoComplete="new-password"
+                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                    error={errors.password_confirmation}
+                />
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
-                        type="password"
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Reset Password
-                    </PrimaryButton>
-                </div>
+                <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>
+                    {processing && <Spinner className="mr-2 h-4 w-4" />}
+                    {processing ? 'Resetting...' : 'Reset Password'}
+                </PrimaryButton>
             </form>
         </GuestLayout>
     );

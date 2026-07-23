@@ -1,8 +1,8 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
+import Spinner from '@/Components/Spinner';
+import AuthField from '@/Components/Auth/AuthField';
+import { UserIcon, MailIcon, LockIcon } from '@/Components/Auth/icons';
+import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {
@@ -22,99 +22,78 @@ export default function Register() {
     };
 
     return (
-        <GuestLayout>
+        <AuthSplitLayout
+            eyebrow="Get started"
+            title="Create your account"
+            subtitle="Set up your account to start organizing projects with your team."
+        >
             <Head title="Register" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
+            <form onSubmit={submit} className="space-y-4">
+                <AuthField
+                    id="name"
+                    label="Name"
+                    name="name"
+                    icon={UserIcon}
+                    value={data.name}
+                    autoComplete="name"
+                    isFocused={true}
+                    onChange={(e) => setData('name', e.target.value)}
+                    error={errors.name}
+                    required
+                />
 
-                    <TextInput
-                        id="name"
-                        name="name"
-                        value={data.name}
-                        className="mt-1 block w-full"
-                        autoComplete="name"
-                        isFocused={true}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                    />
+                <AuthField
+                    id="email"
+                    label="Email"
+                    type="email"
+                    name="email"
+                    icon={MailIcon}
+                    value={data.email}
+                    autoComplete="username"
+                    onChange={(e) => setData('email', e.target.value)}
+                    error={errors.email}
+                    required
+                />
 
-                    <InputError message={errors.name} className="mt-2" />
-                </div>
+                <AuthField
+                    id="password"
+                    label="Password"
+                    type="password"
+                    name="password"
+                    icon={LockIcon}
+                    value={data.password}
+                    autoComplete="new-password"
+                    onChange={(e) => setData('password', e.target.value)}
+                    error={errors.password}
+                    required
+                />
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
+                <AuthField
+                    id="password_confirmation"
+                    label="Confirm Password"
+                    type="password"
+                    name="password_confirmation"
+                    icon={LockIcon}
+                    value={data.password_confirmation}
+                    autoComplete="new-password"
+                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                    error={errors.password_confirmation}
+                    required
+                />
 
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        required
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Already registered?
-                    </Link>
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Register
-                    </PrimaryButton>
-                </div>
+                <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>
+                    {processing && <Spinner className="mr-2 h-4 w-4" />}
+                    {processing ? 'Creating account...' : 'Register'}
+                </PrimaryButton>
             </form>
-        </GuestLayout>
+
+            <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                Already registered?{' '}
+                <Link href={route('login')} className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                    Sign in instead
+                </Link>
+            </p>
+        </AuthSplitLayout>
     );
 }

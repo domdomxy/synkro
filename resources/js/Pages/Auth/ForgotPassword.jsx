@@ -1,8 +1,9 @@
-import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Spinner from '@/Components/Spinner';
+import AuthField from '@/Components/Auth/AuthField';
+import { MailIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function ForgotPassword({ status }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -16,40 +17,48 @@ export default function ForgotPassword({ status }) {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout
+            icon={MailIcon}
+            eyebrow="Password reset"
+            title="Forgot your password?"
+            subtitle="No problem. Enter your email and we'll send you a link to choose a new one."
+            align="center"
+        >
             <Head title="Forgot Password" />
 
-            <div className="mb-4 text-sm text-gray-600">
-                Forgot your password? No problem. Just let us know your email
-                address and we will email you a password reset link that will
-                allow you to choose a new one.
-            </div>
-
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="mb-4 flex items-start gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                    <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                     {status}
                 </div>
             )}
 
-            <form onSubmit={submit}>
-                <TextInput
+            <form onSubmit={submit} className="space-y-4">
+                <AuthField
                     id="email"
+                    label="Email"
                     type="email"
                     name="email"
+                    icon={MailIcon}
                     value={data.email}
-                    className="mt-1 block w-full"
                     isFocused={true}
                     onChange={(e) => setData('email', e.target.value)}
+                    error={errors.email}
                 />
 
-                <InputError message={errors.email} className="mt-2" />
-
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Email Password Reset Link
-                    </PrimaryButton>
-                </div>
+                <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>
+                    {processing && <Spinner className="mr-2 h-4 w-4" />}
+                    {processing ? 'Sending link...' : 'Email Password Reset Link'}
+                </PrimaryButton>
             </form>
+
+            <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                <Link href={route('login')} className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                    ← Back to login
+                </Link>
+            </p>
         </GuestLayout>
     );
 }

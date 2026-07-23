@@ -1,7 +1,7 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Spinner from '@/Components/Spinner';
+import AuthField from '@/Components/Auth/AuthField';
+import { LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 
@@ -19,36 +19,32 @@ export default function ConfirmPassword() {
     };
 
     return (
-        <GuestLayout>
+        <GuestLayout
+            icon={LockIcon}
+            eyebrow="Secure area"
+            title="Confirm your password"
+            subtitle="This is a secure area of the application. Please confirm your password before continuing."
+            align="center"
+        >
             <Head title="Confirm Password" />
 
-            <div className="mb-4 text-sm text-gray-600">
-                This is a secure area of the application. Please confirm your
-                password before continuing.
-            </div>
+            <form onSubmit={submit} className="space-y-4">
+                <AuthField
+                    id="password"
+                    label="Password"
+                    type="password"
+                    name="password"
+                    icon={LockIcon}
+                    value={data.password}
+                    isFocused={true}
+                    onChange={(e) => setData('password', e.target.value)}
+                    error={errors.password}
+                />
 
-            <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Confirm
-                    </PrimaryButton>
-                </div>
+                <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>
+                    {processing && <Spinner className="mr-2 h-4 w-4" />}
+                    {processing ? 'Confirming...' : 'Confirm'}
+                </PrimaryButton>
             </form>
         </GuestLayout>
     );

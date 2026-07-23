@@ -1,22 +1,8 @@
 import PrimaryButton from '@/Components/PrimaryButton';
+import Spinner from '@/Components/Spinner';
+import { MailIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-
-function MailIcon() {
-    return (
-        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-    );
-}
-
-function CheckIcon() {
-    return (
-        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-    );
-}
 
 export default function VerifyEmail({ status }) {
     const { auth } = usePage().props;
@@ -28,26 +14,26 @@ export default function VerifyEmail({ status }) {
     };
 
     return (
-        <GuestLayout>
-            <Head title="Verify Email" />
-
-            <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
-                    <MailIcon />
-                </div>
-
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Verify your email address</h1>
-
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <GuestLayout
+            icon={MailIcon}
+            eyebrow="One more step"
+            title="Verify your email address"
+            subtitle={
+                <>
                     We sent a verification link to{' '}
                     {auth?.user?.email && <span className="font-medium text-gray-700 dark:text-gray-300">{auth.user.email}</span>}.
                     Click the link to activate your account. If it's not in your inbox, check spam, or request a new one below.
-                </p>
-            </div>
+                </>
+            }
+            align="center"
+        >
+            <Head title="Verify Email" />
 
             {status === 'verification-link-sent' && (
-                <div className="mt-5 flex items-start gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    <CheckIcon />
+                <div className="mb-2 flex items-start gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                     <span>A new verification link has been sent to the email address you provided during registration.</span>
                 </div>
             )}
@@ -55,7 +41,8 @@ export default function VerifyEmail({ status }) {
             <form onSubmit={submit}>
                 <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row-reverse sm:justify-between">
                     <PrimaryButton disabled={processing} className="w-full justify-center sm:w-auto">
-                        Resend Verification Email
+                        {processing && <Spinner className="mr-2 h-4 w-4" />}
+                        {processing ? 'Sending...' : 'Resend Verification Email'}
                     </PrimaryButton>
 
                     <Link
