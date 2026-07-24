@@ -28,11 +28,9 @@ function AppealItem({ appeal }) {
     const isPending = appeal.status === 'pending';
     const badgeLabel = isPending
         ? 'pending'
-        : appeal.auto_resolved
-            ? 'approved (automatically)'
-            : appeal.outcome === 'approved'
-                ? 'approved'
-                : 'rejected';
+        : appeal.outcome === 'approved'
+            ? (appeal.auto_resolved ? 'approved (automatically)' : 'approved')
+            : (appeal.auto_resolved ? 'rejected (automatically)' : 'rejected');
     const badgeStyle = isPending
         ? statusStyles.pending
         : appeal.outcome === 'approved'
@@ -166,9 +164,9 @@ function AppealItem({ appeal }) {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     )}
                                 </svg>
-                                {appeal.auto_resolved
-                                    ? 'Approved automatically'
-                                    : appeal.outcome === 'approved' ? 'Accepted — suspension lifted' : 'Rejected'}
+                                {appeal.outcome === 'approved'
+                                    ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted — suspension lifted')
+                                    : (appeal.auto_resolved ? 'Rejected automatically' : 'Rejected')}
                             </p>
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                 {appeal.admin_reason ? <Linkify text={appeal.admin_reason} /> : 'No reason was given.'}

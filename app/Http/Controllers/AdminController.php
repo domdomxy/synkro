@@ -443,24 +443,34 @@ public function suspend(Request $request, User $user)
 
             AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user, $request->reason);
 
-            // Optionally mark the appeal that prompted this as reviewed in the same
-            // transaction — previously the frontend fired this as a second, separate
-            // request chained onto this one's onSuccess, which meant the suspension
-            // could get lifted while the appeal silently stayed "Pending" if that
-            // second request didn't fire or failed. Doing it here makes the two
-            // updates atomic: either both happen, or neither does.
-            if ($request->appeal_id) {
-                $appeal = SuspensionAppeal::where('id', $request->appeal_id)
+            // Resolve any pending appeal(s) tied to this account, same as reviewAppeal()
+            // does when an appeal is approved from the Appeals page — so lifting a
+            // suspension from Manage Users doesn't leave an appeal the user submitted
+            // stuck showing "Pending" forever. $request->appeal_id is honored first for
+            // callers that already know the specific appeal; otherwise every appeal
+            // still pending for this user is resolved, since lifting the suspension
+            // they were appealing effectively decides it regardless of which admin
+            // screen was used.
+            $pendingAppeals = $request->appeal_id
+                ? SuspensionAppeal::where('id', $request->appeal_id)
                     ->where('user_id', $user->id)
                     ->where('status', 'pending')
-                    ->first();
+                    ->get()
+                : SuspensionAppeal::where('user_id', $user->id)
+                    ->where('status', 'pending')
+                    ->get();
 
-                if ($appeal) {
-                    $appeal->update(['status' => 'reviewed']);
-                    AdminLog::log('appeal.reviewed', "Reviewed {$user->name}'s suspension appeal", $appeal, $request->reason);
-                }
+            foreach ($pendingAppeals as $appeal) {
+                $appeal->update([
+                    'status' => 'reviewed',
+                    'outcome' => 'approved',
+                    'admin_reason' => $request->reason,
+                ]);
+                AdminLog::log('appeal.reviewed', "Reviewed {$user->name}'s suspension appeal", $appeal, $request->reason);
             }
         });
+
+        \App\Support\AdminAlerts::broadcastRefresh();
 
         NotificationMailer::send(
             $user,
@@ -742,6 +752,21 @@ public function suspend(Request $request, User $user)
 
                 AdminLog::log('user.suspension_lifted', "Lifted suspension for {$appeal->user->name} ({$appeal->user->email})", $appeal->user, $request->reason);
             }
+
+            // A user can end up with more than one pending appeal — e.g. an earlier
+            // suspension auto-expired (or was lifted some other way) without that
+            // appeal ever going through this review flow. Deciding this appeal
+            // effectively decides those too, so resolve them here instead of leaving
+            // them stuck showing "Pending" indefinitely once this one is reviewed.
+            SuspensionAppeal::where('user_id', $appeal->user_id)
+                ->where('status', 'pending')
+                ->where('id', '!=', $appeal->id)
+                ->update([
+                    'status' => 'reviewed',
+                    'outcome' => $request->outcome,
+                    'admin_reason' => 'Resolved automatically: a newer appeal for this account was reviewed.',
+                    'auto_resolved' => true,
+                ]);
         });
 
         \App\Support\AdminAlerts::broadcastRefresh();

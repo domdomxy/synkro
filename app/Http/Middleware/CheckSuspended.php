@@ -27,6 +27,18 @@ class CheckSuspended
                         'lifted_at' => now(),
                         'lifted_by' => null,
                     ]);
+
+                    // Same as the suspensions:lift-expired scheduled job — a pending
+                    // appeal shouldn't sit there forever once the suspension it's
+                    // appealing has already run out on its own.
+                    \App\Models\SuspensionAppeal::where('user_id', $user->id)
+                        ->where('status', 'pending')
+                        ->update([
+                            'status' => 'reviewed',
+                            'outcome' => 'approved',
+                            'admin_reason' => 'Suspension was lifted automatically after the suspension duration ended.',
+                            'auto_resolved' => true,
+                        ]);
                 } else {
                     $suspensionData = [
                         'reason' => $user->suspension_reason,
