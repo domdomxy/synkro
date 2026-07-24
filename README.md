@@ -54,6 +54,17 @@ composer run setup
 `composer run setup` installs PHP and JS dependencies, copies `.env.example` to `.env`,
 generates the app key, runs migrations, and builds frontend assets.
 
+### Demo data
+
+To get something to click through instead of an empty database, seed it:
+
+```bash
+php artisan db:seed
+```
+
+This creates an admin account (`admin@synkro.test`) and 5 regular users, all with the
+password `password`.
+
 Then start everything (Laravel server, queue worker, log viewer, and Vite dev server) with:
 
 ```bash
@@ -81,6 +92,11 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
 ```bash
 composer run test
 ```
+
+## Architecture
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for an overview of the role/permission model,
+task lifecycle, suspension/appeal flow, and notification system.
 
 ## License
 
