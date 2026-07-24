@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SuspensionAppeal;
+use App\Models\SuspensionLog;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\AppealRateLimiter;
@@ -47,6 +48,19 @@ class SuspensionAppealController extends Controller
             RateLimiter::hit($limiterKey, 6 * 3600);
         }
 
+        // "First appeal for this suspension" means no prior appeal exists since the current
+        // (still-open) suspension started — checked against suspension_logs rather than just
+        // counting the user's all-time appeals, so a brand new suspension always gets the
+        // fuller first-time message again even if the account had appealed a past suspension.
+        $currentSuspensionLog = SuspensionLog::where('user_id', $user->id)
+            ->whereNull('lifted_at')
+            ->latest()
+            ->first();
+
+        $isFirstAppealForThisSuspension = ! $currentSuspensionLog || ! SuspensionAppeal::where('user_id', $user->id)
+            ->where('created_at', '>=', $currentSuspensionLog->created_at)
+            ->exists();
+
         $appeal = SuspensionAppeal::create([
             'user_id' => $user->id,
             'message' => $request->message,
@@ -56,8 +70,12 @@ class SuspensionAppealController extends Controller
 
         \App\Support\AdminAlerts::broadcastRefresh();
 
+        $successMessage = $isFirstAppealForThisSuspension
+            ? 'Your suspension appeal was sent to our admins. Please be patient and wait until they are available to respond — we review every appeal as soon as we can.'
+            : 'Your appeal has been submitted. We will review it as soon as possible.';
+
         return back()
-            ->with('success', 'Your appeal has been submitted. We will review it as soon as possible.')
+            ->with('success', $successMessage)
             ->with('suspension', $this->suspensionPayload($user));
     }
 

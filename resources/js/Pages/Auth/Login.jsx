@@ -106,7 +106,16 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
             )}
 
             <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
-                {limitMessage ? (
+                {justSubmitted ? (
+                    <div className="flex items-start gap-2.5 rounded-lg bg-green-50 p-3 dark:bg-green-950/30">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <p className="text-sm text-green-700 dark:text-green-400">
+                            {flash?.success || "Appeal submitted. We'll review it and get back to you as soon as possible."}
+                        </p>
+                    </div>
+                ) : limitMessage ? (
                     <div className="space-y-3">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Submit an appeal</p>
                         <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
@@ -129,15 +138,6 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
                             </svg>
                         </span>
                     </button>
-                ) : justSubmitted ? (
-                    <div className="flex items-start gap-2.5 rounded-lg bg-green-50 p-3 dark:bg-green-950/30">
-                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <p className="text-sm text-green-700 dark:text-green-400">
-                            {flash?.success || "Appeal submitted. We'll review it and get back to you as soon as possible."}
-                        </p>
-                    </div>
                 ) : (
                     <form onSubmit={submitAppeal} className="space-y-3">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Submit an appeal</p>
