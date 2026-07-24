@@ -25,17 +25,26 @@ function timeRemaining(dateString) {
 
 function SuspensionNotice({ suspension, appealLimitMessage }) {
     const [showAppeal, setShowAppeal] = useState(false);
+    const [appealSent, setAppealSent] = useState(false);
     const appealForm = useForm({ email: suspension?.email ?? '', message: '' });
 
     const submitAppeal = (e) => {
         e.preventDefault();
         appealForm.post(route('appeal.store'), {
-            onSuccess: () => appealForm.reset('message'),
+            onSuccess: () => {
+                setAppealSent(true);
+                appealForm.reset('message');
+            },
         });
     };
 
     const { flash } = usePage().props;
-    const justSubmitted = appealForm.recentlySuccessful || Boolean(flash?.success);
+    // Driven off the post() onSuccess callback directly rather than Inertia's transient
+    // recentlySuccessful (which clears itself after ~2s and would let the empty form
+    // silently reappear) or flash alone (which depends on session/redirect timing and
+    // wasn't reliably showing up on the very first submission). flash?.success is kept
+    // as a fallback for the rare case of landing here with it already flashed.
+    const justSubmitted = appealSent || Boolean(flash?.success);
     // appealLimitMessage is known up front (from the session's suspended email), so a user who
     // already appealed within the cooldown window sees it immediately instead of having to open
     // and fill out the form just to be told they can't submit it. appealForm.errors.limit covers

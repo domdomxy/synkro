@@ -8,27 +8,31 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 const MESSAGE_MAX = 2000;
 
 export default function Appeal() {
-    const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
+    const [appealSent, setAppealSent] = useState(false);
+    const { data, setData, post, processing, errors } = useForm({
         email: '',
         message: '',
     });
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('appeal.store'));
+        post(route('appeal.store'), {
+            onSuccess: () => setAppealSent(true),
+        });
     };
 
     const { flash } = usePage().props;
-    // Mirrors Login.jsx's SuspensionNotice: recentlySuccessful is Inertia's transient
-    // "just submitted" flag and clears itself after ~2s, so on its own it would let the
-    // form silently reappear a couple seconds after a successful submission. Falling
-    // back to the flashed session message keeps the "appeal sent" state showing until
-    // the person navigates away themselves.
-    const justSubmitted = recentlySuccessful || Boolean(flash?.success);
+    // Driven off the post() onSuccess callback directly rather than Inertia's transient
+    // recentlySuccessful (which clears itself after ~2s and would let the empty form
+    // silently reappear) or flash alone (which depends on session/redirect timing and
+    // wasn't reliably showing up on the very first submission). flash?.success is kept
+    // as a fallback for the rare case of landing here with it already flashed.
+    const justSubmitted = appealSent || Boolean(flash?.success);
 
     return (
         <AuthSplitLayout

@@ -35,12 +35,16 @@ class SuspensionAppealController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
-        RateLimiter::hit(AppealRateLimiter::key($email), 6 * 3600);
-
         $user = User::where('email', $request->email)->first();
 
         if (! $user->is_suspended) {
             return back()->withErrors(['email' => 'This account is not currently suspended.']);
+        }
+
+        // Scoped to this specific suspension (see AppealRateLimiter) — always non-null
+        // here since $user->is_suspended is true, so there's an open suspension_logs row.
+        if ($limiterKey = AppealRateLimiter::key($email)) {
+            RateLimiter::hit($limiterKey, 6 * 3600);
         }
 
         $appeal = SuspensionAppeal::create([

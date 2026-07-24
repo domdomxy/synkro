@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\SuspensionLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -12,12 +14,40 @@ use Illuminate\Support\Facades\RateLimiter;
  * form and submitted it. Extracting it here lets the login page pre-check the
  * same cooldown for the suspended account (whose email it already knows from
  * the session) and show the cooldown notice immediately, with no wasted typing.
+ *
+ * The cooldown is scoped to the user's *current* suspension (the open
+ * suspension_logs row, i.e. lifted_at is null) rather than the raw email.
+ * That way an appeal made against a suspension that has since been lifted —
+ * whether the appeal was accepted, a timed suspension expired, or an admin
+ * lifted it manually — doesn't carry over and block an appeal against a
+ * brand new suspension, even if the old 6-hour window hasn't fully elapsed.
  */
 class AppealRateLimiter
 {
-    public static function key(string $email): string
+    /**
+     * Returns the rate-limit key for the email's *current* suspension, or
+     * null if there's nothing to key against (no such user, or the user
+     * isn't currently suspended) — in which case there's no cooldown to
+     * apply or check.
+     */
+    public static function key(string $email): ?string
     {
-        return 'appeal-submit:' . strtolower($email);
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            return null;
+        }
+
+        $suspensionLog = SuspensionLog::where('user_id', $user->id)
+            ->whereNull('lifted_at')
+            ->latest()
+            ->first();
+
+        if (! $suspensionLog) {
+            return null;
+        }
+
+        return 'appeal-submit:suspension:' . $suspensionLog->id;
     }
 
     /**
@@ -32,7 +62,7 @@ class AppealRateLimiter
 
         $key = static::key($email);
 
-        if (! RateLimiter::tooManyAttempts($key, 1)) {
+        if (! $key || ! RateLimiter::tooManyAttempts($key, 1)) {
             return null;
         }
 
