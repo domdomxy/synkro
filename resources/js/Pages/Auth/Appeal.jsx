@@ -7,7 +7,7 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 const MESSAGE_MAX = 2000;
 
@@ -22,6 +22,14 @@ export default function Appeal() {
         post(route('appeal.store'));
     };
 
+    const { flash } = usePage().props;
+    // Mirrors Login.jsx's SuspensionNotice: recentlySuccessful is Inertia's transient
+    // "just submitted" flag and clears itself after ~2s, so on its own it would let the
+    // form silently reappear a couple seconds after a successful submission. Falling
+    // back to the flashed session message keeps the "appeal sent" state showing until
+    // the person navigates away themselves.
+    const justSubmitted = recentlySuccessful || Boolean(flash?.success);
+
     return (
         <AuthSplitLayout
             icon={ScaleIcon}
@@ -32,12 +40,17 @@ export default function Appeal() {
         >
             <Head title="Appeal a Suspension" />
 
-            {recentlySuccessful ? (
-                <div className="flex items-start gap-2.5 rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
-                    <svg className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Your appeal has been submitted. We'll review it as soon as possible.
+            {justSubmitted ? (
+                <div className="space-y-4">
+                    <div className="flex items-start gap-2.5 rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                        <svg className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {flash?.success || "Your appeal has been submitted. We'll review it and get back to you as soon as possible."}
+                    </div>
+                    <Link href={route('login')} className="block text-center text-sm text-gray-500 hover:underline dark:text-gray-400">
+                        ← Back to login
+                    </Link>
                 </div>
             ) : (
                 <form onSubmit={submit} className="space-y-4">
