@@ -3,6 +3,15 @@ import { Link } from '@inertiajs/react';
 
 const MONO = { fontFamily: "'JetBrains Mono', ui-monospace, monospace" };
 
+// Same palette GuestLayout uses for its icon badge, so a suspension/appeal
+// screen looks identical whichever shell it happens to render in.
+const ICON_TONES = {
+    indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400',
+    red: 'bg-red-100 text-red-500 dark:bg-red-950/40 dark:text-red-400',
+    green: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+};
+
 const HIGHLIGHTS = [
     {
         title: 'Role-based collaboration',
@@ -36,12 +45,17 @@ function RadarRings() {
 }
 
 /**
- * Split-panel shell for the two primary conversion moments (sign in / sign
- * up): a dark brand panel that stays visually constant regardless of the
+ * Split-panel shell for the primary auth moments: sign in, sign up, and the
+ * account-access states that branch off of sign in (suspended, appeal a
+ * suspension). A dark brand panel stays visually constant regardless of the
  * app's light/dark/black theme (a common pattern for auth screens), paired
  * with the form on a panel that follows the app's normal theme.
+ *
+ * `icon`/`iconTone` are optional — pass them for the account-access states
+ * that need a status badge above the title (suspended, appeal); sign in and
+ * sign up omit them and render exactly as before.
  */
-export default function AuthSplitLayout({ eyebrow, title, subtitle, children }) {
+export default function AuthSplitLayout({ icon: Icon, iconTone = 'indigo', eyebrow, title, subtitle, children }) {
     return (
         <div className="flex min-h-screen bg-white dark:bg-gray-800">
             <style>{`
@@ -100,6 +114,11 @@ export default function AuthSplitLayout({ eyebrow, title, subtitle, children }) 
                 </Link>
 
                 <div className="w-full max-w-sm">
+                    {Icon && (
+                        <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-full ${ICON_TONES[iconTone]}`}>
+                            <Icon className="h-6 w-6" />
+                        </div>
+                    )}
                     {eyebrow && (
                         <p style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">
                             {eyebrow}

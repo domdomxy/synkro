@@ -1,6 +1,6 @@
 // resources/js/Pages/Auth/Appeal.jsx
 
-import GuestLayout from '@/Layouts/GuestLayout';
+import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import AuthField from '@/Components/Auth/AuthField';
 import { MailIcon, ScaleIcon } from '@/Components/Auth/icons';
 import InputLabel from '@/Components/InputLabel';
@@ -23,14 +23,12 @@ export default function Appeal() {
     };
 
     return (
-        <GuestLayout
+        <AuthSplitLayout
             icon={ScaleIcon}
             iconTone="indigo"
-            glow="indigo"
             eyebrow="Suspended account"
             title="Appeal a Suspension"
             subtitle="If your account was suspended and you believe this was a mistake, tell us why below."
-            align="center"
         >
             <Head title="Appeal a Suspension" />
 
@@ -101,6 +99,6 @@ export default function Appeal() {
                     )}
                 </form>
             )}
-        </GuestLayout>
+        </AuthSplitLayout>
     );
 }

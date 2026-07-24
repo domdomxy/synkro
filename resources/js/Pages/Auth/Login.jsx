@@ -210,18 +210,16 @@ export default function Login({ status, canResetPassword, passwordExpired, appea
 
     if (suspension) {
         return (
-            <GuestLayout
+            <AuthSplitLayout
                 icon={suspension.permanent ? BanIcon : ClockIcon}
                 iconTone="red"
-                glow="red"
                 eyebrow="Account access"
                 title="Account Suspended"
                 subtitle="You won't be able to sign in while this is active."
-                align="center"
             >
                 <Head title="Account Suspended" />
                 <SuspensionNotice suspension={suspension} appealLimitMessage={appealLimitMessage} />
-            </GuestLayout>
+            </AuthSplitLayout>
         );
     }
 
