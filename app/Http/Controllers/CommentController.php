@@ -37,31 +37,43 @@ class CommentController extends Controller
 
         broadcast(new CommentPosted($comment))->toOthers();
 
-        if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
-            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+        // Recipients = the assignee plus anyone else who has commented on this task
+        // (i.e. the thread's participants), minus whoever just posted. Previously only
+        // the assignee was notified, so a manager/tester replying to another manager's
+        // comment never reached them. In a solo project this naturally resolves to an
+        // empty list (no one else to notify), so nothing changes for single-person use.
+        $recipientIds = $task->comments()
+            ->where('user_id', '!=', Auth::id())
+            ->pluck('user_id')
+            ->push($task->assigned_to)
+            ->filter()
+            ->unique();
 
-            if (NotificationPreferences::wantsType($task->assignee, 'task_commented')) {
+        $preview = Str::limit($validated['body'], 200);
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+        $recipients = \App\Models\User::whereIn('id', $recipientIds)->get();
+
+        foreach ($recipients as $recipient) {
+            if (NotificationPreferences::wantsType($recipient, 'task_commented')) {
                 $notification = UserNotification::create([
-                    'user_id' => $task->assigned_to,
+                    'user_id' => $recipient->id,
                     'type' => 'task_commented',
                     'message' => "New comment\n" . Auth::user()->name . " commented on \"{$task->title}\"",
                     'url' => $url,
                 ]);
 
                 try {
-                    broadcast(new TaskCommented($comment, $notification->id))->toOthers();
+                    broadcast(new TaskCommented($comment, $recipient->id, $notification->id))->toOthers();
                 } catch (\Throwable $e) {
                     report($e);
                 }
             }
 
-            $preview = \Illuminate\Support\Str::limit($validated['body'], 200);
-
             NotificationMailer::send(
-                $task->assignee,
+                $recipient,
                 'task.commented',
                 Auth::user()->name . " commented on \"{$task->title}\"",
-                [Auth::user()->name . " commented on your task \"{$task->title}\": \"{$preview}\""],
+                [Auth::user()->name . " commented on \"{$task->title}\": \"{$preview}\""],
                 url($url),
                 'View Task'
             );

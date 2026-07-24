@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('reminders:send')->everyMinute();
 Schedule::command('suspensions:lift-expired')->everyMinute();
+Schedule::command('tasks:notify-overdue')->everyFifteenMinutes();

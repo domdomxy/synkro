@@ -18,16 +18,17 @@ class Task extends Model
         'status', 
         'assigned_to', 
         'due_date',
-        'deliverable_path', 
         'submitted_at',
         'edited_at',
-        'pending_resolution'
+        'pending_resolution',
+        'overdue_notified_at',
     ];
 
     protected $casts = [
         'due_date' => 'datetime',
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
+        'overdue_notified_at' => 'datetime',
     ];
 
     public function project(): BelongsTo

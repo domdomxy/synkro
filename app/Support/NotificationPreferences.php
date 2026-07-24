@@ -11,7 +11,7 @@ class NotificationPreferences
     public static function catalog(?\App\Models\User $user = null): array
     {
         $catalog = [
-            'assignments' => 'Task assignments, updates, and deletions',
+            'assignments' => 'Task assignments, updates, deletions, and overdue alerts',
             'reviews' => 'Review requests and submission decisions',
             'membership' => 'Project invitations, role changes, and removals',
             'reminders' => 'Reminders you set going off',
@@ -49,6 +49,7 @@ class NotificationPreferences
             'task_reopened' => 'reviews',
             'task_review_needed' => 'reviews',
             'task_done' => 'reviews',
+            'task_overdue' => 'assignments',
             'member_left' => 'membership',
             'project_member_added' => 'membership',
             'project_role_changed' => 'membership',

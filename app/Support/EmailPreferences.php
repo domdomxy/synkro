@@ -47,6 +47,7 @@ class EmailPreferences
                     'task.rejected' => 'Your submission was sent back for changes',
                     'task.reopened' => 'A completed task was reopened for changes',
                     'task.done' => 'A task you manage was marked done',
+                    'task.overdue' => 'A task assigned to you passed its due date',
                 ],
             ],
             'tickets' => [

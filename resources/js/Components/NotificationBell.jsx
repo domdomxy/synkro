@@ -10,6 +10,7 @@ const categoryMap = {
     task_updated: 'assignments',
     task_deleted: 'assignments',
     task_commented: 'assignments',
+    task_overdue: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
     task_reopened: 'reviews',
@@ -44,6 +45,11 @@ const typeStyles = {
         bg: 'bg-green-100 dark:bg-green-900',
         text: 'text-green-600 dark:text-green-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />,
+    },
+    task_overdue: {
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-600 dark:text-red-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
     },
     task_rejected: {
         bg: 'bg-amber-100 dark:bg-amber-900',
@@ -183,6 +189,7 @@ export default function NotificationBell() {
             '.project.role-changed',
             '.task.done',
             '.task.review-needed',
+            '.task.overdue',
             '.task.updated',
             '.task.unassigned',
             '.task.deleted',
@@ -218,6 +225,9 @@ export default function NotificationBell() {
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_review_needed') {
                 message = `Review needed\n"${payload.title}" is waiting for your review`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}`;
+            } else if (payload.type === 'task_overdue') {
+                message = `Task overdue\n"${payload.title}" is past its due date`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_updated') {
                 message = `Task updated\nTask "${payload.title}" was updated`;

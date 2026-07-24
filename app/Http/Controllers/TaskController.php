@@ -107,7 +107,7 @@ class TaskController extends Controller
  
     public function update(Request $request, Task $task)
     {
-        $this->authorize('update', $task);
+        $this->authorize('edit', $task);
  
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -146,6 +146,10 @@ class TaskController extends Controller
         }
  
         $task->fill($validated);
+
+        if (isset($changes['due_date'])) {
+            $task->overdue_notified_at = null;
+        }
  
         $assigneeChanged = $task->assigned_to !== $previousAssignee;
         $contentChanged = ! empty($changes);
@@ -371,7 +375,7 @@ class TaskController extends Controller
         ]);
  
         if (! $wasAlreadySubmitted) {
-            $testers = $task->project->members()->wherePivot('role', 'tester')->get();
+            $testers = $task->project->members()->wherePivot('role', 'tester')->where('users.id', '!=', Auth::id())->get();
 
             $reviewers = $testers->isNotEmpty()
                 ? $testers
@@ -660,25 +664,11 @@ class TaskController extends Controller
             return back()->withErrors(['error' => 'No files to download.']);
         }
  
-        $zipFileName = Str::slug($task->title) . '-deliverables.zip';
-        $zipPath = storage_path('app/tmp/' . uniqid() . '-' . $zipFileName);
+        $entries = $files->map(fn ($file) => [
+            'path' => $file->path,
+            'name' => $file->original_name,
+        ])->all();
  
-        if (! is_dir(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
- 
-        $zip = new \ZipArchive();
-        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
- 
-        foreach ($files as $file) {
-            $fullPath = storage_path('app/public/' . $file->path);
-            if (file_exists($fullPath)) {
-                $zip->addFile($fullPath, $file->original_name);
-            }
-        }
- 
-        $zip->close();
- 
-        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        return \App\Support\DeliverableZip::download($entries, Str::slug($task->title) . '-deliverables.zip');
     }
 }

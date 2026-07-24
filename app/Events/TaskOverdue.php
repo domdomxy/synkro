@@ -2,17 +2,17 @@
 
 namespace App\Events;
 
-use App\Models\Comment;
+use App\Models\Task;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class TaskCommented implements ShouldBroadcastNow
+class TaskOverdue implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
-    public function __construct(public Comment $comment, public int $recipientId, public int $notificationId) {}
+    public function __construct(public int $recipientId, public Task $task, public int $notificationId) {}
 
     public function broadcastOn(): array
     {
@@ -21,18 +21,17 @@ class TaskCommented implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'task.commented';
+        return 'task.overdue';
     }
 
     public function broadcastWith(): array
     {
         return [
             'notification_id' => $this->notificationId,
-            'title' => $this->comment->task->title,
-            'project_id' => $this->comment->task->project_id,
-            'task_id' => $this->comment->task->id,
-            'commenter_name' => $this->comment->user->name,
-            'type' => 'task_commented',
+            'title' => $this->task->title,
+            'project_id' => $this->task->project_id,
+            'task_id' => $this->task->id,
+            'type' => 'task_overdue',
         ];
     }
 }

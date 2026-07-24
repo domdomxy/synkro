@@ -252,29 +252,16 @@ class ProjectController extends Controller
             return back()->withErrors(['error' => 'No files to download.']);
         }
 
-        $zipFileName = Str::slug($project->name) . '-deliverables.zip';
-        $zipPath = storage_path('app/tmp/' . uniqid() . '-' . $zipFileName);
-
-        if (! is_dir(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
-
-        $zip = new \ZipArchive();
-        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-
-        foreach ($files as $entry) {
-            $fullPath = storage_path('app/public/' . $entry['deliverable']->path);
-            if (! file_exists($fullPath)) {
-                continue;
-            }
-
+        $entries = $files->map(function ($entry) {
             $folder = Str::slug($entry['task']->title) ?: 'task-' . $entry['task']->id;
-            $zip->addFile($fullPath, "{$folder}/{$entry['deliverable']->original_name}");
-        }
 
-        $zip->close();
+            return [
+                'path' => $entry['deliverable']->path,
+                'name' => "{$folder}/{$entry['deliverable']->original_name}",
+            ];
+        })->all();
 
-        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        return \App\Support\DeliverableZip::download($entries, Str::slug($project->name) . '-deliverables.zip');
     }
 
     public function unpin(Project $project)
