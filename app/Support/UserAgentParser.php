@@ -19,6 +19,9 @@ class UserAgentParser
             'browser' => self::browser($ua),
             'device' => self::device($ua),
             'os' => self::os($ua),
+            // Only ever populated for Android — see androidModel() below for why every
+            // other platform (including all desktop OSes) intentionally can't have this.
+            'model' => self::androidModel($ua),
         ];
     }
 
@@ -64,5 +67,41 @@ class UserAgentParser
             str_contains($ua, 'Linux') => 'Linux',
             default => 'Unknown OS',
         };
+    }
+
+    /**
+     * Android is the *only* platform where a specific hardware model (e.g. "Pixel 7",
+     * "SM-G991B") is realistically obtainable at all, because Android is also the only
+     * platform whose browsers still put it directly in the User-Agent string by default —
+     * e.g. "...(Linux; Android 13; Pixel 7) AppleWebKit/...". There is deliberately no
+     * equivalent for any other platform:
+     *   - Desktop browsers (Windows/macOS/Linux) have never included a hardware model in
+     *     the User-Agent, and there is no browser API — old or new — that exposes one to a
+     *     website. It isn't a gap in this parser; browser vendors treat "what specific PC
+     *     or laptop is this" as fingerprinting-sensitive information and refuse to hand it
+     *     to any site, full stop.
+     *   - iOS/iPadOS deliberately generalize to just "iPhone" / "iPad" for the same reason,
+     *     even though Android takes the opposite stance.
+     *   - Even Chrome's newer User-Agent Client Hints (Sec-CH-UA-Model) — the modern,
+     *     opt-in replacement for reading this out of the UA string — are spec'd to only
+     *     ever return a value on mobile; desktop requests get an empty string by design.
+     * So "Dell G15 3350"-style desktop model names can't be added here or anywhere else in
+     * the stack; this method exists to capture the one case that's actually possible.
+     */
+    private static function androidModel(string $ua): ?string
+    {
+        if (! str_contains($ua, 'Android') || ! preg_match('/Android\s+[\d.]+;\s*([^;)]+)\)/', $ua, $matches)) {
+            return null;
+        }
+
+        // Strip a trailing "Build/XXXXX" suffix some manufacturers append after the model.
+        $model = trim(preg_replace('/\s+Build\/.*/', '', $matches[1]));
+
+        // Generic placeholder tokens some UAs carry instead of a real model name.
+        if ($model === '' || in_array($model, ['K', 'wv'], true)) {
+            return null;
+        }
+
+        return $model;
     }
 }

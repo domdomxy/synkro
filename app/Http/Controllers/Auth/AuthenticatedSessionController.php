@@ -89,6 +89,7 @@ class AuthenticatedSessionController extends Controller
             'browser' => $agent['browser'],
             'device' => $agent['device'],
             'os' => $agent['os'],
+            'model' => $agent['model'],
             'ip' => $request->ip(),
             'location' => $location,
         ]);
@@ -107,7 +108,7 @@ class AuthenticatedSessionController extends Controller
                 'label' => 'Login details',
                 'content' => now()->format('M j, Y \a\t g:i A') . " (UTC)\n"
                     . "Location: " . ($location ?? 'Unknown') . "\n"
-                    . "Device: {$agent['device']} · {$agent['os']}\n"
+                    . "Device: {$agent['device']}" . ($agent['model'] ? " ({$agent['model']})" : '') . " · {$agent['os']}\n"
                     . "Browser: {$agent['browser']}\n"
                     . "IP address: {$request->ip()}",
             ],

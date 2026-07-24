@@ -71,7 +71,7 @@ function LoginHistoryRow({ log }) {
                     </p>
                     {log.action === 'logged_in' && (d.browser || d.device || d.location) && (
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                            {[d.location, [d.browser, d.device, d.os].filter(Boolean).join(' · ')].filter(Boolean).join(' — ')}
+                            {[d.location, [d.browser, d.model ? `${d.device} (${d.model})` : d.device, d.os].filter(Boolean).join(' · ')].filter(Boolean).join(' — ')}
                             {d.ip && <span className="text-gray-400 dark:text-gray-500"> ({d.ip})</span>}
                         </p>
                     )}
