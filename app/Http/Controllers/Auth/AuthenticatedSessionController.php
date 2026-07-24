@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AccountActivityLog;
 use App\Support\AppealRateLimiter;
+use App\Support\DeviceTimezone;
 use App\Support\GeoLocator;
 use App\Support\NotificationMailer;
 use App\Support\UserAgentParser;
@@ -97,6 +98,12 @@ class AuthenticatedSessionController extends Controller
         // Recorded so destroy() below can compute the session's duration at logout.
         $request->session()->put('session_started_at', now()->toISOString());
 
+        // Shown in the device's local time rather than UTC (the app's storage timezone) so it
+        // matches what the user's own clock would say, using the same cookie-based resolver
+        // AppealRateLimiter uses for cooldown messages. Falls back to the app timezone if the
+        // device_timezone cookie isn't present yet.
+        $loginTime = now()->setTimezone(DeviceTimezone::resolve($request));
+
         NotificationMailer::send(
             $user,
             'account.logged_in',
@@ -106,7 +113,7 @@ class AuthenticatedSessionController extends Controller
             null,
             [
                 'label' => 'Login details',
-                'content' => now()->format('M j, Y \a\t g:i A') . " (UTC)\n"
+                'content' => $loginTime->format('M j, Y \a\t g:i A') . " ({$loginTime->format('T')})\n"
                     . "Location: " . ($location ?? 'Unknown') . "\n"
                     . "Device: {$agent['device']}" . ($agent['model'] ? " ({$agent['model']})" : '') . " · {$agent['os']}\n"
                     . "Browser: {$agent['browser']}\n"
