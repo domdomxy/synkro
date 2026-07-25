@@ -7,16 +7,20 @@ import { useForm } from '@inertiajs/react';
 export default function RemoveMemberModal({ project, member, show, onClose }) {
     const form = useForm({ reason: '' });
 
+    const close = () => {
+        form.reset();
+        onClose();
+    };
+
     const submit = (e) => {
         e.preventDefault();
-        if (!confirm(`Remove ${member?.name} from this project?`)) return;
         form.delete(route('projects.members.destroy', [project.id, member.id]), {
             onSuccess: () => { form.reset(); onClose(); },
         });
     };
 
     return (
-        <Modal show={show} onClose={onClose}>
+        <Modal show={show} onClose={close} overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Remove {member?.name}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -39,7 +43,7 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
                 </div>
 
                 <div className="mt-6 flex justify-end gap-2">
-                    <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
+                    <SecondaryButton type="button" onClick={close}>Cancel</SecondaryButton>
                     <DangerButton disabled={form.processing}>Remove Member</DangerButton>
                 </div>
             </form>

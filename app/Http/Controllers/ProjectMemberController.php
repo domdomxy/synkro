@@ -153,13 +153,18 @@ class ProjectMemberController extends Controller
         return back()->with('success', 'Role updated.');
     }
 
-    public function destroy(Project $project, User $user)
+    public function destroy(Request $request, Project $project, User $user)
     {
         $this->authorize('manageMembers', $project);
 
         if ($project->owner_id === $user->id) {
             return back()->withErrors(['error' => 'Cannot remove the project owner.']);
         }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+        $reason = $validated['reason'];
 
         $member = $project->members()->where('user_id', $user->id)->first();
         $role = $member?->pivot->role;
@@ -187,12 +192,16 @@ class ProjectMemberController extends Controller
             $user,
             'project.removed',
             "You were removed from {$project->name}",
-            ["You've been removed from the project \"{$project->name}\"."]
+            [
+                "You've been removed from the project \"{$project->name}\".",
+                "Reason given: \"{$reason}\"",
+            ]
         );
 
         ProjectActivityLog::log($project, 'member_removed', [
             'target_name' => $user->name,
             'role' => $role,
+            'reason' => $reason,
         ]);
 
         return back()->with('success', 'Member removed.');

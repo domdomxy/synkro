@@ -10,6 +10,7 @@ import TaskRow from '@/Components/TaskRow';
 import TaskBoard from '@/Components/TaskBoard';
 import useConfirm from '@/hooks/useConfirm';
 import UserSearchInput from '@/Components/UserSearchInput';
+import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
@@ -522,7 +523,7 @@ function ProjectInfoModal({ show, onClose, project }) {
 
 function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="md">
+        <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
             <form onSubmit={onSubmit} className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Leave "{project.name}"?
@@ -655,11 +656,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
-    const removeMember = async (member) => {
-        if (await confirm(`Remove ${member.name} from this project?`, { danger: true, confirmLabel: 'Remove' })) {
-            router.delete(route('projects.members.destroy', [project.id, member.id]));
-        }
-    };
+    const [memberToRemove, setMemberToRemove] = useState(null);
 
     const changeRole = async (member, newRole) => {
         if (newRole === member.pivot.role) return;
@@ -820,7 +817,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                                 {member.pivot.role}
                                                             </span>
                                                             {canManage && member.id !== project.owner_id && (
-                                                                <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => removeMember(member)} />
+                                                                <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => setMemberToRemove(member)} />
                                                             )}
                                                         </div>
                                                     </div>
@@ -1079,6 +1076,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     </div>
                 </div>
             </Modal>
+
+            <RemoveMemberModal
+                project={project}
+                member={memberToRemove}
+                show={!!memberToRemove}
+                onClose={() => setMemberToRemove(null)}
+            />
 
             <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
             <LeaveProjectModal
