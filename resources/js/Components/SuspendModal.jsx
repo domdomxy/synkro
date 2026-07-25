@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
 import { localDateTimeToIso } from '@/utils/datetime';
+import useConfirm from '@/hooks/useConfirm';
 
 const DURATION_OPTIONS = [
     { value: '1', label: '1 day' },
@@ -17,10 +18,11 @@ const DURATION_OPTIONS = [
 
 export default function SuspendModal({ user, show, onClose }) {
     const form = useForm({ duration: '7', custom_date: '', reason: '' });
+    const { confirm, ConfirmDialog } = useConfirm();
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        if (!confirm(`Suspend ${user?.name}? ${form.data.duration === 'permanent' ? 'This will be permanent until manually lifted.' : ''}`)) return;
+        if (!(await confirm(form.data.duration === 'permanent' ? 'This will be permanent until manually lifted.' : 'They will not be able to log in until the suspension expires.', { title: `Suspend ${user?.name}?`, danger: true, confirmLabel: 'Suspend' }))) return;
         form.transform((data) => ({ ...data, custom_date: localDateTimeToIso(data.custom_date) }));
         form.post(route('admin.users.suspend', user.id), {
             onSuccess: () => { form.reset(); onClose(); },
@@ -72,6 +74,7 @@ export default function SuspendModal({ user, show, onClose }) {
                     <DangerButton disabled={form.processing}>Suspend</DangerButton>
                 </div>
             </form>
+            {ConfirmDialog}
         </Modal>
     );
 }

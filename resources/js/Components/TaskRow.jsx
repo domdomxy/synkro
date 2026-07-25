@@ -277,7 +277,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const toggleSection = (section) => setActiveSection((v) => (v === section ? null : section));
     const showComments = activeSection === 'comments';
     const showChecklist = activeSection === 'checklist';
-    const showTimeLog = activeSection === 'time';
     const showDependencies = activeSection === 'dependencies';
 
     useEffect(() => {
@@ -292,10 +291,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         due_date: toDatetimeLocalValue(task.due_date),
         assigned_to: task.assigned_to ?? '',
         priority: task.priority ?? 'medium',
-        estimated_hours: task.estimated_hours ?? '',
     });
     const checklistForm = useForm({ title: '' });
-    const timeLogForm = useForm({ hours: '', note: '' });
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
     const commentForm = useForm({ body: '' });
@@ -319,7 +316,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const saveEdit = async (e) => {
         e.preventDefault();
-        if (!(await confirm('Save changes to this task?'))) return;
+        if (!(await confirm('Save changes to this task?', { title: 'Save Changes?' }))) return;
         editForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
         editForm.patch(route('tasks.update', task.id), {
             preserveScroll: true,
@@ -357,20 +354,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         router.delete(route('checklist.destroy', item.id), { preserveScroll: true });
     };
 
-    const logTime = (e) => {
-        e.preventDefault();
-        if (!timeLogForm.data.hours) return;
-        timeLogForm.post(route('time.store', task.id), {
-            preserveScroll: true,
-            onSuccess: () => timeLogForm.reset(),
-        });
-    };
-
-    const deleteTimeLog = async (log) => {
-        if (!(await confirm('Remove this time entry?', { danger: true, confirmLabel: 'Remove' }))) return;
-        router.delete(route('time.destroy', log.id), { preserveScroll: true });
-    };
-
     const addDependency = () => {
         if (!dependencyPick) return;
         router.post(route('dependencies.store', task.id), { depends_on_task_id: dependencyPick }, {
@@ -398,8 +381,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             alert('Add at least one file or link first.');
             return;
         }
+        const confirmTitle = task.status === 'submitted' ? 'Add to Submission?' : 'Submit for Review?';
         const confirmMessage = task.status === 'submitted' ? 'Add these to your submission?' : 'Submit this work for review?';
-        if (!(await confirm(confirmMessage))) return;
+        if (!(await confirm(confirmMessage, { title: confirmTitle }))) return;
         submitForm.post(route('tasks.submit', task.id), {
             forceFormData: true,
             preserveScroll: true,
@@ -408,7 +392,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const removeDeliverable = async (deliverableId) => {
-        if (await confirm('Remove this submitted item?', { danger: true, confirmLabel: 'Remove' })) {
+        if (await confirm('Remove this submitted item?', { title: 'Remove Item?', danger: true, confirmLabel: 'Remove' })) {
             router.delete(route('deliverables.destroy', deliverableId), { preserveScroll: true });
         }
     };
@@ -420,7 +404,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const submitReopen = async (e) => {
         e.preventDefault();
-        if (!(await confirm('Send this task back for changes? It will move back to In Progress.'))) return;
+        if (!(await confirm('It will move back to In Progress.', { title: 'Send Back for Changes?' }))) return;
         reopenForm.post(route('tasks.reopen', task.id), {
             preserveScroll: true,
             onSuccess: () => { reopenForm.reset(); setShowReopenPanel(false); },
@@ -446,11 +430,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const deleteComment = async (commentId) => {
-        if (await confirm('Delete this comment?', { danger: true, confirmLabel: 'Delete' })) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
+        if (await confirm('Delete this comment?', { title: 'Delete Comment?', danger: true, confirmLabel: 'Delete' })) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
     };
 
     const deleteTask = async () => {
-        if (await confirm(`Delete task "${task.title}"? This cannot be undone.`, { danger: true, confirmLabel: 'Delete' })) {
+        if (await confirm(`"${task.title}" will be permanently deleted. This cannot be undone.`, { title: 'Delete Task?', danger: true, confirmLabel: 'Delete' })) {
             router.delete(route('tasks.destroy', task.id), { preserveScroll: true });
         }
     };
@@ -502,7 +486,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <DangerButton
                             disabled={resolveResetForm.processing}
                             onClick={async () => {
-                                if (await confirm('Reset this task? The submission and deliverables will be cleared.', { danger: true, confirmLabel: 'Reset' })) {
+                                if (await confirm('The submission and deliverables will be cleared.', { title: 'Reset Task?', danger: true, confirmLabel: 'Reset' })) {
                                     resolveResetForm.patch(route('tasks.resolve', task.id), {
                                         replace: true,
                                         onSuccess: () => window.location.reload(),
@@ -568,20 +552,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             <option value="high">High</option>
                         </select>
                         <InputError message={editForm.errors.priority} className="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel htmlFor={`estimate-${task.id}`} value="Estimated Hours" />
-                        <TextInput
-                            id={`estimate-${task.id}`}
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={editForm.data.estimated_hours}
-                            onChange={(e) => editForm.setData('estimated_hours', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="e.g. 4"
-                        />
-                        <InputError message={editForm.errors.estimated_hours} className="mt-1" />
                     </div>
                     <div className="flex gap-2">
                         <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
@@ -934,20 +904,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         }
                     />
                     <FooterToggle
-                        active={showTimeLog}
-                        onClick={() => toggleSection('time')}
-                        label="Time"
-                        count={(() => {
-                            const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
-                            return total > 0 ? `${total}${task.estimated_hours ? `/${task.estimated_hours}` : ''}h` : null;
-                        })()}
-                        icon={
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z" />
-                            </svg>
-                        }
-                    />
-                    <FooterToggle
                         active={showDependencies}
                         onClick={() => toggleSection('dependencies')}
                         label="Dependencies"
@@ -1002,66 +958,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 className="block w-full text-sm"
                             />
                             <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
-                        </form>
-                    </div>
-                )}
-
-                {showTimeLog && (
-                    <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
-                        {(() => {
-                            const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
-                            const estimate = Number(task.estimated_hours) || 0;
-                            const pct = estimate > 0 ? Math.min(100, Math.round((total / estimate) * 100)) : 0;
-                            return estimate > 0 ? (
-                                <div>
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                                        <div
-                                            className={`h-full rounded-full transition-all ${total > estimate ? 'bg-red-500' : 'bg-indigo-500'}`}
-                                            style={{ width: `${pct}%` }}
-                                        />
-                                    </div>
-                                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{total}h logged of {estimate}h estimated</p>
-                                </div>
-                            ) : total > 0 ? (
-                                <p className="text-xs text-gray-400 dark:text-gray-500">{total}h logged (no estimate set)</p>
-                            ) : null;
-                        })()}
-                        {task.time_logs?.map((log) => (
-                            <div key={log.id} className="flex items-center gap-2 text-sm group">
-                                <Avatar user={log.user} size="h-5 w-5" className="shrink-0" />
-                                <span className="font-medium text-gray-700 dark:text-gray-300">{log.hours}h</span>
-                                {log.note && <span className="min-w-0 flex-1 truncate text-gray-500 dark:text-gray-400">{log.note}</span>}
-                                <span className="ml-auto shrink-0 text-xs text-gray-400 dark:text-gray-500">{log.logged_date}</span>
-                                {(log.user_id === currentUserId || canManage) && (
-                                    <button
-                                        onClick={() => deleteTimeLog(log)}
-                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
-                                        title="Remove entry"
-                                    >
-                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <form onSubmit={logTime} className="flex items-center gap-2 pt-1">
-                            <TextInput
-                                type="number"
-                                step="0.5"
-                                min="0.1"
-                                value={timeLogForm.data.hours}
-                                onChange={(e) => timeLogForm.setData('hours', e.target.value)}
-                                placeholder="Hours"
-                                className="w-20 text-sm"
-                            />
-                            <TextInput
-                                value={timeLogForm.data.note}
-                                onChange={(e) => timeLogForm.setData('note', e.target.value)}
-                                placeholder="Note (optional)"
-                                className="block w-full text-sm"
-                            />
-                            <SecondaryButton type="submit" disabled={timeLogForm.processing || !timeLogForm.data.hours}>Log</SecondaryButton>
                         </form>
                     </div>
                 )}

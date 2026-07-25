@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, useForm } from '@inertiajs/react';
 import BackButton from '@/Components/BackButton';
+import useConfirm from '@/hooks/useConfirm';
 
 export default function Edit({ project }) {
     const { data, setData, patch, processing, errors } = useForm({
@@ -12,9 +13,11 @@ export default function Edit({ project }) {
         description: project.description ?? '',
     });
 
-    const submit = (e) => {
+    const { confirm, ConfirmDialog } = useConfirm();
+
+    const submit = async (e) => {
         e.preventDefault();
-        if (confirm('Save changes to this project?')) {
+        if (await confirm('Save changes to this project?', { title: 'Save Changes?' })) {
             patch(route('projects.update', project.id));
         }
     };
@@ -42,6 +45,7 @@ export default function Edit({ project }) {
                     </form>
                 </div>
             </div>
+            {ConfirmDialog}
         </AuthenticatedLayout>
     );
 }

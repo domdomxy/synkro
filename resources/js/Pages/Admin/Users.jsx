@@ -12,6 +12,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
 import { cleanParams } from '@/utils/queryParams';
+import useConfirm from '@/hooks/useConfirm';
 
 
 function SearchIcon() {
@@ -178,6 +179,7 @@ export default function Users({ users, stats, filters }) {
     const [direction, setDirection] = useState(filters.direction ?? 'asc');
     const [suspendTarget, setSuspendTarget] = useState(null);
     const [liftTarget, setLiftTarget] = useState(null);
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const applyFilters = () => {
         router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
@@ -202,16 +204,16 @@ export default function Users({ users, stats, filters }) {
 
     const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all' || verifiedFilter !== 'all';
 
-    const toggleRole = (user) => {
+    const toggleRole = async (user) => {
         const action = user.role === 'admin' ? 'demote to a regular user' : 'promote to admin';
-        if (!confirm(`Are you sure you want to ${action} ${user.name}?`)) return;
+        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: user.role === 'admin' ? 'Demote User?' : 'Promote to Admin?' }))) return;
         router.patch(route('admin.users.toggle-role', user.id), {}, { preserveScroll: true });
     };
 
     const liftSuspension = (user) => setLiftTarget(user);
 
-    const resetPassword = (user) => {
-        if (!confirm(`Reset ${user.name}'s password? A new temporary password will be emailed to them, expiring in 24 hours.`)) return;
+    const resetPassword = async (user) => {
+        if (!(await confirm(`A new temporary password will be emailed to them, expiring in 24 hours.`, { title: `Reset ${user.name}'s Password?` }))) return;
         router.post(route('admin.users.reset-password', user.id), {}, { preserveScroll: true });
     };
 
@@ -387,6 +389,7 @@ export default function Users({ users, stats, filters }) {
                 show={liftTarget !== null}
                 onClose={() => setLiftTarget(null)}
             />
+            {ConfirmDialog}
         </AuthenticatedLayout>
     );
 }

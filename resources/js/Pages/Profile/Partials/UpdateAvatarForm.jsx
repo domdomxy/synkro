@@ -5,12 +5,14 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import useConfirm from '@/hooks/useConfirm';
 
 export default function UpdateAvatarForm({ className = '' }) {
     const user = usePage().props.auth.user;
     const fileInput = useRef(null);
     const [preview, setPreview] = useState(null);
     const { setData, post, processing, errors, reset } = useForm({ avatar: null });
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const pickFile = () => fileInput.current.click();
 
@@ -27,9 +29,9 @@ export default function UpdateAvatarForm({ className = '' }) {
         if (fileInput.current) fileInput.current.value = '';
     };
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        if (!confirm('Save this as your new avatar?')) return;
+        if (!(await confirm('Save this as your new avatar?', { title: 'Save Avatar?' }))) return;
         post(route('profile.avatar.update'), {
             forceFormData: true,
             onSuccess: () => {
@@ -39,8 +41,8 @@ export default function UpdateAvatarForm({ className = '' }) {
         });
     };
 
-    const removeAvatar = () => {
-        if (confirm('Remove your avatar? This cannot be undone.')) {
+    const removeAvatar = async () => {
+        if (await confirm('This cannot be undone.', { title: 'Remove Avatar?', danger: true, confirmLabel: 'Remove' })) {
             router.delete(route('profile.avatar.destroy'));
         }
     };

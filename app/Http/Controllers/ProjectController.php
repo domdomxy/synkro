@@ -86,7 +86,6 @@ class ProjectController extends Controller
             'tasks.comments.user',
             'tasks.deliverables',
             'tasks.checklistItems',
-            'tasks.timeLogs.user',
             'tasks.dependencies:id,title,status',
             'tasks.dependents:id,title,status',
             'tasks.activityLogs' => fn ($q) => $q->with('user')->limit(20),

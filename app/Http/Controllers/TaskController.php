@@ -54,7 +54,6 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:low,medium,high',
-            'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
         ]);
 
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
@@ -117,7 +116,6 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
             'priority' => 'nullable|in:low,medium,high',
-            'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
         ]);
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
@@ -138,7 +136,7 @@ class TaskController extends Controller
         $previousAssigneeName = $task->assignee?->name;
         $changes = [];
  
-        foreach (['title', 'description', 'due_date', 'priority', 'estimated_hours'] as $field) {
+        foreach (['title', 'description', 'due_date', 'priority'] as $field) {
             if ($field === 'due_date') {
                 $old = $task->due_date?->toDateTimeString();
                 $new = $validated['due_date'] ? \Illuminate\Support\Carbon::parse($validated['due_date'])->toDateTimeString() : null;

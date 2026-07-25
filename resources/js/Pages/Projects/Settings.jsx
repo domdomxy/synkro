@@ -8,6 +8,7 @@ import DangerButton from '@/Components/DangerButton';
 import BackButton from '@/Components/BackButton';
 import Avatar from '@/Components/Avatar';
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import useConfirm from '@/hooks/useConfirm';
 import RichTextEditor from '@/Components/RichTextEditor';
 
 function SectionCard({ icon, title, description, children, danger }) {
@@ -38,26 +39,27 @@ export default function Settings({ project, role }) {
 
     const editForm = useForm({ name: project.name, description: project.description ?? '' });
     const transferForm = useForm({ user_id: '' });
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const hasUnsavedChanges =
         editForm.data.name !== project.name ||
         editForm.data.description !== (project.description ?? '');
 
-    const submitEdit = (e) => {
+    const submitEdit = async (e) => {
         e.preventDefault();
-        if (!confirm('Save changes to this project?')) return;
+        if (!(await confirm('Save changes to this project?', { title: 'Save Changes?' }))) return;
         editForm.patch(route('projects.update', project.id));
     };
 
-    const submitTransfer = (e) => {
+    const submitTransfer = async (e) => {
         e.preventDefault();
         const member = project.members.find((m) => m.id === Number(transferForm.data.user_id));
-        if (!confirm(`Transfer ownership of "${project.name}" to ${member?.name}? You will become a manager.`)) return;
+        if (!(await confirm(`Transfer ownership of "${project.name}" to ${member?.name}? You will become a manager.`, { title: 'Transfer Ownership?' }))) return;
         transferForm.patch(route('projects.transfer-ownership', project.id));
     };
 
-    const deleteProject = () => {
-        if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
+    const deleteProject = async () => {
+        if (await confirm(`"${project.name}" will be permanently deleted. This cannot be undone.`, { title: 'Delete Project?', danger: true, confirmLabel: 'Delete' })) {
             router.delete(route('projects.destroy', project.id));
         }
     };
@@ -182,6 +184,7 @@ export default function Settings({ project, role }) {
                     )}
                 </div>
             </div>
+            {ConfirmDialog}
         </AuthenticatedLayout>
     );
 }

@@ -60,7 +60,6 @@ export const fieldLabels = {
     due_date: 'Due Date',
     name: 'Project Name',
     priority: 'Priority',
-    estimated_hours: 'Estimated Hours',
 };
 
 /** Structured detail rows for a log entry's expandable panel (used by the Logs page and TaskRow's History). */

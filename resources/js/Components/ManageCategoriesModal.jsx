@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import CategoryIcon, { ICON_OPTIONS } from '@/Components/CategoryIcon';
 import { useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import useConfirm from '@/hooks/useConfirm';
 
 function IconPicker({ value, onChange }) {
     return (
@@ -28,7 +29,7 @@ function IconPicker({ value, onChange }) {
     );
 }
 
-function CategoryRow({ category }) {
+function CategoryRow({ category, confirm }) {
     const [editing, setEditing] = useState(false);
     const [deleteError, setDeleteError] = useState(null);
     const form = useForm({ label: category.label, icon: category.icon });
@@ -41,9 +42,9 @@ function CategoryRow({ category }) {
         });
     };
 
-    const remove = () => {
+    const remove = async () => {
         setDeleteError(null);
-        if (!confirm(`Delete category "${category.label}"?`)) return;
+        if (!(await confirm(`Delete category "${category.label}"?`, { title: 'Delete Category?', danger: true, confirmLabel: 'Delete' }))) return;
         form.delete(route('admin.feedback-categories.destroy', category.id), {
             preserveScroll: true,
             onError: (errors) => setDeleteError(errors.category ?? null),
@@ -109,6 +110,7 @@ function CategoryRow({ category }) {
 export default function ManageCategoriesModal({ show, onClose, categories }) {
     const { errors: pageErrors } = usePage().props;
     const addForm = useForm({ label: '', icon: 'dot' });
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const submitAdd = (e) => {
         e.preventDefault();
@@ -136,7 +138,7 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
                     {categories.length === 0 ? (
                         <p className="py-4 text-center text-sm text-gray-400 dark:text-gray-500">No categories yet.</p>
                     ) : (
-                        categories.map((c) => <CategoryRow key={c.id} category={c} />)
+                        categories.map((c) => <CategoryRow key={c.id} category={c} confirm={confirm} />)
                     )}
                 </div>
 
@@ -160,6 +162,7 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
                     <SecondaryButton onClick={onClose}>Close</SecondaryButton>
                 </div>
             </div>
+            {ConfirmDialog}
         </Modal>
     );
 }

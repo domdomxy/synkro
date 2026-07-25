@@ -363,7 +363,7 @@ function NotesPanel({ project, myNotes }) {
         editForm.patch(route('projects.notes.update', noteId), { onSuccess: () => setEditingId(null) });
     };
 
-    const deleteNote = async (noteId) => { if (await confirm('Delete this checklist?', { danger: true, confirmLabel: 'Delete' })) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
+    const deleteNote = async (noteId) => { if (await confirm('This will permanently remove the checklist.', { title: 'Delete Checklist?', danger: true, confirmLabel: 'Delete' })) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
 
     const toggleItem = (noteId, itemId) => router.patch(route('projects.notes.items.toggle', [noteId, itemId]), {}, { preserveScroll: true });
     const removeItem = (noteId, itemId) => router.delete(route('projects.notes.items.remove', [noteId, itemId]), { preserveScroll: true });
@@ -371,7 +371,7 @@ function NotesPanel({ project, myNotes }) {
     const clearCompletedItems = (noteId) => router.delete(route('projects.notes.items.clear-completed', noteId), { preserveScroll: true });
 
     const clearAll = async () => {
-        if (await confirm('Clear all your checklists on this project? This cannot be undone.', { danger: true, confirmLabel: 'Clear All' })) {
+        if (await confirm('This will remove all your checklists on this project. This cannot be undone.', { title: 'Clear All Checklists?', danger: true, confirmLabel: 'Clear All' })) {
             router.delete(route('projects.notes.clear', project.id));
         }
     };
@@ -586,7 +586,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const runBulkAction = async (action, extra = {}) => {
         if (selectedTaskIds.length === 0) return;
-        if (action === 'delete' && !(await confirm(`Delete ${selectedTaskIds.length} task(s)? This can't be undone.`, { danger: true, confirmLabel: 'Delete' }))) return;
+        if (action === 'delete' && !(await confirm(`Delete ${selectedTaskIds.length} task(s)? This can't be undone.`, { title: 'Delete Selected Tasks?', danger: true, confirmLabel: 'Delete' }))) return;
 
         setBulkProcessing(true);
         router.post(route('tasks.bulk', project.id), { task_ids: selectedTaskIds, action, ...extra }, {
@@ -624,7 +624,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     }, []);
 
     const memberForm = useForm({ email: '', role: 'member' });
-    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', estimated_hours: '' });
+    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium' });
     const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
@@ -661,7 +661,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const changeRole = async (member, newRole) => {
         if (newRole === member.pivot.role) return;
-        if (!(await confirm(`Change ${member.name}'s role to ${newRole}?`))) return;
+        if (!(await confirm(`Change ${member.name}'s role to ${newRole}?`, { title: 'Change Member Role?' }))) return;
         router.patch(route('projects.members.update', [project.id, member.id]), { role: newRole });
     };
 
@@ -849,7 +849,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         <p className="text-xs capitalize text-gray-400 dark:text-gray-500">{inv.role}</p>
                                                     </div>
                                                     <button
-                                                        onClick={async () => { if (await confirm(`Cancel the invitation to ${inv.invited_user.name}?`, { danger: true, confirmLabel: 'Cancel Invitation' })) router.delete(route('projects.invitations.destroy', inv.id)); }}
+                                                        onClick={async () => { if (await confirm(`Cancel the invitation to ${inv.invited_user.name}?`, { title: 'Cancel Invitation?', danger: true, confirmLabel: 'Cancel Invitation' })) router.delete(route('projects.invitations.destroy', inv.id)); }}
                                                         className="shrink-0 text-xs text-red-500 hover:underline"
                                                     >
                                                         Cancel
@@ -913,10 +913,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                             <option value="medium">Medium</option>
                                                             <option value="high">High</option>
                                                         </select>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <InputLabel htmlFor="estimated_hours" value="Estimated Hours" />
-                                                        <TextInput id="estimated_hours" type="number" step="0.5" min="0" value={taskForm.data.estimated_hours} onChange={(e) => taskForm.setData('estimated_hours', e.target.value)} className="mt-1 block w-full" placeholder="e.g. 4" />
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">

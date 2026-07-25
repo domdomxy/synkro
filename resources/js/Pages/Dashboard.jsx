@@ -4,6 +4,7 @@ import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Re
 import { useEffect, useMemo, useState } from 'react';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { NoteList, notePreview } from '@/utils/noteFormat';
+import useConfirm from '@/hooks/useConfirm';
 
 const statusLabels = {
     todo: 'To Do',
@@ -533,6 +534,7 @@ function RemindersPanel({ reminders }) {
     });
     const [showForm, setShowForm] = useState(false);
     const [now, setNow] = useState(() => new Date());
+    const { confirm, ConfirmDialog } = useConfirm();
 
     useEffect(() => {
         const id = setInterval(() => setNow(new Date()), 30000);
@@ -545,7 +547,7 @@ function RemindersPanel({ reminders }) {
         post(route('reminders.store'), { onSuccess: () => { reset(); setShowForm(false); } });
     };
 
-    const remove = (id) => { if (confirm('Delete this reminder?')) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
+    const remove = async (id) => { if (await confirm('Delete this reminder?', { title: 'Delete Reminder?', danger: true, confirmLabel: 'Delete' })) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
 
     const sorted = useMemo(
         () => [...reminders].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)),
@@ -612,6 +614,7 @@ function RemindersPanel({ reminders }) {
                     ))}
                 </ul>
             )}
+            {ConfirmDialog}
         </div>
     );
 }

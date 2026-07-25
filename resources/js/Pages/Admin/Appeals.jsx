@@ -6,6 +6,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import { Link } from '@inertiajs/react';
+import useConfirm from '@/hooks/useConfirm';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -24,6 +25,7 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const isPending = appeal.status === 'pending';
     const badgeLabel = isPending
@@ -37,15 +39,16 @@ function AppealItem({ appeal }) {
             ? statusStyles.approved
             : statusStyles.rejected;
 
-    const decide = (outcome) => {
+    const decide = async (outcome) => {
         if (!reason.trim()) {
             alert('Please add a reason before continuing — it will be included in the email sent to the user.');
             return;
         }
+        const confirmTitle = outcome === 'approved' ? 'Lift Suspension?' : 'Reject Appeal?';
         const confirmText = outcome === 'approved'
             ? `Lift ${appeal.user?.name ?? 'this user'}'s suspension and accept this appeal?`
             : `Reject this appeal?`;
-        if (!confirm(confirmText)) return;
+        if (!(await confirm(confirmText, { title: confirmTitle }))) return;
         router.patch(route('admin.appeals.review', appeal.id), { outcome, reason }, { preserveScroll: true });
     };
 
@@ -175,6 +178,7 @@ function AppealItem({ appeal }) {
                     )}
                 </div>
             )}
+            {ConfirmDialog}
         </div>
     );
 }

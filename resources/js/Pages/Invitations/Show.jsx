@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import useConfirm from '@/hooks/useConfirm';
 
 function StateCard({ iconBg, iconColor, icon, children }) {
     return (
@@ -37,10 +38,11 @@ function ForwardArrowIcon() {
 export default function Show({ invitation, rejoinBlocked, revoked }) {
     const acceptForm = useForm({});
     const denyForm = useForm({});
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const accept = () => acceptForm.post(route('invitations.accept', invitation.token));
-    const deny = () => {
-        if (confirm('Decline this invitation?')) denyForm.post(route('invitations.deny', invitation.token));
+    const deny = async () => {
+        if (await confirm('Decline this invitation?', { title: 'Decline Invitation?' })) denyForm.post(route('invitations.deny', invitation.token));
     };
 
     if (revoked) {
@@ -181,6 +183,7 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                     </Link>
                 </p>
             </div>
+            {ConfirmDialog}
         </div>
     );
 }

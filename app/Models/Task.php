@@ -23,7 +23,6 @@ class Task extends Model
         'pending_resolution',
         'overdue_notified_at',
         'priority',
-        'estimated_hours',
     ];
 
     protected $casts = [
@@ -64,11 +63,6 @@ class Task extends Model
     public function checklistItems(): HasMany
     {
         return $this->hasMany(TaskChecklistItem::class)->orderBy('position');
-    }
-
-    public function timeLogs(): HasMany
-    {
-        return $this->hasMany(TaskTimeLog::class)->latest('logged_date');
     }
 
     /** Tasks that THIS task depends on (must be done before this one can start). */

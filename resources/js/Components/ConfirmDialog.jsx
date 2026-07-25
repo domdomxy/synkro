@@ -1,35 +1,34 @@
 import Modal from '@/Components/Modal';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
-import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function ConfirmDialog({ open, title, message, danger, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel }) {
-    const ConfirmButton = danger ? DangerButton : PrimaryButton;
-
+    // Uses neutral-* instead of gray-* on purpose: this project's tailwind.config.js
+    // remaps gray to a bluish slate palette app-wide, but this dialog is styled to match
+    // Claude.ai's own confirmation dialog, which reads as true neutral gray with no blue tint.
     return (
-        <Modal show={!!open} onClose={onCancel} maxWidth="sm" overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
+        <Modal show={!!open} onClose={onCancel} maxWidth="sm" overlayClassName="bg-white/70 backdrop-blur-2xl dark:bg-neutral-950/70 dark:backdrop-blur-2xl">
             <div className="p-6">
-                <div className="flex items-start gap-3.5">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? 'bg-red-100 dark:bg-red-900/40' : 'bg-indigo-100 dark:bg-indigo-900/40'}`}>
-                        {danger ? (
-                            <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                            </svg>
-                        ) : (
-                            <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 17h.008v.008H12V17z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
-                            </svg>
-                        )}
-                    </div>
-                    <div className="min-w-0 flex-1 pt-1.5">
-                        {title && <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">{title}</h2>}
-                        <p className={`text-sm text-gray-600 dark:text-gray-400 ${title ? 'mt-1' : ''}`}>{message}</p>
-                    </div>
-                </div>
-                <div className="mt-6 flex justify-end gap-2">
-                    <SecondaryButton onClick={onCancel}>{cancelLabel}</SecondaryButton>
-                    <ConfirmButton onClick={onConfirm} autoFocus>{confirmLabel}</ConfirmButton>
+                {title && <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>}
+                <p className={`text-sm text-neutral-500 dark:text-neutral-400 ${title ? 'mt-2' : ''}`}>{message}</p>
+                <div className="mt-6 flex justify-end gap-2.5">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                    >
+                        {cancelLabel}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        autoFocus
+                        className={`rounded-full px-4 py-2 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
+                            danger
+                                ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
+                                : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
+                        }`}
+                    >
+                        {confirmLabel}
+                    </button>
                 </div>
             </div>
         </Modal>

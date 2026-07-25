@@ -1,6 +1,7 @@
 import { usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
+import useConfirm from '@/hooks/useConfirm';
 import { NoteList } from '@/utils/noteFormat';
 import FilterSelect from '@/Components/FilterSelect';
 
@@ -170,6 +171,7 @@ export default function NotificationBell() {
     const [filter, setFilter] = useState('all');
     const [category, setCategory] = useState('all');
     const containerRef = useRef(null);
+    const { confirm, ConfirmDialog } = useConfirm();
 
     useEffect(() => {
         setItems(notifications.recent);
@@ -320,8 +322,8 @@ export default function NotificationBell() {
         }
     };
 
-    const clearAll = () => {
-        if (!confirm('Clear all notifications? This cannot be undone.')) return;
+    const clearAll = async () => {
+        if (!(await confirm('This cannot be undone.', { title: 'Clear All Notifications?', danger: true, confirmLabel: 'Clear All' }))) return;
         router.delete(route('notifications.clear'), { preserveScroll: true, preserveState: true });
         setItems([]);
         setUnreadCount(0);
@@ -454,6 +456,7 @@ export default function NotificationBell() {
                     </div>
                 </div>
             )}
+            {ConfirmDialog}
         </div>
     );
 }

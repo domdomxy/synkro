@@ -11,6 +11,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichTextEditor from '@/Components/RichTextEditor';
+import useConfirm from '@/hooks/useConfirm';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -130,6 +131,7 @@ export default function Index({ projects, showingArchived }) {
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const createForm = useForm({ name: '', description: '' });
 
@@ -158,8 +160,8 @@ export default function Index({ projects, showingArchived }) {
         router.get(route('projects.index'), { archived: archived ? 1 : undefined }, { preserveState: false });
     };
 
-    const archiveProject = (project) => {
-        if (confirm(`Archive "${project.name}"? This only affects your own view; other members will still see it normally. You can unarchive it anytime.`)) {
+    const archiveProject = async (project) => {
+        if (await confirm('This only affects your own view; other members will still see it normally. You can unarchive it anytime.', { title: `Archive "${project.name}"?` })) {
             router.post(route('projects.archive', project.id), {}, { preserveScroll: true });
         }
     };
@@ -369,6 +371,7 @@ export default function Index({ projects, showingArchived }) {
                     </div>
                 </form>
             </Modal>
+            {ConfirmDialog}
         </AuthenticatedLayout>
     );
 }
