@@ -50,6 +50,76 @@ export const actionIconConfig = {
     comment_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
 };
 
+export const fieldLabels = {
+    title: 'Title',
+    description: 'Description',
+    due_date: 'Due Date',
+    name: 'Project Name',
+    priority: 'Priority',
+    estimated_hours: 'Estimated Hours',
+};
+
+/** Structured detail rows for a log entry's expandable panel (used by the Logs page and TaskRow's History). */
+export function getLogDetails(log) {
+    const d = log.details ?? {};
+
+    if (log.action === 'task_created') {
+        return [
+            d.task_title && { label: 'Task Name', value: d.task_title },
+        ].filter(Boolean);
+    }
+
+    if ((log.action === 'task_updated' || log.action === 'project_updated') && d.changes) {
+        return Object.entries(d.changes).map(([key, val]) => ({
+            label: fieldLabels[key] ?? key,
+            oldValue: val.old ?? '-',
+            newValue: val.new ?? '-',
+            isChange: true,
+            isHtml: key === 'description',
+        }));
+    }
+
+    if (log.action === 'task_assigned') {
+        return [
+            { label: 'Assigned To', value: d.target_name },
+            { label: 'Task', value: d.task_title },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'task_reassigned') {
+        return [
+            { label: 'Task', value: d.task_title },
+            { label: 'From', value: d.old_assignee ?? 'Unassigned' },
+            { label: 'To', value: d.new_assignee },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'role_changed') {
+        return [
+            { label: 'User', value: d.target_name },
+            { label: 'Previous Role', value: d.old_role },
+            { label: 'New Role', value: d.new_role },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'member_added') {
+        return [
+            { label: 'User', value: d.target_name },
+            { label: 'Role', value: d.role },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'member_removed' || log.action === 'member_left') {
+        return [
+            { label: 'User', value: d.target_name },
+            { label: 'Role', value: d.role },
+            { label: 'Reason', value: d.reason },
+        ].filter((r) => r.value);
+    }
+
+    return [];
+}
+
 export function describeLog(log) {
     const actor = log.user?.name ?? 'Someone';
     const d = log.details ?? {};

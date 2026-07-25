@@ -608,10 +608,10 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
 
-    // Mobile swipeable panes: Notes/Invite <-> Tasks <-> Members, opening on Tasks.
-    const notesPaneRef = useRef(null);
+    // Mobile swipeable panes: Team <-> Tasks <-> Notes, opening on Tasks.
+    const teamPaneRef = useRef(null);
     const tasksPaneRef = useRef(null);
-    const membersPaneRef = useRef(null);
+    const notesPaneRef = useRef(null);
 
     useEffect(() => {
         // Open on the Tasks pane by default (mobile only; inert on desktop's grid layout).
@@ -737,7 +737,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 @media (min-width: 1024px) {
                     .project-columns {
                         display: grid;
-                        grid-template-columns: 340px minmax(0, 750px) 340px;
+                        grid-template-columns: 320px minmax(0, 920px) 320px;
                         justify-content: center;
                         overflow: visible;
                     }
@@ -745,10 +745,26 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             `}</style>
             <div className="py-12">
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+                    <div className="mb-3 flex gap-1 rounded-lg bg-gray-200/70 p-1 dark:bg-gray-900/60 lg:hidden">
+                        {[
+                            { label: 'Team', ref: teamPaneRef },
+                            { label: 'Tasks', ref: tasksPaneRef },
+                            { label: 'Notes', ref: notesPaneRef },
+                        ].map(({ label, ref }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })}
+                                className="flex-1 rounded-md py-1.5 text-sm font-medium text-gray-600 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-gray-700/70"
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                     <div className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
 
-                        {/* LEFT: Invite + Notes */}
-                        <div ref={notesPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
+                        {/* LEFT: Team — Invite, Members, and Pending Invitations grouped together */}
+                        <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && (
                                 <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
                                     <h3 className="mb-3 text-base font-semibold dark:text-gray-100">Invite a Member</h3>
@@ -773,7 +789,64 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 </div>
                             )}
 
-                            <NotesPanel project={project} myNotes={myNotes} />
+                            <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
+                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                        {project.members.length}
+                                    </span>
+                                </div>
+                                <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
+                                <ul
+                                    className="space-y-1 overflow-y-auto pr-1"
+                                    style={{ maxHeight: filteredMembers.length > 6 ? '18rem' : 'none' }}
+                                >
+                                    {filteredMembers.map((member) => (
+                                        <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <div className="flex items-start gap-2">
+                                                <Avatar user={member} size="h-9 w-9" className="mt-0.5 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-1">
+                                                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{member.name}</p>
+                                                        <div className="flex shrink-0 items-center gap-1.5">
+                                                            <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                                {member.pivot.role}
+                                                            </span>
+                                                            {canManage && member.id !== project.owner_id && (
+                                                                <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => removeMember(member)} />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                    {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
+                                </ul>
+
+                                {canManage && pendingInvitations?.length > 0 && (
+                                    <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
+                                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Pending Invitations</p>
+                                        <ul className="space-y-1.5">
+                                            {pendingInvitations.map((inv) => (
+                                                <li key={inv.id} className="flex items-center justify-between gap-2 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm text-gray-700 dark:text-gray-300">{inv.invited_user.name}</p>
+                                                        <p className="text-xs capitalize text-gray-400 dark:text-gray-500">{inv.role}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={async () => { if (await confirm(`Cancel the invitation to ${inv.invited_user.name}?`, { danger: true, confirmLabel: 'Cancel Invitation' })) router.delete(route('projects.invitations.destroy', inv.id)); }}
+                                                        className="shrink-0 text-xs text-red-500 hover:underline"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* MIDDLE: Tasks */}
@@ -970,66 +1043,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
 
-                        {/* RIGHT: Members */}
-                        <div ref={membersPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
-                            <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                                <div className="mb-3 flex items-center gap-2">
-                                    <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
-                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                                        {project.members.length}
-                                    </span>
-                                </div>
-                                <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
-                                <ul
-                                    className="space-y-1 overflow-y-auto pr-1"
-                                    style={{ maxHeight: filteredMembers.length > 6 ? '18rem' : 'none' }}
-                                >
-                                    {filteredMembers.map((member) => (
-                                        <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                                            <div className="flex items-start gap-2">
-                                                <Avatar user={member} size="h-9 w-9" className="mt-0.5 shrink-0" />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-start justify-between gap-1">
-                                                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{member.name}</p>
-                                                        <div className="flex shrink-0 items-center gap-1.5">
-                                                            <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                                {member.pivot.role}
-                                                            </span>
-                                                            {canManage && member.id !== project.owner_id && (
-                                                                <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => removeMember(member)} />
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                    {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
-                                </ul>
-
-                                {canManage && pendingInvitations?.length > 0 && (
-                                    <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
-                                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Pending Invitations</p>
-                                        <ul className="space-y-1.5">
-                                            {pendingInvitations.map((inv) => (
-                                                <li key={inv.id} className="flex items-center justify-between gap-2 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-sm text-gray-700 dark:text-gray-300">{inv.invited_user.name}</p>
-                                                        <p className="text-xs capitalize text-gray-400 dark:text-gray-500">{inv.role}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={async () => { if (await confirm(`Cancel the invitation to ${inv.invited_user.name}?`, { danger: true, confirmLabel: 'Cancel Invitation' })) router.delete(route('projects.invitations.destroy', inv.id)); }}
-                                                        className="shrink-0 text-xs text-red-500 hover:underline"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
+                        {/* RIGHT: My Notes — personal scratchpad, decoupled from team management */}
+                        <div ref={notesPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
+                            <NotesPanel project={project} myNotes={myNotes} />
                         </div>
                     </div>
                 </div>

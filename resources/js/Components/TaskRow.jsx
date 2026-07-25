@@ -7,9 +7,9 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
-import { describeLog } from '@/utils/activityLog';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
+import LogEntryRow from '@/Components/LogEntryRow';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -169,7 +169,7 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges }) {
+function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -193,6 +193,12 @@ function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onReq
                     <button onClick={() => { setOpen(false); onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
                         {isPinned ? 'Unpin task' : 'Pin task'}
+                    </button>
+                    <button onClick={() => { setOpen(false); onShowHistory(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        View History
                     </button>
                     {canManage && isDone && (
                         <button onClick={() => { setOpen(false); onRequestChanges(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-gray-700">
@@ -629,6 +635,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 onDelete={deleteTask}
                                 onPin={togglePin}
                                 onRequestChanges={() => setShowReopenPanel(true)}
+                                onShowHistory={() => setShowHistory((v) => !v)}
                             />
                         </div>
                     </div>
@@ -857,6 +864,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <button
+                        onClick={() => setShowComments((v) => !v)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        {commentCount === 0 ? 'Comments' : `Comments (${commentCount})`}
+                        <svg className={`h-3.5 w-3.5 transition-transform ${showComments ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <button
                         onClick={() => setShowChecklist((v) => !v)}
                         className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
                     >
@@ -867,18 +886,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             ? `Checklist (${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length})`
                             : 'Checklist'}
                         <svg className={`h-3.5 w-3.5 transition-transform ${showChecklist ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => setShowHistory((v) => !v)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        History
-                        <svg className={`h-3.5 w-3.5 transition-transform ${showHistory ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -960,19 +967,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showHistory && (
-                    <div className="mt-3 space-y-2">
-                        {(!task.activity_logs || task.activity_logs.length === 0) && (
+                    <div className="mt-3">
+                        {(!task.activity_logs || task.activity_logs.length === 0) ? (
                             <p className="text-sm text-gray-400 dark:text-gray-500">No history yet for this task.</p>
+                        ) : (
+                            <ul className="space-y-1.5">
+                                {task.activity_logs.map((log) => (
+                                    <LogEntryRow key={log.id} log={log} dense />
+                                ))}
+                            </ul>
                         )}
-                        {task.activity_logs?.map((log) => (
-                            <div key={log.id} className="flex items-start gap-2 text-sm">
-                                <Avatar user={log.user} size="h-5 w-5" className="mt-0.5 shrink-0" />
-                                <p className="min-w-0 flex-1 text-gray-600 dark:text-gray-400">
-                                    {describeLog(log)}
-                                    <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{timeAgo(log.created_at)}</span>
-                                </p>
-                            </div>
-                        ))}
                     </div>
                 )}
 
@@ -1076,21 +1080,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         )}
                     </div>
                 )}
-            </div>
 
-            <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-                <button
-                    onClick={() => setShowComments((v) => !v)}
-                    className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    {commentCount === 0 ? 'Add a comment' : `${commentCount} comment${commentCount > 1 ? 's' : ''}`}
-                    <svg className={`h-3.5 w-3.5 transition-transform ${showComments ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
                 {showComments && (
                     <div className="mt-3 space-y-3">
                         {task.comments?.map((comment) => (
