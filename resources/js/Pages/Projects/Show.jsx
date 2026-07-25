@@ -598,12 +598,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
     const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
 
-    const jumpToTaskInList = (task) => {
+    const jumpToTaskInList = (taskId) => {
         setViewMode('list');
         setShowBoardModal(false);
-        setHighlightedTaskId(task.id);
+        clearTaskFilters();
+        setHighlightedTaskId(taskId);
         setTimeout(() => {
-            document.getElementById(`task-${task.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 50);
         setTimeout(() => setHighlightedTaskId(null), 3000);
     };
@@ -687,17 +688,25 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         );
     }, [project.members, memberSearch]);
 
+    const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+
     const filteredTasks = useMemo(() => {
         const term = taskSearch.trim().toLowerCase();
-        return project.tasks.filter((t) => {
-            if (statusFilter !== 'all' && t.status !== statusFilter) return false;
-            if (priorityFilter !== 'all' && (t.priority ?? 'medium') !== priorityFilter) return false;
-            if (!term) return true;
-            const titleMatch = t.title.toLowerCase().includes(term);
-            const assigneeMatch = t.assignee?.name?.toLowerCase().includes(term);
-            const unassignedMatch = !t.assignee && 'unassigned'.includes(term);
-            return titleMatch || assigneeMatch || unassignedMatch;
-        });
+        return project.tasks
+            .filter((t) => {
+                if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+                if (priorityFilter !== 'all' && (t.priority ?? 'medium') !== priorityFilter) return false;
+                if (!term) return true;
+                const titleMatch = t.title.toLowerCase().includes(term);
+                const assigneeMatch = t.assignee?.name?.toLowerCase().includes(term);
+                const unassignedMatch = !t.assignee && 'unassigned'.includes(term);
+                return titleMatch || assigneeMatch || unassignedMatch;
+            })
+            .sort((a, b) => {
+                const pinDiff = (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+                if (pinDiff !== 0) return pinDiff;
+                return (PRIORITY_ORDER[a.priority ?? 'medium'] ?? 1) - (PRIORITY_ORDER[b.priority ?? 'medium'] ?? 1);
+            });
     }, [project.tasks, taskSearch, statusFilter, priorityFilter]);
 
     const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
@@ -1014,6 +1023,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         selected={selectedTaskIds.includes(task.id)}
                                         onToggleSelect={toggleTaskSelect}
                                         allTasks={project.tasks}
+                                        onJumpToTask={jumpToTaskInList}
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
@@ -1055,7 +1065,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </button>
                     </div>
                     <div className="mt-4">
-                        <TaskBoard tasks={filteredTasks} canManage={canManage} canReview={canReview} currentUserId={auth.user.id} projectId={project.id} onCardClick={jumpToTaskInList} />
+                        <TaskBoard tasks={filteredTasks} canManage={canManage} canReview={canReview} currentUserId={auth.user.id} projectId={project.id} onCardClick={(task) => jumpToTaskInList(task.id)} />
                     </div>
                 </div>
             </Modal>

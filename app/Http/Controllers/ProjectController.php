@@ -97,6 +97,10 @@ class ProjectController extends Controller
         $role = $project->roleFor(Auth::user());
         $canViewAllHistory = in_array($role, ['owner', 'manager', 'tester']);
 
+        // Pinned tasks always float to the top; within that, order by priority so the
+        // most urgent work is visible first without the person having to sort manually.
+        $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
+
         $sortedTasks = $project->tasks
             ->map(function ($task) use ($pinnedTaskIds, $canViewAllHistory) {
                 $task->is_pinned = in_array($task->id, $pinnedTaskIds);
@@ -113,7 +117,10 @@ class ProjectController extends Controller
 
                 return $task;
             })
-            ->sortByDesc('is_pinned')
+            ->sortBy([
+                fn ($a, $b) => $b->is_pinned <=> $a->is_pinned,
+                fn ($a, $b) => ($priorityRank[$a->priority] ?? 1) <=> ($priorityRank[$b->priority] ?? 1),
+            ])
             ->values();
 
         $project->setRelation('tasks', $sortedTasks);

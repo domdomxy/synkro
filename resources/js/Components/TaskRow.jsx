@@ -225,11 +225,40 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDele
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false }) {
+function FooterToggle({ icon, label, count, active, onClick }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            title={label}
+            aria-pressed={active}
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                active
+                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+            }`}
+        >
+            {icon}
+            <span>{label}</span>
+            {count != null && (
+                <span
+                    className={`rounded-full px-1.5 py-px text-[10px] font-semibold ${
+                        active
+                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    }`}
+                >
+                    {count}
+                </span>
+            )}
+        </button>
+    );
+}
+
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, onJumpToTask }) {
     const isAssignee = task.assigned_to === currentUserId;
 
     const [isEditing, setIsEditing] = useState(false);
-    const [showComments, setShowComments] = useState(false);
     const [showAddPanel, setShowAddPanel] = useState(false);
     const [linkInput, setLinkInput] = useState('');
     const fileInputRef = useRef(null);
@@ -238,12 +267,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [showReopenPanel, setShowReopenPanel] = useState(false);
-    const [showChecklist, setShowChecklist] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [showTimeLog, setShowTimeLog] = useState(false);
-    const [showDependencies, setShowDependencies] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
+
+    // Comments / Checklist / Time / Dependencies share one expandable area below the
+    // task — only one is shown at a time so the row doesn't stack multiple open panels.
+    const [activeSection, setActiveSection] = useState(null);
+    const toggleSection = (section) => setActiveSection((v) => (v === section ? null : section));
+    const showComments = activeSection === 'comments';
+    const showChecklist = activeSection === 'checklist';
+    const showTimeLog = activeSection === 'time';
+    const showDependencies = activeSection === 'dependencies';
 
     useEffect(() => {
         if (autoOpenHistory) setShowHistory(true);
@@ -639,7 +674,19 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 <div className="mt-2">
                     {task.dependencies?.some((d) => d.status !== 'done') ? (
                         <p className="text-sm text-amber-600 dark:text-amber-400">
-                            Blocked by: {task.dependencies.filter((d) => d.status !== 'done').map((d) => d.title).join(', ')}
+                            Blocked by:{' '}
+                            {task.dependencies.filter((d) => d.status !== 'done').map((d, i, arr) => (
+                                <span key={d.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => onJumpToTask?.(d.id)}
+                                        className="underline decoration-amber-400/60 underline-offset-2 hover:text-amber-700 dark:hover:text-amber-300"
+                                    >
+                                        {d.title}
+                                    </button>
+                                    {i < arr.length - 1 ? ', ' : ''}
+                                </span>
+                            ))}
                         </p>
                     ) : (
                         <SecondaryButton onClick={startTask}>Start Task</SecondaryButton>
@@ -650,28 +697,52 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             {!isEditing && isAssignee && ['in_progress', 'submitted'].includes(task.status) && (
                 <div className="mt-3">
                     {!showAddPanel && submitForm.data.files.length === 0 && submitForm.data.links.length === 0 && (
-                        <SecondaryButton type="button" onClick={() => setShowAddPanel(true)}>
+                        <button
+                            type="button"
+                            onClick={() => setShowAddPanel(true)}
+                            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                        >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
                             Add files or links
-                        </SecondaryButton>
+                        </button>
                     )}
                     {(showAddPanel || submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
-                        <form onSubmit={submitTask} className="rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                        <form onSubmit={submitTask} className="rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                             <div className="flex flex-wrap items-center gap-2">
                                 <input ref={fileInputRef} type="file" multiple onChange={addFiles} className="hidden" />
-                                <SecondaryButton type="button" onClick={() => fileInputRef.current.click()}>Browse Files</SecondaryButton>
-                                <input
-                                    type="url"
-                                    value={linkInput}
-                                    onChange={(e) => setLinkInput(e.target.value)}
-                                    placeholder="Paste a link..."
-                                    className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                />
-                                <SecondaryButton type="button" onClick={addLink}>Add Link</SecondaryButton>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current.click()}
+                                    className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                    Browse Files
+                                </button>
+                                <div className="flex min-w-[180px] flex-1 items-center gap-1 rounded-md bg-white pl-2.5 pr-1 shadow-sm dark:bg-gray-800">
+                                    <input
+                                        type="url"
+                                        value={linkInput}
+                                        onChange={(e) => setLinkInput(e.target.value)}
+                                        placeholder="Paste a link..."
+                                        className="flex-1 border-0 bg-transparent p-0 py-1.5 text-sm text-gray-700 placeholder:text-gray-400 focus:ring-0 dark:text-gray-300"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={addLink}
+                                        className="shrink-0 rounded px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
                             </div>
                             {(submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
-                                <ul className="mt-3 space-y-1.5">
+                                <ul className="mt-2.5 space-y-1">
                                     {submitForm.data.files.map((file, i) => (
-                                        <li key={`file-${i}`} className="flex items-center gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                                        <li key={`file-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
                                             <FileTypeIcon name={file.name} className="h-4 w-4 shrink-0 text-gray-400" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate text-sm text-gray-700 dark:text-gray-300">{file.name}</p>
@@ -681,7 +752,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         </li>
                                     ))}
                                     {submitForm.data.links.map((link, i) => (
-                                        <li key={`link-${i}`} className="flex items-center gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                                        <li key={`link-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
                                             <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
                                             <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{link}</p>
                                             <RemoveButton onClick={() => removeLink(i)} />
@@ -690,8 +761,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 </ul>
                             )}
                             {submitForm.progress && (
-                                <div className="mt-3">
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                <div className="mt-2.5">
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                         <div
                                             className="h-1.5 rounded-full bg-indigo-500 transition-all"
                                             style={{ width: `${submitForm.progress.percentage}%` }}
@@ -700,10 +771,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Uploading... {submitForm.progress.percentage}%</p>
                                 </div>
                             )}
-                            <div className="mt-3 flex items-center gap-2">
-                                <PrimaryButton disabled={submitForm.processing}>
+                            <div className="mt-2.5 flex items-center gap-3">
+                                <button
+                                    type="submit"
+                                    disabled={submitForm.processing}
+                                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                                >
                                     {submitForm.progress ? `Uploading ${submitForm.progress.percentage}%` : task.status === 'submitted' ? 'Add More' : 'Submit Work'}
-                                </PrimaryButton>
+                                </button>
                                 <button type="button" disabled={submitForm.processing} onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline disabled:opacity-50 dark:text-gray-400">Cancel</button>
                             </div>
                             <InputError message={submitForm.errors.files} className="mt-2" />
@@ -715,33 +790,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             {task.deliverables?.length > 0 && (
                 <div className="mt-2">
                     <div className="flex flex-wrap items-center gap-2">
-                        <button
+                        <FooterToggle
+                            active={showDeliverables}
                             onClick={() => setShowDeliverables((v) => !v)}
-                            className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            {showDeliverables ? 'Hide Submitted' : 'Submitted'}
-                            <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-700 dark:bg-gray-600 dark:text-gray-200">
-                                {task.deliverables.length}
-                            </span>
-                            <svg className={`h-3 w-3 transition-transform ${showDeliverables ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        {task.updated_at && ['submitted', 'in_review', 'done'].includes(task.status) && (
-                            <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            label="Submitted"
+                            count={task.deliverables.length}
+                            icon={
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                 </svg>
-                                Last Submission update {formatDue(task.updated_at)}
-                            </span>
-                        )}
+                            }
+                        />
                         {task.status !== 'done' && task.deliverables?.some((d) => d.type === 'file') && (
                             <a
                                 href={route('tasks.download', task.id)}
-                                className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                title="Download ZIP"
+                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                             >
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
@@ -749,11 +813,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 Download ZIP
                             </a>
                         )}
+                        {task.updated_at && ['submitted', 'in_review', 'done'].includes(task.status) && (
+                            <span className="flex items-center gap-1 px-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                Updated {formatDue(task.updated_at)}
+                            </span>
+                        )}
                     </div>
                     {showDeliverables && (
-                        <ul className="mt-2 space-y-1.5">
+                        <ul className="mt-2 space-y-1 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
                             {task.deliverables.map((d) => (
-                                <li key={d.id} className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900">
+                                <li key={d.id} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
                                     {d.type === 'file' ? (
                                         <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
                                     ) : (
@@ -840,67 +909,59 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
-            <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <button
-                        onClick={() => setShowComments((v) => !v)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        {commentCount === 0 ? 'Comments' : `Comments (${commentCount})`}
-                        <svg className={`h-3.5 w-3.5 transition-transform ${showComments ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => setShowChecklist((v) => !v)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
-                        </svg>
-                        {task.checklist_items?.length > 0
-                            ? `Checklist (${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length})`
-                            : 'Checklist'}
-                        <svg className={`h-3.5 w-3.5 transition-transform ${showChecklist ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => setShowTimeLog((v) => !v)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z" />
-                        </svg>
-                        {(() => {
+            <div className="mt-3 border-t border-gray-100 pt-2.5 dark:border-gray-700">
+                <div className="flex flex-wrap items-center gap-1">
+                    <FooterToggle
+                        active={showComments}
+                        onClick={() => toggleSection('comments')}
+                        label="Comments"
+                        count={commentCount > 0 ? commentCount : null}
+                        icon={
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                        }
+                    />
+                    <FooterToggle
+                        active={showChecklist}
+                        onClick={() => toggleSection('checklist')}
+                        label="Checklist"
+                        count={task.checklist_items?.length > 0 ? `${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length}` : null}
+                        icon={
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
+                            </svg>
+                        }
+                    />
+                    <FooterToggle
+                        active={showTimeLog}
+                        onClick={() => toggleSection('time')}
+                        label="Time"
+                        count={(() => {
                             const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
-                            return total > 0
-                                ? `Time (${total}${task.estimated_hours ? `/${task.estimated_hours}` : ''}h)`
-                                : 'Log Time';
+                            return total > 0 ? `${total}${task.estimated_hours ? `/${task.estimated_hours}` : ''}h` : null;
                         })()}
-                        <svg className={`h-3.5 w-3.5 transition-transform ${showTimeLog ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => setShowDependencies((v) => !v)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        {task.dependencies?.length > 0 ? `Blocked by (${task.dependencies.length})` : 'Dependencies'}
-                        <svg className={`h-3.5 w-3.5 transition-transform ${showDependencies ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
+                        icon={
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z" />
+                            </svg>
+                        }
+                    />
+                    <FooterToggle
+                        active={showDependencies}
+                        onClick={() => toggleSection('dependencies')}
+                        label="Dependencies"
+                        count={task.dependencies?.length > 0 ? task.dependencies.length : null}
+                        icon={
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                        }
+                    />
                 </div>
 
                 {showChecklist && (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {task.checklist_items?.length > 0 && (
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                                 <div
@@ -946,7 +1007,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showTimeLog && (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {(() => {
                             const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
                             const estimate = Number(task.estimated_hours) || 0;
@@ -1006,19 +1067,26 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showDependencies && (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {(!task.dependencies || task.dependencies.length === 0) && (
                             <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
                         )}
                         {task.dependencies?.map((dep) => (
                             <div key={dep.id} className="flex items-center gap-2 text-sm group">
-                                <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{dep.title}</span>
-                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => onJumpToTask?.(dep.id)}
+                                    title={`Go to "${dep.title}"`}
+                                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-0.5 text-left transition hover:text-indigo-600 dark:hover:text-indigo-400"
+                                >
+                                    <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                    <span className="min-w-0 flex-1 truncate text-gray-700 group-hover:underline dark:text-gray-300">{dep.title}</span>
+                                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                                </button>
                                 {canManage && (
                                     <button
                                         onClick={() => removeDependency(dep.id)}
-                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                        className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
                                         title="Remove dependency"
                                     >
                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1047,7 +1115,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showComments && (
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-2 space-y-3 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {task.comments?.map((comment) => (
                             <div key={comment.id} className="flex items-start gap-2.5">
                                 <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5 shrink-0" />

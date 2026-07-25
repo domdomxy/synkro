@@ -140,6 +140,8 @@ export default function Index({ tasks }) {
         });
     };
 
+    const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
         return tasks
@@ -149,7 +151,11 @@ export default function Index({ tasks }) {
                 if (!term) return true;
                 return task.title.toLowerCase().includes(term) || task.project?.name?.toLowerCase().includes(term);
             })
-            .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0));
+            .sort((a, b) => {
+                const pinDiff = (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+                if (pinDiff !== 0) return pinDiff;
+                return (PRIORITY_ORDER[a.priority ?? 'medium'] ?? 1) - (PRIORITY_ORDER[b.priority ?? 'medium'] ?? 1);
+            });
     }, [tasks, search, statusFilter, priorityFilter]);
 
     const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
