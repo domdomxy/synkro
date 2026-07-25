@@ -170,7 +170,7 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges, onShowHistory }) {
+function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -195,12 +195,14 @@ function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onReq
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
                         {isPinned ? 'Unpin task' : 'Pin task'}
                     </button>
-                    <button onClick={() => { setOpen(false); onShowHistory(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        View History
-                    </button>
+                    {canViewHistory && (
+                        <button onClick={() => { setOpen(false); onShowHistory(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            View History
+                        </button>
+                    )}
                     {canManage && isDone && (
                         <button onClick={() => { setOpen(false); onRequestChanges(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-gray-700">
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -641,6 +643,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             </span>
                             <KebabMenu
                                 canManage={canManage}
+                                canViewHistory={!!task.can_view_history}
                                 isPinned={!!task.is_pinned}
                                 isDone={task.status === 'done'}
                                 onEdit={() => setIsEditing(true)}
@@ -1115,15 +1118,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     ) : (
                                         <>
                                             <div className={`rounded-2xl px-3.5 py-2 ${
-                                                comment.is_feedback
+                                                comment.is_rejection
                                                     ? 'bg-amber-50 dark:bg-amber-950/30'
+                                                    : comment.is_feedback
+                                                    ? 'bg-green-50 dark:bg-green-950/30'
                                                     : 'bg-gray-100 dark:bg-gray-700/60'
                                             }`}>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                                    {!!comment.is_feedback && (
+                                                    {!!comment.is_rejection && (
                                                         <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                                                             Requested changes
+                                                        </span>
+                                                    )}
+                                                    {!!comment.is_feedback && !comment.is_rejection && (
+                                                        <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+                                                            Review note
                                                         </span>
                                                     )}
                                                 </div>

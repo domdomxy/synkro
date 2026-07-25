@@ -1072,7 +1072,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </button>
                     </div>
                     <div className="mt-4">
-                        <TaskBoard tasks={filteredTasks} canManage={canManage} projectId={project.id} onCardClick={jumpToTaskInList} />
+                        <TaskBoard tasks={filteredTasks} canManage={canManage} canReview={canReview} currentUserId={auth.user.id} projectId={project.id} onCardClick={jumpToTaskInList} />
                     </div>
                 </div>
             </Modal>

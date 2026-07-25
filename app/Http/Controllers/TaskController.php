@@ -493,6 +493,25 @@ class TaskController extends Controller
  
         $task->update(['status' => 'in_progress']);
  
+        if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
+            if (NotificationPreferences::wantsType($task->assignee, 'task_updated')) {
+                $notification = UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_updated',
+                    'message' => "Task started\n\"{$task->title}\" was moved to In Progress",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new TaskUpdated($task->assigned_to, $task, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+ 
         return back()->with('success', 'Task started.');
     }
  
@@ -605,6 +624,25 @@ class TaskController extends Controller
  
         $task->update(['status' => 'in_review']);
  
+        if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
+            if (NotificationPreferences::wantsType($task->assignee, 'task_updated')) {
+                $notification = UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_updated',
+                    'message' => "Under review\n\"{$task->title}\" is now being reviewed",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new TaskUpdated($task->assigned_to, $task, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+ 
         return back()->with('success', 'Review started.');
     }
  
@@ -688,6 +726,7 @@ class TaskController extends Controller
                 'user_id' => Auth::id(),
                 'body' => $validated['feedback'],
                 'is_feedback' => true,
+                'is_rejection' => $validated['decision'] === 'reject',
             ]);
  
             try {
@@ -848,6 +887,7 @@ class TaskController extends Controller
             'user_id' => Auth::id(),
             'body' => $validated['feedback'],
             'is_feedback' => true,
+            'is_rejection' => true,
         ]);
  
         try {

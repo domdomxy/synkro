@@ -94,9 +94,23 @@ class ProjectController extends Controller
 
         $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
 
+        $role = $project->roleFor(Auth::user());
+        $canViewAllHistory = in_array($role, ['owner', 'manager', 'tester']);
+
         $sortedTasks = $project->tasks
-            ->map(function ($task) use ($pinnedTaskIds) {
+            ->map(function ($task) use ($pinnedTaskIds, $canViewAllHistory) {
                 $task->is_pinned = in_array($task->id, $pinnedTaskIds);
+
+                // History can reveal feedback, reassignment, and other detail that isn't
+                // any bystander's business — only the assignee living the task and the
+                // owner/manager/tester who can act on it get to see it.
+                $canViewHistory = $canViewAllHistory || $task->assigned_to === Auth::id();
+                $task->can_view_history = $canViewHistory;
+
+                if (! $canViewHistory) {
+                    $task->setRelation('activityLogs', collect());
+                }
+
                 return $task;
             })
             ->sortByDesc('is_pinned')
@@ -110,7 +124,7 @@ class ProjectController extends Controller
 
         return Inertia::render('Projects/Show', [
             'project' => $project,
-            'role' => $project->roleFor(Auth::user()),
+            'role' => $role,
             'myNotes' => $notes,
             'pendingInvitations' => $pendingInvitations,
         ]);

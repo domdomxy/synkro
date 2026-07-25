@@ -10,7 +10,13 @@ class Comment extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['task_id', 'user_id', 'body', 'is_feedback', 'edited_at'];
+    protected $fillable = ['task_id', 'user_id', 'body', 'is_feedback', 'is_rejection', 'edited_at'];
+
+    protected $casts = [
+        'is_feedback' => 'boolean',
+        'is_rejection' => 'boolean',
+        'edited_at' => 'datetime',
+    ];
 
     public function task(): BelongsTo
     {
