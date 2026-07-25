@@ -24,9 +24,6 @@ class Task extends Model
         'overdue_notified_at',
         'priority',
         'estimated_hours',
-        'repeat_interval',
-        'repeat_until',
-        'parent_task_id',
     ];
 
     protected $casts = [
@@ -34,7 +31,6 @@ class Task extends Model
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
         'overdue_notified_at' => 'datetime',
-        'repeat_until' => 'date',
     ];
 
     public function project(): BelongsTo
@@ -73,16 +69,6 @@ class Task extends Model
     public function timeLogs(): HasMany
     {
         return $this->hasMany(TaskTimeLog::class)->latest('logged_date');
-    }
-
-    public function parentTask(): BelongsTo
-    {
-        return $this->belongsTo(Task::class, 'parent_task_id');
-    }
-
-    public function childOccurrences(): HasMany
-    {
-        return $this->hasMany(Task::class, 'parent_task_id');
     }
 
     /** Tasks that THIS task depends on (must be done before this one can start). */

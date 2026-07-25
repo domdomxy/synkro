@@ -9,6 +9,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
+import CommentBody from '@/Components/CommentBody';
 import LogEntryRow from '@/Components/LogEntryRow';
 import Modal from '@/Components/Modal';
 import { router, useForm } from '@inertiajs/react';
@@ -257,8 +258,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         assigned_to: task.assigned_to ?? '',
         priority: task.priority ?? 'medium',
         estimated_hours: task.estimated_hours ?? '',
-        repeat_interval: task.repeat_interval ?? '',
-        repeat_until: task.repeat_until ?? '',
     });
     const checklistForm = useForm({ title: '' });
     const timeLogForm = useForm({ hours: '', note: '' });
@@ -549,32 +548,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         />
                         <InputError message={editForm.errors.estimated_hours} className="mt-1" />
                     </div>
-                    <div>
-                        <InputLabel htmlFor={`repeat-${task.id}`} value="Repeat" />
-                        <select
-                            id={`repeat-${task.id}`}
-                            value={editForm.data.repeat_interval}
-                            onChange={(e) => editForm.setData('repeat_interval', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="">Doesn't repeat</option>
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                        </select>
-                        {editForm.data.repeat_interval && (
-                            <div className="mt-2">
-                                <InputLabel htmlFor={`repeat-until-${task.id}`} value="Repeat Until (optional)" />
-                                <TextInput
-                                    id={`repeat-until-${task.id}`}
-                                    type="date"
-                                    value={editForm.data.repeat_until}
-                                    onChange={(e) => editForm.setData('repeat_until', e.target.value)}
-                                    className="mt-1 block w-full"
-                                />
-                            </div>
-                        )}
-                    </div>
                     <div className="flex gap-2">
                         <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
                         <button type="button" onClick={() => { editForm.reset(); setIsEditing(false); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
@@ -592,15 +565,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 </p>
                                 {task.is_pinned && (
                                     <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                )}
-                                {task.repeat_interval && (
-                                    <svg
-                                        className="h-3.5 w-3.5 shrink-0 text-indigo-400"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
-                                        title={`Repeats ${task.repeat_interval}${task.repeat_until ? ` until ${task.repeat_until}` : ''}`}
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
                                 )}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -1137,7 +1101,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100"><Linkify text={comment.body} /></p>
+                                                <CommentBody text={comment.body} />
                                             </div>
                                             <div className="mt-1 flex items-center gap-2 px-1">
                                                 <span className="text-[11px] text-gray-400 dark:text-gray-500">

@@ -623,7 +623,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     }, []);
 
     const memberForm = useForm({ email: '', role: 'member' });
-    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', estimated_hours: '', repeat_interval: '', repeat_until: '' });
+    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', estimated_hours: '' });
     const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
@@ -909,23 +909,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         <InputLabel htmlFor="estimated_hours" value="Estimated Hours" />
                                                         <TextInput id="estimated_hours" type="number" step="0.5" min="0" value={taskForm.data.estimated_hours} onChange={(e) => taskForm.setData('estimated_hours', e.target.value)} className="mt-1 block w-full" placeholder="e.g. 4" />
                                                     </div>
-                                                </div>
-                                                <div className="flex gap-4">
-                                                    <div className="flex-1">
-                                                        <InputLabel htmlFor="repeat_interval" value="Repeat" />
-                                                        <select id="repeat_interval" value={taskForm.data.repeat_interval} onChange={(e) => taskForm.setData('repeat_interval', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                                            <option value="">Doesn't repeat</option>
-                                                            <option value="daily">Daily</option>
-                                                            <option value="weekly">Weekly</option>
-                                                            <option value="monthly">Monthly</option>
-                                                        </select>
-                                                    </div>
-                                                    {taskForm.data.repeat_interval && (
-                                                        <div className="flex-1">
-                                                            <InputLabel htmlFor="repeat_until" value="Repeat Until (optional)" />
-                                                            <TextInput id="repeat_until" type="date" value={taskForm.data.repeat_until} onChange={(e) => taskForm.setData('repeat_until', e.target.value)} className="mt-1 block w-full" />
-                                                        </div>
-                                                    )}
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <PrimaryButton disabled={taskForm.processing}>Create Task</PrimaryButton>

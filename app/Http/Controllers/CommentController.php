@@ -42,11 +42,15 @@ class CommentController extends Controller
         // the assignee was notified, so a manager/tester replying to another manager's
         // comment never reached them. In a solo project this naturally resolves to an
         // empty list (no one else to notify), so nothing changes for single-person use.
+        // The assignee is pushed in unconditionally below, so it also has to be filtered
+        // out again afterwards, not just from the comments query above, or an assignee
+        // commenting on their own task would end up notifying themselves.
         $recipientIds = $task->comments()
             ->where('user_id', '!=', Auth::id())
             ->pluck('user_id')
             ->push($task->assigned_to)
             ->filter()
+            ->reject(fn ($id) => (int) $id === (int) Auth::id())
             ->unique();
 
         $preview = Str::limit($validated['body'], 200);

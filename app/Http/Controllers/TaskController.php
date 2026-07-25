@@ -55,8 +55,6 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:low,medium,high',
             'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
-            'repeat_interval' => 'nullable|in:daily,weekly,monthly',
-            'repeat_until' => 'nullable|date',
         ]);
 
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
@@ -120,8 +118,6 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'priority' => 'nullable|in:low,medium,high',
             'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
-            'repeat_interval' => 'nullable|in:daily,weekly,monthly',
-            'repeat_until' => 'nullable|date',
         ]);
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
@@ -493,6 +489,8 @@ class TaskController extends Controller
  
         $task->update(['status' => 'in_progress']);
  
+        ProjectActivityLog::log($task->project, 'task_started', ['task_title' => $task->title], $task);
+
         if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
@@ -624,6 +622,8 @@ class TaskController extends Controller
  
         $task->update(['status' => 'in_review']);
  
+        ProjectActivityLog::log($task->project, 'task_review_started', ['task_title' => $task->title], $task);
+
         if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
@@ -646,64 +646,6 @@ class TaskController extends Controller
         return back()->with('success', 'Review started.');
     }
  
-    /**
-     * Create the next occurrence of a recurring task once the current one is approved.
-     * The new task carries over title/description/assignee/priority/estimate and the
-     * same repeat_interval, so the chain keeps going on its own each time it's completed
-     * — until repeat_until is reached, at which point it just stops spawning.
-     */
-    private function spawnNextRecurrence(Task $task): void
-    {
-        $nextDue = match ($task->repeat_interval) {
-            'daily' => $task->due_date?->copy()->addDay(),
-            'weekly' => $task->due_date?->copy()->addWeek(),
-            'monthly' => $task->due_date?->copy()->addMonthNoOverflow(),
-            default => null,
-        };
-
-        if ($task->repeat_until && $nextDue && $nextDue->toDateString() > $task->repeat_until->toDateString()) {
-            return;
-        }
-
-        $newTask = $task->project->tasks()->create([
-            'title' => $task->title,
-            'description' => $task->description,
-            'assigned_to' => $task->assigned_to,
-            'due_date' => $nextDue,
-            'priority' => $task->priority,
-            'estimated_hours' => $task->estimated_hours,
-            'status' => 'todo',
-            'repeat_interval' => $task->repeat_interval,
-            'repeat_until' => $task->repeat_until,
-            'parent_task_id' => $task->parent_task_id ?? $task->id,
-        ]);
-
-        ProjectActivityLog::log($task->project, 'task_created', [
-            'task_title' => $newTask->title,
-            'recurring_from' => $task->title,
-        ], $newTask);
-
-        if ($newTask->assigned_to) {
-            $assignee = $newTask->assignee;
-            $url = route('projects.show', $newTask->project_id, false) . '?task=' . $newTask->id;
-
-            if ($assignee && $newTask->project->isMember($assignee) && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
-                $notification = UserNotification::create([
-                    'user_id' => $newTask->assigned_to,
-                    'type' => 'task_assigned',
-                    'message' => "Task assigned\nA new occurrence of \"{$newTask->title}\" is ready for you",
-                    'url' => $url,
-                ]);
-
-                try {
-                    broadcast(new TaskAssigned($newTask, $notification->id))->toOthers();
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            }
-        }
-    }
-
     public function review(Request $request, Task $task)
     {
         $this->authorize('review', $task);
@@ -739,11 +681,14 @@ class TaskController extends Controller
         $task->update([
             'status' => $validated['decision'] === 'approve' ? 'done' : 'in_progress',
         ]);
-
-        if ($validated['decision'] === 'approve' && $task->repeat_interval) {
-            $this->spawnNextRecurrence($task);
-        }
  
+        ProjectActivityLog::log(
+            $task->project,
+            $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected',
+            ['task_title' => $task->title],
+            $task
+        );
+
         $decisionLabel = $validated['decision'] === 'approve' ? 'approved' : 'sent back for changes';
         $decisionTitle = $validated['decision'] === 'approve' ? 'Task approved' : 'Changes requested';
         $message = "{$decisionTitle}\n\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
