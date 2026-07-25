@@ -1,6 +1,4 @@
 import Modal from '@/Components/Modal';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
@@ -30,13 +28,13 @@ export default function SuspendModal({ user, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose}>
+        <Modal show={show} onClose={onClose} maxWidth="sm" overlayClassName="bg-white/10 backdrop-blur-2xl backdrop-saturate-150 dark:bg-neutral-950/20 dark:backdrop-blur-2xl dark:backdrop-saturate-150">
             <form onSubmit={submit} className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Suspend {user?.name}</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">They won't be able to log in until the suspension is lifted or expires.</p>
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Suspend {user?.name}?</h2>
+                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">They won't be able to log in until the suspension is lifted or expires.</p>
 
                 <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Duration</label>
                     <select
                         value={form.data.duration}
                         onChange={(e) => form.setData('duration', e.target.value)}
@@ -48,15 +46,15 @@ export default function SuspendModal({ user, show, onClose }) {
 
                 {form.data.duration === 'custom' && (
                     <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Suspended until</label>
+                        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Suspended until</label>
                         <TextInput type="datetime-local" value={form.data.custom_date} onChange={(e) => form.setData('custom_date', e.target.value)} className="mt-1 block w-full" />
                         <InputError message={form.errors.custom_date} className="mt-2" />
                     </div>
                 )}
 
                 <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Reason <span className="text-red-500">*</span> <span className="font-normal text-gray-400">(shown to the user)</span>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Reason <span className="text-red-500">*</span> <span className="font-normal text-neutral-400">(shown to the user)</span>
                     </label>
                     <textarea
                         value={form.data.reason}
@@ -69,9 +67,21 @@ export default function SuspendModal({ user, show, onClose }) {
                     <InputError message={form.errors.reason} className="mt-1" />
                 </div>
 
-                <div className="mt-6 flex justify-end gap-2">
-                    <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
-                    <DangerButton disabled={form.processing}>Suspend</DangerButton>
+                <div className="mt-6 flex justify-end gap-2.5">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={form.processing}
+                        className="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                    >
+                        Suspend
+                    </button>
                 </div>
             </form>
             {ConfirmDialog}

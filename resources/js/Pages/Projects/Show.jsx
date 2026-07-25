@@ -576,6 +576,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
     const [bulkAction, setBulkAction] = useState({ status: 'todo', priority: 'low', assigned_to: '' });
+    const [bulkTouched, setBulkTouched] = useState({ status: false, priority: false, assigned_to: false });
     const [bulkProcessing, setBulkProcessing] = useState(false);
 
     const toggleTaskSelect = (taskId) => {
@@ -594,6 +595,30 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             onSuccess: () => setSelectedTaskIds([]),
             onFinish: () => setBulkProcessing(false),
         });
+    };
+
+    const saveBulkChanges = async () => {
+        if (selectedTaskIds.length === 0) return;
+
+        const ids = selectedTaskIds;
+        const jobs = [];
+        if (bulkTouched.status) jobs.push({ action: 'status', extra: { status: bulkAction.status } });
+        if (bulkTouched.priority) jobs.push({ action: 'priority', extra: { priority: bulkAction.priority } });
+        if (bulkTouched.assigned_to) jobs.push({ action: 'assign', extra: { assigned_to: bulkAction.assigned_to || null } });
+        if (jobs.length === 0) return;
+
+        setBulkProcessing(true);
+        for (const job of jobs) {
+            await new Promise((resolve) => {
+                router.post(route('tasks.bulk', project.id), { task_ids: ids, action: job.action, ...job.extra }, {
+                    preserveScroll: true,
+                    onFinish: resolve,
+                });
+            });
+        }
+        setBulkProcessing(false);
+        setBulkTouched({ status: false, priority: false, assigned_to: false });
+        setSelectedTaskIds([]);
     };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
     const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
@@ -970,36 +995,45 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedTaskIds.length} selected</span>
                                     <select
                                         value={bulkAction.status}
-                                        onChange={(e) => setBulkAction((s) => ({ ...s, status: e.target.value }))}
+                                        onChange={(e) => { setBulkAction((s) => ({ ...s, status: e.target.value })); setBulkTouched((t) => ({ ...t, status: true })); }}
                                         className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     >
                                         {STATUS_OPTIONS.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                                     </select>
-                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('status', { status: bulkAction.status })}>Set Status</SecondaryButton>
 
                                     <select
                                         value={bulkAction.priority}
-                                        onChange={(e) => setBulkAction((s) => ({ ...s, priority: e.target.value }))}
+                                        onChange={(e) => { setBulkAction((s) => ({ ...s, priority: e.target.value })); setBulkTouched((t) => ({ ...t, priority: true })); }}
                                         className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
                                         <option value="high">High</option>
                                     </select>
-                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('priority', { priority: bulkAction.priority })}>Set Priority</SecondaryButton>
 
                                     <select
                                         value={bulkAction.assigned_to}
-                                        onChange={(e) => setBulkAction((s) => ({ ...s, assigned_to: e.target.value }))}
+                                        onChange={(e) => { setBulkAction((s) => ({ ...s, assigned_to: e.target.value })); setBulkTouched((t) => ({ ...t, assigned_to: true })); }}
                                         className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     >
                                         <option value="">Unassigned</option>
                                         {project.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                                     </select>
-                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('assign', { assigned_to: bulkAction.assigned_to || null })}>Assign</SecondaryButton>
+
+                                    <PrimaryButton
+                                        disabled={bulkProcessing || !(bulkTouched.status || bulkTouched.priority || bulkTouched.assigned_to)}
+                                        onClick={saveBulkChanges}
+                                    >
+                                        Save Changes
+                                    </PrimaryButton>
 
                                     <DangerButton disabled={bulkProcessing} onClick={() => runBulkAction('delete')}>Delete</DangerButton>
-                                    <button onClick={clearSelection} className="ml-auto text-sm text-indigo-700 hover:underline dark:text-indigo-300">Clear selection</button>
+                                    <button
+                                        onClick={() => { clearSelection(); setBulkTouched({ status: false, priority: false, assigned_to: false }); }}
+                                        className="ml-auto text-sm text-indigo-700 hover:underline dark:text-indigo-300"
+                                    >
+                                        Clear selection
+                                    </button>
                                 </div>
                             )}
 

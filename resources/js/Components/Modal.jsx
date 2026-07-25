@@ -7,6 +7,7 @@ export default function Modal({
     closeable = true,
     onClose = () => {},
     overlayClassName = 'bg-gray-500/75 dark:bg-gray-900/75',
+    panelClassName = 'bg-white dark:bg-gray-800',
 }) {
     const close = () => {
         if (closeable) {
@@ -48,7 +49,7 @@ export default function Modal({
                     leaveFrom="translate-y-0 opacity-100 sm:scale-100"
                     leaveTo="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
                 >
-                    <DialogPanel className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full dark:bg-gray-800 ${maxWidthClass}`}>
+                    <DialogPanel className={`mb-6 transform overflow-hidden rounded-lg shadow-xl transition-all sm:mx-auto sm:w-full ${panelClassName} ${maxWidthClass}`}>
                         {children}
                     </DialogPanel>
                 </TransitionChild>

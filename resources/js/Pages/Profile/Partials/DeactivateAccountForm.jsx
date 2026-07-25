@@ -2,7 +2,6 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
-import SecondaryButton from '@/Components/SecondaryButton';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -41,16 +40,16 @@ export default function DeactivateAccountForm({ className = '' }) {
                 Deactivate Account
             </DangerButton>
 
-            <Modal show={confirmingDeactivation} onClose={closeModal}>
+            <Modal show={confirmingDeactivation} onClose={closeModal} maxWidth="sm" overlayClassName="backdrop-blur-[2px]">
                 <form onSubmit={deactivate} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Deactivate your account?
+                    <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                        Deactivate Account?
                     </h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
                         Your task submissions will be frozen until a manager decides to keep or reset them.
                         Log in again at any time to reactivate your account.
                     </p>
-                    <div className="mt-6">
+                    <div className="mt-4">
                         <InputLabel htmlFor="password" value="Password" className="sr-only" />
                         <input
                             id="password"
@@ -64,9 +63,21 @@ export default function DeactivateAccountForm({ className = '' }) {
                         />
                         <InputError message={errors.password} className="mt-2" />
                     </div>
-                    <div className="mt-6 flex justify-end gap-3">
-                        <SecondaryButton onClick={closeModal}>Cancel</SecondaryButton>
-                        <DangerButton disabled={processing}>Deactivate Account</DangerButton>
+                    <div className="mt-6 flex justify-end gap-2.5">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        >
+                            Deactivate Account
+                        </button>
                     </div>
                 </form>
             </Modal>
