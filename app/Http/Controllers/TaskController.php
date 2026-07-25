@@ -364,6 +364,8 @@ class TaskController extends Controller
                 return back()->withErrors(['error' => 'Choose a status.']);
             }
 
+            $affected = []; // assignee_id => count of their tasks that changed
+
             // Deliberately bypasses the normal start/submit/review workflow — this is a
             // manager override for administrative cleanup (e.g. closing out stale tasks),
             // not a substitute for the guided per-task flow.
@@ -379,7 +381,13 @@ class TaskController extends Controller
                     'task_title' => $task->title,
                     'changes' => ['status' => ['old' => $old, 'new' => $validated['status']]],
                 ], $task);
+
+                if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
+                    $affected[$task->assigned_to] = ($affected[$task->assigned_to] ?? 0) + 1;
+                }
             }
+
+            $this->notifyBulkFieldChange($project, $affected, 'status');
 
             return back()->with('success', 'Status updated for ' . count($tasks) . ' task(s).');
         }
@@ -388,6 +396,8 @@ class TaskController extends Controller
             if (empty($validated['priority'])) {
                 return back()->withErrors(['error' => 'Choose a priority.']);
             }
+
+            $affected = [];
 
             foreach ($tasks as $task) {
                 if ($task->priority === $validated['priority']) {
@@ -401,7 +411,13 @@ class TaskController extends Controller
                     'task_title' => $task->title,
                     'changes' => ['priority' => ['old' => $old, 'new' => $validated['priority']]],
                 ], $task);
+
+                if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
+                    $affected[$task->assigned_to] = ($affected[$task->assigned_to] ?? 0) + 1;
+                }
             }
+
+            $this->notifyBulkFieldChange($project, $affected, 'priority');
 
             return back()->with('success', 'Priority updated for ' . count($tasks) . ' task(s).');
         }
@@ -414,12 +430,14 @@ class TaskController extends Controller
             }
 
             $changedCount = 0;
+            $unassignedCounts = []; // previous_assignee_id => count of their tasks taken away
 
             foreach ($tasks as $task) {
                 if ((string) $task->assigned_to === (string) $newAssigneeId) {
                     continue;
                 }
 
+                $oldAssigneeId = $task->assigned_to;
                 $oldName = $task->assignee?->name;
                 $task->update(['assigned_to' => $newAssigneeId]);
                 $changedCount++;
@@ -436,6 +454,41 @@ class TaskController extends Controller
                         'old_assignee' => $oldName,
                     ], $task);
                 }
+
+                if ($oldAssigneeId && (int) $oldAssigneeId !== (int) ($newAssigneeId ?? 0) && (int) $oldAssigneeId !== Auth::id()) {
+                    $unassignedCounts[$oldAssigneeId] = ($unassignedCounts[$oldAssigneeId] ?? 0) + 1;
+                }
+            }
+
+            // Let anyone who lost tasks in this bulk move know, same grouped-per-person
+            // approach as the "newly assigned" notification just below.
+            foreach ($unassignedCounts as $userId => $count) {
+                $previousUser = \App\Models\User::find($userId);
+
+                if (! $previousUser || ! $project->isMember($previousUser)) {
+                    continue;
+                }
+
+                $url = route('projects.show', $project->id, false);
+                $summary = $count > 1 ? "{$count} tasks were reassigned away from you" : '1 task was reassigned away from you';
+
+                if (NotificationPreferences::wantsType($previousUser, 'task_unassigned')) {
+                    UserNotification::create([
+                        'user_id' => $previousUser->id,
+                        'type' => 'task_unassigned',
+                        'message' => "Tasks reassigned\n{$summary} in \"{$project->name}\"",
+                        'url' => $url,
+                    ]);
+                }
+
+                NotificationMailer::send(
+                    $previousUser,
+                    'task.unassigned',
+                    "{$summary} in {$project->name}",
+                    ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
+                    url($url),
+                    'View Project'
+                );
             }
 
             // One grouped notification rather than one per task (bulk-assigning 20 tasks
@@ -468,6 +521,53 @@ class TaskController extends Controller
             }
 
             return back()->with('success', 'Assignee updated for ' . $changedCount . ' task(s).');
+        }
+    }
+
+    /**
+     * Sends one grouped in-app + email notification per assignee affected by a bulk
+     * status/priority change, mirroring the "N task(s)" grouping used for bulk
+     * reassignment above — a manager updating 20 tasks shouldn't fire 20 separate
+     * pings per person. Intentionally skips the live websocket push (no clean
+     * single-task payload for a grouped "N tasks" event), same as bulk assign.
+     *
+     * @param array<int,int> $affectedCounts assignee_id => number of their tasks changed
+     */
+    private function notifyBulkFieldChange(Project $project, array $affectedCounts, string $field): void
+    {
+        if (empty($affectedCounts)) {
+            return;
+        }
+
+        foreach ($affectedCounts as $userId => $count) {
+            $user = \App\Models\User::find($userId);
+
+            if (! $user || ! $project->isMember($user)) {
+                continue;
+            }
+
+            $url = route('projects.show', $project->id, false);
+            $summary = $count > 1
+                ? "{$count} of your tasks had their {$field} changed"
+                : "1 of your tasks had its {$field} changed";
+
+            if (NotificationPreferences::wantsType($user, 'task_updated')) {
+                UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'task_updated',
+                    'message' => "Tasks updated\n{$summary} in \"{$project->name}\"",
+                    'url' => $url,
+                ]);
+            }
+
+            NotificationMailer::send(
+                $user,
+                'task.updated',
+                "{$summary} in {$project->name}",
+                ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
+                url($url),
+                'View Project'
+            );
         }
     }
  
