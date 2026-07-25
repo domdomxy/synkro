@@ -39,5 +39,29 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
-    
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
+            $status = $e->getStatusCode();
+
+            if (! in_array($status, [403, 404], true)) {
+                return null;
+            }
+
+            if ($request->is('api/*') || $request->wantsJson() && ! $request->header('X-Inertia')) {
+                return null;
+            }
+
+            $defaultMessage = $status === 404
+                ? "That no longer exists — it may have been deleted."
+                : "You no longer have access to that — you may have left or been removed from the project.";
+
+            $message = $status === 404
+                ? $defaultMessage
+                : ($e->getMessage() && ! str_starts_with($e->getMessage(), 'This action is unauthorized')
+                    ? $e->getMessage()
+                    : $defaultMessage);
+
+            return redirect()->back(fallback: route('projects.index'))
+                ->withErrors(['error' => $message]);
+        });
     })->create();

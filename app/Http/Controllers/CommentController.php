@@ -51,7 +51,9 @@ class CommentController extends Controller
 
         $preview = Str::limit($validated['body'], 200);
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
-        $recipients = \App\Models\User::whereIn('id', $recipientIds)->get();
+        $recipients = \App\Models\User::whereIn('id', $recipientIds)
+            ->get()
+            ->filter(fn ($user) => $task->project->isMember($user));
 
         foreach ($recipients as $recipient) {
             if (NotificationPreferences::wantsType($recipient, 'task_commented')) {

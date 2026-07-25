@@ -131,7 +131,10 @@ class TaskController extends Controller
         $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div>');
         $validated['description'] = Linkifier::linkify($validated['description']);
  
-        if (! empty($validated['assigned_to']) && ! $task->project->members()->where('user_id', $validated['assigned_to'])->exists()) {
+        $assignedToChanging = array_key_exists('assigned_to', $validated)
+            && (string) ($validated['assigned_to'] ?? '') !== (string) ($task->assigned_to ?? '');
+
+        if ($assignedToChanging && ! empty($validated['assigned_to']) && ! $task->project->members()->where('user_id', $validated['assigned_to'])->exists()) {
             return back()->withErrors(['assigned_to' => 'That user is not a member of this project.']);
         }
  
@@ -219,8 +222,9 @@ class TaskController extends Controller
             if ($previousAssignee && $previousAssignee !== $task->assigned_to) {
                 $projectUrl = route('projects.show', $task->project_id, false);
                 $previousUser = \App\Models\User::find($previousAssignee);
+                $previousUserStillMember = $previousUser && $task->project->isMember($previousUser);
 
-                if ($previousUser && NotificationPreferences::wantsType($previousUser, 'task_unassigned')) {
+                if ($previousUserStillMember && NotificationPreferences::wantsType($previousUser, 'task_unassigned')) {
                     $notification = UserNotification::create([
                         'user_id' => $previousAssignee,
                         'type' => 'task_unassigned',
@@ -235,7 +239,7 @@ class TaskController extends Controller
                     }
                 }
 
-                if ($previousUser) {
+                if ($previousUserStillMember) {
                     NotificationMailer::send(
                         $previousUser,
                         'task.unassigned',
@@ -246,7 +250,7 @@ class TaskController extends Controller
                     );
                 }
             }
-        } elseif ($contentChanged && $task->assigned_to) {
+        } elseif ($contentChanged && $task->assigned_to && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&history=1';
  
             if (NotificationPreferences::wantsType($task->assignee, 'task_updated')) {
@@ -290,9 +294,10 @@ class TaskController extends Controller
             $projectName = $task->project->name;
             $projectId = $task->project_id;
             $projectUrl = route('projects.show', $projectId, false);
+            $assigneeStillMember = $assignee && $task->project->isMember($assignee);
  
             $notification = null;
-            if (NotificationPreferences::wantsType($assignee, 'task_deleted')) {
+            if ($assigneeStillMember && NotificationPreferences::wantsType($assignee, 'task_deleted')) {
                 try {
                     $notification = UserNotification::create([
                         'user_id' => $assigneeId,
@@ -311,7 +316,7 @@ class TaskController extends Controller
                 }
             }
  
-            if ($assignee) {
+            if ($assigneeStillMember) {
                 NotificationMailer::send(
                     $assignee,
                     'task.deleted',
@@ -644,7 +649,7 @@ class TaskController extends Controller
             $assignee = $newTask->assignee;
             $url = route('projects.show', $newTask->project_id, false) . '?task=' . $newTask->id;
 
-            if ($assignee && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+            if ($assignee && $newTask->project->isMember($assignee) && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
                 $notification = UserNotification::create([
                     'user_id' => $newTask->assigned_to,
                     'type' => 'task_assigned',
@@ -707,7 +712,12 @@ class TaskController extends Controller
  
         $decisionType = $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected';
 
-        if (NotificationPreferences::wantsType($task->assignee, $decisionType)) {
+        // A task assigned to a member who has since been removed/left stays assigned (frozen for
+        // review, not unassigned) so its history is preserved — but that person shouldn't be
+        // notified or emailed about a review decision on a project they're no longer part of.
+        $assigneeStillMember = $task->assignee && $task->project->isMember($task->assignee);
+
+        if ($assigneeStillMember && NotificationPreferences::wantsType($task->assignee, $decisionType)) {
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => $decisionType,
@@ -722,7 +732,7 @@ class TaskController extends Controller
             }
         }
  
-        if ($task->assignee) {
+        if ($assigneeStillMember) {
             $mailLines = ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) was {$decisionLabel}."];
             if (! empty($validated['feedback'])) {
                 $mailLines[] = "Feedback: {$validated['feedback']}";
@@ -850,7 +860,9 @@ class TaskController extends Controller
  
         ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title], $task);
  
-        if ($task->assignee) {
+        // Same reasoning as review(): a frozen task stays assigned to a removed/left member for
+        // history's sake, but they shouldn't hear about it being reopened on a project they've left.
+        if ($task->assignee && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
             if (NotificationPreferences::wantsType($task->assignee, 'task_reopened')) {

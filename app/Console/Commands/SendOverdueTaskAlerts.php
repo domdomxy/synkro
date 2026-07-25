@@ -27,7 +27,7 @@ class SendOverdueTaskAlerts extends Command
         foreach ($overdue as $task) {
             $assignee = $task->assignee;
 
-            if ($assignee && NotificationPreferences::wantsType($assignee, 'task_overdue')) {
+            if ($assignee && $task->project->isMember($assignee) && NotificationPreferences::wantsType($assignee, 'task_overdue')) {
                 $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
                 $notification = UserNotification::create([

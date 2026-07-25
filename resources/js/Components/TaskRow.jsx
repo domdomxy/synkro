@@ -246,6 +246,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         if (autoOpenHistory) setShowHistory(true);
     }, [autoOpenHistory]);
 
+    const assigneeStillMember = task.assigned_to != null && members?.some((m) => m.id === task.assigned_to);
+
     const editForm = useForm({
         title: task.title,
         description: task.description ?? '',
@@ -502,6 +504,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         >
                             <option value="">Unassigned</option>
+                            {!assigneeStillMember && task.assigned_to != null && (
+                                <option value={task.assigned_to} disabled>
+                                    {task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member — pick someone else or Unassigned)
+                                </option>
+                            )}
                             {members?.map((m) => (
                                 <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
