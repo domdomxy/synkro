@@ -141,7 +141,7 @@ function describeLog(log) {
         case 'task_created': return `${actor} created task "${d.task_title}"`;
         case 'task_deleted': return `${actor} deleted task "${d.task_title}"`;
         case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${d.target_name}`;
-        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee}`;
+        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee ?? 'unassigned'}`;
         case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee})`;
         case 'task_updated': return `${actor} updated "${d.task_title}"`;
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;

@@ -16,6 +16,7 @@ use App\Models\ProjectActivityLog;
 use App\Models\Task;
 use App\Models\TaskDeliverable;
 use App\Models\UserNotification;
+use App\Support\NoteFormatter;
 use App\Support\NotificationMailer;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
@@ -364,7 +365,7 @@ class TaskController extends Controller
                 return back()->withErrors(['error' => 'Choose a status.']);
             }
 
-            $affected = []; // assignee_id => count of their tasks that changed
+            $affected = []; // assignee_id => [changed task titles]
 
             // Deliberately bypasses the normal start/submit/review workflow — this is a
             // manager override for administrative cleanup (e.g. closing out stale tasks),
@@ -383,11 +384,11 @@ class TaskController extends Controller
                 ], $task);
 
                 if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
-                    $affected[$task->assigned_to] = ($affected[$task->assigned_to] ?? 0) + 1;
+                    $affected[$task->assigned_to][] = $task->title;
                 }
             }
 
-            $this->notifyBulkFieldChange($project, $affected, 'status');
+            $this->notifyBulkFieldChange($project, $affected, 'status', $validated['status']);
 
             return back()->with('success', 'Status updated for ' . count($tasks) . ' task(s).');
         }
@@ -413,11 +414,11 @@ class TaskController extends Controller
                 ], $task);
 
                 if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
-                    $affected[$task->assigned_to] = ($affected[$task->assigned_to] ?? 0) + 1;
+                    $affected[$task->assigned_to][] = $task->title;
                 }
             }
 
-            $this->notifyBulkFieldChange($project, $affected, 'priority');
+            $this->notifyBulkFieldChange($project, $affected, 'priority', $validated['priority']);
 
             return back()->with('success', 'Priority updated for ' . count($tasks) . ' task(s).');
         }
@@ -430,7 +431,14 @@ class TaskController extends Controller
             }
 
             $changedCount = 0;
-            $unassignedCounts = []; // previous_assignee_id => count of their tasks taken away
+            $unassignedTitles = []; // previous_assignee_id => [task titles taken away]
+            $newAssigneeTitles = []; // task titles newly assigned to $newAssigneeId
+            // Fetched once, fresh, rather than reading $task->assignee after update() —
+            // that property is a cached relation loaded (as null) when we read the *old*
+            // assignee's name a few lines below, and Eloquent won't silently re-query it
+            // just because assigned_to changed. Using the stale cache there was producing
+            // a literal "null" in the reassigned-task log line.
+            $newAssigneeName = $newAssigneeId ? \App\Models\User::find($newAssigneeId)?->name : null;
 
             foreach ($tasks as $task) {
                 if ((string) $task->assigned_to === (string) $newAssigneeId) {
@@ -439,30 +447,33 @@ class TaskController extends Controller
 
                 $oldAssigneeId = $task->assigned_to;
                 $oldName = $task->assignee?->name;
+                $taskTitle = $task->title;
                 $task->update(['assigned_to' => $newAssigneeId]);
                 $changedCount++;
 
                 if ($newAssigneeId) {
                     ProjectActivityLog::log($project, 'task_reassigned', [
-                        'task_title' => $task->title,
+                        'task_title' => $taskTitle,
                         'old_assignee' => $oldName,
-                        'new_assignee' => $task->assignee?->name,
+                        'new_assignee' => $newAssigneeName,
                     ], $task);
+
+                    $newAssigneeTitles[] = $taskTitle;
                 } else {
                     ProjectActivityLog::log($project, 'task_unassigned', [
-                        'task_title' => $task->title,
+                        'task_title' => $taskTitle,
                         'old_assignee' => $oldName,
                     ], $task);
                 }
 
                 if ($oldAssigneeId && (int) $oldAssigneeId !== (int) ($newAssigneeId ?? 0) && (int) $oldAssigneeId !== Auth::id()) {
-                    $unassignedCounts[$oldAssigneeId] = ($unassignedCounts[$oldAssigneeId] ?? 0) + 1;
+                    $unassignedTitles[$oldAssigneeId][] = $taskTitle;
                 }
             }
 
             // Let anyone who lost tasks in this bulk move know, same grouped-per-person
             // approach as the "newly assigned" notification just below.
-            foreach ($unassignedCounts as $userId => $count) {
+            foreach ($unassignedTitles as $userId => $titles) {
                 $previousUser = \App\Models\User::find($userId);
 
                 if (! $previousUser || ! $project->isMember($previousUser)) {
@@ -470,13 +481,15 @@ class TaskController extends Controller
                 }
 
                 $url = route('projects.show', $project->id, false);
+                $count = count($titles);
                 $summary = $count > 1 ? "{$count} tasks were reassigned away from you" : '1 task was reassigned away from you';
+                $taskList = collect($titles)->map(fn ($t) => "**{$t}**")->implode("\n");
 
                 if (NotificationPreferences::wantsType($previousUser, 'task_unassigned')) {
                     UserNotification::create([
                         'user_id' => $previousUser->id,
                         'type' => 'task_unassigned',
-                        'message' => "Tasks reassigned\n{$summary} in \"{$project->name}\"",
+                        'message' => "Tasks reassigned\n{$taskList}",
                         'url' => $url,
                     ]);
                 }
@@ -487,7 +500,8 @@ class TaskController extends Controller
                     "{$summary} in {$project->name}",
                     ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
                     url($url),
-                    'View Project'
+                    'View Project',
+                    ['label' => $count > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
                 );
             }
 
@@ -496,26 +510,31 @@ class TaskController extends Controller
             // next page load; intentionally skips the live websocket push that individual
             // task events use, since there's no clean single-task payload for a "N tasks"
             // notification.
-            if ($newAssigneeId && $changedCount > 0 && (int) $newAssigneeId !== Auth::id()) {
+            if ($newAssigneeId && $changedCount > 0) {
                 $assignee = \App\Models\User::find($newAssigneeId);
 
-                if ($assignee && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+                if ($assignee) {
                     $url = route('projects.show', $project->id, false);
+                    $taskList = collect($newAssigneeTitles)->map(fn ($t) => "**{$t}**")->implode("\n");
+                    $summary = $changedCount > 1 ? "You were assigned {$changedCount} tasks" : 'You were assigned 1 task';
 
-                    UserNotification::create([
-                        'user_id' => $assignee->id,
-                        'type' => 'task_assigned',
-                        'message' => "Tasks assigned\nYou were assigned {$changedCount} task(s) in \"{$project->name}\"",
-                        'url' => $url,
-                    ]);
+                    if (NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+                        UserNotification::create([
+                            'user_id' => $assignee->id,
+                            'type' => 'task_assigned',
+                            'message' => "Tasks assigned\n{$taskList}",
+                            'url' => $url,
+                        ]);
+                    }
 
                     NotificationMailer::send(
                         $assignee,
                         'task.assigned',
                         "{$changedCount} new task(s) assigned in {$project->name}",
-                        ["You've been assigned {$changedCount} task(s) in \"{$project->name}\" (ID {$project->id})."],
+                        ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
                         url($url),
-                        'View Project'
+                        'View Project',
+                        ['label' => $changedCount > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
                     );
                 }
             }
@@ -526,20 +545,25 @@ class TaskController extends Controller
 
     /**
      * Sends one grouped in-app + email notification per assignee affected by a bulk
-     * status/priority change, mirroring the "N task(s)" grouping used for bulk
-     * reassignment above — a manager updating 20 tasks shouldn't fire 20 separate
-     * pings per person. Intentionally skips the live websocket push (no clean
-     * single-task payload for a grouped "N tasks" event), same as bulk assign.
+     * status/priority change, listing the actual task titles (not just a count) —
+     * mirrors the "N task(s)" grouping used for bulk reassignment above, so a manager
+     * updating 20 tasks still gets one ping per person, just with the task names
+     * attached. Intentionally skips the live websocket push (no clean single-task
+     * payload for a grouped "N tasks" event), same as bulk assign.
      *
-     * @param array<int,int> $affectedCounts assignee_id => number of their tasks changed
+     * @param array<int,array<string>> $affectedTitles assignee_id => [changed task titles]
      */
-    private function notifyBulkFieldChange(Project $project, array $affectedCounts, string $field): void
+    private function notifyBulkFieldChange(Project $project, array $affectedTitles, string $field, string $newValue): void
     {
-        if (empty($affectedCounts)) {
+        if (empty($affectedTitles)) {
             return;
         }
 
-        foreach ($affectedCounts as $userId => $count) {
+        $label = ucwords(str_replace('_', ' ', $newValue));
+        $fieldLabel = $field === 'status' ? 'Status' : 'Priority';
+        $headline = "{$fieldLabel} changed to {$label}";
+
+        foreach ($affectedTitles as $userId => $titles) {
             $user = \App\Models\User::find($userId);
 
             if (! $user || ! $project->isMember($user)) {
@@ -547,15 +571,17 @@ class TaskController extends Controller
             }
 
             $url = route('projects.show', $project->id, false);
+            $count = count($titles);
             $summary = $count > 1
-                ? "{$count} of your tasks had their {$field} changed"
-                : "1 of your tasks had its {$field} changed";
+                ? "{$count} of your tasks had their {$field} changed to {$label}"
+                : "1 of your tasks had its {$field} changed to {$label}";
+            $taskList = collect($titles)->map(fn ($t) => "**{$t}**")->implode("\n");
 
             if (NotificationPreferences::wantsType($user, 'task_updated')) {
                 UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'task_updated',
-                    'message' => "Tasks updated\n{$summary} in \"{$project->name}\"",
+                    'message' => "{$headline}\n{$taskList}",
                     'url' => $url,
                 ]);
             }
@@ -563,10 +589,11 @@ class TaskController extends Controller
             NotificationMailer::send(
                 $user,
                 'task.updated',
-                "{$summary} in {$project->name}",
+                "{$headline} in {$project->name}",
                 ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
                 url($url),
-                'View Project'
+                'View Project',
+                ['label' => $count > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
             );
         }
     }
