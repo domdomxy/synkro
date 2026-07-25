@@ -1082,7 +1082,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     ) : (
                                         <>
                                             <div className={`rounded-2xl px-3.5 py-2 ${
-                                                comment.is_rejection
+                                                comment.is_reopened
+                                                    ? 'bg-orange-50 dark:bg-orange-950/30'
+                                                    : comment.is_rejection
                                                     ? 'bg-amber-50 dark:bg-amber-950/30'
                                                     : comment.is_feedback
                                                     ? 'bg-green-50 dark:bg-green-950/30'
@@ -1090,12 +1092,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                             }`}>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                                    {!!comment.is_rejection && (
+                                                    {!!comment.is_reopened && (
+                                                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900 dark:text-orange-300">
+                                                            Reopened
+                                                        </span>
+                                                    )}
+                                                    {!!comment.is_rejection && !comment.is_reopened && (
                                                         <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                                                             Requested changes
                                                         </span>
                                                     )}
-                                                    {!!comment.is_feedback && !comment.is_rejection && (
+                                                    {!!comment.is_feedback && !comment.is_rejection && !comment.is_reopened && (
                                                         <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
                                                             Review note
                                                         </span>

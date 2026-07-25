@@ -832,7 +832,7 @@ class TaskController extends Controller
             'user_id' => Auth::id(),
             'body' => $validated['feedback'],
             'is_feedback' => true,
-            'is_rejection' => true,
+            'is_reopened' => true,
         ]);
  
         try {

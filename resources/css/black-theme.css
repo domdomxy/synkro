@@ -67,6 +67,11 @@ html.theme-black .shadow-xl {
 html.theme-black .dark\:bg-gray-800\/95 { background-color: rgba(13, 13, 13, 0.95) !important; }
 html.theme-black .dark\:bg-gray-900\/95 { background-color: rgba(0, 0, 0, 0.95) !important; }
 
+/* Reopened-task comment bubble (TaskRow.jsx) — the stock dark:bg-orange-950/30 tint
+   is dark enough to nearly vanish against this theme's pure-black surfaces. */
+html.theme-black .dark\:bg-orange-950\/30 { background-color: rgba(249, 115, 22, 0.14) !important; }
+html.theme-black .dark\:bg-orange-900 { background-color: #7c2d12 !important; }
+
 /* Gradient hero backgrounds (public Feedback pages) use color *stops* rather than a flat
    background-color, so the plain dark:bg-gray-900 rule above never matches them — Tailwind's
    gradient utilities work through --tw-gradient-* custom properties instead. Overriding those

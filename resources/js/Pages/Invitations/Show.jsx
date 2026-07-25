@@ -5,13 +5,32 @@ function StateCard({ iconBg, iconColor, icon, children }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
             <Head title="Invitation" />
-            <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow dark:bg-gray-800">
-                <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${iconBg} ${iconColor}`}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-900/5 dark:bg-gray-800 dark:ring-white/10">
+                <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full ring-8 ring-black/[0.03] dark:ring-white/[0.03] ${iconBg} ${iconColor}`}>
                     {icon}
                 </div>
                 {children}
             </div>
         </div>
+    );
+}
+
+const primaryBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out hover:bg-indigo-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm dark:focus:ring-offset-gray-800';
+const secondaryBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition duration-150 ease-in-out hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800';
+
+function BackArrowIcon() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+    );
+}
+
+function ForwardArrowIcon() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
     );
 }
 
@@ -42,8 +61,9 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
                     Ask them to send you a new invitation if this was unexpected.
                 </p>
-                <div className="mt-6">
-                    <Link href={route('projects.index')} className="inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <div className="mt-7">
+                    <Link href={route('projects.index')} className={secondaryBtn}>
+                        <BackArrowIcon />
                         Back to Projects
                     </Link>
                 </div>
@@ -69,8 +89,9 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
                     Ask the project owner or a manager to invite you again.
                 </p>
-                <div className="mt-6">
-                    <Link href={route('projects.index')} className="inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <div className="mt-7">
+                    <Link href={route('projects.index')} className={secondaryBtn}>
+                        <BackArrowIcon />
                         Back to Projects
                     </Link>
                 </div>
@@ -97,13 +118,15 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 <p className="text-gray-600 dark:text-gray-300">
                     You already {accepted ? 'accepted' : 'declined'} this invitation to <span className="font-medium text-gray-900 dark:text-gray-100">{invitation.project.name}</span>.
                 </p>
-                <div className="mt-6 flex justify-center gap-3">
-                    <Link href={route('projects.index')} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <div className="mt-7 flex justify-center gap-3">
+                    <Link href={route('projects.index')} className={secondaryBtn}>
+                        <BackArrowIcon />
                         Back to Projects
                     </Link>
                     {accepted && (
-                        <Link href={route('projects.show', invitation.project_id)} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                        <Link href={route('projects.show', invitation.project_id)} className={primaryBtn}>
                             Go to Project
+                            <ForwardArrowIcon />
                         </Link>
                     )}
                 </div>
@@ -114,9 +137,11 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
             <Head title="Project Invitation" />
-            <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow dark:bg-gray-800">
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-900/5 dark:bg-gray-800 dark:ring-white/10">
                 <div className="mb-5 flex justify-center">
-                    <ApplicationLogo className="h-11 w-11 fill-current text-indigo-600 dark:text-indigo-400" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 ring-8 ring-black/[0.03] dark:bg-indigo-950/40 dark:ring-white/[0.03]">
+                        <ApplicationLogo className="h-9 w-9 fill-current text-indigo-600 dark:text-indigo-400" />
+                    </div>
                 </div>
 
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -134,11 +159,17 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 </span>
 
                 <div className="mt-8 flex gap-3">
-                    <button onClick={deny} disabled={denyForm.processing} className="flex-1 rounded-md border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                        Decline
+                    <button onClick={deny} disabled={denyForm.processing} className={`flex-1 ${secondaryBtn}`}>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        {denyForm.processing ? 'Declining…' : 'Decline'}
                     </button>
-                    <button onClick={accept} disabled={acceptForm.processing} className="flex-1 rounded-md bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                        Accept
+                    <button onClick={accept} disabled={acceptForm.processing} className={`flex-1 ${primaryBtn}`}>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {acceptForm.processing ? 'Accepting…' : 'Accept'}
                     </button>
                 </div>
 
