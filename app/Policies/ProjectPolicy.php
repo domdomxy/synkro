@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class ProjectPolicy
 {
@@ -12,9 +13,17 @@ class ProjectPolicy
         return true; // index filters to the user's own projects in the controller
     }
 
-    public function view(User $user, Project $project): bool
+    /**
+     * This is the check that runs whenever a project (or a task within it) is opened,
+     * including via a notification link. Its denial message is the one place that should
+     * ever say "you may have left or been removed" - see the fallback comment in
+     * bootstrap/app.php for why that message isn't just the generic 403 default anymore.
+     */
+    public function view(User $user, Project $project): bool|Response
     {
-        return $project->isMember($user);
+        return $project->isMember($user)
+            ? true
+            : Response::deny('You no longer have access to that — you may have left or been removed from the project.');
     }
 
     public function create(User $user): bool
