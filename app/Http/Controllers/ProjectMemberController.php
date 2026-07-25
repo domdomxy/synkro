@@ -194,8 +194,12 @@ class ProjectMemberController extends Controller
             "You were removed from {$project->name}",
             [
                 "You've been removed from the project \"{$project->name}\".",
-                "Reason given: \"{$reason}\"",
-            ]
+            ],
+            highlight: [
+                'label' => 'Reason',
+                'content' => \App\Support\NoteFormatter::toHtml($reason),
+                'html' => true,
+            ],
         );
 
         ProjectActivityLog::log($project, 'member_removed', [
@@ -264,10 +268,14 @@ class ProjectMemberController extends Controller
                 "{$leavingName} left {$project->name}",
                 [
                     "{$leavingName} ({$leavingRole}) left \"{$project->name}\" (ID {$project->id}).",
-                    "Reason given: \"{$reason}\"",
                 ],
                 url(route('projects.show', $project->id, false)),
-                'View Project'
+                'View Project',
+                highlight: [
+                    'label' => 'Reason',
+                    'content' => \App\Support\NoteFormatter::toHtml($reason),
+                    'html' => true,
+                ],
             );
         }
 
