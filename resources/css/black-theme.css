@@ -12,6 +12,7 @@ html.theme-black .dark\:bg-gray-700\/40,
 html.theme-black .dark\:bg-gray-700\/50,
 html.theme-black .dark\:bg-gray-700\/60 { background-color: rgba(22, 22, 22, 0.6) !important; }
 html.theme-black .dark\:bg-gray-900\/50 { background-color: rgba(0, 0, 0, 0.6) !important; }
+html.theme-black .dark\:bg-gray-900\/40 { background-color: rgba(0, 0, 0, 0.5) !important; }
 html.theme-black .dark\:hover\:bg-gray-700:hover { background-color: #1a1a1a !important; }
 html.theme-black .dark\:hover\:bg-gray-600:hover { background-color: #222222 !important; }
 
@@ -71,6 +72,94 @@ html.theme-black .dark\:bg-gray-900\/95 { background-color: rgba(0, 0, 0, 0.95) 
    is dark enough to nearly vanish against this theme's pure-black surfaces. */
 html.theme-black .dark\:bg-orange-950\/30 { background-color: rgba(249, 115, 22, 0.14) !important; }
 html.theme-black .dark\:bg-orange-900 { background-color: #7c2d12 !important; }
+
+/* Status/priority badge colors — used on the Kanban board, task rows, notes,
+   reminders, etc. These color families (amber/blue/green/indigo/purple/red/
+   sky/teal/yellow/pink/neutral) weren't in the original allowlist above, only
+   gray + a couple of red/orange one-offs were. Result: any badge or card tint
+   built from these families rendered pixel-identical in Dark vs Black mode,
+   which is the "colors aren't changing" bug. Each pair below takes Tailwind's
+   default -900/-950 shade and pushes it toward near-black the same way the
+   gray-900 -> #000 / gray-800 -> #0d0d0d rules above do, while keeping enough
+   of the hue to stay readable as "this is the blue/amber/etc one". */
+html.theme-black .dark\:bg-amber-900 { background-color: #33230a !important; }
+html.theme-black .dark\:bg-amber-900\/40 { background-color: rgba(51, 35, 10, 0.4) !important; }
+html.theme-black .dark\:bg-amber-950,
+html.theme-black .dark\:bg-amber-950\/40 { background-color: rgba(26, 18, 5, 0.6) !important; }
+html.theme-black .dark\:bg-amber-950\/30 { background-color: rgba(26, 18, 5, 0.4) !important; }
+html.theme-black .dark\:border-amber-700 { border-color: #8a5a10 !important; }
+html.theme-black .dark\:border-amber-800 { border-color: #5c3d0d !important; }
+html.theme-black .dark\:border-amber-900\/30 { border-color: rgba(51, 35, 10, 0.4) !important; }
+html.theme-black .dark\:border-amber-900\/40 { border-color: rgba(51, 35, 10, 0.5) !important; }
+
+html.theme-black .dark\:bg-blue-900 { background-color: #0d1f38 !important; }
+html.theme-black .dark\:bg-blue-950,
+html.theme-black .dark\:bg-blue-950\/40 { background-color: rgba(6, 12, 24, 0.7) !important; }
+html.theme-black .dark\:bg-blue-950\/20 { background-color: rgba(6, 12, 24, 0.35) !important; }
+html.theme-black .dark\:bg-blue-950\/30 { background-color: rgba(6, 12, 24, 0.5) !important; }
+html.theme-black .dark\:border-blue-800 { border-color: #14315c !important; }
+html.theme-black .dark\:border-blue-900 { border-color: #0d1f38 !important; }
+
+html.theme-black .dark\:bg-green-900,
+html.theme-black .dark\:bg-green-900\/40 { background-color: #0d2417 !important; }
+html.theme-black .dark\:bg-green-900\/30 { background-color: rgba(13, 36, 23, 0.6) !important; }
+html.theme-black .dark\:bg-green-950\/20 { background-color: rgba(5, 18, 11, 0.35) !important; }
+html.theme-black .dark\:bg-green-950\/30 { background-color: rgba(5, 18, 11, 0.5) !important; }
+html.theme-black .dark\:bg-green-950\/40 { background-color: rgba(5, 18, 11, 0.65) !important; }
+html.theme-black .dark\:border-green-900 { border-color: #0d2417 !important; }
+
+html.theme-black .dark\:bg-indigo-900,
+html.theme-black .dark\:bg-indigo-900\/50 { background-color: #16123a !important; }
+html.theme-black .dark\:bg-indigo-950,
+html.theme-black .dark\:bg-indigo-950\/40 { background-color: rgba(9, 7, 24, 0.7) !important; }
+html.theme-black .dark\:bg-indigo-950\/20 { background-color: rgba(9, 7, 24, 0.35) !important; }
+html.theme-black .dark\:bg-indigo-950\/30 { background-color: rgba(9, 7, 24, 0.5) !important; }
+html.theme-black .dark\:bg-indigo-500\/10 { background-color: rgba(99, 102, 241, 0.08) !important; }
+html.theme-black .dark\:border-indigo-500,
+html.theme-black .dark\:border-indigo-500\/25 { border-color: rgba(129, 140, 248, 0.35) !important; }
+html.theme-black .dark\:border-indigo-600 { border-color: #3730a3 !important; }
+html.theme-black .dark\:border-indigo-700 { border-color: #2d2470 !important; }
+html.theme-black .dark\:border-indigo-800 { border-color: #211a4d !important; }
+html.theme-black .dark\:border-indigo-900 { border-color: #16123a !important; }
+html.theme-black .dark\:ring-indigo-500 { --tw-ring-color: rgba(129, 140, 248, 0.5) !important; }
+
+html.theme-black .dark\:bg-purple-900 { background-color: #22103a !important; }
+html.theme-black .dark\:bg-purple-950,
+html.theme-black .dark\:bg-purple-950\/20 { background-color: rgba(15, 8, 26, 0.4) !important; }
+html.theme-black .dark\:bg-purple-950\/30 { background-color: rgba(15, 8, 26, 0.5) !important; }
+html.theme-black .dark\:border-purple-800 { border-color: #34195c !important; }
+html.theme-black .dark\:border-purple-900 { border-color: #22103a !important; }
+
+html.theme-black .dark\:bg-red-700 { background-color: #7a1414 !important; }
+html.theme-black .dark\:bg-red-900,
+html.theme-black .dark\:bg-red-900\/40 { background-color: #330a0a !important; }
+html.theme-black .dark\:bg-red-950\/20 { background-color: rgba(26, 6, 6, 0.35) !important; }
+html.theme-black .dark\:bg-red-950\/30 { background-color: rgba(26, 6, 6, 0.5) !important; }
+html.theme-black .dark\:bg-red-950\/40 { background-color: rgba(26, 6, 6, 0.65) !important; }
+html.theme-black .dark\:bg-red-950\/50 { background-color: rgba(26, 6, 6, 0.75) !important; }
+html.theme-black .dark\:bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.08) !important; }
+html.theme-black .dark\:border-red-700 { border-color: #7a1414 !important; }
+html.theme-black .dark\:border-red-800 { border-color: #5c0f0f !important; }
+html.theme-black .dark\:border-red-900,
+html.theme-black .dark\:border-red-900\/50 { border-color: rgba(51, 10, 10, 0.7) !important; }
+
+html.theme-black .dark\:bg-sky-900 { background-color: #0a2233 !important; }
+html.theme-black .dark\:bg-sky-950\/20 { background-color: rgba(4, 15, 23, 0.35) !important; }
+html.theme-black .dark\:border-sky-900 { border-color: #0a2233 !important; }
+
+html.theme-black .dark\:bg-teal-900 { background-color: #0a2b26 !important; }
+html.theme-black .dark\:bg-teal-950\/40 { background-color: rgba(4, 18, 16, 0.65) !important; }
+
+html.theme-black .dark\:bg-yellow-900 { background-color: #332a06 !important; }
+html.theme-black .dark\:bg-yellow-950\/20 { background-color: rgba(26, 21, 4, 0.35) !important; }
+html.theme-black .dark\:bg-yellow-950\/30 { background-color: rgba(26, 21, 4, 0.5) !important; }
+html.theme-black .dark\:border-yellow-900 { border-color: #332a06 !important; }
+
+html.theme-black .dark\:bg-pink-950\/40 { background-color: rgba(30, 8, 20, 0.65) !important; }
+
+html.theme-black .dark\:bg-neutral-800 { background-color: #0d0d0d !important; }
+html.theme-black .dark\:bg-neutral-950\/20 { background-color: rgba(0, 0, 0, 0.35) !important; }
+html.theme-black .dark\:border-neutral-600 { border-color: #2a2a2a !important; }
 
 /* Gradient hero backgrounds (public Feedback pages) use color *stops* rather than a flat
    background-color, so the plain dark:bg-gray-900 rule above never matches them — Tailwind's

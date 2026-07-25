@@ -14,14 +14,44 @@ const COLUMNS = [
     { status: 'done', label: 'Done' },
 ];
 
-// Same palette used for the status pill/left-border accent in TaskRow.jsx, kept in sync
-// so a task looks the same color whether you're looking at the list or the board.
+// Single source of truth for "what color is this status", used for the card border/background/
+// dot here, the column header dot, and kept in sync with the status pill + left-border accent in
+// TaskRow.jsx so a task reads as the same color everywhere in the app.
+// - dot: small solid indicator (column header, card title)
+// - accent: thicker left-edge border stripe, full-strength hue
+// - border: thin border running around the whole card, a tint of the same hue (not just the left edge)
+// - bg: background wash, a tint of the same hue
 const STATUS_STYLES = {
-    todo: { border: 'border-l-gray-400 dark:border-l-gray-600', bg: 'bg-white dark:bg-gray-800' },
-    in_progress: { border: 'border-l-blue-500', bg: 'bg-blue-50/70 dark:bg-blue-950/20' },
-    submitted: { border: 'border-l-yellow-500', bg: 'bg-yellow-50/70 dark:bg-yellow-950/20' },
-    in_review: { border: 'border-l-purple-500', bg: 'bg-purple-50/70 dark:bg-purple-950/20' },
-    done: { border: 'border-l-green-500', bg: 'bg-green-50/70 dark:bg-green-950/20' },
+    todo: {
+        dot: 'bg-gray-400 dark:bg-gray-500',
+        accent: 'border-l-gray-400 dark:border-l-gray-600',
+        border: 'border-gray-200 dark:border-gray-700',
+        bg: 'bg-white dark:bg-gray-800',
+    },
+    in_progress: {
+        dot: 'bg-blue-500',
+        accent: 'border-l-blue-500',
+        border: 'border-blue-200 dark:border-blue-900',
+        bg: 'bg-blue-50 dark:bg-blue-950/30',
+    },
+    submitted: {
+        dot: 'bg-yellow-500',
+        accent: 'border-l-yellow-500',
+        border: 'border-yellow-200 dark:border-yellow-900',
+        bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+    },
+    in_review: {
+        dot: 'bg-purple-500',
+        accent: 'border-l-purple-500',
+        border: 'border-purple-200 dark:border-purple-900',
+        bg: 'bg-purple-50 dark:bg-purple-950/30',
+    },
+    done: {
+        dot: 'bg-green-500',
+        accent: 'border-l-green-500',
+        border: 'border-green-200 dark:border-green-900',
+        bg: 'bg-green-50 dark:bg-green-950/30',
+    },
 };
 
 const priorityStyles = {
@@ -64,18 +94,33 @@ function TaskCard({ task, draggable, onDragStart, onClick }) {
             onDragStart={(e) => onDragStart(e, task)}
             onClick={() => onClick(task)}
             title={draggable ? undefined : 'You can open this task, but only its assignee or a reviewer can drag it'}
-            className={`cursor-pointer rounded-md border border-l-4 border-gray-200 p-3 text-sm shadow-sm transition hover:shadow-md dark:border-gray-700 ${style.border} ${style.bg} ${draggable ? 'active:cursor-grabbing' : 'opacity-90'}`}
+            className={`group cursor-pointer rounded-lg border border-l-[3px] p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${style.border} ${style.accent} ${style.bg} ${draggable ? 'active:cursor-grabbing active:translate-y-0 active:shadow-sm' : 'opacity-90'}`}
         >
-            <p className="font-medium text-gray-800 dark:text-gray-200 line-clamp-2">{task.title}</p>
-            <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex items-start gap-1.5">
+                <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
+                <p className="font-medium leading-snug text-gray-800 dark:text-gray-200 line-clamp-2">{task.title}</p>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                    {task.priority && task.priority !== 'medium' && (
-                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
-                            {task.priority === 'high' ? 'High' : 'Low'}
+                    {task.priority === 'high' && (
+                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${priorityStyles.high}`}>
+                            High
+                        </span>
+                    )}
+                    {task.priority === 'low' && (
+                        <span className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${priorityStyles.low}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
+                            Low
                         </span>
                     )}
                     {task.dependencies?.some((d) => d.status !== 'done') && (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300" title="Blocked by dependencies">
+                        <span
+                            className="flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                            title="Blocked by dependencies"
+                        >
+                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 10-8 0v4h8z" />
+                            </svg>
                             Blocked
                         </span>
                     )}
@@ -83,8 +128,12 @@ function TaskCard({ task, draggable, onDragStart, onClick }) {
                 {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
             </div>
             {task.due_date && (
-                <p className={`mt-1.5 text-xs ${isOverdue ? 'font-medium text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                    Due {new Date(task.due_date).toLocaleDateString()}
+                <p className={`mt-1.5 flex items-center gap-1 text-xs ${isOverdue ? 'font-medium text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {isOverdue ? 'Overdue ' : 'Due '}
+                    {new Date(task.due_date).toLocaleDateString()}
                 </p>
             )}
         </div>
@@ -201,23 +250,30 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                 {COLUMNS.map((col) => {
                     const columnTasks = tasks.filter((t) => t.status === col.status);
 
+                    const isDragTarget = dragOverStatus === col.status;
+
                     return (
                         <div
                             key={col.status}
                             onDragOver={(e) => { if (draggedId != null) { e.preventDefault(); setDragOverStatus(col.status); } }}
                             onDragLeave={() => setDragOverStatus((s) => (s === col.status ? null : s))}
                             onDrop={(e) => { e.preventDefault(); handleDrop(col.status); }}
-                            className={`flex w-64 shrink-0 flex-col rounded-lg border-2 border-dashed p-2 transition-colors ${
-                                dragOverStatus === col.status
-                                    ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950'
+                            className={`flex w-64 shrink-0 flex-col rounded-xl border-2 border-dashed p-2 transition-all ${
+                                isDragTarget
+                                    ? 'scale-[1.02] border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950'
                                     : 'border-transparent bg-gray-50 dark:bg-gray-900/40'
                             }`}
                         >
-                            <div className="mb-2 flex items-center justify-between px-1">
-                                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{col.label}</h4>
-                                <span className="text-xs text-gray-400 dark:text-gray-500">{columnTasks.length}</span>
+                            <div className="mb-2.5 flex items-center justify-between px-1.5 pt-0.5">
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`h-2 w-2 rounded-full ${STATUS_STYLES[col.status]?.dot ?? STATUS_STYLES.todo.dot}`} />
+                                    <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{col.label}</h4>
+                                </div>
+                                <span className="rounded-full bg-gray-200/70 px-1.5 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
+                                    {columnTasks.length}
+                                </span>
                             </div>
-                            <div className="flex min-h-[2rem] flex-col gap-2">
+                            <div className="flex min-h-[4.5rem] flex-col gap-2">
                                 {columnTasks.map((task) => (
                                     <TaskCard
                                         key={task.id}
@@ -228,7 +284,15 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                                     />
                                 ))}
                                 {columnTasks.length === 0 && (
-                                    <p className="px-1 text-xs text-gray-300 dark:text-gray-600">No tasks</p>
+                                    <div
+                                        className={`flex flex-1 items-center justify-center rounded-lg px-2 py-4 text-center text-xs transition-colors ${
+                                            isDragTarget
+                                                ? 'text-indigo-400 dark:text-indigo-300'
+                                                : 'text-gray-300 dark:text-gray-600'
+                                        }`}
+                                    >
+                                        {isDragTarget ? 'Drop here' : 'No tasks'}
+                                    </div>
                                 )}
                             </div>
                         </div>
