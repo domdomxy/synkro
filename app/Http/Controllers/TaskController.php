@@ -247,7 +247,7 @@ class TaskController extends Controller
                 }
             }
         } elseif ($contentChanged && $task->assigned_to) {
-            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&history=1';
  
             if (NotificationPreferences::wantsType($task->assignee, 'task_updated')) {
                 $notification = UserNotification::create([
@@ -270,7 +270,7 @@ class TaskController extends Controller
                 "Task updated: {$task->title}",
                 ["The task \"{$task->title}\" you're assigned to was updated in \"{$task->project->name}\" (ID {$task->project_id})."],
                 url($url),
-                'View Task'
+                'View Task History'
             );
         }
  

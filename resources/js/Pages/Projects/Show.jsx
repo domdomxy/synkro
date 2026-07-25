@@ -475,7 +475,7 @@ function ProjectInfoModal({ show, onClose, project }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="3xl">
+        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
             <div className="flex max-h-[80vh] flex-col">
                 <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
                     <div className="min-w-0">
@@ -595,9 +595,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+    const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
 
     const jumpToTaskInList = (task) => {
         setViewMode('list');
+        setShowBoardModal(false);
         setHighlightedTaskId(task.id);
         setTimeout(() => {
             document.getElementById(`task-${task.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -607,6 +609,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [showBoardModal, setShowBoardModal] = useState(false);
 
     // Mobile swipeable panes: Team <-> Tasks <-> Notes, opening on Tasks.
     const teamPaneRef = useRef(null);
@@ -627,9 +630,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     });
 
     useEffect(() => {
-        const taskId = new URLSearchParams(window.location.search).get('task');
+        const params = new URLSearchParams(window.location.search);
+        const taskId = params.get('task');
         if (!taskId) return;
         setHighlightedTaskId(Number(taskId));
+        if (params.get('history') === '1') {
+            setAutoOpenHistoryTaskId(Number(taskId));
+        }
         const scrollTimer = setTimeout(() => {
             document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
@@ -946,8 +953,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 List
                                             </button>
                                             <button
-                                                onClick={() => setViewMode('board')}
-                                                className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'board' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
+                                                onClick={() => setShowBoardModal(true)}
+                                                className={`rounded px-2 py-1 text-xs font-medium ${showBoardModal ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
                                             >
                                                 Board
                                             </button>
@@ -968,9 +975,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </div>
                                 </div>
                                 <TaskStatusBar tasks={project.tasks} />
-                                {viewMode === 'board' && (
-                                    <TaskBoard tasks={filteredTasks} canManage={canManage} projectId={project.id} onCardClick={jumpToTaskInList} />
-                                )}
                                 {viewMode === 'list' && hasActiveTaskFilters && (
                                     <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">Showing {filteredTasks.length} of {project.tasks.length} tasks</p>
                                 )}
@@ -1024,6 +1028,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         canManage={canManage}
                                         canReview={canReview}
                                         isHighlighted={task.id === highlightedTaskId}
+                                        autoOpenHistory={task.id === autoOpenHistoryTaskId}
                                         members={project.members}
                                         selectable={canManage}
                                         selected={selectedTaskIds.includes(task.id)}
@@ -1050,6 +1055,30 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                show={showBoardModal}
+                onClose={() => setShowBoardModal(false)}
+                maxWidth="6xl"
+                overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40"
+            >
+                <div className="p-6">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Board</h3>
+                        <button
+                            onClick={() => setShowBoardModal(false)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="mt-4">
+                        <TaskBoard tasks={filteredTasks} canManage={canManage} projectId={project.id} onCardClick={jumpToTaskInList} />
+                    </div>
+                </div>
+            </Modal>
 
             <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
             <LeaveProjectModal

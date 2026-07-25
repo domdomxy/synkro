@@ -231,7 +231,7 @@ export default function NotificationBell() {
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_updated') {
                 message = `Task updated\nTask "${payload.title}" was updated`;
-                url = `/projects/${payload.project_id}?task=${payload.task_id}`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}&history=1`;
             } else if (payload.type === 'task_unassigned') {
                 message = `Removed from task\nYou were removed from task "${payload.title}"`;
                 url = `/projects/${payload.project_id}`;

@@ -10,6 +10,7 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
 import LogEntryRow from '@/Components/LogEntryRow';
+import Modal from '@/Components/Modal';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -221,7 +222,7 @@ function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onReq
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [] }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false }) {
     const isAssignee = task.assigned_to === currentUserId;
 
     const [isEditing, setIsEditing] = useState(false);
@@ -240,6 +241,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [showDependencies, setShowDependencies] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
+
+    useEffect(() => {
+        if (autoOpenHistory) setShowHistory(true);
+    }, [autoOpenHistory]);
 
     const editForm = useForm({
         title: task.title,
@@ -635,7 +640,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 onDelete={deleteTask}
                                 onPin={togglePin}
                                 onRequestChanges={() => setShowReopenPanel(true)}
-                                onShowHistory={() => setShowHistory((v) => !v)}
+                                onShowHistory={() => setShowHistory(true)}
                             />
                         </div>
                     </div>
@@ -966,20 +971,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                 )}
 
-                {showHistory && (
-                    <div className="mt-3">
-                        {(!task.activity_logs || task.activity_logs.length === 0) ? (
-                            <p className="text-sm text-gray-400 dark:text-gray-500">No history yet for this task.</p>
-                        ) : (
-                            <ul className="space-y-1.5">
-                                {task.activity_logs.map((log) => (
-                                    <LogEntryRow key={log.id} log={log} dense />
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                )}
-
                 {showTimeLog && (
                     <div className="mt-3 space-y-2">
                         {(() => {
@@ -1194,6 +1185,39 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
             </div>
         </div>
+
+        <Modal
+            show={showHistory}
+            onClose={() => setShowHistory(false)}
+            maxWidth="lg"
+            overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40"
+        >
+            <div className="p-6">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">History — {task.title}</h3>
+                    <button
+                        onClick={() => setShowHistory(false)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="mt-4 max-h-96 overflow-y-auto">
+                    {(!task.activity_logs || task.activity_logs.length === 0) ? (
+                        <p className="text-sm text-gray-400 dark:text-gray-500">No history yet for this task.</p>
+                    ) : (
+                        <ul className="space-y-1.5">
+                            {task.activity_logs.map((log) => (
+                                <LogEntryRow key={log.id} log={log} dense />
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </Modal>
+
         {ConfirmDialog}
         </div>
     );
