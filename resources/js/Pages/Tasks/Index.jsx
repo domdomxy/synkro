@@ -29,6 +29,19 @@ const statusOptions = {
     done: 'Done',
 };
 
+const priorityStyles = {
+    low: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+    medium: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+    high: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+};
+
+const priorityOptions = {
+    all: 'All Priorities',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+};
+
 function formatDue(dateString) {
     if (!dateString) return null;
     return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -108,11 +121,13 @@ function EmptyState({ hasAnyTasks, onClearFilters }) {
 export default function Index({ tasks }) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [priorityFilter, setPriorityFilter] = useState('all');
     const [pinningId, setPinningId] = useState(null);
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('all');
+        setPriorityFilter('all');
     };
 
     const togglePin = (task) => {
@@ -130,13 +145,14 @@ export default function Index({ tasks }) {
         return tasks
             .filter((task) => {
                 if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+                if (priorityFilter !== 'all' && (task.priority ?? 'medium') !== priorityFilter) return false;
                 if (!term) return true;
                 return task.title.toLowerCase().includes(term) || task.project?.name?.toLowerCase().includes(term);
             })
             .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0));
-    }, [tasks, search, statusFilter]);
+    }, [tasks, search, statusFilter, priorityFilter]);
 
-    const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all';
+    const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
     const overdueCount = useMemo(() => tasks.filter(isOverdue).length, [tasks]);
 
     return (
@@ -161,6 +177,12 @@ export default function Index({ tasks }) {
                             onChange={setStatusFilter}
                             className="w-44"
                             options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                        />
+                        <FilterSelect
+                            value={priorityFilter}
+                            onChange={setPriorityFilter}
+                            className="w-44"
+                            options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
                         />
                         {hasActiveFilters && (
                             <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
@@ -216,6 +238,11 @@ export default function Index({ tasks }) {
                                                 {task.status.replace('_', ' ')}
                                             </span>
                                         </div>
+                                        {task.priority && task.priority !== 'medium' && (
+                                            <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                                {task.priority === 'high' ? 'High Priority' : 'Low Priority'}
+                                            </span>
+                                        )}
                                         {task.description && (
                                             <div
                                                 className="prose-sm mt-2 line-clamp-2 max-w-none whitespace-pre-wrap break-words text-sm text-gray-500 dark:text-gray-400"

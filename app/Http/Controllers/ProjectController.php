@@ -80,7 +80,17 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load(['members', 'tasks.assignee', 'tasks.comments.user', 'tasks.deliverables']);
+        $project->load([
+            'members',
+            'tasks.assignee',
+            'tasks.comments.user',
+            'tasks.deliverables',
+            'tasks.checklistItems',
+            'tasks.timeLogs.user',
+            'tasks.dependencies:id,title,status',
+            'tasks.dependents:id,title,status',
+            'tasks.activityLogs' => fn ($q) => $q->with('user')->limit(20),
+        ]);
 
         $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
 

@@ -53,6 +53,10 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
+            'priority' => 'nullable|in:low,medium,high',
+            'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
+            'repeat_interval' => 'nullable|in:daily,weekly,monthly',
+            'repeat_until' => 'nullable|date',
         ]);
 
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
@@ -65,7 +69,7 @@ class TaskController extends Controller
 
         $task = $project->tasks()->create($validated);
  
-        ProjectActivityLog::log($project, 'task_created', ['task_title' => $task->title]);
+        ProjectActivityLog::log($project, 'task_created', ['task_title' => $task->title], $task);
  
         if ($task->assigned_to) {
             $assignee = $task->assignee;
@@ -73,7 +77,7 @@ class TaskController extends Controller
             ProjectActivityLog::log($project, 'task_assigned', [
                 'task_title' => $task->title,
                 'target_name' => $assignee->name,
-            ]);
+            ], $task);
  
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
@@ -114,6 +118,10 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'due_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
+            'priority' => 'nullable|in:low,medium,high',
+            'estimated_hours' => 'nullable|numeric|min:0.1|max:999',
+            'repeat_interval' => 'nullable|in:daily,weekly,monthly',
+            'repeat_until' => 'nullable|date',
         ]);
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
@@ -131,13 +139,13 @@ class TaskController extends Controller
         $previousAssigneeName = $task->assignee?->name;
         $changes = [];
  
-        foreach (['title', 'description', 'due_date'] as $field) {
+        foreach (['title', 'description', 'due_date', 'priority', 'estimated_hours'] as $field) {
             if ($field === 'due_date') {
                 $old = $task->due_date?->toDateTimeString();
                 $new = $validated['due_date'] ? \Illuminate\Support\Carbon::parse($validated['due_date'])->toDateTimeString() : null;
             } else {
                 $old = $task->{$field};
-                $new = $validated[$field];
+                $new = $validated[$field] ?? $old;
             }
 
             if ((string) $old !== (string) $new) {
@@ -164,7 +172,7 @@ class TaskController extends Controller
             ProjectActivityLog::log($task->project, 'task_updated', [
                 'task_title' => $task->title,
                 'changes' => $changes,
-            ]);
+            ], $task);
         }
  
         if ($assigneeChanged) {
@@ -176,7 +184,7 @@ class TaskController extends Controller
                     'task_title' => $task->title,
                     'old_assignee' => $previousAssigneeName,
                     'new_assignee' => $newAssignee?->name,
-                ]);
+                ], $task);
  
                 if (NotificationPreferences::wantsType($newAssignee, 'task_assigned')) {
                     $notification = UserNotification::create([
@@ -205,7 +213,7 @@ class TaskController extends Controller
                 ProjectActivityLog::log($task->project, 'task_unassigned', [
                     'task_title' => $task->title,
                     'old_assignee' => $previousAssigneeName,
-                ]);
+                ], $task);
             }
  
             if ($previousAssignee && $previousAssignee !== $task->assigned_to) {
@@ -273,7 +281,7 @@ class TaskController extends Controller
     {
         $this->authorize('delete', $task);
  
-        ProjectActivityLog::log($task->project, 'task_deleted', ['task_title' => $task->title]);
+        ProjectActivityLog::log($task->project, 'task_deleted', ['task_title' => $task->title], $task);
  
         if ($task->assigned_to) {
             $assigneeId = $task->assigned_to;
@@ -319,6 +327,150 @@ class TaskController extends Controller
  
         return back()->with('success', 'Task deleted.');
     }
+
+    /**
+     * Multi-select bulk actions from the project task list. Owner/manager only (same
+     * gate as the project's own "manage" permission) — this is a power-user tool for
+     * whoever's running the project, not something an individual assignee needs.
+     */
+    public function bulkUpdate(Request $request, Project $project)
+    {
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'task_ids' => 'required|array|min:1',
+            'task_ids.*' => 'integer|exists:tasks,id',
+            'action' => 'required|in:delete,status,priority,assign',
+            'status' => 'nullable|in:todo,in_progress,submitted,in_review,done',
+            'priority' => 'nullable|in:low,medium,high',
+            'assigned_to' => 'nullable|exists:users,id',
+        ]);
+
+        $tasks = $project->tasks()->whereIn('id', $validated['task_ids'])->get();
+
+        if ($tasks->isEmpty()) {
+            return back()->withErrors(['error' => 'No matching tasks found.']);
+        }
+
+        if ($validated['action'] === 'delete') {
+            foreach ($tasks as $task) {
+                $this->destroy($task);
+            }
+
+            return back()->with('success', count($tasks) . ' task(s) deleted.');
+        }
+
+        if ($validated['action'] === 'status') {
+            if (empty($validated['status'])) {
+                return back()->withErrors(['error' => 'Choose a status.']);
+            }
+
+            // Deliberately bypasses the normal start/submit/review workflow — this is a
+            // manager override for administrative cleanup (e.g. closing out stale tasks),
+            // not a substitute for the guided per-task flow.
+            foreach ($tasks as $task) {
+                if ($task->status === $validated['status']) {
+                    continue;
+                }
+
+                $old = $task->status;
+                $task->update(['status' => $validated['status']]);
+
+                ProjectActivityLog::log($project, 'task_updated', [
+                    'task_title' => $task->title,
+                    'changes' => ['status' => ['old' => $old, 'new' => $validated['status']]],
+                ], $task);
+            }
+
+            return back()->with('success', 'Status updated for ' . count($tasks) . ' task(s).');
+        }
+
+        if ($validated['action'] === 'priority') {
+            if (empty($validated['priority'])) {
+                return back()->withErrors(['error' => 'Choose a priority.']);
+            }
+
+            foreach ($tasks as $task) {
+                if ($task->priority === $validated['priority']) {
+                    continue;
+                }
+
+                $old = $task->priority;
+                $task->update(['priority' => $validated['priority']]);
+
+                ProjectActivityLog::log($project, 'task_updated', [
+                    'task_title' => $task->title,
+                    'changes' => ['priority' => ['old' => $old, 'new' => $validated['priority']]],
+                ], $task);
+            }
+
+            return back()->with('success', 'Priority updated for ' . count($tasks) . ' task(s).');
+        }
+
+        if ($validated['action'] === 'assign') {
+            $newAssigneeId = $validated['assigned_to'] ?? null;
+
+            if ($newAssigneeId && ! $project->members()->where('user_id', $newAssigneeId)->exists()) {
+                return back()->withErrors(['assigned_to' => 'That user is not a member of this project.']);
+            }
+
+            $changedCount = 0;
+
+            foreach ($tasks as $task) {
+                if ((string) $task->assigned_to === (string) $newAssigneeId) {
+                    continue;
+                }
+
+                $oldName = $task->assignee?->name;
+                $task->update(['assigned_to' => $newAssigneeId]);
+                $changedCount++;
+
+                if ($newAssigneeId) {
+                    ProjectActivityLog::log($project, 'task_reassigned', [
+                        'task_title' => $task->title,
+                        'old_assignee' => $oldName,
+                        'new_assignee' => $task->assignee?->name,
+                    ], $task);
+                } else {
+                    ProjectActivityLog::log($project, 'task_unassigned', [
+                        'task_title' => $task->title,
+                        'old_assignee' => $oldName,
+                    ], $task);
+                }
+            }
+
+            // One grouped notification rather than one per task (bulk-assigning 20 tasks
+            // shouldn't fire 20 separate pings). Stored so it shows up in the bell on the
+            // next page load; intentionally skips the live websocket push that individual
+            // task events use, since there's no clean single-task payload for a "N tasks"
+            // notification.
+            if ($newAssigneeId && $changedCount > 0 && (int) $newAssigneeId !== Auth::id()) {
+                $assignee = \App\Models\User::find($newAssigneeId);
+
+                if ($assignee && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+                    $url = route('projects.show', $project->id, false);
+
+                    UserNotification::create([
+                        'user_id' => $assignee->id,
+                        'type' => 'task_assigned',
+                        'message' => "Tasks assigned\nYou were assigned {$changedCount} task(s) in \"{$project->name}\"",
+                        'url' => $url,
+                    ]);
+
+                    NotificationMailer::send(
+                        $assignee,
+                        'task.assigned',
+                        "{$changedCount} new task(s) assigned in {$project->name}",
+                        ["You've been assigned {$changedCount} task(s) in \"{$project->name}\" (ID {$project->id})."],
+                        url($url),
+                        'View Project'
+                    );
+                }
+            }
+
+            return back()->with('success', 'Assignee updated for ' . $changedCount . ' task(s).');
+        }
+    }
  
     public function start(Task $task)
     {
@@ -326,6 +478,12 @@ class TaskController extends Controller
  
         if ($task->status !== 'todo') {
             return back()->withErrors(['status' => 'This task has already been started.']);
+        }
+ 
+        $blockingTitles = $task->dependencies()->where('status', '!=', 'done')->pluck('title');
+ 
+        if ($blockingTitles->isNotEmpty()) {
+            return back()->withErrors(['status' => 'This task is blocked by: ' . $blockingTitles->implode(', ')]);
         }
  
         $task->update(['status' => 'in_progress']);
@@ -445,6 +603,64 @@ class TaskController extends Controller
         return back()->with('success', 'Review started.');
     }
  
+    /**
+     * Create the next occurrence of a recurring task once the current one is approved.
+     * The new task carries over title/description/assignee/priority/estimate and the
+     * same repeat_interval, so the chain keeps going on its own each time it's completed
+     * — until repeat_until is reached, at which point it just stops spawning.
+     */
+    private function spawnNextRecurrence(Task $task): void
+    {
+        $nextDue = match ($task->repeat_interval) {
+            'daily' => $task->due_date?->copy()->addDay(),
+            'weekly' => $task->due_date?->copy()->addWeek(),
+            'monthly' => $task->due_date?->copy()->addMonthNoOverflow(),
+            default => null,
+        };
+
+        if ($task->repeat_until && $nextDue && $nextDue->toDateString() > $task->repeat_until->toDateString()) {
+            return;
+        }
+
+        $newTask = $task->project->tasks()->create([
+            'title' => $task->title,
+            'description' => $task->description,
+            'assigned_to' => $task->assigned_to,
+            'due_date' => $nextDue,
+            'priority' => $task->priority,
+            'estimated_hours' => $task->estimated_hours,
+            'status' => 'todo',
+            'repeat_interval' => $task->repeat_interval,
+            'repeat_until' => $task->repeat_until,
+            'parent_task_id' => $task->parent_task_id ?? $task->id,
+        ]);
+
+        ProjectActivityLog::log($task->project, 'task_created', [
+            'task_title' => $newTask->title,
+            'recurring_from' => $task->title,
+        ], $newTask);
+
+        if ($newTask->assigned_to) {
+            $assignee = $newTask->assignee;
+            $url = route('projects.show', $newTask->project_id, false) . '?task=' . $newTask->id;
+
+            if ($assignee && NotificationPreferences::wantsType($assignee, 'task_assigned')) {
+                $notification = UserNotification::create([
+                    'user_id' => $newTask->assigned_to,
+                    'type' => 'task_assigned',
+                    'message' => "Task assigned\nA new occurrence of \"{$newTask->title}\" is ready for you",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new TaskAssigned($newTask, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+    }
+
     public function review(Request $request, Task $task)
     {
         $this->authorize('review', $task);
@@ -479,6 +695,10 @@ class TaskController extends Controller
         $task->update([
             'status' => $validated['decision'] === 'approve' ? 'done' : 'in_progress',
         ]);
+
+        if ($validated['decision'] === 'approve' && $task->repeat_interval) {
+            $this->spawnNextRecurrence($task);
+        }
  
         $decisionLabel = $validated['decision'] === 'approve' ? 'approved' : 'sent back for changes';
         $decisionTitle = $validated['decision'] === 'approve' ? 'Task approved' : 'Changes requested';
@@ -581,10 +801,10 @@ class TaskController extends Controller
                 'submitted_at' => null,
             ]);
  
-            ProjectActivityLog::log($task->project, 'submission_reset', ['task_title' => $task->title]);
+            ProjectActivityLog::log($task->project, 'submission_reset', ['task_title' => $task->title], $task);
         } else {
             $task->update(['pending_resolution' => false]);
-            ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title]);
+            ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title], $task);
         }
         return redirect()->route('projects.show', [
             'project' => $task->project_id,
@@ -628,7 +848,7 @@ class TaskController extends Controller
  
         $task->update(['status' => 'in_progress']);
  
-        ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title]);
+        ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title], $task);
  
         if ($task->assignee) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;

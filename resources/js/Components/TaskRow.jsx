@@ -7,6 +7,8 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { localDateTimeToIso } from '@/utils/datetime';
+import { describeLog } from '@/utils/activityLog';
+import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +20,14 @@ const statusStyles = {
     in_review: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
     done: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
 };
+
+const priorityStyles = {
+    low: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+    medium: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+    high: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+};
+
+const priorityLabels = { low: 'Low', medium: 'Medium', high: 'High' };
 
 function formatDue(dateString) {
     if (!dateString) return null;
@@ -205,7 +215,7 @@ function KebabMenu({ canManage, isPinned, isDone, onEdit, onDelete, onPin, onReq
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [] }) {
     const isAssignee = task.assigned_to === currentUserId;
 
     const [isEditing, setIsEditing] = useState(false);
@@ -218,13 +228,25 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [showReopenPanel, setShowReopenPanel] = useState(false);
+    const [showChecklist, setShowChecklist] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [showTimeLog, setShowTimeLog] = useState(false);
+    const [showDependencies, setShowDependencies] = useState(false);
+    const [dependencyPick, setDependencyPick] = useState('');
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const editForm = useForm({
         title: task.title,
         description: task.description ?? '',
         due_date: toDatetimeLocalValue(task.due_date),
         assigned_to: task.assigned_to ?? '',
+        priority: task.priority ?? 'medium',
+        estimated_hours: task.estimated_hours ?? '',
+        repeat_interval: task.repeat_interval ?? '',
+        repeat_until: task.repeat_until ?? '',
     });
+    const checklistForm = useForm({ title: '' });
+    const timeLogForm = useForm({ hours: '', note: '' });
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
     const commentForm = useForm({ body: '' });
@@ -246,9 +268,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         });
     };
 
-    const saveEdit = (e) => {
+    const saveEdit = async (e) => {
         e.preventDefault();
-        if (!confirm('Save changes to this task?')) return;
+        if (!(await confirm('Save changes to this task?'))) return;
         editForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
         editForm.patch(route('tasks.update', task.id), {
             preserveScroll: true,
@@ -269,6 +291,49 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         e.target.value = '';
     };
 
+    const addChecklistItem = (e) => {
+        e.preventDefault();
+        if (!checklistForm.data.title.trim()) return;
+        checklistForm.post(route('checklist.store', task.id), {
+            preserveScroll: true,
+            onSuccess: () => checklistForm.reset('title'),
+        });
+    };
+
+    const toggleChecklistItem = (item) => {
+        router.patch(route('checklist.update', item.id), { done: !item.done }, { preserveScroll: true });
+    };
+
+    const deleteChecklistItem = (item) => {
+        router.delete(route('checklist.destroy', item.id), { preserveScroll: true });
+    };
+
+    const logTime = (e) => {
+        e.preventDefault();
+        if (!timeLogForm.data.hours) return;
+        timeLogForm.post(route('time.store', task.id), {
+            preserveScroll: true,
+            onSuccess: () => timeLogForm.reset(),
+        });
+    };
+
+    const deleteTimeLog = async (log) => {
+        if (!(await confirm('Remove this time entry?', { danger: true, confirmLabel: 'Remove' }))) return;
+        router.delete(route('time.destroy', log.id), { preserveScroll: true });
+    };
+
+    const addDependency = () => {
+        if (!dependencyPick) return;
+        router.post(route('dependencies.store', task.id), { depends_on_task_id: dependencyPick }, {
+            preserveScroll: true,
+            onSuccess: () => setDependencyPick(''),
+        });
+    };
+
+    const removeDependency = (dependsOnTaskId) => {
+        router.delete(route('dependencies.destroy', [task.id, dependsOnTaskId]), { preserveScroll: true });
+    };
+
     const addLink = () => {
         if (!linkInput.trim()) return;
         submitForm.setData('links', [...submitForm.data.links, linkInput.trim()]);
@@ -278,14 +343,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const removeFile = (index) => submitForm.setData('files', submitForm.data.files.filter((_, i) => i !== index));
     const removeLink = (index) => submitForm.setData('links', submitForm.data.links.filter((_, i) => i !== index));
 
-    const submitTask = (e) => {
+    const submitTask = async (e) => {
         e.preventDefault();
         if (submitForm.data.files.length === 0 && submitForm.data.links.length === 0) {
             alert('Add at least one file or link first.');
             return;
         }
         const confirmMessage = task.status === 'submitted' ? 'Add these to your submission?' : 'Submit this work for review?';
-        if (!confirm(confirmMessage)) return;
+        if (!(await confirm(confirmMessage))) return;
         submitForm.post(route('tasks.submit', task.id), {
             forceFormData: true,
             preserveScroll: true,
@@ -293,8 +358,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         });
     };
 
-    const removeDeliverable = (deliverableId) => {
-        if (confirm('Remove this submitted item?')) {
+    const removeDeliverable = async (deliverableId) => {
+        if (await confirm('Remove this submitted item?', { danger: true, confirmLabel: 'Remove' })) {
             router.delete(route('deliverables.destroy', deliverableId), { preserveScroll: true });
         }
     };
@@ -304,9 +369,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         reviewForm.post(route('tasks.review', task.id), { preserveScroll: true, onSuccess: () => reviewForm.reset() });
     };
 
-    const submitReopen = (e) => {
+    const submitReopen = async (e) => {
         e.preventDefault();
-        if (!confirm('Send this task back for changes? It will move back to In Progress.')) return;
+        if (!(await confirm('Send this task back for changes? It will move back to In Progress.'))) return;
         reopenForm.post(route('tasks.reopen', task.id), {
             preserveScroll: true,
             onSuccess: () => { reopenForm.reset(); setShowReopenPanel(false); },
@@ -331,12 +396,12 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         });
     };
 
-    const deleteComment = (commentId) => {
-        if (confirm('Delete this comment?')) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
+    const deleteComment = async (commentId) => {
+        if (await confirm('Delete this comment?', { danger: true, confirmLabel: 'Delete' })) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
     };
 
-    const deleteTask = () => {
-        if (confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
+    const deleteTask = async () => {
+        if (await confirm(`Delete task "${task.title}"? This cannot be undone.`, { danger: true, confirmLabel: 'Delete' })) {
             router.delete(route('tasks.destroy', task.id), { preserveScroll: true });
         }
     };
@@ -347,7 +412,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     return (
         <div
             id={`task-${task.id}`}
-            className={`rounded-lg border-l-4 bg-white shadow-sm transition dark:bg-gray-800 ${
+            className={`relative rounded-lg border-l-4 bg-white shadow-sm transition dark:bg-gray-800 ${
                 isHighlighted
                     ? 'border-l-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500'
                     : task.status === 'todo' ? 'border-l-gray-400 dark:border-l-gray-600'
@@ -358,7 +423,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     : 'border-l-gray-400'
             }`}
         >
-            <div className="p-4">
+            {selectable && (
+                <label className="absolute left-3 top-4 z-10 flex h-5 w-5 cursor-pointer items-center justify-center">
+                    <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => onToggleSelect?.(task.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                    />
+                </label>
+            )}
+            <div className={`p-4 ${selectable ? 'pl-10' : ''}`}>
             {!!task.pending_resolution && canManage && (
                 <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
                     <p className="text-sm text-amber-800 dark:text-amber-200">
@@ -377,8 +452,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         </SecondaryButton>
                         <DangerButton
                             disabled={resolveResetForm.processing}
-                            onClick={() => {
-                                if (confirm('Reset this task? The submission and deliverables will be cleared.')) {
+                            onClick={async () => {
+                                if (await confirm('Reset this task? The submission and deliverables will be cleared.', { danger: true, confirmLabel: 'Reset' })) {
                                     resolveResetForm.patch(route('tasks.resolve', task.id), {
                                         replace: true,
                                         onSuccess: () => window.location.reload(),
@@ -426,6 +501,60 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <InputLabel htmlFor={`due-${task.id}`} value="Due Date & Time" />
                         <TextInput id={`due-${task.id}`} type="datetime-local" step="1" value={editForm.data.due_date} onChange={(e) => editForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
                     </div>
+                    <div>
+                        <InputLabel htmlFor={`priority-${task.id}`} value="Priority" />
+                        <select
+                            id={`priority-${task.id}`}
+                            value={editForm.data.priority}
+                            onChange={(e) => editForm.setData('priority', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                        <InputError message={editForm.errors.priority} className="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor={`estimate-${task.id}`} value="Estimated Hours" />
+                        <TextInput
+                            id={`estimate-${task.id}`}
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={editForm.data.estimated_hours}
+                            onChange={(e) => editForm.setData('estimated_hours', e.target.value)}
+                            className="mt-1 block w-full"
+                            placeholder="e.g. 4"
+                        />
+                        <InputError message={editForm.errors.estimated_hours} className="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor={`repeat-${task.id}`} value="Repeat" />
+                        <select
+                            id={`repeat-${task.id}`}
+                            value={editForm.data.repeat_interval}
+                            onChange={(e) => editForm.setData('repeat_interval', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        >
+                            <option value="">Doesn't repeat</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                        {editForm.data.repeat_interval && (
+                            <div className="mt-2">
+                                <InputLabel htmlFor={`repeat-until-${task.id}`} value="Repeat Until (optional)" />
+                                <TextInput
+                                    id={`repeat-until-${task.id}`}
+                                    type="date"
+                                    value={editForm.data.repeat_until}
+                                    onChange={(e) => editForm.setData('repeat_until', e.target.value)}
+                                    className="mt-1 block w-full"
+                                />
+                            </div>
+                        )}
+                    </div>
                     <div className="flex gap-2">
                         <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
                         <button type="button" onClick={() => { editForm.reset(); setIsEditing(false); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
@@ -443,6 +572,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 </p>
                                 {task.is_pinned && (
                                     <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                )}
+                                {task.repeat_interval && (
+                                    <svg
+                                        className="h-3.5 w-3.5 shrink-0 text-indigo-400"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+                                        title={`Repeats ${task.repeat_interval}${task.repeat_until ? ` until ${task.repeat_until}` : ''}`}
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
                                 )}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -475,6 +613,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
+                            {task.priority && task.priority !== 'medium' && (
+                                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                    {priorityLabels[task.priority] ?? task.priority}
+                                </span>
+                            )}
                             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                 {task.status.replace('_', ' ')}
                             </span>
@@ -508,7 +651,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
             {!isEditing && isAssignee && task.status === 'todo' && (
                 <div className="mt-2">
-                    <SecondaryButton onClick={startTask}>Start Task</SecondaryButton>
+                    {task.dependencies?.some((d) => d.status !== 'done') ? (
+                        <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Blocked by: {task.dependencies.filter((d) => d.status !== 'done').map((d) => d.title).join(', ')}
+                        </p>
+                    ) : (
+                        <SecondaryButton onClick={startTask}>Start Task</SecondaryButton>
+                    )}
                 </div>
             )}
 
@@ -706,6 +855,230 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             )}
 
             <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <button
+                        onClick={() => setShowChecklist((v) => !v)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
+                        </svg>
+                        {task.checklist_items?.length > 0
+                            ? `Checklist (${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length})`
+                            : 'Checklist'}
+                        <svg className={`h-3.5 w-3.5 transition-transform ${showChecklist ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => setShowHistory((v) => !v)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
+                        <svg className={`h-3.5 w-3.5 transition-transform ${showHistory ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => setShowTimeLog((v) => !v)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2M12 3a9 9 0 100 18 9 9 0 000-18z" />
+                        </svg>
+                        {(() => {
+                            const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
+                            return total > 0
+                                ? `Time (${total}${task.estimated_hours ? `/${task.estimated_hours}` : ''}h)`
+                                : 'Log Time';
+                        })()}
+                        <svg className={`h-3.5 w-3.5 transition-transform ${showTimeLog ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => setShowDependencies((v) => !v)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        {task.dependencies?.length > 0 ? `Blocked by (${task.dependencies.length})` : 'Dependencies'}
+                        <svg className={`h-3.5 w-3.5 transition-transform ${showDependencies ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+
+                {showChecklist && (
+                    <div className="mt-3 space-y-2">
+                        {task.checklist_items?.length > 0 && (
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                <div
+                                    className="h-full rounded-full bg-indigo-500 transition-all"
+                                    style={{
+                                        width: `${Math.round((task.checklist_items.filter((i) => i.done).length / task.checklist_items.length) * 100)}%`,
+                                    }}
+                                />
+                            </div>
+                        )}
+                        {task.checklist_items?.map((item) => (
+                            <div key={item.id} className="flex items-center gap-2 group">
+                                <input
+                                    type="checkbox"
+                                    checked={item.done}
+                                    onChange={() => toggleChecklistItem(item)}
+                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                                />
+                                <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                    {item.title}
+                                </span>
+                                <button
+                                    onClick={() => deleteChecklistItem(item)}
+                                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                    title="Remove item"
+                                >
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        <form onSubmit={addChecklistItem} className="flex items-center gap-2 pt-1">
+                            <TextInput
+                                value={checklistForm.data.title}
+                                onChange={(e) => checklistForm.setData('title', e.target.value)}
+                                placeholder="Add a checklist item…"
+                                className="block w-full text-sm"
+                            />
+                            <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
+                        </form>
+                    </div>
+                )}
+
+                {showHistory && (
+                    <div className="mt-3 space-y-2">
+                        {(!task.activity_logs || task.activity_logs.length === 0) && (
+                            <p className="text-sm text-gray-400 dark:text-gray-500">No history yet for this task.</p>
+                        )}
+                        {task.activity_logs?.map((log) => (
+                            <div key={log.id} className="flex items-start gap-2 text-sm">
+                                <Avatar user={log.user} size="h-5 w-5" className="mt-0.5 shrink-0" />
+                                <p className="min-w-0 flex-1 text-gray-600 dark:text-gray-400">
+                                    {describeLog(log)}
+                                    <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{timeAgo(log.created_at)}</span>
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {showTimeLog && (
+                    <div className="mt-3 space-y-2">
+                        {(() => {
+                            const total = task.time_logs?.reduce((sum, l) => sum + Number(l.hours), 0) ?? 0;
+                            const estimate = Number(task.estimated_hours) || 0;
+                            const pct = estimate > 0 ? Math.min(100, Math.round((total / estimate) * 100)) : 0;
+                            return estimate > 0 ? (
+                                <div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${total > estimate ? 'bg-red-500' : 'bg-indigo-500'}`}
+                                            style={{ width: `${pct}%` }}
+                                        />
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{total}h logged of {estimate}h estimated</p>
+                                </div>
+                            ) : total > 0 ? (
+                                <p className="text-xs text-gray-400 dark:text-gray-500">{total}h logged (no estimate set)</p>
+                            ) : null;
+                        })()}
+                        {task.time_logs?.map((log) => (
+                            <div key={log.id} className="flex items-center gap-2 text-sm group">
+                                <Avatar user={log.user} size="h-5 w-5" className="shrink-0" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{log.hours}h</span>
+                                {log.note && <span className="min-w-0 flex-1 truncate text-gray-500 dark:text-gray-400">{log.note}</span>}
+                                <span className="ml-auto shrink-0 text-xs text-gray-400 dark:text-gray-500">{log.logged_date}</span>
+                                {(log.user_id === currentUserId || canManage) && (
+                                    <button
+                                        onClick={() => deleteTimeLog(log)}
+                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                        title="Remove entry"
+                                    >
+                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <form onSubmit={logTime} className="flex items-center gap-2 pt-1">
+                            <TextInput
+                                type="number"
+                                step="0.5"
+                                min="0.1"
+                                value={timeLogForm.data.hours}
+                                onChange={(e) => timeLogForm.setData('hours', e.target.value)}
+                                placeholder="Hours"
+                                className="w-20 text-sm"
+                            />
+                            <TextInput
+                                value={timeLogForm.data.note}
+                                onChange={(e) => timeLogForm.setData('note', e.target.value)}
+                                placeholder="Note (optional)"
+                                className="block w-full text-sm"
+                            />
+                            <SecondaryButton type="submit" disabled={timeLogForm.processing || !timeLogForm.data.hours}>Log</SecondaryButton>
+                        </form>
+                    </div>
+                )}
+
+                {showDependencies && (
+                    <div className="mt-3 space-y-2">
+                        {(!task.dependencies || task.dependencies.length === 0) && (
+                            <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
+                        )}
+                        {task.dependencies?.map((dep) => (
+                            <div key={dep.id} className="flex items-center gap-2 text-sm group">
+                                <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{dep.title}</span>
+                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                                {canManage && (
+                                    <button
+                                        onClick={() => removeDependency(dep.id)}
+                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                        title="Remove dependency"
+                                    >
+                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        {canManage && (
+                            <div className="flex items-center gap-2 pt-1">
+                                <select
+                                    value={dependencyPick}
+                                    onChange={(e) => setDependencyPick(e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                >
+                                    <option value="">Add a dependency…</option>
+                                    {allTasks
+                                        .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id))
+                                        .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                                </select>
+                                <SecondaryButton onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
                 <button
                     onClick={() => setShowComments((v) => !v)}
                     className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
@@ -831,6 +1204,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
             </div>
         </div>
+        {ConfirmDialog}
         </div>
     );
 }

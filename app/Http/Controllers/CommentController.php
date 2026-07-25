@@ -33,7 +33,7 @@ class CommentController extends Controller
         ProjectActivityLog::log($task->project, 'comment_added', [
             'task_title' => $task->title,
             'preview' => Str::limit($validated['body'], 200),
-        ]);
+        ], $task);
 
         broadcast(new CommentPosted($comment))->toOthers();
 
@@ -92,7 +92,7 @@ class CommentController extends Controller
         ProjectActivityLog::log($task->project, 'comment_deleted', [
             'task_title' => $task->title,
             'preview' => Str::limit($comment->body, 200),
-        ]);
+        ], $task);
 
         $comment->delete();
 
@@ -121,7 +121,7 @@ class CommentController extends Controller
                 'task_title' => $task->title,
                 'old_preview' => Str::limit($oldBody, 200),
                 'new_preview' => Str::limit($validated['body'], 200),
-            ]);
+            ], $task);
         }
 
         return back();

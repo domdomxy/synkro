@@ -22,6 +22,9 @@ use App\Http\Controllers\SuspensionAppealController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\TaskChecklistItemController;
+use App\Http\Controllers\TaskTimeLogController;
+use App\Http\Controllers\TaskDependencyController;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Task;
@@ -78,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notes/{note}/items/completed', [ProjectNoteController::class, 'clearCompletedItems'])->name('projects.notes.items.clear-completed');
     Route::delete('/notes/{note}/items/{itemId}', [ProjectNoteController::class, 'removeItem'])->name('projects.notes.items.remove');
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::post('/projects/{project}/tasks/bulk', [TaskController::class, 'bulkUpdate'])->name('tasks.bulk');
     Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
     Route::get('/projects/{project}/deliverables', [ProjectController::class, 'deliverables'])->name('projects.deliverables');
@@ -100,6 +104,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download');
+    Route::post('/tasks/{task}/checklist', [TaskChecklistItemController::class, 'store'])->name('checklist.store');
+    Route::patch('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'update'])->name('checklist.update');
+    Route::delete('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'destroy'])->name('checklist.destroy');
+    Route::post('/tasks/{task}/time', [TaskTimeLogController::class, 'store'])->name('time.store');
+    Route::delete('/time/{timeLog}', [TaskTimeLogController::class, 'destroy'])->name('time.destroy');
+    Route::post('/tasks/{task}/dependencies', [TaskDependencyController::class, 'store'])->name('dependencies.store');
+    Route::delete('/tasks/{task}/dependencies/{dependsOnTask}', [TaskDependencyController::class, 'destroy'])->name('dependencies.destroy');
     
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::patch('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');

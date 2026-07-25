@@ -22,6 +22,11 @@ class Task extends Model
         'edited_at',
         'pending_resolution',
         'overdue_notified_at',
+        'priority',
+        'estimated_hours',
+        'repeat_interval',
+        'repeat_until',
+        'parent_task_id',
     ];
 
     protected $casts = [
@@ -29,6 +34,7 @@ class Task extends Model
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
         'overdue_notified_at' => 'datetime',
+        'repeat_until' => 'date',
     ];
 
     public function project(): BelongsTo
@@ -52,5 +58,47 @@ class Task extends Model
     public function pinnedBy()
     {
         return $this->belongsToMany(User::class, 'pinned_tasks');
+    }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ProjectActivityLog::class)->latest();
+    }
+
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(TaskChecklistItem::class)->orderBy('position');
+    }
+
+    public function timeLogs(): HasMany
+    {
+        return $this->hasMany(TaskTimeLog::class)->latest('logged_date');
+    }
+
+    public function parentTask(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'parent_task_id');
+    }
+
+    public function childOccurrences(): HasMany
+    {
+        return $this->hasMany(Task::class, 'parent_task_id');
+    }
+
+    /** Tasks that THIS task depends on (must be done before this one can start). */
+    public function dependencies()
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'task_id', 'depends_on_task_id')->withTimestamps();
+    }
+
+    /** Tasks that depend on this one. */
+    public function dependents()
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_task_id', 'task_id')->withTimestamps();
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->dependencies()->where('status', '!=', 'done')->exists();
     }
 }

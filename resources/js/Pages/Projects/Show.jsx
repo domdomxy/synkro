@@ -4,8 +4,11 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import DangerButton from '@/Components/DangerButton';
 import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
+import TaskBoard from '@/Components/TaskBoard';
+import useConfirm from '@/hooks/useConfirm';
 import UserSearchInput from '@/Components/UserSearchInput';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
@@ -328,6 +331,7 @@ function NotesPanel({ project, myNotes }) {
 
     const newForm = useForm({ title: '', itemsText: '' });
     const editForm = useForm({ title: '', items: [] });
+    const { confirm, ConfirmDialog } = useConfirm();
 
     const sorted = useMemo(
         () => [...myNotes].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
@@ -358,15 +362,15 @@ function NotesPanel({ project, myNotes }) {
         editForm.patch(route('projects.notes.update', noteId), { onSuccess: () => setEditingId(null) });
     };
 
-    const deleteNote = (noteId) => { if (confirm('Delete this checklist?')) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
+    const deleteNote = async (noteId) => { if (await confirm('Delete this checklist?', { danger: true, confirmLabel: 'Delete' })) router.delete(route('projects.notes.destroy', noteId), { preserveScroll: true }); };
 
     const toggleItem = (noteId, itemId) => router.patch(route('projects.notes.items.toggle', [noteId, itemId]), {}, { preserveScroll: true });
     const removeItem = (noteId, itemId) => router.delete(route('projects.notes.items.remove', [noteId, itemId]), { preserveScroll: true });
     const addItem = (noteId, text) => router.post(route('projects.notes.items.add', noteId), { text }, { preserveScroll: true });
     const clearCompletedItems = (noteId) => router.delete(route('projects.notes.items.clear-completed', noteId), { preserveScroll: true });
 
-    const clearAll = () => {
-        if (confirm('Clear all your checklists on this project? This cannot be undone.')) {
+    const clearAll = async () => {
+        if (await confirm('Clear all your checklists on this project? This cannot be undone.', { danger: true, confirmLabel: 'Clear All' })) {
             router.delete(route('projects.notes.clear', project.id));
         }
     };
@@ -451,6 +455,7 @@ function NotesPanel({ project, myNotes }) {
             )}
                 </>
             )}
+            {ConfirmDialog}
         </div>
     );
 }
@@ -565,7 +570,40 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [memberSearch, setMemberSearch] = useState('');
     const [taskSearch, setTaskSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [priorityFilter, setPriorityFilter] = useState('all');
+    const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+    const [viewMode, setViewMode] = useState('list');
+    const { confirm, ConfirmDialog } = useConfirm();
+    const [bulkAction, setBulkAction] = useState({ status: 'todo', priority: 'low', assigned_to: '' });
+    const [bulkProcessing, setBulkProcessing] = useState(false);
+
+    const toggleTaskSelect = (taskId) => {
+        setSelectedTaskIds((prev) => (prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]));
+    };
+
+    const clearSelection = () => setSelectedTaskIds([]);
+
+    const runBulkAction = async (action, extra = {}) => {
+        if (selectedTaskIds.length === 0) return;
+        if (action === 'delete' && !(await confirm(`Delete ${selectedTaskIds.length} task(s)? This can't be undone.`, { danger: true, confirmLabel: 'Delete' }))) return;
+
+        setBulkProcessing(true);
+        router.post(route('tasks.bulk', project.id), { task_ids: selectedTaskIds, action, ...extra }, {
+            preserveScroll: true,
+            onSuccess: () => setSelectedTaskIds([]),
+            onFinish: () => setBulkProcessing(false),
+        });
+    };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+
+    const jumpToTaskInList = (task) => {
+        setViewMode('list');
+        setHighlightedTaskId(task.id);
+        setTimeout(() => {
+            document.getElementById(`task-${task.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+        setTimeout(() => setHighlightedTaskId(null), 3000);
+    };
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -581,7 +619,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     }, []);
 
     const memberForm = useForm({ email: '', role: 'member' });
-    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '' });
+    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', estimated_hours: '', repeat_interval: '', repeat_until: '' });
     const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
@@ -610,15 +648,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
-    const removeMember = (member) => {
-        if (confirm(`Remove ${member.name} from this project?`)) {
+    const removeMember = async (member) => {
+        if (await confirm(`Remove ${member.name} from this project?`, { danger: true, confirmLabel: 'Remove' })) {
             router.delete(route('projects.members.destroy', [project.id, member.id]));
         }
     };
 
-    const changeRole = (member, newRole) => {
+    const changeRole = async (member, newRole) => {
         if (newRole === member.pivot.role) return;
-        if (!confirm(`Change ${member.name}'s role to ${newRole}?`)) return;
+        if (!(await confirm(`Change ${member.name}'s role to ${newRole}?`))) return;
         router.patch(route('projects.members.update', [project.id, member.id]), { role: newRole });
     };
 
@@ -635,7 +673,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     };
 
-    const clearTaskFilters = () => { setTaskSearch(''); setStatusFilter('all'); };
+    const clearTaskFilters = () => { setTaskSearch(''); setStatusFilter('all'); setPriorityFilter('all'); };
 
     const filteredMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
@@ -649,15 +687,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         const term = taskSearch.trim().toLowerCase();
         return project.tasks.filter((t) => {
             if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+            if (priorityFilter !== 'all' && (t.priority ?? 'medium') !== priorityFilter) return false;
             if (!term) return true;
             const titleMatch = t.title.toLowerCase().includes(term);
             const assigneeMatch = t.assignee?.name?.toLowerCase().includes(term);
             const unassignedMatch = !t.assignee && 'unassigned'.includes(term);
             return titleMatch || assigneeMatch || unassignedMatch;
         });
-    }, [project.tasks, taskSearch, statusFilter]);
+    }, [project.tasks, taskSearch, statusFilter, priorityFilter]);
 
-    const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all';
+    const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
     const canLeave = !isOwner && role !== 'admin';
 
     return (
@@ -781,6 +820,35 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         <InputLabel htmlFor="due_date" value="Due Date & Time" />
                                                         <TextInput id="due_date" type="datetime-local" step="1" value={taskForm.data.due_date} onChange={(e) => taskForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
                                                     </div>
+                                                    <div className="flex-1">
+                                                        <InputLabel htmlFor="priority" value="Priority" />
+                                                        <select id="priority" value={taskForm.data.priority} onChange={(e) => taskForm.setData('priority', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                            <option value="low">Low</option>
+                                                            <option value="medium">Medium</option>
+                                                            <option value="high">High</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <InputLabel htmlFor="estimated_hours" value="Estimated Hours" />
+                                                        <TextInput id="estimated_hours" type="number" step="0.5" min="0" value={taskForm.data.estimated_hours} onChange={(e) => taskForm.setData('estimated_hours', e.target.value)} className="mt-1 block w-full" placeholder="e.g. 4" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <div className="flex-1">
+                                                        <InputLabel htmlFor="repeat_interval" value="Repeat" />
+                                                        <select id="repeat_interval" value={taskForm.data.repeat_interval} onChange={(e) => taskForm.setData('repeat_interval', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                            <option value="">Doesn't repeat</option>
+                                                            <option value="daily">Daily</option>
+                                                            <option value="weekly">Weekly</option>
+                                                            <option value="monthly">Monthly</option>
+                                                        </select>
+                                                    </div>
+                                                    {taskForm.data.repeat_interval && (
+                                                        <div className="flex-1">
+                                                            <InputLabel htmlFor="repeat_until" value="Repeat Until (optional)" />
+                                                            <TextInput id="repeat_until" type="date" value={taskForm.data.repeat_until} onChange={(e) => taskForm.setData('repeat_until', e.target.value)} className="mt-1 block w-full" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <PrimaryButton disabled={taskForm.processing}>Create Task</PrimaryButton>
@@ -797,24 +865,98 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>
                                         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">{project.tasks.length}</span>
+                                        <div className="ml-2 flex rounded-md border border-gray-200 p-0.5 dark:border-gray-700">
+                                            <button
+                                                onClick={() => setViewMode('list')}
+                                                className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
+                                            >
+                                                List
+                                            </button>
+                                            <button
+                                                onClick={() => setViewMode('board')}
+                                                className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'board' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
+                                            >
+                                                Board
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-48 text-sm" />
                                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                                         </select>
+                                        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                            <option value="all">All Priorities</option>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
                                         {hasActiveTaskFilters && <button onClick={clearTaskFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>}
                                     </div>
                                 </div>
                                 <TaskStatusBar tasks={project.tasks} />
-                                {hasActiveTaskFilters && (
+                                {viewMode === 'board' && (
+                                    <TaskBoard tasks={filteredTasks} canManage={canManage} projectId={project.id} onCardClick={jumpToTaskInList} />
+                                )}
+                                {viewMode === 'list' && hasActiveTaskFilters && (
                                     <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">Showing {filteredTasks.length} of {project.tasks.length} tasks</p>
                                 )}
                             </div>
 
+                            {viewMode === 'list' && canManage && selectedTaskIds.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
+                                    <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedTaskIds.length} selected</span>
+                                    <select
+                                        value={bulkAction.status}
+                                        onChange={(e) => setBulkAction((s) => ({ ...s, status: e.target.value }))}
+                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    >
+                                        {STATUS_OPTIONS.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                    </select>
+                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('status', { status: bulkAction.status })}>Set Status</SecondaryButton>
+
+                                    <select
+                                        value={bulkAction.priority}
+                                        onChange={(e) => setBulkAction((s) => ({ ...s, priority: e.target.value }))}
+                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('priority', { priority: bulkAction.priority })}>Set Priority</SecondaryButton>
+
+                                    <select
+                                        value={bulkAction.assigned_to}
+                                        onChange={(e) => setBulkAction((s) => ({ ...s, assigned_to: e.target.value }))}
+                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {project.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    </select>
+                                    <SecondaryButton disabled={bulkProcessing} onClick={() => runBulkAction('assign', { assigned_to: bulkAction.assigned_to || null })}>Assign</SecondaryButton>
+
+                                    <DangerButton disabled={bulkProcessing} onClick={() => runBulkAction('delete')}>Delete</DangerButton>
+                                    <button onClick={clearSelection} className="ml-auto text-sm text-indigo-700 hover:underline dark:text-indigo-300">Clear selection</button>
+                                </div>
+                            )}
+
+                            {viewMode === 'list' && (
                             <div className="space-y-3">
                                 {filteredTasks.map((task) => (
-                                    <TaskRow key={task.id} task={task} currentUserId={auth.user.id} canManage={canManage} canReview={canReview} isHighlighted={task.id === highlightedTaskId} members={project.members} />
+                                    <TaskRow
+                                        key={task.id}
+                                        task={task}
+                                        currentUserId={auth.user.id}
+                                        canManage={canManage}
+                                        canReview={canReview}
+                                        isHighlighted={task.id === highlightedTaskId}
+                                        members={project.members}
+                                        selectable={canManage}
+                                        selected={selectedTaskIds.includes(task.id)}
+                                        onToggleSelect={toggleTaskSelect}
+                                        allTasks={project.tasks}
+                                    />
                                 ))}
                                 {filteredTasks.length === 0 && (
                                     <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center dark:border-gray-700">
@@ -825,6 +967,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </div>
                                 )}
                             </div>
+                            )}
                         </div>
 
                         {/* RIGHT: Members */}
@@ -876,7 +1019,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         <p className="text-xs capitalize text-gray-400 dark:text-gray-500">{inv.role}</p>
                                                     </div>
                                                     <button
-                                                        onClick={() => { if (confirm(`Cancel the invitation to ${inv.invited_user.name}?`)) router.delete(route('projects.invitations.destroy', inv.id)); }}
+                                                        onClick={async () => { if (await confirm(`Cancel the invitation to ${inv.invited_user.name}?`, { danger: true, confirmLabel: 'Cancel Invitation' })) router.delete(route('projects.invitations.destroy', inv.id)); }}
                                                         className="shrink-0 text-xs text-red-500 hover:underline"
                                                     >
                                                         Cancel
@@ -900,6 +1043,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 form={leaveForm}
                 onSubmit={submitLeave}
             />
+            {ConfirmDialog}
         </AuthenticatedLayout>
     );
 }
