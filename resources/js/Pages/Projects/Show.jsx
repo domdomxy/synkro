@@ -51,6 +51,21 @@ function SearchIcon() {
     );
 }
 
+function RemoveButton({ onClick, title = 'Remove' }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            title={title}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+        >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    );
+}
+
 function SearchInput({ value, onChange, placeholder, className = '' }) {
     return (
         <div className="relative">
@@ -649,7 +664,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     }, []);
 
     const memberForm = useForm({ email: '', role: 'member' });
-    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium' });
+    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', dependencies: [] });
+    const [newTaskDependencyPick, setNewTaskDependencyPick] = useState('');
     const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
@@ -679,7 +695,20 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const submitTask = (e) => {
         e.preventDefault();
         taskForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
-        taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
+        taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setNewTaskDependencyPick(''); setShowNewTaskForm(false); } });
+    };
+
+    const addNewTaskDependency = () => {
+        if (!newTaskDependencyPick) return;
+        const id = Number(newTaskDependencyPick);
+        if (!taskForm.data.dependencies.includes(id)) {
+            taskForm.setData('dependencies', [...taskForm.data.dependencies, id]);
+        }
+        setNewTaskDependencyPick('');
+    };
+
+    const removeNewTaskDependency = (id) => {
+        taskForm.setData('dependencies', taskForm.data.dependencies.filter((depId) => depId !== id));
     };
 
     const [memberToRemove, setMemberToRemove] = useState(null);
@@ -938,6 +967,36 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                             <option value="medium">Medium</option>
                                                             <option value="high">High</option>
                                                         </select>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="dependencies" value="Dependencies" />
+                                                    {taskForm.data.dependencies.length > 0 && (
+                                                        <ul className="mt-1 space-y-1">
+                                                            {taskForm.data.dependencies.map((id) => {
+                                                                const dep = project.tasks.find((t) => t.id === id);
+                                                                return (
+                                                                    <li key={id} className="flex items-center gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-sm dark:bg-gray-900/40">
+                                                                        <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{dep?.title ?? `Task #${id}`}</span>
+                                                                        <RemoveButton onClick={() => removeNewTaskDependency(id)} />
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    )}
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <select
+                                                            id="dependencies"
+                                                            value={newTaskDependencyPick}
+                                                            onChange={(e) => setNewTaskDependencyPick(e.target.value)}
+                                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                        >
+                                                            <option value="">Add a dependency…</option>
+                                                            {project.tasks
+                                                                .filter((t) => !taskForm.data.dependencies.includes(t.id))
+                                                                .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                                                        </select>
+                                                        <SecondaryButton type="button" onClick={addNewTaskDependency} disabled={!newTaskDependencyPick}>Add</SecondaryButton>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">

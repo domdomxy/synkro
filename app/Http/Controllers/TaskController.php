@@ -55,7 +55,12 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:low,medium,high',
+            'dependencies' => 'nullable|array',
+            'dependencies.*' => 'integer|exists:tasks,id',
         ]);
+
+        $dependencyIds = $validated['dependencies'] ?? [];
+        unset($validated['dependencies']);
 
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
         // Allow-list matches ProjectController's project-description sanitization for consistency.
@@ -66,6 +71,13 @@ class TaskController extends Controller
         $validated['description'] = Linkifier::linkify($validated['description']);
 
         $task = $project->tasks()->create($validated);
+
+        if (! empty($dependencyIds)) {
+            $validDependencyIds = $project->tasks()->whereIn('id', $dependencyIds)->pluck('id')->all();
+            if (! empty($validDependencyIds)) {
+                $task->dependencies()->attach($validDependencyIds);
+            }
+        }
  
         ProjectActivityLog::log($project, 'task_created', ['task_title' => $task->title], $task);
  

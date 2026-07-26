@@ -262,6 +262,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [showAddPanel, setShowAddPanel] = useState(false);
     const [linkInput, setLinkInput] = useState('');
     const fileInputRef = useRef(null);
+    const dragCounter = useRef(0);
+    const [isDraggingFiles, setIsDraggingFiles] = useState(false);
     const [showDeliverables, setShowDeliverables] = useState(false);
     const [showFullDescription, setShowFullDescription] = useState(false);
     const [pinning, setPinning] = useState(false);
@@ -271,13 +273,12 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
 
-    // Comments / Checklist / Time / Dependencies share one expandable area below the
-    // task — only one is shown at a time so the row doesn't stack multiple open panels.
+    // Comments / Checklist share one expandable area below the task — only one is
+    // shown at a time so the row doesn't stack multiple open panels.
     const [activeSection, setActiveSection] = useState(null);
     const toggleSection = (section) => setActiveSection((v) => (v === section ? null : section));
     const showComments = activeSection === 'comments';
     const showChecklist = activeSection === 'checklist';
-    const showDependencies = activeSection === 'dependencies';
 
     useEffect(() => {
         if (autoOpenHistory) setShowHistory(true);
@@ -335,6 +336,30 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         const newFiles = Array.from(e.target.files);
         submitForm.setData('files', [...submitForm.data.files, ...newFiles]);
         e.target.value = '';
+    };
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        dragCounter.current++;
+        setIsDraggingFiles(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        dragCounter.current = Math.max(0, dragCounter.current - 1);
+        if (dragCounter.current === 0) setIsDraggingFiles(false);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        dragCounter.current = 0;
+        setIsDraggingFiles(false);
+        const dropped = Array.from(e.dataTransfer.files ?? []);
+        if (dropped.length > 0) submitForm.setData('files', [...submitForm.data.files, ...dropped]);
     };
 
     const addChecklistItem = (e) => {
@@ -553,6 +578,55 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         </select>
                         <InputError message={editForm.errors.priority} className="mt-1" />
                     </div>
+                    <div>
+                        <InputLabel value="Dependencies" />
+                        <div className="mt-1 space-y-2 rounded-md border border-indigo-100 bg-white p-2.5 dark:border-indigo-900 dark:bg-gray-900/40">
+                            {(!task.dependencies || task.dependencies.length === 0) && (
+                                <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
+                            )}
+                            {task.dependencies?.map((dep) => (
+                                <div key={dep.id} className="flex items-center gap-2 text-sm group">
+                                    <button
+                                        type="button"
+                                        onClick={() => onJumpToTask?.(dep.id)}
+                                        title={`Go to "${dep.title}"`}
+                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-0.5 text-left transition hover:text-indigo-600 dark:hover:text-indigo-400"
+                                    >
+                                        <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                        <span className="min-w-0 flex-1 truncate text-gray-700 group-hover:underline dark:text-gray-300">{dep.title}</span>
+                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                                    </button>
+                                    {canManage && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDependency(dep.id)}
+                                            className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
+                                            title="Remove dependency"
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {canManage && (
+                                <div className="flex items-center gap-2 pt-1">
+                                    <select
+                                        value={dependencyPick}
+                                        onChange={(e) => setDependencyPick(e.target.value)}
+                                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    >
+                                        <option value="">Add a dependency…</option>
+                                        {allTasks
+                                            .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id))
+                                            .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                                    </select>
+                                    <SecondaryButton type="button" onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex gap-2">
                         <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
                         <button type="button" onClick={() => { editForm.reset(); setIsEditing(false); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
@@ -679,7 +753,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         </button>
                     )}
                     {(showAddPanel || submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
-                        <form onSubmit={submitTask} className="rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
+                        <form
+                            onSubmit={submitTask}
+                            onDragEnter={handleDragEnter}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`rounded-md border-2 border-dashed p-3 transition ${
+                                isDraggingFiles
+                                    ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-950/30'
+                                    : 'border-transparent bg-gray-50 dark:bg-gray-900/40'
+                            }`}
+                        >
                             <div className="flex flex-wrap items-center gap-2">
                                 <input ref={fileInputRef} type="file" multiple onChange={addFiles} className="hidden" />
                                 <button
@@ -708,27 +793,78 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         Add
                                     </button>
                                 </div>
+                                <p className="w-full text-[11px] text-gray-400 dark:text-gray-500">or drag and drop files anywhere in this box</p>
                             </div>
                             {(submitForm.data.files.length > 0 || submitForm.data.links.length > 0) && (
-                                <ul className="mt-2.5 space-y-1">
-                                    {submitForm.data.files.map((file, i) => (
-                                        <li key={`file-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
-                                            <FileTypeIcon name={file.name} className="h-4 w-4 shrink-0 text-gray-400" />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm text-gray-700 dark:text-gray-300">{file.name}</p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(file.size)}</p>
-                                            </div>
-                                            <RemoveButton onClick={() => removeFile(i)} />
-                                        </li>
-                                    ))}
-                                    {submitForm.data.links.map((link, i) => (
-                                        <li key={`link-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
-                                            <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                                            <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{link}</p>
-                                            <RemoveButton onClick={() => removeLink(i)} />
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div className="mt-2.5">
+                                    {task.deliverables?.length > 0 && (
+                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">New</p>
+                                    )}
+                                    <ul className="space-y-1">
+                                        {submitForm.data.files.map((file, i) => (
+                                            <li key={`file-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
+                                                <FileTypeIcon name={file.name} className="h-4 w-4 shrink-0 text-gray-400" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm text-gray-700 dark:text-gray-300">{file.name}</p>
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(file.size)}</p>
+                                                </div>
+                                                <RemoveButton onClick={() => removeFile(i)} />
+                                            </li>
+                                        ))}
+                                        {submitForm.data.links.map((link, i) => (
+                                            <li key={`link-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
+                                                <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                                                <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{link}</p>
+                                                <RemoveButton onClick={() => removeLink(i)} />
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {task.deliverables?.length > 0 && (
+                                <div className="mt-2.5">
+                                    <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted</p>
+                                    <ul className="space-y-1">
+                                        {task.deliverables.map((d) => (
+                                            <li key={d.id} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
+                                                {d.type === 'file' ? (
+                                                    <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
+                                                ) : (
+                                                    <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                    {d.type === 'file' ? (
+                                                        <a
+                                                            href={`/storage/${d.path}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                                            title={d.original_name}
+                                                        >
+                                                            {d.original_name}
+                                                        </a>
+                                                    ) : (
+                                                        <a
+                                                            href={d.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                                            title={d.url}
+                                                        >
+                                                            {d.url}
+                                                        </a>
+                                                    )}
+                                                    {d.size != null && (
+                                                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(d.size)}</p>
+                                                    )}
+                                                </div>
+                                                {canEditDeliverables && (
+                                                    <RemoveButton onClick={() => removeDeliverable(d.id)} />
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             )}
                             {submitForm.progress && (
                                 <div className="mt-2.5">
@@ -757,40 +893,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
-            {task.deliverables?.length > 0 && (
+            {!showAddPanel && task.deliverables?.length > 0 && (
                 <div className="mt-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <FooterToggle
-                            active={showDeliverables}
-                            onClick={() => setShowDeliverables((v) => !v)}
-                            label="Submitted"
-                            count={task.deliverables.length}
-                            icon={
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                            }
-                        />
-                        {task.status !== 'done' && task.deliverables?.some((d) => d.type === 'file') && (
-                            <a
-                                href={route('tasks.download', task.id)}
-                                title="Download ZIP"
-                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                            >
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                                </svg>
-                                Download ZIP
-                            </a>
-                        )}
-                        {task.updated_at && ['submitted', 'in_review', 'done'].includes(task.status) && (
-                            <span className="flex items-center gap-1 px-1 text-[11px] text-gray-400 dark:text-gray-500">
-                                Updated {formatDue(task.updated_at)}
-                            </span>
-                        )}
-                    </div>
                     {showDeliverables && (
-                        <ul className="mt-2 space-y-1 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
+                        <ul className="mb-2 space-y-1 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
                             {task.deliverables.map((d) => (
                                 <li key={d.id} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
                                     {d.type === 'file' ? (
@@ -831,6 +937,36 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             ))}
                         </ul>
                     )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <FooterToggle
+                            active={showDeliverables}
+                            onClick={() => setShowDeliverables((v) => !v)}
+                            label="Submitted"
+                            count={task.deliverables.length}
+                            icon={
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                            }
+                        />
+                        {task.status !== 'done' && task.deliverables?.some((d) => d.type === 'file') && (
+                            <a
+                                href={route('tasks.download', task.id)}
+                                title="Download ZIP"
+                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                            >
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                                </svg>
+                                Download ZIP
+                            </a>
+                        )}
+                        {task.updated_at && ['submitted', 'in_review', 'done'].includes(task.status) && (
+                            <span className="flex items-center gap-1 px-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                Updated {formatDue(task.updated_at)}
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -892,26 +1028,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             </svg>
                         }
                     />
-                    <FooterToggle
-                        active={showChecklist}
-                        onClick={() => toggleSection('checklist')}
-                        label="Checklist"
-                        count={task.checklist_items?.length > 0 ? `${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length}` : null}
-                        icon={
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
-                            </svg>
-                        }
-                    />
                     <div className="ml-auto">
                         <FooterToggle
-                            active={showDependencies}
-                            onClick={() => toggleSection('dependencies')}
-                            label="Dependencies"
-                            count={task.dependencies?.length > 0 ? task.dependencies.length : null}
+                            active={showChecklist}
+                            onClick={() => toggleSection('checklist')}
+                            label="Checklist"
+                            count={task.checklist_items?.length > 0 ? `${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length}` : null}
                             icon={
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
                                 </svg>
                             }
                         />
@@ -961,54 +1086,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             />
                             <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
                         </form>
-                    </div>
-                )}
-
-                {showDependencies && (
-                    <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
-                        {(!task.dependencies || task.dependencies.length === 0) && (
-                            <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
-                        )}
-                        {task.dependencies?.map((dep) => (
-                            <div key={dep.id} className="flex items-center gap-2 text-sm group">
-                                <button
-                                    type="button"
-                                    onClick={() => onJumpToTask?.(dep.id)}
-                                    title={`Go to "${dep.title}"`}
-                                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-0.5 text-left transition hover:text-indigo-600 dark:hover:text-indigo-400"
-                                >
-                                    <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                    <span className="min-w-0 flex-1 truncate text-gray-700 group-hover:underline dark:text-gray-300">{dep.title}</span>
-                                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
-                                </button>
-                                {canManage && (
-                                    <button
-                                        onClick={() => removeDependency(dep.id)}
-                                        className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
-                                        title="Remove dependency"
-                                    >
-                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        {canManage && (
-                            <div className="flex items-center gap-2 pt-1">
-                                <select
-                                    value={dependencyPick}
-                                    onChange={(e) => setDependencyPick(e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                >
-                                    <option value="">Add a dependency…</option>
-                                    {allTasks
-                                        .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id))
-                                        .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-                                </select>
-                                <SecondaryButton onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
-                            </div>
-                        )}
                     </div>
                 )}
 
