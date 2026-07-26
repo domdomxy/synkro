@@ -27,11 +27,13 @@ class EmailPreferences
                     'project.invitation_received' => 'Someone invited you to a project',
                     'project.invitation_accepted' => 'Your invitation was accepted',
                     'project.invitation_denied' => 'Your invitation was declined',
+                    'project.member_added' => 'A new member joined a project you belong to',
                     'project.member_left' => 'A member left a project you own or manage',
                     'project.removed' => 'You were removed from a project',
                     'project.edited' => 'A project you belong to was edited',
                     'project.ownership_transferred' => 'Project ownership was transferred to you',
                     'project.role_changed' => 'Your role in a project changed',
+                    'project.deleted' => 'A project you belonged to was deleted',
                 ],
             ],
             'task' => [

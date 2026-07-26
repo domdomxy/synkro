@@ -172,6 +172,21 @@ class ProjectController extends Controller
 
             $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
             foreach ($recipients as $recipient) {
+                if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_updated')) {
+                    $notification = \App\Models\UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'project_updated',
+                        'message' => "Project updated\n\"{$project->name}\" was edited",
+                        'url' => route('projects.show', $project->id, false),
+                    ]);
+
+                    try {
+                        broadcast(new \App\Events\ProjectUpdated($recipient->id, $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
                 NotificationMailer::send(
                     $recipient,
                     'project.edited',
@@ -191,6 +206,36 @@ class ProjectController extends Controller
         $this->authorize('delete', $project);
 
         ProjectActivityLog::log($project, 'project_deleted');
+
+        // Capture recipients, name, and id before delete() removes the project and its
+        // project_user pivot rows - nothing here is queryable off $project afterwards.
+        $projectName = $project->name;
+        $projectId = $project->id;
+        $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+
+        foreach ($recipients as $recipient) {
+            if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deleted')) {
+                $notification = \App\Models\UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'project_deleted',
+                    'message' => "Project deleted\n\"{$projectName}\" was deleted",
+                    'url' => route('projects.index', [], false),
+                ]);
+
+                try {
+                    broadcast(new \App\Events\ProjectDeleted($recipient->id, $projectName, $projectId, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            NotificationMailer::send(
+                $recipient,
+                'project.deleted',
+                "{$projectName} was deleted",
+                ["The project \"{$projectName}\" (ID {$projectId}) you belonged to was deleted."],
+            );
+        }
 
         $project->delete();
 
@@ -218,6 +263,21 @@ class ProjectController extends Controller
         $project->members()->updateExistingPivot(Auth::id(), ['role' => 'manager']);
 
         ProjectActivityLog::log($project, 'ownership_transferred', ['target_name' => $newOwner->name]);
+
+        if (\App\Support\NotificationPreferences::wantsType($newOwner, 'project_ownership_transferred')) {
+            $notification = \App\Models\UserNotification::create([
+                'user_id' => $newOwner->id,
+                'type' => 'project_ownership_transferred',
+                'message' => "Ownership transferred\nYou now own \"{$project->name}\"",
+                'url' => route('projects.show', $project->id, false),
+            ]);
+
+            try {
+                broadcast(new \App\Events\ProjectOwnershipTransferred($newOwner->id, $project, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         NotificationMailer::send(
             $newOwner,

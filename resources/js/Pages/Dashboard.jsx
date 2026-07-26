@@ -698,7 +698,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                                 />
                                 <Tooltip />
                                 <Legend wrapperStyle={{ color: 'currentColor' }} />
-                                <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
+                                <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
                                 <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
                                 <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
                             </AreaChart>

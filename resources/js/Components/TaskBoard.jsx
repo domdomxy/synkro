@@ -136,6 +136,19 @@ function TaskCard({ task, draggable, onDragStart, onClick }) {
                     {new Date(task.due_date).toLocaleDateString()}
                 </p>
             )}
+            {task.dependencies?.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-gray-100 pt-1.5 dark:border-gray-700/60">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        Depends on
+                    </p>
+                    {task.dependencies.map((dep) => (
+                        <div key={dep.id} className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400" title={dep.title}>
+                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                            <span className="truncate">{dep.title}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

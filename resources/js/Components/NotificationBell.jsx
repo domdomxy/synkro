@@ -20,6 +20,9 @@ const categoryMap = {
     member_left: 'membership',
     project_member_added: 'membership',
     project_role_changed: 'membership',
+    project_updated: 'membership',
+    project_ownership_transferred: 'membership',
+    project_deleted: 'membership',
     reminder: 'reminders',
     removed_from_project: 'membership',
     project_invitation: 'membership',
@@ -101,6 +104,21 @@ const typeStyles = {
         bg: 'bg-blue-100 dark:bg-blue-900',
         text: 'text-blue-600 dark:text-blue-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />,
+    },
+    project_updated: {
+        bg: 'bg-blue-100 dark:bg-blue-900',
+        text: 'text-blue-600 dark:text-blue-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />,
+    },
+    project_ownership_transferred: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />,
+    },
+    project_deleted: {
+        bg: 'bg-red-100 dark:bg-red-900',
+        text: 'text-red-600 dark:text-red-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
     },
     reminder: {
         bg: 'bg-amber-100 dark:bg-amber-900',
@@ -184,11 +202,16 @@ export default function NotificationBell() {
             '.task.assigned',
             '.task.reviewed',
             '.task.commented',
+            '.task.reopened',
             '.member.left',
             '.project.invitation',
             '.invitation.accepted',
             '.invitation.denied',
             '.project.role-changed',
+            '.project.member-added',
+            '.project.updated',
+            '.project.ownership-transferred',
+            '.project.deleted',
             '.task.done',
             '.task.review-needed',
             '.task.overdue',
@@ -222,6 +245,21 @@ export default function NotificationBell() {
             } else if (payload.type === 'project_role_changed') {
                 message = `Role changed\nYour role in "${payload.project_name}" changed from ${payload.old_role} to ${payload.new_role}`;
                 url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'project_member_added') {
+                message = `New member\n${payload.member_name ?? 'Someone'} joined "${payload.project_name}" as ${payload.role}`;
+                url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'project_updated') {
+                message = `Project updated\n"${payload.project_name}" was edited`;
+                url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'project_ownership_transferred') {
+                message = `Ownership transferred\nYou now own "${payload.project_name}"`;
+                url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'project_deleted') {
+                message = `Project deleted\n"${payload.project_name}" was deleted`;
+                url = '/projects';
+            } else if (payload.type === 'task_reopened') {
+                message = `Task reopened\n"${payload.title}" was reopened for changes${payload.feedback ? ': ' + payload.feedback : ''}`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_done') {
                 message = `Task completed\n"${payload.title}" was marked done`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;

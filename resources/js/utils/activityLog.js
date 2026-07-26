@@ -46,6 +46,8 @@ export const actionIconConfig = {
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
+    dependency_added: { path: ICON_PATHS.plus, color: 'text-amber-500' },
+    dependency_removed: { path: ICON_PATHS.minus, color: 'text-gray-400' },
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
     invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
     invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
@@ -99,6 +101,13 @@ export function getLogDetails(log) {
                 isChange: true,
             },
         ].filter(Boolean);
+    }
+
+    if (log.action === 'dependency_added' || log.action === 'dependency_removed') {
+        return [
+            { label: 'Task', value: d.task_title },
+            { label: 'Depends On', value: d.depends_on_title },
+        ].filter((r) => r.value);
     }
 
     if (log.action === 'task_assigned') {
@@ -167,6 +176,8 @@ export function describeLog(log) {
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
+        case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
+        case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
         case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
         case 'invitation_accepted': return `${d.target_name ?? actor} accepted the invitation and joined as ${d.role}`;

@@ -109,6 +109,14 @@ function formatSize(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function DownloadIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+        </svg>
+    );
+}
+
 function TaskFolder({ task }) {
     const [open, setOpen] = useState(false);
     const files = task.deliverables.filter((d) => d.type === 'file');
@@ -116,15 +124,25 @@ function TaskFolder({ task }) {
 
     return (
         <div className="border-b border-gray-100 last:border-0 dark:border-gray-700">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/40"
-            >
-                <ChevronIcon open={open} />
-                <FolderIcon className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
-                <span className="flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-200">{task.title}</span>
-                <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{files.length} file{files.length > 1 ? 's' : ''}</span>
-            </button>
+            <div className="flex w-full items-center gap-2.5 px-4 py-2.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                <button
+                    onClick={() => setOpen((v) => !v)}
+                    className="flex flex-1 items-center gap-2.5 text-left"
+                >
+                    <ChevronIcon open={open} />
+                    <FolderIcon className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                    <span className="flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-200">{task.title}</span>
+                    <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{files.length} file{files.length > 1 ? 's' : ''}</span>
+                </button>
+                <a
+                    href={route('tasks.download', task.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    title={`Download ${task.title} deliverables`}
+                    className="flex shrink-0 items-center rounded-md bg-indigo-50 p-1.5 text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/70"
+                >
+                    <DownloadIcon className="h-4 w-4" />
+                </a>
+            </div>
             {open && (
                 <div className="pb-1.5 pl-11">
                     {files.map((f) => (

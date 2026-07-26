@@ -13,7 +13,7 @@ class NotificationPreferences
         $catalog = [
             'assignments' => 'Task assignments, updates, deletions, and overdue alerts',
             'reviews' => 'Review requests and submission decisions',
-            'membership' => 'Project invitations, role changes, and removals',
+            'membership' => 'Project invitations, role changes, member joins, edits, ownership transfers, and removals',
             'reminders' => 'Reminders you set going off',
         ];
 
@@ -57,6 +57,9 @@ class NotificationPreferences
             'project_invitation' => 'membership',
             'invitation_accepted' => 'membership',
             'invitation_denied' => 'membership',
+            'project_updated' => 'membership',
+            'project_ownership_transferred' => 'membership',
+            'project_deleted' => 'membership',
             'reminder' => 'reminders',
             'feedback_replied' => 'administration',
             'admin_status_changed' => 'administration',

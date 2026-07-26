@@ -8,17 +8,11 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class ProjectMemberAdded implements ShouldBroadcastNow
+class ProjectUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
-    public function __construct(
-        public int $recipientId,
-        public Project $project,
-        public string $role,
-        public int $notificationId,
-        public ?string $memberName = null
-    ) {}
+    public function __construct(public int $recipientId, public Project $project, public int $notificationId) {}
 
     public function broadcastOn(): array
     {
@@ -27,7 +21,7 @@ class ProjectMemberAdded implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'project.member-added';
+        return 'project.updated';
     }
 
     public function broadcastWith(): array
@@ -36,9 +30,7 @@ class ProjectMemberAdded implements ShouldBroadcastNow
             'notification_id' => $this->notificationId,
             'project_id' => $this->project->id,
             'project_name' => $this->project->name,
-            'role' => $this->role,
-            'member_name' => $this->memberName,
-            'type' => 'project_member_added',
+            'type' => 'project_updated',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectActivityLog;
 use App\Models\Task;
 use Illuminate\Http\Request;
 
@@ -37,6 +38,11 @@ class TaskDependencyController extends Controller
 
         $task->dependencies()->attach($dependsOnId);
 
+        ProjectActivityLog::log($task->project, 'dependency_added', [
+            'task_title' => $task->title,
+            'depends_on_title' => $dependsOnTask->title,
+        ], $task);
+
         return back()->with('success', 'Dependency added.');
     }
 
@@ -44,7 +50,16 @@ class TaskDependencyController extends Controller
     {
         $this->authorize('edit', $task);
 
+        $existed = $task->dependencies()->where('depends_on_task_id', $dependsOnTask->id)->exists();
+
         $task->dependencies()->detach($dependsOnTask->id);
+
+        if ($existed) {
+            ProjectActivityLog::log($task->project, 'dependency_removed', [
+                'task_title' => $task->title,
+                'depends_on_title' => $dependsOnTask->title,
+            ], $task);
+        }
 
         return back()->with('success', 'Dependency removed.');
     }

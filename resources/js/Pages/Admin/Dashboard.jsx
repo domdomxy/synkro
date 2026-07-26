@@ -236,7 +236,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                                     <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
                                     <Tooltip />
                                     <Legend wrapperStyle={{ color: 'currentColor', paddingTop: 12 }} />
-                                    <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} />
+                                    <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
                                     <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
                                     <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
                                     <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />

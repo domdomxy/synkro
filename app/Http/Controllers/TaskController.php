@@ -988,12 +988,18 @@ class TaskController extends Controller
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
  
             if (NotificationPreferences::wantsType($task->assignee, 'task_reopened')) {
-                UserNotification::create([
+                $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_reopened',
                     'message' => "Task reopened\n\"{$task->title}\" was reopened for changes: {$validated['feedback']}",
                     'url' => $url,
                 ]);
+
+                try {
+                    broadcast(new \App\Events\TaskReopened($task->assigned_to, $task, $validated['feedback'], $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
  
             NotificationMailer::send(

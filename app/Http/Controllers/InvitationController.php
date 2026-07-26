@@ -86,6 +86,42 @@ class InvitationController extends Controller
             );
         }
 
+        // Rest of the project (everyone but the inviter, who already got the
+        // invitation_accepted notification above, and the person who just joined)
+        // gets told a new member arrived. Owners/managers most likely care, but any
+        // member can see who else is on the project, so everyone qualifies.
+        $projectUrl = route('projects.show', $invitation->project_id, false);
+        $otherRecipients = $invitation->project->members()
+            ->where('users.id', '!=', Auth::id())
+            ->when($inviter, fn ($query) => $query->where('users.id', '!=', $inviter->id))
+            ->get();
+
+        foreach ($otherRecipients as $recipient) {
+            if (NotificationPreferences::wantsType($recipient, 'project_member_added')) {
+                $notification = UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'project_member_added',
+                    'message' => "New member\n" . Auth::user()->name . " joined \"{$invitation->project->name}\" as {$invitation->role}",
+                    'url' => $projectUrl,
+                ]);
+
+                try {
+                    broadcast(new \App\Events\ProjectMemberAdded($recipient->id, $invitation->project, $invitation->role, $notification->id, Auth::user()->name))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            NotificationMailer::send(
+                $recipient,
+                'project.member_added',
+                Auth::user()->name . " joined {$invitation->project->name}",
+                [Auth::user()->name . " joined \"{$invitation->project->name}\" (ID {$invitation->project_id}) as {$invitation->role}."],
+                url($projectUrl),
+                'View Project'
+            );
+        }
+
         return redirect()->route('projects.show', $invitation->project_id)->with('success', 'You joined the project.');
     }
 

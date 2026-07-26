@@ -2,23 +2,17 @@
 
 namespace App\Events;
 
-use App\Models\Project;
+use App\Models\Task;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class ProjectMemberAdded implements ShouldBroadcastNow
+class TaskReopened implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
-    public function __construct(
-        public int $recipientId,
-        public Project $project,
-        public string $role,
-        public int $notificationId,
-        public ?string $memberName = null
-    ) {}
+    public function __construct(public int $recipientId, public Task $task, public ?string $feedback, public int $notificationId) {}
 
     public function broadcastOn(): array
     {
@@ -27,18 +21,18 @@ class ProjectMemberAdded implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'project.member-added';
+        return 'task.reopened';
     }
 
     public function broadcastWith(): array
     {
         return [
             'notification_id' => $this->notificationId,
-            'project_id' => $this->project->id,
-            'project_name' => $this->project->name,
-            'role' => $this->role,
-            'member_name' => $this->memberName,
-            'type' => 'project_member_added',
+            'title' => $this->task->title,
+            'project_id' => $this->task->project_id,
+            'task_id' => $this->task->id,
+            'feedback' => $this->feedback,
+            'type' => 'task_reopened',
         ];
     }
 }

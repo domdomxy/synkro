@@ -31,6 +31,29 @@ const priorityStyles = {
 
 const priorityLabels = { low: 'Low', medium: 'Medium', high: 'High' };
 
+/**
+ * Mirrors TaskDependencyController::wouldCreateCycle on the backend: would making
+ * `taskId` depend on `candidateId` create a cycle? True if `candidateId`, directly or
+ * transitively (via its own dependencies), already depends on `taskId`. Used to hide
+ * cycle-causing options from the picker up front instead of letting the person pick
+ * one and only find out from a server error.
+ */
+function wouldCreateCycle(allTasks, taskId, candidateId) {
+    const byId = new Map(allTasks.map((t) => [t.id, t]));
+    const visited = new Set();
+    const queue = [candidateId];
+
+    while (queue.length) {
+        const currentId = queue.shift();
+        if (currentId === taskId) return true;
+        if (visited.has(currentId)) continue;
+        visited.add(currentId);
+        (byId.get(currentId)?.dependencies ?? []).forEach((d) => queue.push(d.id));
+    }
+
+    return false;
+}
+
 function formatDue(dateString) {
     if (!dateString) return null;
     return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -619,7 +642,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     >
                                         <option value="">Add a dependency…</option>
                                         {allTasks
-                                            .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id))
+                                            .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
                                             .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
                                     </select>
                                     <SecondaryButton type="button" onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
