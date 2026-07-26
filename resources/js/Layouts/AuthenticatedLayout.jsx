@@ -54,6 +54,9 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')}>
+                                    Dashboard
+                                </NavLink>
                                 <NavLink href={route('projects.index')} active={route().current('projects.*')}>
                                     Projects
                                 </NavLink>
@@ -99,8 +102,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         </Dropdown.Trigger>
 
                                         <Dropdown.Content>
-                                            <Dropdown.Link href={route('dashboard')}>Dashboard</Dropdown.Link>
-                                            <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
+                                            <Dropdown.Link href={route('account.edit')}>Account</Dropdown.Link>
                                             <Dropdown.Link href={route('settings.edit')}>Settings</Dropdown.Link>
 
                                             <Dropdown.Link
@@ -145,6 +147,9 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
 
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
                     <div className="space-y-1 pb-3 pt-2">
+                        <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
+                            Dashboard
+                        </ResponsiveNavLink>
                         <ResponsiveNavLink href={route('projects.index')} active={route().current('projects.*')}>
                             Projects
                         </ResponsiveNavLink>
@@ -173,8 +178,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('dashboard')}>Dashboard</ResponsiveNavLink>
-                            <ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink>
+                            <ResponsiveNavLink href={route('account.edit')}>Account</ResponsiveNavLink>
                             <ResponsiveNavLink href={route('settings.edit')}>Settings</ResponsiveNavLink>
 
                             <ResponsiveNavLink

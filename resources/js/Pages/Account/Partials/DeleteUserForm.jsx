@@ -29,7 +29,7 @@ export default function DeleteUserForm({ className = '' }) {
     const deleteUser = (e) => {
         e.preventDefault();
 
-        destroy(route('profile.destroy'), {
+        destroy(route('account.destroy'), {
             preserveScroll: true,
             onSuccess: () => closeModal(),
             onError: () => passwordInput.current.focus(),
@@ -50,17 +50,17 @@ export default function DeleteUserForm({ className = '' }) {
                 Delete Account
             </DangerButton>
 
-            <Modal show={confirmingUserDeletion} onClose={closeModal} maxWidth="sm" overlayClassName="backdrop-blur-[2px]">
+            <Modal show={confirmingUserDeletion} onClose={closeModal} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={deleteUser} className="p-6">
                     <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
                         Delete Account?
                     </h2>
 
-                    <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                    <p className="mt-2.5 text-[15px] leading-relaxed text-red-600 dark:text-red-400">
+                        Once your account is deleted, all of its resources and data will be permanently deleted.
+                    </p>
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+                        Enter your password to confirm you'd like to permanently delete your account.
                     </p>
 
                     <div className="mt-4">

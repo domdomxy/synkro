@@ -804,9 +804,11 @@ public function suspend(Request $request, User $user)
     {
         $logs = $project->activityLogs()->with('user')->latest()->get();
 
-        return Inertia::render('Admin/ProjectLogs', [
+        return Inertia::render('Projects/Logs', [
             'project' => $project,
             'logs' => $logs,
+            'backHref' => route('admin.projects'),
+            'backLabel' => 'Back to Projects',
         ]);
     }
 }

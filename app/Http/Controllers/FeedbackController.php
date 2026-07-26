@@ -177,7 +177,7 @@ class FeedbackController extends Controller
                     "Thanks for reaching out! We've received your {$feedback->category} ticket \"{$feedback->subject}\" and will get back to you soon.",
                     "Your tracking ID is {$feedback->tracking_id} — use it on the tracking page to follow this ticket's status or add replies.",
                 ],
-                url(route('feedback.page', [], false)),
+                url(route('feedback.page', ['tracking' => $feedback->tracking_id], false)),
                 'Track Your Ticket',
                 footerNote: 'This email was generated automatically. Please do not reply directly; use the button above to continue the conversation on your ticket.',
             ));

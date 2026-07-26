@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import UpdateAccountInformationForm from './Partials/UpdateAccountInformationForm';
 import UpdateAvatarForm from './Partials/UpdateAvatarForm';
 import DeactivateAccountForm from './Partials/DeactivateAccountForm';
 
@@ -10,7 +10,7 @@ const sections = [
     {
         id: 'avatar',
         label: 'Avatar',
-        description: 'Update your profile picture.',
+        description: 'Update your account picture.',
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -18,8 +18,8 @@ const sections = [
         ),
     },
     {
-        id: 'profile-information',
-        label: 'Profile Information',
+        id: 'account-information',
+        label: 'Account Information',
         description: "Update your account's name and email address.",
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -43,7 +43,10 @@ const dangerSections = [
     {
         id: 'deactivate-account',
         label: 'Deactivate Account',
-        description: 'Deactivating your account will log you out and freeze your active task submissions.You can reactivate at any time by logging back in.',
+        description: [
+            'Deactivating your account will log you out and freeze your active task submissions.',
+            'You can reactivate at any time by logging back in.',
+        ],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -53,7 +56,10 @@ const dangerSections = [
     {
         id: 'delete-account',
         label: 'Delete Account',
-        description: 'Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.',
+        description: [
+            'Once your account is deleted, all of its resources and data will be permanently deleted.',
+            'Before deleting your account, please download any data or information that you wish to retain.',
+        ],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -82,7 +88,18 @@ function SectionCard({ id, label, description, icon, children, danger }) {
                     <h3 className={`text-base font-semibold ${danger ? 'text-red-700 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
                         {label}
                     </h3>
-                    <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+                    {Array.isArray(description) ? (
+                        <>
+                            <p className={`mt-0.5 text-sm ${danger ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {description[0]}
+                            </p>
+                            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                {description[1]}
+                            </p>
+                        </>
+                    ) : (
+                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+                    )}
                 </div>
             </div>
             {children}
@@ -97,11 +114,11 @@ export default function Edit({ mustVerifyEmail, status }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Profile
+                    Account
                 </h2>
             }
         >
-            <Head title="Profile" />
+            <Head title="Account" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -134,7 +151,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                             </SectionCard>
 
                             <SectionCard {...sections[1]}>
-                                <UpdateProfileInformationForm
+                                <UpdateAccountInformationForm
                                     mustVerifyEmail={mustVerifyEmail}
                                     status={status}
                                     className="max-w-xl"

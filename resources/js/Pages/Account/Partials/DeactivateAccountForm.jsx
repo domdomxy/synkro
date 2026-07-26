@@ -18,7 +18,7 @@ export default function DeactivateAccountForm({ className = '' }) {
 
     const deactivate = (e) => {
         e.preventDefault();
-        post(route('profile.deactivate'), {
+        post(route('account.deactivate'), {
             onSuccess: () => {
                 setConfirmingDeactivation(false);
                 reset();
@@ -40,13 +40,15 @@ export default function DeactivateAccountForm({ className = '' }) {
                 Deactivate Account
             </DangerButton>
 
-            <Modal show={confirmingDeactivation} onClose={closeModal} maxWidth="sm" overlayClassName="backdrop-blur-[2px]">
+            <Modal show={confirmingDeactivation} onClose={closeModal} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={deactivate} className="p-6">
                     <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
                         Deactivate Account?
                     </h2>
-                    <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+                    <p className="mt-2.5 text-[15px] leading-relaxed text-red-600 dark:text-red-400">
                         Your task submissions will be frozen until a manager decides to keep or reset them.
+                    </p>
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
                         Log in again at any time to reactivate your account.
                     </p>
                     <div className="mt-4">

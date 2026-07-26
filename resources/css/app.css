@@ -29,6 +29,18 @@ html.dark {
     color-scheme: dark;
 }
 
+/* AuthField.jsx (Login/Register/password-reset pages) renders its own eye
+   icon to toggle password visibility. Microsoft Edge also draws its own
+   native reveal icon on top of any type="password" input, so on those
+   specific fields the two icons stacked on top of each other. This only
+   targets fields carrying .password-toggle-field, so the native icon
+   still shows normally everywhere else in the app (see color-scheme note
+   above). */
+.password-toggle-field::-ms-reveal,
+.password-toggle-field::-ms-clear {
+    display: none;
+}
+
 /* Futuristic invitation buttons (Invitations/Show.jsx accept action, and the
    "Invite a Member" send action on the project page). Kept as real CSS rather
    than pure Tailwind because the animated sheen sweep needs a pseudo-element

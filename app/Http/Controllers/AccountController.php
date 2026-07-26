@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\AccountUpdateRequest;
 use App\Models\AccountActivityLog;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -17,23 +17,23 @@ use App\Support\NotificationPreferences;
 use App\Mail\SynkroNotificationMail;
 use Illuminate\Support\Facades\Mail;
 
-class ProfileController extends Controller
+class AccountController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display the user's account form.
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('Profile/Edit', [
+        return Inertia::render('Account/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Update the user's account information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(AccountUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
         $oldEmail = $user->getOriginal('email');
@@ -84,7 +84,7 @@ class ProfileController extends Controller
             );
         }
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('account.edit');
     }
 
     /**
@@ -185,7 +185,7 @@ class ProfileController extends Controller
 
         AccountActivityLog::log('avatar_updated');
 
-        return Redirect::route('profile.edit')->with('success', 'Avatar updated.');
+        return Redirect::route('account.edit')->with('success', 'Avatar updated.');
     }
 
     public function destroyAvatar(Request $request): RedirectResponse
@@ -198,7 +198,7 @@ class ProfileController extends Controller
             AccountActivityLog::log('avatar_removed');
         }
 
-        return Redirect::route('profile.edit')->with('success', 'Avatar removed.');
+        return Redirect::route('account.edit')->with('success', 'Avatar removed.');
     }
     public function deactivate(Request $request): RedirectResponse
     {

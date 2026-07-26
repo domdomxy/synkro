@@ -25,6 +25,10 @@ const actionLabels = {
     task_reassigned: 'Task Reassigned',
     task_unassigned: 'Task Unassigned',
     task_deleted: 'Task Deleted',
+    task_started: 'Task Started',
+    task_review_started: 'Review Started',
+    task_approved: 'Task Approved',
+    task_rejected: 'Task Rejected',
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
     task_reopened: 'Task Reopened',
@@ -107,6 +111,10 @@ const actionIconConfig = {
     task_reassigned: { path: ICON_PATHS.swap, color: 'text-blue-500' },
     task_unassigned: { path: ICON_PATHS.person, color: 'text-amber-500' },
     task_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    task_started: { path: ICON_PATHS.clipboard, color: 'text-blue-500' },
+    task_review_started: { path: ICON_PATHS.clipboard, color: 'text-purple-500' },
+    task_approved: { path: ICON_PATHS.check, color: 'text-green-500' },
+    task_rejected: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
@@ -144,6 +152,10 @@ function describeLog(log) {
         case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee ?? 'unassigned'}`;
         case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee})`;
         case 'task_updated': return `${actor} updated "${d.task_title}"`;
+        case 'task_started': return `${actor} started "${d.task_title}"`;
+        case 'task_review_started': return `${actor} started reviewing "${d.task_title}"`;
+        case 'task_approved': return `${actor} approved "${d.task_title}"`;
+        case 'task_rejected': return `${actor} sent "${d.task_title}" back for changes`;
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
@@ -167,7 +179,7 @@ function describeLog(log) {
 function getDetails(log) {
     const d = log.details ?? {};
 
-    if (log.action === 'task_created') {
+    if (['task_created', 'task_started', 'task_review_started', 'task_approved', 'task_rejected'].includes(log.action)) {
         return [
             d.task_title && { label: 'Task Name', value: d.task_title },
         ].filter(Boolean);

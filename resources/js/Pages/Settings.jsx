@@ -64,7 +64,7 @@ const notificationTitles = {
     administration: 'Administration',
 };
 
-// Section nav (left sidebar), same pattern as Profile/Edit.jsx's section nav.
+// Section nav (left sidebar), same pattern as Account/Edit.jsx's section nav.
 const settingsNavItems = [
     {
         id: 'appearance',

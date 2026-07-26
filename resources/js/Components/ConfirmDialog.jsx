@@ -9,7 +9,7 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
             show={!!open}
             onClose={onCancel}
             maxWidth="sm"
-            overlayClassName="backdrop-blur-[2px]"
+            overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
         >
             <div className="p-6">
                 {title && <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>}

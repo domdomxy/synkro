@@ -14,7 +14,7 @@ export default function LiftSuspensionModal({ user, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="sm" overlayClassName="bg-white/10 backdrop-blur-2xl backdrop-saturate-150 dark:bg-neutral-950/20 dark:backdrop-blur-2xl dark:backdrop-saturate-150">
+        <Modal show={show} onClose={onClose} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Lift {user?.name}'s Suspension?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">They'll be able to log in again right away.</p>

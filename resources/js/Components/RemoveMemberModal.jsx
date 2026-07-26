@@ -18,7 +18,7 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={close} maxWidth="sm" overlayClassName="bg-white/10 backdrop-blur-2xl backdrop-saturate-150 dark:bg-neutral-950/20 dark:backdrop-blur-2xl dark:backdrop-saturate-150">
+        <Modal show={show} onClose={close} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Remove {member?.name}?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">

@@ -300,7 +300,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                 })}
             </div>
 
-            <Modal show={!!rejectTarget} onClose={() => (processing ? null : setRejectTarget(null))} maxWidth="md">
+            <Modal show={!!rejectTarget} onClose={() => (processing ? null : setRejectTarget(null))} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={submitReject} className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Send back for changes</h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

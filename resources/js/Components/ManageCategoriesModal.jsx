@@ -121,7 +121,7 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Manage Feedback Categories</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

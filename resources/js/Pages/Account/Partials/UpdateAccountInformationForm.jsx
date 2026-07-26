@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 
-export default function UpdateProfileInformation({
+export default function UpdateAccountInformation({
     mustVerifyEmail,
     status,
     className = '',
@@ -21,7 +21,7 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
 
-        patch(route('profile.update'));
+        patch(route('account.update'));
     };
 
     return (

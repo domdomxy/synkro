@@ -343,7 +343,7 @@ export default function Index({ projects, showingArchived }) {
                 </div>
             </div>
 
-            <Modal show={showCreateModal} onClose={closeCreateModal}>
+            <Modal show={showCreateModal} onClose={closeCreateModal} overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={submitCreate} className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">New Project</h2>
                     <div className="mt-4">

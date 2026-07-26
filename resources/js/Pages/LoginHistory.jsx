@@ -125,7 +125,7 @@ function LoginDetailsModal({ log, onClose }) {
     const deviceValue = [d.model ? `${d.device} (${d.model})` : d.device, d.os].filter(Boolean).join(' · ');
 
     return (
-        <Modal show={!!log} onClose={onClose} maxWidth="sm">
+        <Modal show={!!log} onClose={onClose} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Sign-in details</h3>
                 {log && (

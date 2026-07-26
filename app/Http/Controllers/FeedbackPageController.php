@@ -12,6 +12,7 @@ class FeedbackPageController extends Controller
         return Inertia::render('Feedback', [
             'flash' => session()->only(['feedback_tracking_id']),
             'categories' => FeedbackCategory::orderBy('sort_order')->get(['key', 'label', 'icon']),
+            'trackingId' => request()->query('tracking'),
         ]);
     }
 }

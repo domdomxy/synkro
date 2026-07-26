@@ -1144,7 +1144,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             show={showHistory}
             onClose={() => setShowHistory(false)}
             maxWidth="lg"
-            overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40"
+            overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
         >
             <div className="p-6">
                 <div className="flex items-center justify-between">

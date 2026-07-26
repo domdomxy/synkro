@@ -32,7 +32,7 @@ export default function UpdateAvatarForm({ className = '' }) {
     const submit = async (e) => {
         e.preventDefault();
         if (!(await confirm('Save this as your new avatar?', { title: 'Save Avatar?' }))) return;
-        post(route('profile.avatar.update'), {
+        post(route('account.avatar.update'), {
             forceFormData: true,
             onSuccess: () => {
                 reset();
@@ -43,7 +43,7 @@ export default function UpdateAvatarForm({ className = '' }) {
 
     const removeAvatar = async () => {
         if (await confirm('This cannot be undone.', { title: 'Remove Avatar?', danger: true, confirmLabel: 'Remove' })) {
-            router.delete(route('profile.avatar.destroy'));
+            router.delete(route('account.avatar.destroy'));
         }
     };
 
@@ -80,6 +80,7 @@ export default function UpdateAvatarForm({ className = '' }) {
                 </div>
             </form>
             <InputError message={errors.avatar} className="mt-2" />
+            {ConfirmDialog}
         </section>
     );
 }

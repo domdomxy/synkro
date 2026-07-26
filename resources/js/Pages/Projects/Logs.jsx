@@ -33,7 +33,7 @@ const actionLabels = {
     comment_deleted: 'Comment Deleted',
 };
 
-export default function Logs({ project, logs }) {
+export default function Logs({ project, logs, backHref, backLabel }) {
     const [userFilter, setUserFilter] = useState('all');
     const [actionFilter, setActionFilter] = useState('all');
     const [from, setFrom] = useState('');
@@ -81,7 +81,7 @@ export default function Logs({ project, logs }) {
     return (
         <AuthenticatedLayout header={
             <div className="flex items-center gap-4">
-                <BackButton href={route('projects.settings', project.id)} label="Back to Settings" />
+                <BackButton href={backHref ?? route('projects.settings', project.id)} label={backLabel ?? 'Back to Settings'} />
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
                     Activity Logs: {project.name}
                 </h2>

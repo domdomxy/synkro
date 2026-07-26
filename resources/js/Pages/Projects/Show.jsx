@@ -476,7 +476,7 @@ function ProjectInfoModal({ show, onClose, project }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
+        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <div className="flex max-h-[80vh] flex-col">
                 <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
                     <div className="min-w-0">
@@ -523,7 +523,7 @@ function ProjectInfoModal({ show, onClose, project }) {
 
 function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40">
+        <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <form onSubmit={onSubmit} className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Leave "{project.name}"?
@@ -1080,7 +1080,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 show={showBoardModal}
                 onClose={() => setShowBoardModal(false)}
                 maxWidth="6xl"
-                overlayClassName="bg-black/20 backdrop-blur-[2px] dark:bg-black/40"
+                overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
             >
                 <div className="p-6">
                     <div className="flex items-center justify-between">

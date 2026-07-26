@@ -226,9 +226,9 @@ function TicketActions({ feedback, trackingId, email, onStatusChanged }) {
     );
 }
 
-export default function Feedback({ flash, categories }) {
-    const [activeTab, setActiveTab] = useState('submit');
-    const [trackingId, setTrackingId] = useState('');
+export default function Feedback({ flash, categories, trackingId: trackingIdFromUrl }) {
+    const [activeTab, setActiveTab] = useState(trackingIdFromUrl ? 'track' : 'submit');
+    const [trackingId, setTrackingId] = useState(trackingIdFromUrl ?? '');
     const [trackResult, setTrackResult] = useState(null);
     const [trackLoading, setTrackLoading] = useState(false);
     const [submitted, setSubmitted] = useState(null);
@@ -306,9 +306,10 @@ export default function Feedback({ flash, categories }) {
         setPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const trackFeedback = async (e) => {
-        e.preventDefault();
-        if (!trackingId.trim()) return;
+    const trackFeedback = async (e, idOverride) => {
+        e?.preventDefault();
+        const id = idOverride ?? trackingId;
+        if (!id.trim()) return;
         setTrackLoading(true);
         setTrackResult(null);
         try {
@@ -319,7 +320,7 @@ export default function Feedback({ flash, categories }) {
                     'X-XSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ tracking_id: trackingId }),
+                body: JSON.stringify({ tracking_id: id }),
             });
             const json = await res.json();
             setTrackResult(json);
@@ -329,6 +330,13 @@ export default function Feedback({ flash, categories }) {
             setTrackLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (trackingIdFromUrl) {
+            trackFeedback(null, trackingIdFromUrl);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const appendReply = (response) => {
         setTrackResult((prev) => ({

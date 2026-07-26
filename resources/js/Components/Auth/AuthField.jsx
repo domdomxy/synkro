@@ -32,7 +32,7 @@ const AuthField = forwardRef(function AuthField(
                     id={id}
                     ref={ref}
                     type={inputType}
-                    className={`block w-full ${Icon ? 'pl-10' : ''} ${isPassword ? 'pr-10' : ''} ${className}`}
+                    className={`block w-full ${Icon ? 'pl-10' : ''} ${isPassword ? 'pr-10 password-toggle-field' : ''} ${className}`}
                     {...props}
                 />
                 {isPassword && (
