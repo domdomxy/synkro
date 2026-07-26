@@ -216,8 +216,9 @@ export default function Deliverables({ project, tasks }) {
                                                 rel="noopener noreferrer"
                                                 className="shrink-0 truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
                                                 style={{ maxWidth: '220px' }}
+                                                title={d.url}
                                             >
-                                                {d.url}
+                                                {d.title || d.url}
                                             </a>
                                         </div>
                                     ))

@@ -13,6 +13,7 @@ import UserSearchInput from '@/Components/UserSearchInput';
 import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
+import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -253,16 +254,15 @@ function NoteEditForm({ editForm, onSubmit, onCancel }) {
                 <input type="text" placeholder="Title (e.g. Authentication)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
                 <div className="space-y-1.5">
                     {editForm.data.items.map((item, index) => (
-                        <div key={item.id ?? `new-${index}`} className="flex items-center gap-1.5">
-                            <input
-                                type="text"
+                        <div key={item.id ?? `new-${index}`} className="flex items-start gap-1.5">
+                            <AutoGrowTextarea
                                 value={item.text}
                                 onChange={(e) => setItemText(index, e.target.value)}
                                 placeholder="Checklist item"
                                 className="block w-full rounded-md border-gray-300 text-xs shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                             {editForm.data.items.length > 1 && (
-                                <button type="button" onClick={() => removeItem(index)} className="shrink-0 rounded p-1 text-gray-400 hover:text-red-500">
+                                <button type="button" onClick={() => removeItem(index)} className="mt-0.5 shrink-0 rounded p-1 text-gray-400 hover:text-red-500">
                                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
@@ -324,14 +324,19 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
                 ))}
             </ul>
 
-            <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-center gap-1.5">
-                <svg className="h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-start gap-1.5">
+                <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                <input
-                    type="text"
+                <AutoGrowTextarea
                     value={quickAdd}
                     onChange={(e) => setQuickAdd(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (quickAdd.trim()) submitQuickAdd(e);
+                        }
+                    }}
                     placeholder="Add item..."
                     className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
                 />

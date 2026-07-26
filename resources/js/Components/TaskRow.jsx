@@ -10,6 +10,7 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
 import CommentBody from '@/Components/CommentBody';
+import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import LogEntryRow from '@/Components/LogEntryRow';
 import Modal from '@/Components/Modal';
 import { router, useForm } from '@inertiajs/react';
@@ -194,6 +195,45 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
+function DeliverableItem({ d, canRemove, onRemove }) {
+    return (
+        <li className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
+            {d.type === 'file' ? (
+                <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
+            ) : (
+                <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
+            )}
+            <div className="min-w-0 flex-1">
+                {d.type === 'file' ? (
+                    <a
+                        href={`/storage/${d.path}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                        title={d.original_name}
+                    >
+                        {d.original_name}
+                    </a>
+                ) : (
+                    <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                        title={d.url}
+                    >
+                        {d.title || d.url}
+                    </a>
+                )}
+                {d.size != null && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(d.size)}</p>
+                )}
+            </div>
+            {canRemove && <RemoveButton onClick={onRemove} />}
+        </li>
+    );
+}
+
 function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -248,7 +288,8 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDele
     );
 }
 
-function FooterToggle({ icon, label, count, active, onClick }) {
+function FooterToggle({ icon, label, count, active, onClick, variant = 'default' }) {
+    const isWarning = variant === 'warning';
     return (
         <button
             type="button"
@@ -256,9 +297,13 @@ function FooterToggle({ icon, label, count, active, onClick }) {
             title={label}
             aria-pressed={active}
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                active
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                isWarning
+                    ? active
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
+                        : 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950'
+                    : active
+                        ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
             }`}
         >
             {icon}
@@ -266,9 +311,11 @@ function FooterToggle({ icon, label, count, active, onClick }) {
             {count != null && (
                 <span
                     className={`rounded-full px-1.5 py-px text-[10px] font-semibold ${
-                        active
-                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        isWarning
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
+                            : active
+                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                                : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}
                 >
                     {count}
@@ -284,6 +331,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [isEditing, setIsEditing] = useState(false);
     const [showAddPanel, setShowAddPanel] = useState(false);
     const [linkInput, setLinkInput] = useState('');
+    const [linkTitleInput, setLinkTitleInput] = useState('');
     const fileInputRef = useRef(null);
     const dragCounter = useRef(0);
     const [isDraggingFiles, setIsDraggingFiles] = useState(false);
@@ -302,12 +350,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const toggleSection = (section) => setActiveSection((v) => (v === section ? null : section));
     const showComments = activeSection === 'comments';
     const showChecklist = activeSection === 'checklist';
+    const showDependencies = activeSection === 'dependencies';
 
     useEffect(() => {
         if (autoOpenHistory) setShowHistory(true);
     }, [autoOpenHistory]);
 
     const assigneeStillMember = task.assigned_to != null && members?.some((m) => m.id === task.assigned_to);
+
+    const deliverableFiles = task.deliverables?.filter((d) => d.type === 'file') ?? [];
+    const deliverableLinks = task.deliverables?.filter((d) => d.type === 'link') ?? [];
 
     const editForm = useForm({
         title: task.title,
@@ -416,8 +468,12 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const addLink = () => {
         if (!linkInput.trim()) return;
-        submitForm.setData('links', [...submitForm.data.links, linkInput.trim()]);
+        submitForm.setData('links', [
+            ...submitForm.data.links,
+            { url: linkInput.trim(), title: linkTitleInput.trim() },
+        ]);
         setLinkInput('');
+        setLinkTitleInput('');
     };
 
     const removeFile = (index) => submitForm.setData('files', submitForm.data.files.filter((_, i) => i !== index));
@@ -488,6 +544,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const commentCount = task.comments?.length ?? 0;
+    const dependencyCount = task.dependencies?.length ?? 0;
+    const dependenciesBlocked = task.dependencies?.some((d) => d.status !== 'done') ?? false;
     const canEditDeliverables = isAssignee && ['in_progress', 'submitted'].includes(task.status);
 
     return (
@@ -800,13 +858,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     </svg>
                                     Browse Files
                                 </button>
-                                <div className="flex min-w-[180px] flex-1 items-center gap-1 rounded-md bg-white pl-2.5 pr-1 shadow-sm dark:bg-gray-800">
+                                <div className="flex min-w-[260px] flex-1 items-center gap-1 rounded-md bg-white pl-2.5 pr-1 shadow-sm dark:bg-gray-800">
+                                    <input
+                                        type="text"
+                                        value={linkTitleInput}
+                                        onChange={(e) => setLinkTitleInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                                        placeholder="Title (optional)"
+                                        className="w-28 shrink-0 border-0 border-r border-gray-100 bg-transparent p-0 py-1.5 pr-2 text-sm text-gray-700 placeholder:text-gray-400 focus:ring-0 dark:border-gray-700 dark:text-gray-300"
+                                    />
                                     <input
                                         type="url"
                                         value={linkInput}
                                         onChange={(e) => setLinkInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
                                         placeholder="Paste a link..."
-                                        className="flex-1 border-0 bg-transparent p-0 py-1.5 text-sm text-gray-700 placeholder:text-gray-400 focus:ring-0 dark:text-gray-300"
+                                        className="flex-1 border-0 bg-transparent p-0 py-1.5 pl-2 text-sm text-gray-700 placeholder:text-gray-400 focus:ring-0 dark:text-gray-300"
                                     />
                                     <button
                                         type="button"
@@ -837,7 +904,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         {submitForm.data.links.map((link, i) => (
                                             <li key={`link-${i}`} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
                                                 <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                                                <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{link}</p>
+                                                <p className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300" title={link.url}>
+                                                    {link.title || link.url}
+                                                </p>
                                                 <RemoveButton onClick={() => removeLink(i)} />
                                             </li>
                                         ))}
@@ -845,48 +914,27 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 </div>
                             )}
                             {task.deliverables?.length > 0 && (
-                                <div className="mt-2.5">
-                                    <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted</p>
-                                    <ul className="space-y-1">
-                                        {task.deliverables.map((d) => (
-                                            <li key={d.id} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
-                                                {d.type === 'file' ? (
-                                                    <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
-                                                ) : (
-                                                    <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                                                )}
-                                                <div className="min-w-0 flex-1">
-                                                    {d.type === 'file' ? (
-                                                        <a
-                                                            href={`/storage/${d.path}`}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                                                            title={d.original_name}
-                                                        >
-                                                            {d.original_name}
-                                                        </a>
-                                                    ) : (
-                                                        <a
-                                                            href={d.url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                                                            title={d.url}
-                                                        >
-                                                            {d.url}
-                                                        </a>
-                                                    )}
-                                                    {d.size != null && (
-                                                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(d.size)}</p>
-                                                    )}
-                                                </div>
-                                                {canEditDeliverables && (
-                                                    <RemoveButton onClick={() => removeDeliverable(d.id)} />
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <div className="mt-2.5 space-y-2.5">
+                                    {deliverableFiles.length > 0 && (
+                                        <div>
+                                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted &middot; Files</p>
+                                            <ul className="space-y-1">
+                                                {deliverableFiles.map((d) => (
+                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {deliverableLinks.length > 0 && (
+                                        <div>
+                                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted &middot; Links</p>
+                                            <ul className="space-y-1">
+                                                {deliverableLinks.map((d) => (
+                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {submitForm.progress && (
@@ -919,46 +967,32 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             {!showAddPanel && task.deliverables?.length > 0 && (
                 <div className="mt-2">
                     {showDeliverables && (
-                        <ul className="mb-2 space-y-1 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
-                            {task.deliverables.map((d) => (
-                                <li key={d.id} className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
-                                    {d.type === 'file' ? (
-                                        <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
-                                    ) : (
-                                        <LinkTypeIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                        <div className="mb-2 space-y-2.5 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
+                            {deliverableFiles.length > 0 && (
+                                <div>
+                                    {deliverableLinks.length > 0 && (
+                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Files</p>
                                     )}
-                                    <div className="min-w-0 flex-1">
-                                        {d.type === 'file' ? (
-                                            <a
-                                                href={`/storage/${d.path}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                                                title={d.original_name}
-                                            >
-                                                {d.original_name}
-                                            </a>
-                                        ) : (
-                                            <a
-                                                href={d.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                                                title={d.url}
-                                            >
-                                                {d.url}
-                                            </a>
-                                        )}
-                                        {d.size != null && (
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">{formatBytes(d.size)}</p>
-                                        )}
-                                    </div>
-                                    {canEditDeliverables && (
-                                        <RemoveButton onClick={() => removeDeliverable(d.id)} />
+                                    <ul className="space-y-1">
+                                        {deliverableFiles.map((d) => (
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {deliverableLinks.length > 0 && (
+                                <div>
+                                    {deliverableFiles.length > 0 && (
+                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Links</p>
                                     )}
-                                </li>
-                            ))}
-                        </ul>
+                                    <ul className="space-y-1">
+                                        {deliverableLinks.map((d) => (
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2">
                         <FooterToggle
@@ -1001,12 +1035,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
             {!isEditing && canReview && task.status === 'in_review' && (
                 <div className="mt-3 space-y-2 rounded-md border border-purple-200 bg-purple-50 p-3 dark:border-purple-800 dark:bg-purple-950">
-                    <textarea
+                    <AutoGrowTextarea
                         value={reviewForm.data.feedback}
                         onChange={(e) => reviewForm.setData('feedback', e.target.value)}
                         placeholder="Feedback (required if rejecting)"
                         className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        rows={2}
                     />
                     <InputError message={reviewForm.errors.feedback} className="mt-1" />
                     <div className="flex gap-2">
@@ -1022,12 +1055,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <p className="text-xs text-amber-700 dark:text-amber-400">
                             This will move the task back to In Progress, keeping its existing submission and history. The assignee can then update it without starting over.
                         </p>
-                        <textarea
+                        <AutoGrowTextarea
                             value={reopenForm.data.feedback}
                             onChange={(e) => reopenForm.setData('feedback', e.target.value)}
                             placeholder="What needs to change?"
                             className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            rows={2}
                         />
                         <InputError message={reopenForm.errors.feedback} className="mt-1" />
                         <div className="flex gap-2">
@@ -1051,6 +1083,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             </svg>
                         }
                     />
+                    {dependencyCount > 0 && (
+                        <FooterToggle
+                            active={showDependencies}
+                            onClick={() => toggleSection('dependencies')}
+                            label={dependenciesBlocked ? 'Blocked by' : 'Depends on'}
+                            count={dependencyCount}
+                            variant={dependenciesBlocked ? 'warning' : 'default'}
+                            icon={
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="6" cy="6" r="2.25" />
+                                    <circle cx="18" cy="18" r="2.25" />
+                                    <path strokeLinecap="round" d="M8 7.5l8 9" />
+                                </svg>
+                            }
+                        />
+                    )}
                     <div className="ml-auto">
                         <FooterToggle
                             active={showChecklist}
@@ -1065,6 +1113,24 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         />
                     </div>
                 </div>
+
+                {showDependencies && (
+                    <div className="mt-2 space-y-1.5 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
+                        {task.dependencies.map((dep) => (
+                            <button
+                                key={dep.id}
+                                type="button"
+                                onClick={() => onJumpToTask?.(dep.id)}
+                                title={`Go to "${dep.title}"`}
+                                className="flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-sm transition hover:text-indigo-600 dark:hover:text-indigo-400"
+                            >
+                                <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                <span className="min-w-0 flex-1 truncate text-gray-700 hover:underline dark:text-gray-300">{dep.title}</span>
+                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {showChecklist && (
                     <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
@@ -1086,7 +1152,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     onChange={() => toggleChecklistItem(item)}
                                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
                                 />
-                                <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
                                     {item.title}
                                 </span>
                                 <button
@@ -1101,11 +1167,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             </div>
                         ))}
                         <form onSubmit={addChecklistItem} className="flex items-center gap-2 pt-1">
-                            <TextInput
+                            <AutoGrowTextarea
                                 value={checklistForm.data.title}
                                 onChange={(e) => checklistForm.setData('title', e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (checklistForm.data.title.trim()) addChecklistItem(e);
+                                    }
+                                }}
                                 placeholder="Add a checklist item…"
-                                className="block w-full text-sm"
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                             <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
                         </form>
@@ -1120,10 +1192,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 <div className="min-w-0 flex-1">
                                     {editingCommentId === comment.id ? (
                                         <form onSubmit={(e) => saveCommentEdit(e, comment.id)} className="space-y-1.5">
-                                            <textarea
+                                            <AutoGrowTextarea
                                                 value={editCommentForm.data.body}
                                                 onChange={(e) => editCommentForm.setData('body', e.target.value)}
-                                                rows={2}
                                                 autoFocus
                                                 className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             />
@@ -1215,13 +1286,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
                         <form onSubmit={submitComment} className="flex items-start gap-2.5 pt-1">
                             <div className="min-w-0 flex-1">
-                                <input
-                                    type="text"
+                                <AutoGrowTextarea
                                     value={commentForm.data.body}
                                     onChange={(e) => commentForm.setData('body', e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (commentForm.data.body.trim()) submitComment(e);
+                                        }
+                                    }}
                                     placeholder="Write a comment..."
                                     title="Tip: [label](url) turns into a clickable link"
-                                    className="block w-full rounded-full border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
                                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
                             </div>

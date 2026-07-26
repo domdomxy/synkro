@@ -662,9 +662,12 @@ class TaskController extends Controller
             'files' => 'nullable|array',
             'files.*' => 'file|max:51200', // see #8 below for the raised limit
             'links' => 'nullable|array',
-            'links.*' => 'url',
+            'links.*.url' => 'required|url',
+            'links.*.title' => 'nullable|string|max:255',
         ], [
             'files.*.max' => 'One or more files exceed the 50MB size limit and were not uploaded.',
+            'links.*.url.required' => 'Each link needs a URL.',
+            'links.*.url.url' => 'One or more links are not valid URLs.',
         ]);
  
         if (empty($validated['files']) && empty($validated['links'])) {
@@ -681,7 +684,11 @@ class TaskController extends Controller
         }
  
         foreach ($validated['links'] ?? [] as $link) {
-            $task->deliverables()->create(['type' => 'link', 'url' => $link]);
+            $task->deliverables()->create([
+                'type' => 'link',
+                'url' => $link['url'],
+                'title' => $link['title'] ?? null,
+            ]);
         }
  
         $wasAlreadySubmitted = $task->status === 'submitted';

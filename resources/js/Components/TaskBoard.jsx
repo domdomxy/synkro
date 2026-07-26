@@ -5,6 +5,7 @@ import Modal from '@/Components/Modal';
 import DangerButton from '@/Components/DangerButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputError from '@/Components/InputError';
+import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 
 const COLUMNS = [
     { status: 'todo', label: 'To Do' },
@@ -319,10 +320,9 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         Moving "{rejectTarget?.title}" back to In Progress. Let the assignee know what needs to change.
                     </p>
-                    <textarea
+                    <AutoGrowTextarea
                         value={rejectFeedback}
                         onChange={(e) => setRejectFeedback(e.target.value)}
-                        rows={4}
                         autoFocus
                         placeholder="Feedback (required)"
                         className="mt-3 block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
