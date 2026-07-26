@@ -5,6 +5,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { watchSystemTheme } from './theme';
 import '../css/black-theme.css';
+import ExternalLinkGuard from './Components/ExternalLinkGuard';
 
 watchSystemTheme();
 
@@ -51,7 +52,11 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        root.render(
+            <ExternalLinkGuard>
+                <App {...props} />
+            </ExternalLinkGuard>,
+        );
     },
     progress: {
         color: '#4B5563',
