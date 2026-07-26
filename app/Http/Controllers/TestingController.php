@@ -27,7 +27,9 @@ class TestingController extends Controller
             ->with(['project', 'assignee'])
             ->withCount(['comments', 'deliverables'])
             ->orderByRaw("CASE WHEN status = 'in_review' THEN 0 ELSE 1 END")
-            ->orderBy('submitted_at')
+            // "submitted" tasks are waiting on submitted_at; "in_review" tasks are
+            // waiting on review_started_at — order by whichever one actually applies.
+            ->orderByRaw("COALESCE(review_started_at, submitted_at)")
             ->get();
 
         return Inertia::render('Testing/Index', [

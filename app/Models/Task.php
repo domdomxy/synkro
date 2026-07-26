@@ -19,6 +19,7 @@ class Task extends Model
         'assigned_to', 
         'due_date',
         'submitted_at',
+        'review_started_at',
         'edited_at',
         'pending_resolution',
         'overdue_notified_at',
@@ -28,6 +29,7 @@ class Task extends Model
     protected $casts = [
         'due_date' => 'datetime',
         'submitted_at' => 'datetime',
+        'review_started_at' => 'datetime',
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
         'overdue_notified_at' => 'datetime',

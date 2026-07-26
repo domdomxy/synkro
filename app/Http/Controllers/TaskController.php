@@ -387,20 +387,27 @@ class TaskController extends Controller
 
             $affected = []; // assignee_id => [changed task titles]
 
-            // Deliberately bypasses the normal start/submit/review workflow — this is a
-            // manager override for administrative cleanup (e.g. closing out stale tasks),
-            // not a substitute for the guided per-task flow.
+            // Bypasses the normal start/submit/review workflow — this is a manager
+            // override for administrative cleanup (e.g. closing out stale tasks) — but
+            // it still needs to keep submitted_at/review_started_at consistent with what
+            // the guided flow would do, or the Testing Queue's "Waiting" column ends up
+            // wrong (blank on entry, or stale on exit) for any task touched this way.
             foreach ($tasks as $task) {
                 if ($task->status === $validated['status']) {
                     continue;
                 }
 
                 $old = $task->status;
-                $task->update(['status' => $validated['status']]);
+                $new = $validated['status'];
+
+                $task->update(array_merge(
+                    ['status' => $new],
+                    $this->queueTimestampFieldsForStatusChange($task, $old, $new)
+                ));
 
                 ProjectActivityLog::log($project, 'task_updated', [
                     'task_title' => $task->title,
-                    'changes' => ['status' => ['old' => $old, 'new' => $validated['status']]],
+                    'changes' => ['status' => ['old' => $old, 'new' => $new]],
                 ], $task);
 
                 if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
@@ -561,6 +568,48 @@ class TaskController extends Controller
 
             return back()->with('success', 'Assignee updated for ' . $changedCount . ' task(s).');
         }
+    }
+
+    /**
+     * Mirrors what submit()/startReview()/review()/reopen() do to submitted_at and
+     * review_started_at, for the bulk "force status" override that otherwise bypasses
+     * all of them. Without this, a task forced into the queue skips its "waiting"
+     * timestamp entirely (Testing Queue just shows nothing), and a task forced back
+     * out keeps a stale timestamp that a later normal submit()/startReview() would
+     * incorrectly inherit — the same bug class fixed elsewhere in this controller.
+     *
+     * @return array<string,mixed>
+     */
+    private function queueTimestampFieldsForStatusChange(Task $task, string $old, string $new): array
+    {
+        $wasInQueue = in_array($old, ['submitted', 'in_review'], true);
+
+        if ($new === 'submitted') {
+            // Entering (or re-entering) "awaiting review" always starts a fresh wait,
+            // and any prior review session no longer applies.
+            return ['submitted_at' => now(), 'review_started_at' => null];
+        }
+
+        if ($new === 'in_review') {
+            // Starting review without having gone through submit() first still needs
+            // a submitted_at for the queue to sort/display correctly — backfill it if
+            // missing, but don't disturb it if a submission timestamp already exists.
+            return ['submitted_at' => $task->submitted_at ?? now(), 'review_started_at' => now()];
+        }
+
+        if ($wasInQueue && $new === 'done') {
+            // Same as review()'s approve branch: keep both timestamps as a historical
+            // record of how long the submission/review took.
+            return [];
+        }
+
+        if ($wasInQueue) {
+            // Forced out to todo/in_progress: same as reject/reopen — clear both so a
+            // future resubmission doesn't inherit this cycle's timestamps.
+            return ['submitted_at' => null, 'review_started_at' => null];
+        }
+
+        return [];
     }
 
     /**
@@ -774,7 +823,10 @@ class TaskController extends Controller
             return back()->withErrors(['status' => 'This task is not awaiting review.']);
         }
  
-        $task->update(['status' => 'in_review']);
+        $task->update([
+            'status' => 'in_review',
+            'review_started_at' => now(),
+        ]);
  
         ProjectActivityLog::log($task->project, 'task_review_started', ['task_title' => $task->title], $task);
 
@@ -834,6 +886,13 @@ class TaskController extends Controller
  
         $task->update([
             'status' => $validated['decision'] === 'approve' ? 'done' : 'in_progress',
+            // Rejections send the task back for revisions, so the next submit()/startReview()
+            // call must start the "waiting" clocks over. Without clearing these, submit()'s
+            // `submitted_at ?? now()` and a later startReview() would otherwise coexist with
+            // stale values from before the rejection, making the Testing Queue show wait
+            // times counted from the original submission/review instead of the latest cycle.
+            'submitted_at' => $validated['decision'] === 'approve' ? $task->submitted_at : null,
+            'review_started_at' => $validated['decision'] === 'approve' ? $task->review_started_at : null,
         ]);
 
         TestingQueueBroadcaster::notify($task->project);
@@ -951,6 +1010,7 @@ class TaskController extends Controller
                 'status' => 'todo',
                 'pending_resolution' => false,
                 'submitted_at' => null,
+                'review_started_at' => null,
             ]);
  
             ProjectActivityLog::log($task->project, 'submission_reset', ['task_title' => $task->title], $task);
@@ -1003,7 +1063,15 @@ class TaskController extends Controller
             report($e);
         }
  
-        $task->update(['status' => 'in_progress']);
+        $task->update([
+            'status' => 'in_progress',
+            // Same reasoning as review()'s rejection branch: this task already carries a
+            // submitted_at/review_started_at pair from the cycle that got it approved.
+            // Left in place, a future resubmission would inherit that old timestamp and
+            // show a stale "waiting" duration counted from months ago instead of now.
+            'submitted_at' => null,
+            'review_started_at' => null,
+        ]);
  
         ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title], $task);
  

@@ -34,6 +34,13 @@ function formatWait(dateString) {
     return `${days}d`;
 }
 
+// "submitted" tasks are waiting on submitted_at (time since the assignee handed it
+// off); "in_review" tasks are waiting on review_started_at (time since the current
+// reviewer picked it up) — these are two different clocks, not one continuous wait.
+function waitTimestamp(task) {
+    return task.status === 'in_review' ? task.review_started_at : task.submitted_at;
+}
+
 function descriptionPreview(html) {
     if (!html) return '';
     return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -225,7 +232,7 @@ export default function Index({ tasks }) {
                                                     )}
                                                 </div>
                                                 <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500 sm:hidden">
-                                                    {task.project?.name} · {task.submitted_at ? `Waiting ${formatWait(task.submitted_at)}` : ''}
+                                                    {task.project?.name} · {waitTimestamp(task) ? `Waiting ${formatWait(waitTimestamp(task))}` : ''}
                                                 </p>
                                             </div>
                                             <span className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block">
@@ -250,10 +257,10 @@ export default function Index({ tasks }) {
                                                 )}
                                             </span>
                                             <span className="hidden items-center gap-1 text-xs text-gray-400 dark:text-gray-500 sm:flex">
-                                                {task.submitted_at && (
+                                                {waitTimestamp(task) && (
                                                     <>
                                                         <ClockIcon className="h-3.5 w-3.5 shrink-0" />
-                                                        {formatWait(task.submitted_at)}
+                                                        {formatWait(waitTimestamp(task))}
                                                     </>
                                                 )}
                                             </span>
@@ -314,10 +321,10 @@ export default function Index({ tasks }) {
                                         )}
                                     </div>
                                 </div>
-                                {task.submitted_at && (
+                                {waitTimestamp(task) && (
                                     <div className="mt-2 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                                         <ClockIcon className="h-3.5 w-3.5 shrink-0" />
-                                        Waiting {formatWait(task.submitted_at)}
+                                        Waiting {formatWait(waitTimestamp(task))}
                                     </div>
                                 )}
                             </Link>
