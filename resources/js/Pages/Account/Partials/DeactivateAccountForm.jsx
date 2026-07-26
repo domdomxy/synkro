@@ -42,7 +42,7 @@ export default function DeactivateAccountForm({ className = '' }) {
 
             <Modal show={confirmingDeactivation} onClose={closeModal} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={deactivate} className="p-6">
-                    <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                    <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
                         Deactivate Account?
                     </h2>
                     <p className="mt-2.5 text-[15px] leading-relaxed text-red-600 dark:text-red-400">

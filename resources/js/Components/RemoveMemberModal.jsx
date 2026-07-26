@@ -20,7 +20,7 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
     return (
         <Modal show={show} onClose={close} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
             <form onSubmit={submit} className="p-6">
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Remove {member?.name}?</h2>
+                <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">Remove {member?.name}?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
                     They'll lose access to this project immediately. Their in-progress work is frozen for review, not deleted.
                 </p>

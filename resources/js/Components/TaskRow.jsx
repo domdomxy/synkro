@@ -337,12 +337,30 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [isDraggingFiles, setIsDraggingFiles] = useState(false);
     const [showDeliverables, setShowDeliverables] = useState(false);
     const [showFullDescription, setShowFullDescription] = useState(false);
+    const descriptionRef = useRef(null);
+    // Whether the description is actually being clipped by line-clamp-2 right now.
+    // Measured from real layout (scrollHeight vs clientHeight) instead of a raw
+    // character count, since a short description can still wrap onto more than 2
+    // visual lines (long unbroken word, narrow column, etc) and a character count
+    // can't tell that apart from a short description that fits fine.
+    const [isDescriptionTruncated, setIsDescriptionTruncated] = useState(false);
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
+
+    // Re-measure whenever the description is collapsed (line-clamp-2 is only
+    // ever active then) or its content changes. When expanded, clientHeight
+    // grows to match scrollHeight so there's nothing meaningful to measure -
+    // isDescriptionTruncated just keeps its last known collapsed-state value,
+    // which is exactly what's needed to keep the "Show Less" button visible.
+    useEffect(() => {
+        if (showFullDescription || !descriptionRef.current) return;
+        const el = descriptionRef.current;
+        setIsDescriptionTruncated(el.scrollHeight > el.clientHeight + 1);
+    }, [task.description, showFullDescription]);
 
     // Comments / Checklist share one expandable area below the task — only one is
     // shown at a time so the row doesn't stack multiple open panels.
@@ -765,14 +783,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     {task.description && (
                         <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
                             <div
+                                ref={descriptionRef}
                                 className={`prose-sm max-w-none whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''}`}
                                 style={{ tabSize: 4 }}
                                 dangerouslySetInnerHTML={{ __html: task.description }}
                             />
-                            {task.description.replace(/<[^>]*>/g, '').length > 120 && (
-                                <button onClick={() => setShowFullDescription((v) => !v)} className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                                    {showFullDescription ? 'Show Less' : 'View Full Description'}
-                                </button>
+                            {isDescriptionTruncated && (
+                                <div className="mt-0.5 flex justify-end">
+                                    <button onClick={() => setShowFullDescription((v) => !v)} className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                                        {showFullDescription ? 'View less' : 'View more'}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     )}

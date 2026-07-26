@@ -52,7 +52,7 @@ export default function DeleteUserForm({ className = '' }) {
 
             <Modal show={confirmingUserDeletion} onClose={closeModal} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
                 <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                    <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
                         Delete Account?
                     </h2>
 

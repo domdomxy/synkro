@@ -12,7 +12,7 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
             overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
         >
             <div className="p-6">
-                {title && <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>}
+                {title && <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>}
                 <p className={`text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300 ${title ? 'mt-2.5' : ''}`}>{message}</p>
                 <div className="mt-6 flex justify-end gap-2.5">
                     <button

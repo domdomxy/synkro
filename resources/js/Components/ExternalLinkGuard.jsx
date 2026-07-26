@@ -1,4 +1,25 @@
-import useConfirm from '@/hooks/useConfirm';
+import { useState } from 'react';
+import ExternalLinkDialog from '@/Components/ExternalLinkDialog';
+
+const TRUSTED_HOSTS_KEY = 'synkro:trusted-link-hosts';
+
+function loadTrustedHosts() {
+    try {
+        const raw = window.localStorage.getItem(TRUSTED_HOSTS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return []; // localStorage unavailable (private browsing, etc) - just always ask
+    }
+}
+
+function saveTrustedHosts(hosts) {
+    try {
+        window.localStorage.setItem(TRUSTED_HOSTS_KEY, JSON.stringify(hosts));
+    } catch {
+        // best effort only - if it can't persist, the dialog just asks again next time
+    }
+}
 
 /**
  * Wraps the whole app (mounted once in app.jsx, outside Inertia's page switching)
@@ -20,14 +41,20 @@ import useConfirm from '@/hooks/useConfirm';
  * Relative links, in-page anchors, mailto:/tel:, and same-origin links are
  * left alone and navigate immediately as normal.
  *
- * Modifier-clicks (ctrl/cmd/shift/middle-click) are intentionally left alone —
+ * Modifier-clicks (ctrl/cmd/shift/middle-click) are intentionally left alone -
  * that's a deliberate "open in background tab" gesture, not a plain click, so
  * we don't interrupt it with a confirmation dialog.
+ *
+ * Hostnames the person has ticked "Trust ... links from now on" for are kept
+ * in localStorage and skip the dialog entirely on future clicks, same as
+ * Discord's equivalent prompt.
  */
 export default function ExternalLinkGuard({ children }) {
-    const { confirm, ConfirmDialog } = useConfirm();
+    const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
+    const [pending, setPending] = useState(null); // { url, anchorTarget } | null
+    const [trustChecked, setTrustChecked] = useState(false);
 
-    const handleClick = async (event) => {
+    const handleClick = (event) => {
         // Only plain left-clicks; let modifier-clicks and middle-clicks through untouched.
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
             return;
@@ -40,24 +67,34 @@ export default function ExternalLinkGuard({ children }) {
         try {
             url = new URL(anchor.href, window.location.href);
         } catch {
-            return; // unparseable href — nothing we can safely check, leave it alone
+            return; // unparseable href - nothing we can safely check, leave it alone
         }
 
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return; // mailto:, tel:, etc.
         if (url.hostname === window.location.hostname) return; // same-site, no prompt needed
+        if (trustedHosts.includes(url.hostname)) return; // previously trusted, let it navigate normally
 
         event.preventDefault();
         event.stopPropagation();
 
-        const proceed = await confirm(
-            `You're about to leave Synkro to visit ${url.hostname}. Make sure you trust this link before continuing.`,
-            { title: 'Leave Synkro?', confirmLabel: 'Continue', cancelLabel: 'Go back' },
-        );
+        setTrustChecked(false);
+        setPending({ url, anchorTarget: anchor.target || '_blank' });
+    };
 
-        if (proceed) {
-            const target = anchor.target || '_blank';
-            window.open(url.href, target, 'noopener,noreferrer');
+    const handleCancel = () => {
+        setPending(null);
+    };
+
+    const handleConfirm = () => {
+        if (pending) {
+            if (trustChecked && !trustedHosts.includes(pending.url.hostname)) {
+                const next = [...trustedHosts, pending.url.hostname];
+                setTrustedHosts(next);
+                saveTrustedHosts(next);
+            }
+            window.open(pending.url.href, pending.anchorTarget, 'noopener,noreferrer');
         }
+        setPending(null);
     };
 
     return (
@@ -67,7 +104,15 @@ export default function ExternalLinkGuard({ children }) {
         // of #app
         <div onClickCapture={handleClick} style={{ display: 'contents' }}>
             {children}
-            {ConfirmDialog}
+            <ExternalLinkDialog
+                open={!!pending}
+                hostname={pending?.url.hostname}
+                url={pending?.url.href}
+                trustChecked={trustChecked}
+                onTrustChange={setTrustChecked}
+                onConfirm={handleConfirm}
+                onCancel={handleCancel}
+            />
         </div>
     );
 }
