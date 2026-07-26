@@ -36,7 +36,7 @@ export default function ExternalLinkDialog({ open, hostname, url, trustChecked, 
     const { prefix, host, rest } = splitUrl(url, hostname);
 
     return (
-        <Modal show={!!open} onClose={onCancel} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={!!open} onClose={onCancel} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
             <div className="p-6">
                 <div className="flex items-start justify-between">
                     <div>
@@ -59,14 +59,38 @@ export default function ExternalLinkDialog({ open, hostname, url, trustChecked, 
                     <span className="text-neutral-500 dark:text-neutral-400">{rest}</span>
                 </div>
 
-                <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
-                    <input
-                        type="checkbox"
-                        checked={trustChecked}
-                        onChange={(e) => onTrustChange(e.target.checked)}
-                        className="h-4 w-4 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-700"
-                    />
-                    Trust <span className="font-semibold">{hostname}</span> links from now on
+                <label
+                    className={`mt-4 flex cursor-pointer items-start gap-3 rounded-lg border px-3.5 py-3 transition ${
+                        trustChecked
+                            ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-500/40 dark:bg-indigo-950/30'
+                            : 'border-neutral-200 bg-neutral-50/60 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900/40 dark:hover:bg-neutral-800/60'
+                    }`}
+                >
+                    <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                        <input
+                            type="checkbox"
+                            checked={trustChecked}
+                            onChange={(e) => onTrustChange(e.target.checked)}
+                            className="peer h-4 w-4 shrink-0 appearance-none rounded border border-neutral-300 bg-white transition checked:border-indigo-600 checked:bg-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:border-neutral-600 dark:bg-neutral-700 dark:checked:border-indigo-500 dark:checked:bg-indigo-500"
+                        />
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="pointer-events-none absolute h-3 w-3 text-white opacity-0 transition-opacity peer-checked:opacity-100"
+                        >
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                    <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                        Trust <span className="font-semibold text-neutral-900 dark:text-neutral-100">{hostname}</span> links from now on
+                        <span className="mt-0.5 block text-xs text-neutral-400 dark:text-neutral-500">
+                            Skips this prompt for {hostname} next time. Manage trusted sites anytime in Settings.
+                        </span>
+                    </span>
                 </label>
 
                 <div className="mt-6 flex justify-end gap-2.5">

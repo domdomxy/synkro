@@ -784,15 +784,41 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
                             <div
                                 ref={descriptionRef}
-                                className={`prose-sm max-w-none whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''}`}
+                                onClick={isDescriptionTruncated ? (e) => {
+                                    // Let links inside the description (Linkify/Linkifier-generated
+                                    // <a> tags) behave normally instead of toggling the expand state.
+                                    if (e.target.closest('a')) return;
+                                    setShowFullDescription((v) => !v);
+                                } : undefined}
+                                onKeyDown={isDescriptionTruncated ? (e) => {
+                                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                                    e.preventDefault();
+                                    setShowFullDescription((v) => !v);
+                                } : undefined}
+                                role={isDescriptionTruncated ? 'button' : undefined}
+                                tabIndex={isDescriptionTruncated ? 0 : undefined}
+                                aria-expanded={isDescriptionTruncated ? showFullDescription : undefined}
+                                title={isDescriptionTruncated ? (showFullDescription ? 'Click to collapse' : 'Click to expand') : undefined}
+                                className={`prose-sm max-w-none whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100 ${!showFullDescription ? 'line-clamp-2' : ''} ${
+                                    isDescriptionTruncated ? '-mx-1.5 -my-0.5 cursor-pointer rounded-md px-1.5 py-0.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/40' : ''
+                                }`}
                                 style={{ tabSize: 4 }}
                                 dangerouslySetInnerHTML={{ __html: task.description }}
                             />
                             {isDescriptionTruncated && (
                                 <div className="mt-0.5 flex justify-end">
-                                    <button onClick={() => setShowFullDescription((v) => !v)} className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                                        {showFullDescription ? 'View less' : 'View more'}
-                                    </button>
+                                    <span className="flex select-none items-center gap-0.5 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                        {showFullDescription ? 'Click to collapse' : 'Click to expand'}
+                                        <svg
+                                            className={`h-3 w-3 transition-transform ${showFullDescription ? 'rotate-180' : ''}`}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -1325,14 +1351,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
             show={showHistory}
             onClose={() => setShowHistory(false)}
             maxWidth="lg"
-            overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
+            overlayClassName="bg-black/55 dark:bg-black/70"
         >
             <div className="p-6">
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">History — {task.title}</h3>
                     <button
                         onClick={() => setShowHistory(false)}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        aria-label="Close"
+                        className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                     >
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

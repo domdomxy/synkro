@@ -1,25 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ExternalLinkDialog from '@/Components/ExternalLinkDialog';
-
-const TRUSTED_HOSTS_KEY = 'synkro:trusted-link-hosts';
-
-function loadTrustedHosts() {
-    try {
-        const raw = window.localStorage.getItem(TRUSTED_HOSTS_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return []; // localStorage unavailable (private browsing, etc) - just always ask
-    }
-}
-
-function saveTrustedHosts(hosts) {
-    try {
-        window.localStorage.setItem(TRUSTED_HOSTS_KEY, JSON.stringify(hosts));
-    } catch {
-        // best effort only - if it can't persist, the dialog just asks again next time
-    }
-}
+import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/utils/trustedHosts';
 
 /**
  * Wraps the whole app (mounted once in app.jsx, outside Inertia's page switching)
@@ -46,13 +27,19 @@ function saveTrustedHosts(hosts) {
  * we don't interrupt it with a confirmation dialog.
  *
  * Hostnames the person has ticked "Trust ... links from now on" for are kept
- * in localStorage and skip the dialog entirely on future clicks, same as
- * Discord's equivalent prompt.
+ * in localStorage (see utils/trustedHosts.js) and skip the dialog entirely on
+ * future clicks, same as Discord's equivalent prompt. They can be reviewed
+ * and revoked anytime from Settings > Trusted Sites.
  */
 export default function ExternalLinkGuard({ children }) {
     const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
     const [pending, setPending] = useState(null); // { url, anchorTarget } | null
     const [trustChecked, setTrustChecked] = useState(false);
+
+    // Stay in sync if the trusted list is revoked/cleared from the Settings
+    // page while this guard is already mounted (it's mounted once, outside
+    // Inertia's page swapping, so it never remounts to pick up a fresh read).
+    useEffect(() => subscribeTrustedHosts(setTrustedHosts), []);
 
     const handleClick = (event) => {
         // Only plain left-clicks; let modifier-clicks and middle-clicks through untouched.

@@ -58,7 +58,7 @@ function CategoryRow({ category, confirm }) {
                     type="text"
                     value={form.data.label}
                     onChange={(e) => form.setData('label', e.target.value)}
-                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     placeholder="Category name"
                     autoFocus
                 />
@@ -121,12 +121,26 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70">
             <div className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Manage Feedback Categories</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    These appear as options on the public feedback form. Deleting a category is only allowed once no tickets use it.
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Manage Feedback Categories</h2>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            These appear as options on the public feedback form. Deleting a category is only allowed once no tickets use it.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
                 {pageErrors?.category && (
                     <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -149,7 +163,7 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
                         value={addForm.data.label}
                         onChange={(e) => addForm.setData('label', e.target.value)}
                         placeholder="e.g. Billing Question"
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     />
                     <InputError message={addForm.errors.label} />
                     <IconPicker value={addForm.data.icon} onChange={(icon) => addForm.setData('icon', icon)} />

@@ -1,7 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
-import { useState } from 'react';
+import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/utils/trustedHosts';
+import { useEffect, useState } from 'react';
+
+function LinkIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m4.828 1.5a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" />
+        </svg>
+    );
+}
 
 const categoryIcons = {
     account: (
@@ -93,6 +102,11 @@ const settingsNavItems = [
             </svg>
         ),
     },
+    {
+        id: 'trusted-sites',
+        label: 'Trusted Sites',
+        icon: <LinkIcon className="h-5 w-5" />,
+    },
 ];
 
 function Toggle({ enabled, onClick }) {
@@ -162,10 +176,25 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
     const [theme, setThemeState] = useState(getStoredTheme());
+    const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);
         setThemeState(value);
+    };
+
+    // Trusted sites are stored client-side (browser localStorage), same as
+    // theme above - there's no server record to load, and revoking here takes
+    // effect immediately for the ExternalLinkGuard already mounted in this tab.
+    useEffect(() => subscribeTrustedHosts(setTrustedHosts), []);
+    const revokeTrustedHost = (host) => {
+        const next = trustedHosts.filter((h) => h !== host);
+        setTrustedHosts(next);
+        saveTrustedHosts(next);
+    };
+    const revokeAllTrustedHosts = () => {
+        setTrustedHosts([]);
+        saveTrustedHosts([]);
     };
 
     // --- Email preferences ---
@@ -264,6 +293,56 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Trusted Sites */}
+                    <div id="trusted-sites" className="scroll-mt-24 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <LinkIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Trusted Sites</h3>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                                        Sites you've told Synkro to trust skip the "Leaving Synkro" confirmation on external links.
+                                    </p>
+                                </div>
+                            </div>
+                            {trustedHosts.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={revokeAllTrustedHosts}
+                                    className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 hover:underline dark:text-red-400 dark:hover:bg-red-950/30"
+                                >
+                                    Revoke all
+                                </button>
+                            )}
+                        </div>
+
+                        {trustedHosts.length === 0 ? (
+                            <p className="rounded-md border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+                                No trusted sites yet. Tick "Trust ... links from now on" the next time you click an external link to add one here.
+                            </p>
+                        ) : (
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                {trustedHosts.map((host) => (
+                                    <div key={host} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                                        <span className="flex items-center gap-2 truncate text-sm text-gray-600 dark:text-gray-400">
+                                            <LinkIcon className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
+                                            {host}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => revokeTrustedHost(host)}
+                                            className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                                        >
+                                            Revoke
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* In-App Notifications */}

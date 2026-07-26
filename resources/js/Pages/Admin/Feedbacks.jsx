@@ -6,6 +6,7 @@ import Linkify from '@/Components/Linkify';
 import FilterSelect from '@/Components/FilterSelect';
 import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ManageCategoriesModal from '@/Components/ManageCategoriesModal';
+import ImageLightbox from '@/Components/ImageLightbox';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -27,9 +28,18 @@ function CategoryBadge({ category, categories }) {
 
 function FeedbackItem({ feedback, isHighlighted, categories }) {
     const [open, setOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(null);
     const updateForm = useForm({ status: feedback.status, message: '' });
     const isClosed = ['closed', 'rejected'].includes(feedback.status);
     const userReplyCount = feedback.responses?.filter((r) => r.sender_type === 'user').length ?? 0;
+
+    // Flattened so the lightbox can page through every attachment on this
+    // ticket (legacy single attachment_path + the newer attachments array)
+    // with one shared index, regardless of which field they came from.
+    const attachmentImages = [
+        ...(feedback.attachment_path ? [{ src: `/storage/${feedback.attachment_path}`, alt: 'Attachment' }] : []),
+        ...(feedback.attachments ?? []).map((att) => ({ src: `/storage/${att.path}`, alt: att.original_name })),
+    ];
 
     // A deep-linked ticket (from a notification/email) should open expanded, not just scroll into view collapsed.
     useEffect(() => {
@@ -110,20 +120,28 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
                             <div className="rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
                                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={feedback.message} /></p>
 
-                                {(feedback.attachment_path || feedback.attachments?.length > 0) && (
+                                {attachmentImages.length > 0 && (
                                     <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                        {feedback.attachment_path && (
-                                            <a href={`/storage/${feedback.attachment_path}`} target="_blank" rel="noreferrer">
-                                                <img src={`/storage/${feedback.attachment_path}`} alt="attachment" className="h-24 w-full rounded-md object-cover shadow" />
-                                            </a>
-                                        )}
-                                        {feedback.attachments?.map((att) => (
-                                            <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer" title={att.original_name}>
-                                                <img src={`/storage/${att.path}`} alt={att.original_name} className="h-24 w-full rounded-md object-cover shadow" />
-                                            </a>
+                                        {attachmentImages.map((img, i) => (
+                                            <button
+                                                key={img.src}
+                                                type="button"
+                                                onClick={() => setLightboxIndex(i)}
+                                                title={img.alt}
+                                                className="group relative overflow-hidden rounded-md shadow"
+                                            >
+                                                <img src={img.src} alt={img.alt} className="h-24 w-full object-cover transition group-hover:brightness-90" />
+                                            </button>
                                         ))}
                                     </div>
                                 )}
+
+                                <ImageLightbox
+                                    images={attachmentImages}
+                                    index={lightboxIndex}
+                                    onClose={() => setLightboxIndex(null)}
+                                    onIndexChange={setLightboxIndex}
+                                />
 
                                 <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
                                     {feedback.name}

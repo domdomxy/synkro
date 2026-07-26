@@ -18,7 +18,7 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={close} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={show} onClose={close} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">Remove {member?.name}?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -34,7 +34,7 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
                         onChange={(e) => form.setData('reason', e.target.value)}
                         rows={3}
                         required
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         placeholder="e.g. Inactive on this project for over two months."
                     />
                     <InputError message={form.errors.reason} className="mt-1" />
@@ -44,14 +44,14 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
                     <button
                         type="button"
                         onClick={close}
-                        className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                     >
                         Remove Member
                     </button>

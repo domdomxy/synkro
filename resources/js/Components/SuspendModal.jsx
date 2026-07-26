@@ -28,7 +28,7 @@ export default function SuspendModal({ user, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">Suspend {user?.name}?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">They won't be able to log in until the suspension is lifted or expires.</p>
@@ -38,7 +38,7 @@ export default function SuspendModal({ user, show, onClose }) {
                     <select
                         value={form.data.duration}
                         onChange={(e) => form.setData('duration', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     >
                         {DURATION_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                     </select>
@@ -61,7 +61,7 @@ export default function SuspendModal({ user, show, onClose }) {
                         onChange={(e) => form.setData('reason', e.target.value)}
                         rows={3}
                         required
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         placeholder="e.g. Violation of community guidelines"
                     />
                     <InputError message={form.errors.reason} className="mt-1" />

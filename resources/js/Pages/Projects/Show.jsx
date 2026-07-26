@@ -496,7 +496,7 @@ function ProjectInfoModal({ show, onClose, project }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/55 dark:bg-black/70">
             <div className="flex max-h-[80vh] flex-col">
                 <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
                     <div className="min-w-0">
@@ -543,7 +543,7 @@ function ProjectInfoModal({ show, onClose, project }) {
 
 function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
             <form onSubmit={onSubmit} className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Leave "{project.name}"?
@@ -560,7 +560,7 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
                         onChange={(e) => form.setData('reason', e.target.value)}
                         rows={3}
                         autoFocus
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         placeholder="e.g. Moving to a different project, workload, no longer relevant to my role..."
                     />
                     <InputError message={form.errors.reason} className="mt-1" />
@@ -571,7 +571,7 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
                     >
                         {form.processing ? 'Leaving...' : 'Leave Project'}
                     </button>
@@ -1144,14 +1144,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 show={showBoardModal}
                 onClose={() => setShowBoardModal(false)}
                 maxWidth="6xl"
-                overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70"
+                overlayClassName="bg-black/55 dark:bg-black/70"
             >
                 <div className="p-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Board</h3>
                         <button
                             onClick={() => setShowBoardModal(false)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            aria-label="Close"
+                            className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                         >
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

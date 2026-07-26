@@ -314,7 +314,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                 })}
             </div>
 
-            <Modal show={!!rejectTarget} onClose={() => (processing ? null : setRejectTarget(null))} maxWidth="md" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+            <Modal show={!!rejectTarget} onClose={() => (processing ? null : setRejectTarget(null))} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
                 <form onSubmit={submitReject} className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Send back for changes</h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -325,7 +325,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                         onChange={(e) => setRejectFeedback(e.target.value)}
                         autoFocus
                         placeholder="Feedback (required)"
-                        className="mt-3 block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-3 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     />
                     {rejectError && <InputError message={rejectError} className="mt-1" />}
                     <div className="mt-4 flex justify-end gap-2">

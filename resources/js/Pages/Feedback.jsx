@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Linkify from '@/Components/Linkify';
 import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
+import ImageLightbox from '@/Components/ImageLightbox';
 import { useEffect, useRef, useState } from 'react';
 
 const statusConfig = {
@@ -234,6 +235,7 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
     const [submitted, setSubmitted] = useState(null);
     const [copied, setCopied] = useState(false);
     const [previews, setPreviews] = useState([]); // [{ file, url }]
+    const [lightboxIndex, setLightboxIndex] = useState(null);
     const fileInputRef = useRef(null);
 
     const MAX_ATTACHMENTS = 5;
@@ -356,6 +358,13 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
     };
 
     const selectedCategory = categories.find((c) => c.key === data.category);
+
+    // Flattened so the lightbox can page through every attachment on this
+    // ticket (legacy single attachment_path + the newer attachments array).
+    const trackAttachmentImages = trackResult ? [
+        ...(trackResult.feedback.attachment_path ? [{ src: `/storage/${trackResult.feedback.attachment_path}`, alt: 'Attachment' }] : []),
+        ...(trackResult.feedback.attachments ?? []).map((att) => ({ src: `/storage/${att.path}`, alt: att.original_name })),
+    ] : [];
 
     return (
         <>
@@ -708,20 +717,28 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
                                                         <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={trackResult.feedback.message} /></p>
 
-                                                        {(trackResult.feedback.attachment_path || trackResult.feedback.attachments?.length > 0) && (
+                                                        {trackAttachmentImages.length > 0 && (
                                                             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                                                {trackResult.feedback.attachment_path && (
-                                                                    <a href={`/storage/${trackResult.feedback.attachment_path}`} target="_blank" rel="noreferrer">
-                                                                        <img src={`/storage/${trackResult.feedback.attachment_path}`} alt="attachment" className="h-20 w-full rounded-md object-cover shadow" />
-                                                                    </a>
-                                                                )}
-                                                                {trackResult.feedback.attachments?.map((att) => (
-                                                                    <a key={att.id} href={`/storage/${att.path}`} target="_blank" rel="noreferrer">
-                                                                        <img src={`/storage/${att.path}`} alt={att.original_name} className="h-20 w-full rounded-md object-cover shadow" />
-                                                                    </a>
+                                                                {trackAttachmentImages.map((img, i) => (
+                                                                    <button
+                                                                        key={img.src}
+                                                                        type="button"
+                                                                        onClick={() => setLightboxIndex(i)}
+                                                                        title={img.alt}
+                                                                        className="group relative overflow-hidden rounded-md shadow"
+                                                                    >
+                                                                        <img src={img.src} alt={img.alt} className="h-20 w-full object-cover transition group-hover:brightness-90" />
+                                                                    </button>
                                                                 ))}
                                                             </div>
                                                         )}
+
+                                                        <ImageLightbox
+                                                            images={trackAttachmentImages}
+                                                            index={lightboxIndex}
+                                                            onClose={() => setLightboxIndex(null)}
+                                                            onIndexChange={setLightboxIndex}
+                                                        />
 
                                                         <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                                                             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

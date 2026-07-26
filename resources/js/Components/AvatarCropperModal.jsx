@@ -160,10 +160,25 @@ export default function AvatarCropperModal({ file, onCancel, onSave }) {
     const scale = baseScale * zoom;
 
     return (
-        <Modal show={!!file} onClose={onCancel} maxWidth="md">
+        <Modal show={!!file} onClose={onCancel} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
             <div className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Edit Photo</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Drag to reposition, and use the slider to zoom.</p>
+                <div className="flex items-start justify-between gap-2">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Photo</h2>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Drag to reposition, and use the slider to zoom.</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={saving}
+                        aria-label="Close"
+                        className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
                 <div
                     className="relative mx-auto mt-4 select-none overflow-hidden rounded-2xl bg-gray-900 ring-1 ring-black/10"

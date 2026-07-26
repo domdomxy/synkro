@@ -125,7 +125,7 @@ function LoginDetailsModal({ log, onClose }) {
     const deviceValue = [d.model ? `${d.device} (${d.model})` : d.device, d.os].filter(Boolean).join(' · ');
 
     return (
-        <Modal show={!!log} onClose={onClose} maxWidth="sm" overlayClassName="bg-black/55 backdrop-blur-[2px] dark:bg-black/70">
+        <Modal show={!!log} onClose={onClose} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
             <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Sign-in details</h3>
                 {log && (
@@ -147,7 +147,7 @@ function LoginDetailsModal({ log, onClose }) {
             <div className="flex justify-end border-t border-gray-100 px-6 py-4 dark:border-gray-700">
                 <button
                     onClick={onClose}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                 >
                     Close
                 </button>
