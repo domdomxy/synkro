@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
+import ViewToggle from '@/Components/ViewToggle';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -50,6 +51,13 @@ function formatDue(dateString) {
 function isOverdue(task) {
     if (!task.due_date || task.status === 'done') return false;
     return new Date(task.due_date) < new Date();
+}
+
+/** Rich-text descriptions are stored as HTML; strip tags for a plain-text list preview. */
+function descriptionPreview(html) {
+    if (!html) return '';
+    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text;
 }
 
 function SearchIcon() {
@@ -123,6 +131,15 @@ export default function Index({ tasks }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
     const [pinningId, setPinningId] = useState(null);
+    const [view, setView] = useState(() => {
+        if (typeof window === 'undefined') return 'grid';
+        return localStorage.getItem('synkro:tasks-view') ?? 'grid';
+    });
+
+    const changeView = (next) => {
+        setView(next);
+        try { localStorage.setItem('synkro:tasks-view', next); } catch { /* private browsing, etc. */ }
+    };
 
     const clearFilters = () => {
         setSearch('');
@@ -204,11 +221,91 @@ export default function Index({ tasks }) {
                     </div>
 
                     {tasks.length > 0 && (
-                        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                            {filtered.length} of {tasks.length} task{tasks.length > 1 ? 's' : ''}
-                        </p>
+                        <div className="mb-4 flex items-center justify-between">
+                            <p className="text-sm text-gray-400 dark:text-gray-500">
+                                {filtered.length} of {tasks.length} task{tasks.length > 1 ? 's' : ''}
+                            </p>
+                            <ViewToggle value={view} onChange={changeView} />
+                        </div>
                     )}
 
+                    {view === 'list' && filtered.length > 0 && (
+                        <div className="mb-4 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            <div className="hidden border-b border-gray-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500 sm:grid sm:grid-cols-[14rem_minmax(0,1fr)_14rem_7rem_10rem_2.5rem] sm:items-center sm:gap-4">
+                                <span>Task</span>
+                                <span>Description</span>
+                                <span>Project</span>
+                                <span>Status</span>
+                                <span>Due</span>
+                                <span></span>
+                            </div>
+                            <ul>
+                                {filtered.map((task) => {
+                                    const overdue = isOverdue(task);
+                                    return (
+                                        <li key={task.id} className="group relative border-b border-gray-100 last:border-0 dark:border-gray-700">
+                                            <button
+                                                onClick={() => togglePin(task)}
+                                                disabled={pinningId === task.id}
+                                                title={task.is_pinned ? 'Unpin' : 'Pin to top'}
+                                                className={`absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-md p-1.5 transition disabled:opacity-50 ${
+                                                    task.is_pinned
+                                                        ? 'text-amber-500 opacity-100'
+                                                        : 'text-gray-300 opacity-100 hover:bg-gray-100 hover:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                                                }`}
+                                            >
+                                                <PinIcon filled={!!task.is_pinned} className="h-3.5 w-3.5" />
+                                            </button>
+                                            <Link
+                                                href={`${route('projects.show', task.project_id)}?task=${task.id}`}
+                                                className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 pr-10 transition hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:grid-cols-[14rem_minmax(0,1fr)_14rem_7rem_10rem_2.5rem] sm:items-center sm:gap-4"
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>
+                                                            {task.title}
+                                                        </span>
+                                                        {task.priority && task.priority !== 'medium' && (
+                                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                                                {task.priority === 'high' ? 'High' : 'Low'}
+                                                            </span>
+                                                        )}
+                                                        {task.comments_count > 0 && (
+                                                            <span className="hidden shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500 sm:flex">
+                                                                <CommentIcon className="h-3.5 w-3.5" />
+                                                                {task.comments_count}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+                                                        {task.project?.name} · {task.due_date ? `${overdue ? 'Overdue' : 'Due'} ${formatDue(task.due_date)}` : 'No due date'}
+                                                    </p>
+                                                </div>
+                                                <span className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block">
+                                                    {task.description
+                                                        ? descriptionPreview(task.description)
+                                                        : <span className="italic text-gray-300 dark:text-gray-600">No description</span>}
+                                                </span>
+                                                <span className="hidden text-sm text-gray-500 dark:text-gray-400 sm:line-clamp-2 sm:block" title={task.project?.name}>
+                                                    {task.project?.name}
+                                                </span>
+                                                <span className={`hidden w-fit shrink-0 rounded-full px-2 py-1 text-xs capitalize sm:block ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                                    {task.status.replace('_', ' ')}
+                                                </span>
+                                                <span className={`hidden items-center gap-1 text-xs sm:flex ${overdue ? 'font-medium text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                    {overdue ? <AlertIcon className="h-3.5 w-3.5 shrink-0" /> : <ClockIcon className="h-3.5 w-3.5 shrink-0" />}
+                                                    {task.due_date ? formatDue(task.due_date) : 'No due date'}
+                                                </span>
+                                                <span className="hidden sm:block" />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
+
+                    {view === 'grid' && (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {filtered.map((task) => {
                             const overdue = isOverdue(task);
@@ -275,10 +372,14 @@ export default function Index({ tasks }) {
                                 </div>
                             );
                         })}
-                        {filtered.length === 0 && (
-                            <EmptyState hasAnyTasks={tasks.length > 0} onClearFilters={clearFilters} />
-                        )}
                     </div>
+                    )}
+
+                    {filtered.length === 0 && (
+                        <div className="grid">
+                            <EmptyState hasAnyTasks={tasks.length > 0} onClearFilters={clearFilters} />
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

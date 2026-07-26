@@ -110,13 +110,15 @@ function AdminLogRow({ log, actionCatalog }) {
                         </p>
                     )}
                     {hasReason && open && (
-                        <div className="mt-2 rounded-md border-l-2 border-indigo-300 bg-indigo-50/60 py-2 pl-3 pr-2 dark:border-indigo-700 dark:bg-indigo-950/20">
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-indigo-400 dark:text-indigo-500">
-                                Reason given
+                        <div className="mt-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                Reason Given
                             </p>
-                            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                <Linkify text={reason} />
-                            </p>
+                            <div className="mt-1.5 rounded-md border border-indigo-100 bg-indigo-50/50 p-2.5 dark:border-indigo-900 dark:bg-indigo-950/20">
+                                <p className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">
+                                    <Linkify text={reason} />
+                                </p>
+                            </div>
                         </div>
                     )}
                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">

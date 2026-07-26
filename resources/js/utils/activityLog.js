@@ -82,6 +82,25 @@ export function getLogDetails(log) {
         }));
     }
 
+    if (log.action === 'comment_added' || log.action === 'comment_deleted') {
+        return [
+            { label: 'Task', value: d.task_title },
+            { label: 'Comment', value: d.preview },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'comment_edited') {
+        return [
+            { label: 'Task', value: d.task_title },
+            d.old_preview !== undefined && d.new_preview !== undefined && {
+                label: 'Comment',
+                oldValue: d.old_preview || '-',
+                newValue: d.new_preview || '-',
+                isChange: true,
+            },
+        ].filter(Boolean);
+    }
+
     if (log.action === 'task_assigned') {
         return [
             { label: 'Assigned To', value: d.target_name },
@@ -151,9 +170,9 @@ export function describeLog(log) {
         case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
         case 'invitation_accepted': return `${d.target_name ?? actor} accepted the invitation and joined as ${d.role}`;
-        case 'comment_added': return `${actor} commented: "${d.preview}"`;
-        case 'comment_edited': return `${actor} edited a comment`;
-        case 'comment_deleted': return `${actor} deleted a comment: "${d.preview}"`;
+        case 'comment_added': return `${actor} commented on "${d.task_title}"`;
+        case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
+        case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }

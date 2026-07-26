@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
+import ViewToggle from '@/Components/ViewToggle';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -131,7 +132,16 @@ export default function Index({ projects, showingArchived }) {
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [view, setView] = useState(() => {
+        if (typeof window === 'undefined') return 'grid';
+        return localStorage.getItem('synkro:projects-view') ?? 'grid';
+    });
     const { confirm, ConfirmDialog } = useConfirm();
+
+    const changeView = (next) => {
+        setView(next);
+        try { localStorage.setItem('synkro:projects-view', next); } catch { /* private browsing, etc. */ }
+    };
 
     const createForm = useForm({ name: '', description: '' });
 
@@ -259,11 +269,87 @@ export default function Index({ projects, showingArchived }) {
                     </div>
 
                     {projects.length > 0 && (
-                        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                            {filtered.length} of {projects.length} project{projects.length > 1 ? 's' : ''}
-                        </p>
+                        <div className="mb-4 flex items-center justify-between">
+                            <p className="text-sm text-gray-400 dark:text-gray-500">
+                                {filtered.length} of {projects.length} project{projects.length > 1 ? 's' : ''}
+                            </p>
+                            <ViewToggle value={view} onChange={changeView} />
+                        </div>
                     )}
 
+                    {view === 'list' && filtered.length > 0 && (
+                        <div className="mb-4 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            <div className="hidden border-b border-gray-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500 sm:grid sm:grid-cols-[1fr_10rem_6rem_8rem_2.5rem] sm:items-center sm:gap-3">
+                                <span>Project</span>
+                                <span>Owner</span>
+                                <span className="text-right">Tasks</span>
+                                <span>Progress</span>
+                                <span></span>
+                            </div>
+                            <ul>
+                                {filtered.map((project) => {
+                                    const progress = project.tasks_count > 0
+                                        ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
+                                        : 0;
+                                    const progressColor = progress === 100 ? 'bg-green-500' : 'bg-indigo-500';
+
+                                    return (
+                                        <li key={project.id} className="group relative border-b border-gray-100 last:border-0 dark:border-gray-700">
+                                            <ProjectActionsMenu
+                                                project={project}
+                                                showingArchived={showingArchived}
+                                                onPin={() => pinProject(project)}
+                                                onUnpin={() => unpinProject(project)}
+                                                onArchive={() => archiveProject(project)}
+                                                onUnarchive={() => unarchiveProject(project)}
+                                            />
+                                            <Link
+                                                href={route('projects.show', project.id)}
+                                                className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 pr-10 transition hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:grid-cols-[1fr_10rem_6rem_8rem_2.5rem]"
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100" title={project.name}>
+                                                            {project.name}
+                                                        </span>
+                                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${roleStyles[project.pivot?.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                            {project.pivot?.role}
+                                                        </span>
+                                                        {!!project.pivot?.pinned && (
+                                                            <svg title="Pinned" className="h-3.5 w-3.5 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+                                                        {project.owner?.name} · {project.tasks_count} tasks · {progress}% done
+                                                    </p>
+                                                </div>
+                                                <div className="hidden min-w-0 items-center gap-2 sm:flex">
+                                                    <Avatar user={project.owner} size="h-5 w-5" />
+                                                    <span className="truncate text-sm text-gray-500 dark:text-gray-400" title={project.owner?.name}>
+                                                        {project.owner?.name}
+                                                    </span>
+                                                </div>
+                                                <span className="hidden text-right text-sm text-gray-500 dark:text-gray-400 sm:block">
+                                                    {project.tasks_count}
+                                                </span>
+                                                <div className="hidden items-center gap-2 sm:flex">
+                                                    <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
+                                                        <div className={`h-1.5 rounded-full transition-all ${progressColor}`} style={{ width: `${progress}%` }} />
+                                                    </div>
+                                                    <span className="w-9 shrink-0 text-right text-xs text-gray-400 dark:text-gray-500">{progress}%</span>
+                                                </div>
+                                                <span className="hidden sm:block" />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
+
+                    {view === 'grid' && (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {filtered.map((project) => {
                             const progress = project.tasks_count > 0
@@ -331,15 +417,19 @@ export default function Index({ projects, showingArchived }) {
                                 </div>
                             );
                         })}
-                        {filtered.length === 0 && (
+                    </div>
+                    )}
+
+                    {filtered.length === 0 && (
+                        <div className="grid">
                             <EmptyState
                                 hasAnyProjects={projects.length > 0}
                                 showingArchived={showingArchived}
                                 onNewProject={() => setShowCreateModal(true)}
                                 onClearFilters={clearFilters}
                             />
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
