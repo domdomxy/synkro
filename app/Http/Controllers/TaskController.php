@@ -11,6 +11,7 @@ use App\Events\TaskReviewNeeded;
 use App\Events\TaskUnassigned;
 use App\Events\TaskUpdated;
 use App\Events\TaskDeleted;
+use App\Support\TestingQueueBroadcaster;
 use App\Models\Project;
 use App\Models\ProjectActivityLog;
 use App\Models\Task;
@@ -335,8 +336,15 @@ class TaskController extends Controller
             }
         }
  
+        $wasInQueue = in_array($task->status, ['submitted', 'in_review']);
+        $project = $task->project;
+
         $task->delete();
- 
+
+        if ($wasInQueue) {
+            TestingQueueBroadcaster::notify($project);
+        }
+
         return back()->with('success', 'Task deleted.');
     }
 
@@ -699,6 +707,8 @@ class TaskController extends Controller
         ]);
  
         if (! $wasAlreadySubmitted) {
+            TestingQueueBroadcaster::notify($task->project);
+
             $testers = $task->project->members()->wherePivot('role', 'tester')->where('users.id', '!=', Auth::id())->get();
 
             $reviewers = $testers->isNotEmpty()
@@ -825,6 +835,8 @@ class TaskController extends Controller
         $task->update([
             'status' => $validated['decision'] === 'approve' ? 'done' : 'in_progress',
         ]);
+
+        TestingQueueBroadcaster::notify($task->project);
  
         ProjectActivityLog::log(
             $task->project,
@@ -925,6 +937,8 @@ class TaskController extends Controller
         ]);
  
         if ($validated['action'] === 'reset') {
+            $wasInQueue = in_array($task->status, ['submitted', 'in_review']);
+
             foreach ($task->deliverables as $deliverable) {
                 if ($deliverable->type === 'file' && $deliverable->path) {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($deliverable->path);
@@ -940,6 +954,10 @@ class TaskController extends Controller
             ]);
  
             ProjectActivityLog::log($task->project, 'submission_reset', ['task_title' => $task->title], $task);
+
+            if ($wasInQueue) {
+                TestingQueueBroadcaster::notify($task->project);
+            }
         } else {
             $task->update(['pending_resolution' => false]);
             ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title], $task);

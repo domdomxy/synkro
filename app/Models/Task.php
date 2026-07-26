@@ -27,6 +27,7 @@ class Task extends Model
 
     protected $casts = [
         'due_date' => 'datetime',
+        'submitted_at' => 'datetime',
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
         'overdue_notified_at' => 'datetime',

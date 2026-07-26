@@ -45,6 +45,26 @@ class HandleInertiaRequests extends Middleware
             'unreadCount' => fn () => $request->user()?->notifications()->whereNull('read_at')->count() ?? 0,
             'recent' => fn () => $request->user()?->notifications()->limit(10)->get() ?? [],
             ],
+            'testing' => fn () => (function () use ($request) {
+                $user = $request->user();
+                if (! $user) {
+                    return null;
+                }
+
+                $reviewerProjectIds = $user->projects()
+                    ->wherePivotIn('role', ['owner', 'manager', 'tester'])
+                    ->pluck('projects.id');
+
+                if ($reviewerProjectIds->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'pendingCount' => \App\Models\Task::whereIn('project_id', $reviewerProjectIds)
+                        ->whereIn('status', ['submitted', 'in_review'])
+                        ->count(),
+                ];
+            })(),
             'adminAlerts' => fn () => (function () use ($request) {
                 $user = $request->user();
                 if (! $user || $user->role !== 'admin') {

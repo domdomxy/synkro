@@ -13,12 +13,26 @@ import SuspensionListener from '@/Components/SuspensionListener';
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-    const { adminAlerts } = usePage().props;
+    const { adminAlerts, testing } = usePage().props;
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
+    const [pendingTestCount, setPendingTestCount] = useState(testing?.pendingCount ?? 0);
 
     useEffect(() => {
         setHasPendingAlert(adminAlerts?.hasPending ?? false);
     }, [adminAlerts]);
+
+    useEffect(() => {
+        setPendingTestCount(testing?.pendingCount ?? 0);
+    }, [testing]);
+
+    // Private per-user channel, always valid here since AuthenticatedLayout only
+    // renders for a logged-in user — unlike admin-alerts below, no fallback needed.
+    useEcho(
+        `user.${user.id}`,
+        ['.testing.queue-updated'],
+        (payload) => setPendingTestCount(payload.pendingCount),
+        [user.id],
+    );
 
     // useEcho always subscribes on mount, even when given a falsy channel
     // name (it does not skip subscribing, it just subscribes to the literal
@@ -63,6 +77,18 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                 <NavLink href={route('tasks.index')} active={route().current('tasks.index')}>
                                     Tasks
                                 </NavLink>
+                                {testing && (
+                                    <div className="relative inline-flex">
+                                        <NavLink href={route('testing.index')} active={route().current('testing.index')}>
+                                            Testing
+                                        </NavLink>
+                                        {pendingTestCount > 0 && (
+                                            <span className="pointer-events-none absolute -right-3 top-3.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
+                                                {pendingTestCount > 99 ? '99+' : pendingTestCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                                 {user.role === 'admin' && (
                                     <div className="relative inline-flex">
                                         <NavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
@@ -156,6 +182,18 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                         <ResponsiveNavLink href={route('tasks.index')} active={route().current('tasks.index')}>
                             Tasks
                         </ResponsiveNavLink>
+                        {testing && (
+                            <div className="relative">
+                                <ResponsiveNavLink href={route('testing.index')} active={route().current('testing.index')}>
+                                    Testing
+                                </ResponsiveNavLink>
+                                {pendingTestCount > 0 && (
+                                    <span className="pointer-events-none absolute right-4 top-1/2 flex h-4 min-w-4 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
+                                        {pendingTestCount > 99 ? '99+' : pendingTestCount}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                         {user.role === 'admin' && (
                             <div className="relative">
                                 <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>

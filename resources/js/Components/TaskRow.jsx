@@ -738,22 +738,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         {formatDue(task.due_date)}
                                     </span>
                                 )}
-                                {task.comments?.length > 0 && (
-                                    <span className="flex items-center gap-1">
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                        {task.comments.length}
-                                    </span>
-                                )}
-                                {task.deliverables?.length > 0 && (
-                                    <span className="flex items-center gap-1">
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                        </svg>
-                                        {task.deliverables.length} file{task.deliverables.length > 1 ? 's' : ''}
-                                    </span>
-                                )}
                             </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
