@@ -20,14 +20,7 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-
-const roleStyles = {
-    owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-    manager: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    member: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    tester: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-    admin: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-};
+import { roleStyles } from '@/utils/roleStyles';
 
 const statusBarColors = {
     todo: 'bg-gray-400',

@@ -9,6 +9,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
 import MentionTextarea, { extractRoleMentions, ROLE_LABELS } from '@/Components/MentionTextarea';
 import { localDateTimeToIso } from '@/utils/datetime';
+import { roleStyles } from '@/utils/roleStyles';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
 import CommentBody from '@/Components/CommentBody';
@@ -371,16 +372,17 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
     );
 }
 
-// Renders a single comment (top-level or reply). Replies are drawn indented,
-// with a connecting line + curve on the left that runs up to the avatar of
-// the comment they're replying to - there's no dedicated collapse button;
-// clicking the comment itself toggles its thread open/closed.
+// Renders a single comment's content (name, badges, bubble, meta row) -
+// no avatar and no thread lines. Those live one level up in CommentThread,
+// which lays the avatar out in its own column next to this content so the
+// connecting rail can start right at the avatar and run exactly as far
+// down as this comment's own replies go - there's no dedicated collapse
+// button; clicking the comment itself toggles its thread open/closed.
 function CommentEntry({
     comment,
-    isReply,
     quoteParent,
+    canCollapse,
     isCollapsed,
-    descendantCount,
     onToggleCollapse,
     highlightedCommentId,
     editingCommentId,
@@ -388,6 +390,7 @@ function CommentEntry({
     currentUserId,
     canManage,
     members,
+    authorRole,
     onSaveEdit,
     onStartEdit,
     onCancelEdit,
@@ -398,21 +401,15 @@ function CommentEntry({
     const isDeleted = !!comment.is_deleted;
 
     return (
-        <div id={`comment-${comment.id}`} className={`relative flex items-start gap-2 ${isReply ? 'pt-3' : ''}`}>
-            {isReply && (
-                <span
-                    aria-hidden="true"
-                    className="absolute -left-4 top-0 h-7 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
-                />
-            )}
-            <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 shrink-0 ${isDeleted ? 'opacity-40 grayscale' : ''}`} />
-            <div className="min-w-0 flex-1">
-                {isDeleted && !isCollapsed ? (
+        <div className="min-w-0 flex-1">
+                {isDeleted ? (
                     <>
                         <div
-                            onClick={onToggleCollapse}
-                            title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
-                            className="flex cursor-pointer items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3.5 py-2 text-sm italic text-gray-400 transition hover:border-gray-400 dark:border-gray-600 dark:text-gray-500 dark:hover:border-gray-500"
+                            onClick={canCollapse ? onToggleCollapse : undefined}
+                            title={canCollapse ? (isCollapsed ? 'Expand thread' : 'Collapse thread') : undefined}
+                            className={`flex items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3.5 py-2 text-sm italic text-gray-400 transition dark:border-gray-600 dark:text-gray-500 ${
+                                canCollapse ? 'cursor-pointer hover:border-gray-400 dark:hover:border-gray-500' : ''
+                            }`}
                         >
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
@@ -458,15 +455,6 @@ function CommentEntry({
                             </button>
                         </div>
                     </form>
-                ) : isCollapsed ? (
-                    <button
-                        type="button"
-                        onClick={onToggleCollapse}
-                        className="flex items-center gap-1.5 py-1 text-xs text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                    >
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{comment.user.name}</span>
-                        <span>{descendantCount > 0 ? `${descendantCount} repl${descendantCount === 1 ? 'y' : 'ies'} hidden` : 'comment collapsed'}</span>
-                    </button>
                 ) : (
                     <>
                         {/* Only shown for a reply whose parent was deleted - real nesting
@@ -490,12 +478,13 @@ function CommentEntry({
                                 )}
                             </button>
                         )}
-                        {/* Clicking the comment itself (not a separate +/- control)
-                            collapses or expands its thread. */}
+                        {/* Clicking the comment bubble only toggles the thread when this is
+                            a root comment with replies (canCollapse) - a plain reply is not
+                            interactive here, it doesn't collapse itself or anything else. */}
                         <div
-                            onClick={onToggleCollapse}
-                            title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
-                            className={`cursor-pointer rounded-2xl px-3.5 py-2 transition hover:brightness-95 dark:hover:brightness-110 ${
+                            onClick={canCollapse ? onToggleCollapse : undefined}
+                            title={canCollapse ? (isCollapsed ? 'Expand thread' : 'Collapse thread') : undefined}
+                            className={`rounded-2xl px-3.5 py-2 transition ${canCollapse ? 'cursor-pointer hover:brightness-95 dark:hover:brightness-110' : ''} ${
                             highlightedCommentId === comment.id
                                 ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
                                 : ''
@@ -512,6 +501,11 @@ function CommentEntry({
                                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                     {comment.user.name}
                                 </span>
+                                {authorRole && (
+                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize ${roleStyles[authorRole] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                        {authorRole}
+                                    </span>
+                                )}
                                 {!!comment.is_reopened && (
                                     <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900 dark:text-orange-300">
                                         Reopened
@@ -567,7 +561,6 @@ function CommentEntry({
                         </div>
                     </>
                 )}
-            </div>
         </div>
     );
 }
@@ -600,77 +593,117 @@ function CommentThread({
     onScrollToComment,
 }) {
     const children = childrenByParent.get(comment.id) ?? [];
+    const descendantCount = countDescendants(comment.id, childrenByParent);
     const isCollapsed = collapsedIds.has(comment.id);
     const isReplyingHere = replyingToId === comment.id;
+    const isDeleted = !!comment.is_deleted;
+    // Only a root comment with replies can be collapsed - a reply (whatever
+    // is nested under it) never gets a click-to-toggle affordance of its own,
+    // and it's the reply *list* that hides/shows, never the root's own text.
+    const canCollapse = !isReply && descendantCount > 0;
+    const hasNestedContent = !isCollapsed && (children.length > 0 || isReplyingHere);
     // A quote line only makes sense for a comment whose parent was deleted
     // (it lost its real nesting spot); a properly nested reply doesn't need
     // one since its position in the tree already shows who it's replying to.
     const quoteParent = !isReply && comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
+    const authorRole = members.find((m) => m.id === comment.user.id)?.pivot?.role ?? null;
+    const toggle = () => onToggleCollapse(comment.id);
 
     return (
-        <div>
-            <CommentEntry
-                comment={comment}
-                isReply={isReply}
-                quoteParent={quoteParent}
-                isCollapsed={isCollapsed}
-                descendantCount={countDescendants(comment.id, childrenByParent)}
-                onToggleCollapse={() => onToggleCollapse(comment.id)}
-                highlightedCommentId={highlightedCommentId}
-                editingCommentId={editingCommentId}
-                editCommentForm={editCommentForm}
-                currentUserId={currentUserId}
-                canManage={canManage}
-                members={members}
-                onSaveEdit={onSaveEdit}
-                onStartEdit={onStartEdit}
-                onCancelEdit={onCancelEdit}
-                onDelete={onDelete}
-                onStartReply={onStartReply}
-                onScrollToComment={onScrollToComment}
-            />
-            {/* This rail starts right where the comment above ends, so it reads
-                as running straight down from that comment's avatar into each
-                reply's own elbow connector (see CommentEntry) rather than
-                floating disconnected from what it's replying to. */}
-            {!isCollapsed && (children.length > 0 || isReplyingHere) && (
-                <div className="ml-3.5 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
-                    {children.map((child) => (
-                        <CommentThread
-                            key={child.id}
-                            comment={child}
-                            isReply
-                            childrenByParent={childrenByParent}
-                            byId={byId}
-                            collapsedIds={collapsedIds}
-                            onToggleCollapse={onToggleCollapse}
-                            replyingToId={replyingToId}
-                            composer={composer}
-                            highlightedCommentId={highlightedCommentId}
-                            editingCommentId={editingCommentId}
-                            editCommentForm={editCommentForm}
-                            currentUserId={currentUserId}
-                            canManage={canManage}
-                            members={members}
-                            onSaveEdit={onSaveEdit}
-                            onStartEdit={onStartEdit}
-                            onCancelEdit={onCancelEdit}
-                            onDelete={onDelete}
-                            onStartReply={onStartReply}
-                            onScrollToComment={onScrollToComment}
-                        />
-                    ))}
-                    {isReplyingHere && (
-                        <div className="relative pt-3">
-                            <span
-                                aria-hidden="true"
-                                className="absolute -left-4 top-0 h-9 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
-                            />
-                            {composer}
-                        </div>
-                    )}
-                </div>
+        // No `items-start` here on purpose: leaving this row at the default
+        // stretch alignment lets the avatar column below match the full
+        // height of the content column next to it (comment + every reply
+        // nested under it), so the rail can span exactly that height instead
+        // of a fixed/guessed one. `relative` is for the reply's own elbow
+        // curve below, which is positioned against this row.
+        <div id={`comment-${comment.id}`} className="relative flex gap-2">
+            {/* The curve that peels off the parent's rail (a fixed distance
+                to the left - one avatar's width plus the gap) and runs down
+                into this reply's own avatar, so every reply branches visibly
+                off the trunk instead of just sitting parallel to it. */}
+            {isReply && (
+                <span
+                    aria-hidden="true"
+                    className="absolute -left-[22px] top-0 h-4 w-[22px] rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
+                />
             )}
+            <div className="flex shrink-0 flex-col items-center">
+                <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 ${isDeleted ? 'opacity-40 grayscale' : ''}`} />
+                {/* The trunk: starts right at the bottom of this avatar
+                    (touching it) and stretches (flex-1) to fill whatever
+                    height the replies beside it take up, so it always
+                    reaches exactly as far as the last reply below - never
+                    further, never short of it. */}
+                {hasNestedContent && (
+                    <div className="my-1 w-0.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700" />
+                )}
+            </div>
+            <div className="min-w-0 flex-1">
+                <CommentEntry
+                    comment={comment}
+                    quoteParent={quoteParent}
+                    canCollapse={canCollapse}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={toggle}
+                    highlightedCommentId={highlightedCommentId}
+                    editingCommentId={editingCommentId}
+                    editCommentForm={editCommentForm}
+                    currentUserId={currentUserId}
+                    canManage={canManage}
+                    members={members}
+                    authorRole={authorRole}
+                    onSaveEdit={onSaveEdit}
+                    onStartEdit={onStartEdit}
+                    onCancelEdit={onCancelEdit}
+                    onDelete={onDelete}
+                    onStartReply={onStartReply}
+                    onScrollToComment={onScrollToComment}
+                />
+                {/* The only place the reply count / collapse control shows -
+                    a plain reply never gets one, even if it has its own
+                    replies nested under it. */}
+                {canCollapse && (
+                    <button
+                        type="button"
+                        onClick={toggle}
+                        className="mt-1 px-1 text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                    >
+                        {isCollapsed
+                            ? `View ${descendantCount} repl${descendantCount === 1 ? 'y' : 'ies'}`
+                            : 'Hide replies'}
+                    </button>
+                )}
+                {hasNestedContent && (
+                    <div className="mt-3 space-y-3">
+                        {children.map((child) => (
+                            <CommentThread
+                                key={child.id}
+                                comment={child}
+                                isReply
+                                childrenByParent={childrenByParent}
+                                byId={byId}
+                                collapsedIds={collapsedIds}
+                                onToggleCollapse={onToggleCollapse}
+                                replyingToId={replyingToId}
+                                composer={composer}
+                                highlightedCommentId={highlightedCommentId}
+                                editingCommentId={editingCommentId}
+                                editCommentForm={editCommentForm}
+                                currentUserId={currentUserId}
+                                canManage={canManage}
+                                members={members}
+                                onSaveEdit={onSaveEdit}
+                                onStartEdit={onStartEdit}
+                                onCancelEdit={onCancelEdit}
+                                onDelete={onDelete}
+                                onStartReply={onStartReply}
+                                onScrollToComment={onScrollToComment}
+                            />
+                        ))}
+                        {isReplyingHere && composer}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
