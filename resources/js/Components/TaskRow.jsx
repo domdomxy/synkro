@@ -101,6 +101,37 @@ function truncate(raw, length) {
     return plain.length > length ? plain.slice(0, length).trimEnd() + '…' : plain;
 }
 
+// Builds a real parent -> children tree from the flat comments array, so
+// replies can be nested under their exact direct parent at any depth
+// (Reddit-style), rather than flattened to one indented tier. A comment
+// whose parent_id points at nothing we have (parent deleted) is promoted
+// to a root so it still renders, and its parent_id is preserved so the UI
+// can show a "replying to a deleted comment" note for it.
+function buildCommentTree(comments) {
+    const list = comments ?? [];
+    const byId = new Map(list.map((c) => [c.id, c]));
+    const childrenByParent = new Map();
+    const roots = [];
+
+    list.forEach((comment) => {
+        if (comment.parent_id && byId.has(comment.parent_id)) {
+            if (!childrenByParent.has(comment.parent_id)) childrenByParent.set(comment.parent_id, []);
+            childrenByParent.get(comment.parent_id).push(comment);
+        } else {
+            roots.push(comment);
+        }
+    });
+
+    return { roots, childrenByParent, byId };
+}
+
+// Total number of replies nested (at any depth) under a comment - shown in
+// the collapsed summary line, e.g. "3 replies hidden".
+function countDescendants(commentId, childrenByParent) {
+    const kids = childrenByParent.get(commentId) ?? [];
+    return kids.reduce((sum, kid) => sum + 1 + countDescendants(kid.id, childrenByParent), 0);
+}
+
 function getExtension(name) {
     return name?.split('.').pop()?.toLowerCase() ?? '';
 }
@@ -337,6 +368,291 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
     );
 }
 
+// Renders a single comment (top-level or reply). Replies are drawn indented,
+// with a connecting line + curve on the left tying them back to the parent
+// thread, in the style of Facebook/Reddit nested comments.
+function CommentEntry({
+    comment,
+    isReply,
+    quoteParent,
+    isCollapsed,
+    descendantCount,
+    onToggleCollapse,
+    highlightedCommentId,
+    editingCommentId,
+    editCommentForm,
+    currentUserId,
+    canManage,
+    members,
+    onSaveEdit,
+    onStartEdit,
+    onCancelEdit,
+    onDelete,
+    onStartReply,
+    onScrollToComment,
+}) {
+    return (
+        <div id={`comment-${comment.id}`} className={`relative flex items-start gap-2 ${isReply ? 'pt-3' : ''}`}>
+            {isReply && (
+                <span
+                    aria-hidden="true"
+                    className="absolute -left-4 top-0 h-7 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
+                />
+            )}
+            {/* Click to minimize/maximize this comment's thread - matches the
+                collapse control on Reddit-style threaded comments. */}
+            <button
+                type="button"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
+                className="mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-gray-300 text-[10px] font-bold leading-none text-gray-400 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400"
+            >
+                {isCollapsed ? '+' : '−'}
+            </button>
+            <button type="button" onClick={onToggleCollapse} className="shrink-0">
+                <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5" />
+            </button>
+            <div className="min-w-0 flex-1">
+                {editingCommentId === comment.id ? (
+                    <form onSubmit={(e) => onSaveEdit(e, comment.id)} className="space-y-1.5">
+                        <MentionTextarea
+                            value={editCommentForm.data.body}
+                            onChange={(val) => editCommentForm.setData('body', val)}
+                            members={members}
+                            canMentionEveryone={canManage}
+                            autoFocus
+                            className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        />
+                        {editCommentForm.errors.body && <p className="text-xs text-red-500">{editCommentForm.errors.body}</p>}
+                        <div className="flex gap-2">
+                            <button
+                                type="submit"
+                                disabled={editCommentForm.processing}
+                                className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                            >
+                                Save
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onCancelEdit}
+                                className="text-xs text-gray-500 hover:underline dark:text-gray-400"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                ) : isCollapsed ? (
+                    <button
+                        type="button"
+                        onClick={onToggleCollapse}
+                        className="flex items-center gap-1.5 py-1 text-xs text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                    >
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{comment.user.name}</span>
+                        <span>{descendantCount > 0 ? `${descendantCount} repl${descendantCount === 1 ? 'y' : 'ies'} hidden` : 'comment collapsed'}</span>
+                    </button>
+                ) : (
+                    <>
+                        {/* Only shown for a reply whose parent was deleted - real nesting
+                            already makes a direct reply-to-parent relationship obvious. */}
+                        {quoteParent !== undefined && (
+                            <button
+                                type="button"
+                                onClick={() => quoteParent && onScrollToComment(quoteParent.id)}
+                                disabled={!quoteParent}
+                                className="mb-0.5 flex items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-indigo-600 disabled:hover:text-gray-400 dark:text-gray-500 dark:hover:text-indigo-400"
+                            >
+                                <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
+                                </svg>
+                                {quoteParent ? (
+                                    <span className="truncate">
+                                        Replying to <span className="font-medium">{quoteParent.user.name}</span>: {truncate(quoteParent.body, 60)}
+                                    </span>
+                                ) : (
+                                    <span className="italic">Replying to a deleted comment</span>
+                                )}
+                            </button>
+                        )}
+                        <div className={`rounded-2xl px-3.5 py-2 transition ${
+                            highlightedCommentId === comment.id
+                                ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
+                                : ''
+                        } ${
+                            comment.is_reopened
+                                ? 'bg-orange-50 dark:bg-orange-950/30'
+                                : comment.is_rejection
+                                ? 'bg-amber-50 dark:bg-amber-950/30'
+                                : comment.is_feedback
+                                ? 'bg-green-50 dark:bg-green-950/30'
+                                : 'bg-gray-100 dark:bg-gray-700/60'
+                        }`}>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={onToggleCollapse}
+                                    className="text-sm font-semibold text-gray-800 hover:text-indigo-600 dark:text-gray-200 dark:hover:text-indigo-400"
+                                >
+                                    {comment.user.name}
+                                </button>
+                                {!!comment.is_reopened && (
+                                    <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900 dark:text-orange-300">
+                                        Reopened
+                                    </span>
+                                )}
+                                {!!comment.is_rejection && !comment.is_reopened && (
+                                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                                        Requested changes
+                                    </span>
+                                )}
+                                {!!comment.is_feedback && !comment.is_rejection && !comment.is_reopened && (
+                                    <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+                                        Review note
+                                    </span>
+                                )}
+                            </div>
+                            <CommentBody text={comment.body} />
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 px-1">
+                            <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                                {timeAgo(comment.created_at)}
+                                {comment.edited_at && ' · edited'}
+                            </span>
+                            {comment.user.id === currentUserId && (
+                                <>
+                                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    <button
+                                        onClick={() => onStartEdit(comment)}
+                                        className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                                    >
+                                        Edit
+                                    </button>
+                                </>
+                            )}
+                            {(comment.user.id === currentUserId || canManage) && (
+                                <>
+                                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    <button
+                                        onClick={() => onDelete(comment.id)}
+                                        className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                                    >
+                                        Delete
+                                    </button>
+                                </>
+                            )}
+                            <span className="text-gray-300 dark:text-gray-600">·</span>
+                            <button
+                                onClick={() => onStartReply(comment)}
+                                className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                            >
+                                Reply
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Recursively renders one comment plus its full reply tree beneath it,
+// indented one notch deeper at every level (Reddit-style, not flattened).
+// When this comment is the active reply target, the shared composer is
+// rendered as the last item in its children column - directly under its
+// existing replies, or immediately under itself if it has none yet.
+function CommentThread({
+    comment,
+    isReply,
+    childrenByParent,
+    byId,
+    collapsedIds,
+    onToggleCollapse,
+    replyingToId,
+    composer,
+    highlightedCommentId,
+    editingCommentId,
+    editCommentForm,
+    currentUserId,
+    canManage,
+    members,
+    onSaveEdit,
+    onStartEdit,
+    onCancelEdit,
+    onDelete,
+    onStartReply,
+    onScrollToComment,
+}) {
+    const children = childrenByParent.get(comment.id) ?? [];
+    const isCollapsed = collapsedIds.has(comment.id);
+    const isReplyingHere = replyingToId === comment.id;
+    // A quote line only makes sense for a comment whose parent was deleted
+    // (it lost its real nesting spot); a properly nested reply doesn't need
+    // one since its position in the tree already shows who it's replying to.
+    const quoteParent = !isReply && comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
+
+    return (
+        <div>
+            <CommentEntry
+                comment={comment}
+                isReply={isReply}
+                quoteParent={quoteParent}
+                isCollapsed={isCollapsed}
+                descendantCount={countDescendants(comment.id, childrenByParent)}
+                onToggleCollapse={() => onToggleCollapse(comment.id)}
+                highlightedCommentId={highlightedCommentId}
+                editingCommentId={editingCommentId}
+                editCommentForm={editCommentForm}
+                currentUserId={currentUserId}
+                canManage={canManage}
+                members={members}
+                onSaveEdit={onSaveEdit}
+                onStartEdit={onStartEdit}
+                onCancelEdit={onCancelEdit}
+                onDelete={onDelete}
+                onStartReply={onStartReply}
+                onScrollToComment={onScrollToComment}
+            />
+            {!isCollapsed && (children.length > 0 || isReplyingHere) && (
+                <div className="ml-3.5 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
+                    {children.map((child) => (
+                        <CommentThread
+                            key={child.id}
+                            comment={child}
+                            isReply
+                            childrenByParent={childrenByParent}
+                            byId={byId}
+                            collapsedIds={collapsedIds}
+                            onToggleCollapse={onToggleCollapse}
+                            replyingToId={replyingToId}
+                            composer={composer}
+                            highlightedCommentId={highlightedCommentId}
+                            editingCommentId={editingCommentId}
+                            editCommentForm={editCommentForm}
+                            currentUserId={currentUserId}
+                            canManage={canManage}
+                            members={members}
+                            onSaveEdit={onSaveEdit}
+                            onStartEdit={onStartEdit}
+                            onCancelEdit={onCancelEdit}
+                            onDelete={onDelete}
+                            onStartReply={onStartReply}
+                            onScrollToComment={onScrollToComment}
+                        />
+                    ))}
+                    {isReplyingHere && (
+                        <div className="relative pt-3">
+                            <span
+                                aria-hidden="true"
+                                className="absolute -left-4 top-0 h-9 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
+                            />
+                            {composer}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, onJumpToTask }) {
     const isAssignee = task.assigned_to === currentUserId;
 
@@ -359,6 +675,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null); // comment object being replied to, or null
+    const [collapsedIds, setCollapsedIds] = useState(() => new Set()); // ids of comments whose thread is minimized
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
@@ -596,6 +913,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         commentForm.setData('parent_id', null);
     };
 
+    const toggleCommentCollapse = (commentId) => {
+        setCollapsedIds((current) => {
+            const next = new Set(current);
+            if (next.has(commentId)) next.delete(commentId);
+            else next.add(commentId);
+            return next;
+        });
+    };
+
     const startEditComment = (comment) => {
         setEditingCommentId(comment.id);
         editCommentForm.setData('body', comment.body);
@@ -630,6 +956,59 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const commentCount = task.comments?.length ?? 0;
+    const commentTree = buildCommentTree(task.comments);
+
+    // Single shared compose box: rendered at the bottom of the list when
+    // starting a fresh top-level comment, or inline inside a thread (right
+    // after its existing replies, or immediately below it if it's the first
+    // reply) when replyingTo is set.
+    const commentComposer = (
+        <form onSubmit={submitComment} className="flex items-start gap-2.5">
+            <div className="min-w-0 flex-1">
+                {replyingTo && (
+                    <div className="mb-1.5 flex items-center gap-2 text-xs">
+                        <span className="min-w-0 flex-1 truncate text-gray-400 dark:text-gray-500">
+                            Replying to <span className="font-medium text-gray-600 dark:text-gray-300">{replyingTo.user.name}</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={cancelReply}
+                            className="shrink-0 font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
+                <MentionTextarea
+                    value={commentForm.data.body}
+                    onChange={(val) => commentForm.setData('body', val)}
+                    members={members}
+                    canMentionEveryone={canManage}
+                    autoFocus={!!replyingTo}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (commentForm.data.body.trim()) submitComment(e);
+                        }
+                        if (e.key === 'Escape' && replyingTo) cancelReply();
+                    }}
+                    placeholder={replyingTo ? `Reply to ${replyingTo.user.name}...` : 'Write a comment... (@ to mention someone)'}
+                    title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
+                    className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                />
+                {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
+            </div>
+            <button
+                type="submit"
+                disabled={commentForm.processing || !commentForm.data.body.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
+            >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
+        </form>
+    );
     const dependencyCount = task.dependencies?.length ?? 0;
     const dependenciesBlocked = task.dependencies?.some((d) => d.status !== 'done') ?? false;
     const canEditDeliverables = isAssignee && ['in_progress', 'submitted'].includes(task.status);
@@ -1284,190 +1663,39 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showComments && (
-                    <div className="mt-2 space-y-3 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
-                        {task.comments?.map((comment) => (
-                            <div key={comment.id} id={`comment-${comment.id}`} className="flex items-start gap-2.5">
-                                <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5 shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                    {editingCommentId === comment.id ? (
-                                        <form onSubmit={(e) => saveCommentEdit(e, comment.id)} className="space-y-1.5">
-                                            <MentionTextarea
-                                                value={editCommentForm.data.body}
-                                                onChange={(val) => editCommentForm.setData('body', val)}
-                                                members={members}
-                                                canMentionEveryone={canManage}
-                                                autoFocus
-                                                className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            />
-                                            {editCommentForm.errors.body && <p className="text-xs text-red-500">{editCommentForm.errors.body}</p>}
-                                            <div className="flex gap-2">
-                                                <button
-                                                    type="submit"
-                                                    disabled={editCommentForm.processing}
-                                                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditingCommentId(null)}
-                                                    className="text-xs text-gray-500 hover:underline dark:text-gray-400"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </form>
-                                    ) : (
-                                        <>
-                                            {!!comment.parent_id && (() => {
-                                                const parent = task.comments?.find((c) => c.id === comment.parent_id);
-                                                return (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => parent && scrollToComment(parent.id)}
-                                                        disabled={!parent}
-                                                        className="mb-0.5 flex items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-indigo-600 disabled:hover:text-gray-400 dark:text-gray-500 dark:hover:text-indigo-400"
-                                                    >
-                                                        <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
-                                                        </svg>
-                                                        {parent ? (
-                                                            <span className="truncate">
-                                                                Replying to <span className="font-medium">{parent.user.name}</span>: {truncate(parent.body, 60)}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="italic">Replying to a deleted comment</span>
-                                                        )}
-                                                    </button>
-                                                );
-                                            })()}
-                                            <div className={`rounded-2xl px-3.5 py-2 transition ${
-                                                highlightedCommentId === comment.id
-                                                    ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
-                                                    : ''
-                                            } ${
-                                                comment.is_reopened
-                                                    ? 'bg-orange-50 dark:bg-orange-950/30'
-                                                    : comment.is_rejection
-                                                    ? 'bg-amber-50 dark:bg-amber-950/30'
-                                                    : comment.is_feedback
-                                                    ? 'bg-green-50 dark:bg-green-950/30'
-                                                    : 'bg-gray-100 dark:bg-gray-700/60'
-                                            }`}>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                                    {!!comment.is_reopened && (
-                                                        <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900 dark:text-orange-300">
-                                                            Reopened
-                                                        </span>
-                                                    )}
-                                                    {!!comment.is_rejection && !comment.is_reopened && (
-                                                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                                                            Requested changes
-                                                        </span>
-                                                    )}
-                                                    {!!comment.is_feedback && !comment.is_rejection && !comment.is_reopened && (
-                                                        <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
-                                                            Review note
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <CommentBody text={comment.body} />
-                                            </div>
-                                            <div className="mt-1 flex items-center gap-2 px-1">
-                                                <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                                                    {timeAgo(comment.created_at)}
-                                                    {comment.edited_at && ' · edited'}
-                                                </span>
-                                                {comment.user.id === currentUserId && (
-                                                    <>
-                                                        <span className="text-gray-300 dark:text-gray-600">·</span>
-                                                        <button
-                                                            onClick={() => startEditComment(comment)}
-                                                            className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {(comment.user.id === currentUserId || canManage) && (
-                                                    <>
-                                                        <span className="text-gray-300 dark:text-gray-600">·</span>
-                                                        <button
-                                                            onClick={() => deleteComment(comment.id)}
-                                                            className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </>
-                                                )}
-                                                <span className="text-gray-300 dark:text-gray-600">·</span>
-                                                <button
-                                                    onClick={() => startReply(comment)}
-                                                    className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
-                                                >
-                                                    Reply
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                    <div className="mt-2 space-y-4 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
+                        {commentTree.roots.map((comment) => (
+                            <CommentThread
+                                key={comment.id}
+                                comment={comment}
+                                isReply={false}
+                                childrenByParent={commentTree.childrenByParent}
+                                byId={commentTree.byId}
+                                collapsedIds={collapsedIds}
+                                onToggleCollapse={toggleCommentCollapse}
+                                replyingToId={replyingTo?.id ?? null}
+                                composer={commentComposer}
+                                highlightedCommentId={highlightedCommentId}
+                                editingCommentId={editingCommentId}
+                                editCommentForm={editCommentForm}
+                                currentUserId={currentUserId}
+                                canManage={canManage}
+                                members={members}
+                                onSaveEdit={saveCommentEdit}
+                                onStartEdit={startEditComment}
+                                onCancelEdit={() => setEditingCommentId(null)}
+                                onDelete={deleteComment}
+                                onStartReply={startReply}
+                                onScrollToComment={scrollToComment}
+                            />
                         ))}
                         {commentCount === 0 && (
                             <p className="text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
                         )}
-
-                        <form onSubmit={submitComment} className="flex items-start gap-2.5 pt-1">
-                            <div className="min-w-0 flex-1">
-                                {replyingTo && (
-                                    <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs dark:bg-indigo-950/40">
-                                        <svg className="h-3.5 w-3.5 shrink-0 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
-                                        </svg>
-                                        <span className="min-w-0 flex-1 truncate text-indigo-700 dark:text-indigo-300">
-                                            Replying to <span className="font-medium">{replyingTo.user.name}</span>: {truncate(replyingTo.body, 50)}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={cancelReply}
-                                            className="shrink-0 text-indigo-400 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-300"
-                                        >
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                )}
-                                <MentionTextarea
-                                    value={commentForm.data.body}
-                                    onChange={(val) => commentForm.setData('body', val)}
-                                    members={members}
-                                    canMentionEveryone={canManage}
-                                    autoFocus={!!replyingTo}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (commentForm.data.body.trim()) submitComment(e);
-                                        }
-                                        if (e.key === 'Escape' && replyingTo) cancelReply();
-                                    }}
-                                    placeholder={replyingTo ? `Reply to ${replyingTo.user.name}...` : 'Write a comment... (@ to mention someone)'}
-                                    title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
-                                    className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                />
-                                {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={commentForm.processing || !commentForm.data.body.trim()}
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
-                            >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                            </button>
-                        </form>
+                        {/* The bottom box is for starting a brand-new top-level comment.
+                            While replying to an existing comment, the same composer
+                            renders inline inside that thread instead (see CommentThread). */}
+                        {!replyingTo && commentComposer}
                     </div>
                 )}
             </div>
