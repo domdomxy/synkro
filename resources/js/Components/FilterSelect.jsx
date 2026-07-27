@@ -19,17 +19,20 @@ function CheckIcon() {
 
 /**
  * Styled replacement for a native <select> used as a list filter.
- * options: [{ value, label }]. Panel is capped to a scrollable ~15rem
- * (roughly 5-6 items) instead of a native OS listbox with no size control.
+ * options: [{ value, label, disabled? }]. Panel is capped to a scrollable
+ * ~15rem (roughly 5-6 items) instead of a native OS listbox with no size
+ * control. Pass disabled: true on an option to show but not allow picking it
+ * (e.g. a stale/former value kept only so its label still renders).
  */
-export default function FilterSelect({ value, onChange, options, className = '', buttonClassName = '' }) {
+export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '' }) {
     const selected = options.find((o) => String(o.value) === String(value)) ?? options[0];
 
     return (
         <Listbox value={value} onChange={onChange}>
             <div className={`relative ${className}`}>
                 <ListboxButton
-                    className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-1.5 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${buttonClassName}`}
+                    id={id}
+                    className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${buttonClassName}`}
                 >
                     <span className="truncate">{selected?.label ?? 'Select...'}</span>
                     <ChevronIcon />
@@ -45,9 +48,12 @@ export default function FilterSelect({ value, onChange, options, className = '',
                             <ListboxOption
                                 key={opt.value}
                                 value={opt.value}
-                                className={({ focus }) =>
-                                    `relative cursor-pointer select-none py-2 pl-9 pr-3 ${
-                                        focus ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200' : 'text-gray-700 dark:text-gray-300'
+                                disabled={opt.disabled}
+                                className={({ focus, disabled }) =>
+                                    `relative select-none py-2 pl-9 pr-3 ${
+                                        disabled
+                                            ? 'cursor-not-allowed text-gray-400 dark:text-gray-600'
+                                            : `cursor-pointer ${focus ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200' : 'text-gray-700 dark:text-gray-300'}`
                                     }`
                                 }
                             >

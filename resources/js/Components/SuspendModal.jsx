@@ -1,6 +1,7 @@
 import Modal from '@/Components/Modal';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
+import FilterSelect from '@/Components/FilterSelect';
 import { useForm } from '@inertiajs/react';
 import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
@@ -35,13 +36,12 @@ export default function SuspendModal({ user, show, onClose }) {
 
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Duration</label>
-                    <select
+                    <FilterSelect
+                        className="mt-1"
                         value={form.data.duration}
-                        onChange={(e) => form.setData('duration', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    >
-                        {DURATION_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                    </select>
+                        onChange={(v) => form.setData('duration', v)}
+                        options={DURATION_OPTIONS}
+                    />
                 </div>
 
                 {form.data.duration === 'custom' && (

@@ -14,6 +14,7 @@ import CommentBody from '@/Components/CommentBody';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import LogEntryRow from '@/Components/LogEntryRow';
 import Modal from '@/Components/Modal';
+import FilterSelect from '@/Components/FilterSelect';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -32,6 +33,7 @@ const priorityStyles = {
 };
 
 const priorityLabels = { low: 'Low', medium: 'Medium', high: 'High' };
+const PRIORITY_OPTIONS = Object.entries(priorityLabels).map(([value, label]) => ({ value, label }));
 
 /**
  * Mirrors TaskDependencyController::wouldCreateCycle on the backend: would making
@@ -1097,22 +1099,23 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     <div>
                         <InputLabel htmlFor={`assigned-${task.id}`} value="Assign To" />
-                        <select
+                        <FilterSelect
                             id={`assigned-${task.id}`}
+                            className="mt-1"
                             value={editForm.data.assigned_to}
-                            onChange={(e) => editForm.setData('assigned_to', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="">Unassigned</option>
-                            {!assigneeStillMember && task.assigned_to != null && (
-                                <option value={task.assigned_to} disabled>
-                                    {task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member — pick someone else or Unassigned)
-                                </option>
-                            )}
-                            {members?.map((m) => (
-                                <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                        </select>
+                            onChange={(v) => editForm.setData('assigned_to', v)}
+                            options={[
+                                { value: '', label: 'Unassigned' },
+                                ...(!assigneeStillMember && task.assigned_to != null
+                                    ? [{
+                                        value: task.assigned_to,
+                                        label: `${task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member — pick someone else or Unassigned)`,
+                                        disabled: true,
+                                    }]
+                                    : []),
+                                ...(members?.map((m) => ({ value: m.id, label: m.name })) ?? []),
+                            ]}
+                        />
                         <InputError message={editForm.errors.assigned_to} className="mt-1" />
                     </div>
                     <div>
@@ -1121,16 +1124,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     <div>
                         <InputLabel htmlFor={`priority-${task.id}`} value="Priority" />
-                        <select
-                            id={`priority-${task.id}`}
-                            value={editForm.data.priority}
-                            onChange={(e) => editForm.setData('priority', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
+                        <FilterSelect id={`priority-${task.id}`} className="mt-1" value={editForm.data.priority} onChange={(v) => editForm.setData('priority', v)} options={PRIORITY_OPTIONS} />
                         <InputError message={editForm.errors.priority} className="mt-1" />
                     </div>
                     <div>
@@ -1167,16 +1161,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             ))}
                             {canManage && (
                                 <div className="flex items-center gap-2 pt-1">
-                                    <select
+                                    <FilterSelect
                                         value={dependencyPick}
-                                        onChange={(e) => setDependencyPick(e.target.value)}
-                                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    >
-                                        <option value="">Add a dependency…</option>
-                                        {allTasks
-                                            .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
-                                            .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-                                    </select>
+                                        onChange={setDependencyPick}
+                                        options={[
+                                            { value: '', label: 'Add a dependency…' },
+                                            ...allTasks
+                                                .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
+                                                .map((t) => ({ value: t.id, label: t.title })),
+                                        ]}
+                                    />
                                     <SecondaryButton type="button" onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
                                 </div>
                             )}
@@ -1724,7 +1718,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         <Modal
             show={showHistory}
             onClose={() => setShowHistory(false)}
-            maxWidth="lg"
+            maxWidth="2xl"
             overlayClassName="bg-black/55 dark:bg-black/70"
         >
             <div className="p-6">

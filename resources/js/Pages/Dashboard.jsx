@@ -6,6 +6,7 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import { NoteList, notePreview } from '@/utils/noteFormat';
 import useConfirm from '@/hooks/useConfirm';
 import StatCard from '@/Components/StatCard';
+import FilterSelect from '@/Components/FilterSelect';
 
 const statusLabels = {
     todo: 'To Do',
@@ -249,6 +250,7 @@ function CalendarView({ tasks }) {
 }
 
 const REPEAT_LABELS = { none: 'Once', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+const REPEAT_OPTIONS = Object.entries(REPEAT_LABELS).map(([value, label]) => ({ value, label }));
 
 function toDatetimeLocalValue(isoString) {
     if (!isoString) return '';
@@ -343,13 +345,12 @@ function AlarmRow({ r, now, onDelete }) {
                             onChange={(e) => editForm.setData('remind_at', e.target.value)}
                             className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         />
-                        <select
+                        <FilterSelect
+                            className="w-36 shrink-0"
                             value={editForm.data.repeat_interval}
-                            onChange={(e) => editForm.setData('repeat_interval', e.target.value)}
-                            className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        >
-                            {Object.entries(REPEAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                        </select>
+                            onChange={(v) => editForm.setData('repeat_interval', v)}
+                            options={REPEAT_OPTIONS}
+                        />
                     </div>
                     {editForm.errors.remind_at && <p className="text-xs text-red-500">{editForm.errors.remind_at}</p>}
                     <div className="flex gap-2">
@@ -573,9 +574,7 @@ function RemindersPanel({ reminders }) {
                     <textarea placeholder="Optional note..." value={data.note} onChange={(e) => setData('note', e.target.value)} rows={2} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
                     <div className="flex gap-2">
                         <input type="datetime-local" value={data.remind_at} onChange={(e) => setData('remind_at', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                        <select value={data.repeat_interval} onChange={(e) => setData('repeat_interval', e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            {Object.entries(REPEAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                        </select>
+                        <FilterSelect className="w-36 shrink-0" value={data.repeat_interval} onChange={(v) => setData('repeat_interval', v)} options={REPEAT_OPTIONS} />
                     </div>
                     {errors.remind_at && <p className="text-xs text-red-500">{errors.remind_at}</p>}
                     <button type="submit" disabled={processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Set Reminder</button>
@@ -633,7 +632,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Active Tasks" value={stats.activeTasksCount} sub={`${activeRatio}% of your tasks · ${stats.activeDueSoonCount} due within 7 days`} icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />
                         <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Marked done, assigned to you" pct={stats.doneTasksTrend} icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
                         <StatCard label="Projects" value={stats.projectsCount} sub="You're a member of" pct={stats.projectsTrend} icon={statIcons.projects} />

@@ -14,6 +14,7 @@ import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
+import FilterSelect from '@/Components/FilterSelect';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -42,6 +43,23 @@ const STATUS_OPTIONS = [
     { value: 'submitted', label: 'Submitted' },
     { value: 'in_review', label: 'In Review' },
     { value: 'done', label: 'Done' },
+];
+
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+];
+
+const PRIORITY_FILTER_OPTIONS = [
+    { value: 'all', label: 'All Priorities' },
+    ...PRIORITY_OPTIONS,
+];
+
+const ROLE_OPTIONS = [
+    { value: 'manager', label: 'Manager' },
+    { value: 'member', label: 'Member' },
+    { value: 'tester', label: 'Tester' },
 ];
 
 function SearchIcon() {
@@ -857,11 +875,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         </div>
                                         <div>
                                             <InputLabel htmlFor="role" value="Role" />
-                                            <select id="role" value={memberForm.data.role} onChange={(e) => memberForm.setData('role', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                                <option value="manager">Manager</option>
-                                                <option value="member">Member</option>
-                                                <option value="tester">Tester</option>
-                                            </select>
+                                            <FilterSelect id="role" className="mt-1" value={memberForm.data.role} onChange={(v) => memberForm.setData('role', v)} options={ROLE_OPTIONS} />
                                         </div>
                                         <button type="submit" disabled={memberForm.processing} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                                             Send Invitation
@@ -965,10 +979,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 <div className="flex gap-4">
                                                     <div className="flex-1">
                                                         <InputLabel htmlFor="assigned_to" value="Assign To" />
-                                                        <select id="assigned_to" value={taskForm.data.assigned_to} onChange={(e) => taskForm.setData('assigned_to', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                                            <option value="">Unassigned</option>
-                                                            {project.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                                        </select>
+                                                        <FilterSelect
+                                                            id="assigned_to"
+                                                            className="mt-1"
+                                                            value={taskForm.data.assigned_to}
+                                                            onChange={(v) => taskForm.setData('assigned_to', v)}
+                                                            options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name }))]}
+                                                        />
                                                     </div>
                                                     <div className="flex-1">
                                                         <InputLabel htmlFor="due_date" value="Due Date & Time" />
@@ -976,11 +993,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                     </div>
                                                     <div className="flex-1">
                                                         <InputLabel htmlFor="priority" value="Priority" />
-                                                        <select id="priority" value={taskForm.data.priority} onChange={(e) => taskForm.setData('priority', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                                            <option value="low">Low</option>
-                                                            <option value="medium">Medium</option>
-                                                            <option value="high">High</option>
-                                                        </select>
+                                                        <FilterSelect id="priority" className="mt-1" value={taskForm.data.priority} onChange={(v) => taskForm.setData('priority', v)} options={PRIORITY_OPTIONS} />
                                                     </div>
                                                 </div>
                                                 <div>
@@ -999,17 +1012,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         </ul>
                                                     )}
                                                     <div className="mt-1 flex items-center gap-2">
-                                                        <select
-                                                            id="dependencies"
+                                                        <FilterSelect
                                                             value={newTaskDependencyPick}
-                                                            onChange={(e) => setNewTaskDependencyPick(e.target.value)}
-                                                            className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                                        >
-                                                            <option value="">Add a dependency…</option>
-                                                            {project.tasks
-                                                                .filter((t) => !taskForm.data.dependencies.includes(t.id))
-                                                                .map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-                                                        </select>
+                                                            onChange={setNewTaskDependencyPick}
+                                                            options={[
+                                                                { value: '', label: 'Add a dependency…' },
+                                                                ...project.tasks
+                                                                    .filter((t) => !taskForm.data.dependencies.includes(t.id))
+                                                                    .map((t) => ({ value: t.id, label: t.title })),
+                                                            ]}
+                                                        />
                                                         <SecondaryButton type="button" onClick={addNewTaskDependency} disabled={!newTaskDependencyPick}>Add</SecondaryButton>
                                                     </div>
                                                 </div>
@@ -1045,15 +1057,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-48 text-sm" />
-                                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                            {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                        </select>
-                                        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                            <option value="all">All Priorities</option>
-                                            <option value="low">Low</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="high">High</option>
-                                        </select>
+                                        <FilterSelect className="w-36" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
+                                        <FilterSelect className="w-36" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
                                         {hasActiveTaskFilters && <button onClick={clearTaskFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>}
                                     </div>
                                 </div>
@@ -1066,32 +1071,26 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             {viewMode === 'list' && canManage && selectedTaskIds.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
                                     <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedTaskIds.length} selected</span>
-                                    <select
+                                    <FilterSelect
+                                        className="w-36"
                                         value={bulkAction.status}
-                                        onChange={(e) => { setBulkAction((s) => ({ ...s, status: e.target.value })); setBulkTouched((t) => ({ ...t, status: true })); }}
-                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    >
-                                        {STATUS_OPTIONS.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                    </select>
+                                        onChange={(v) => { setBulkAction((s) => ({ ...s, status: v })); setBulkTouched((t) => ({ ...t, status: true })); }}
+                                        options={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
+                                    />
 
-                                    <select
+                                    <FilterSelect
+                                        className="w-32"
                                         value={bulkAction.priority}
-                                        onChange={(e) => { setBulkAction((s) => ({ ...s, priority: e.target.value })); setBulkTouched((t) => ({ ...t, priority: true })); }}
-                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    >
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
+                                        onChange={(v) => { setBulkAction((s) => ({ ...s, priority: v })); setBulkTouched((t) => ({ ...t, priority: true })); }}
+                                        options={PRIORITY_OPTIONS}
+                                    />
 
-                                    <select
+                                    <FilterSelect
+                                        className="w-40"
                                         value={bulkAction.assigned_to}
-                                        onChange={(e) => { setBulkAction((s) => ({ ...s, assigned_to: e.target.value })); setBulkTouched((t) => ({ ...t, assigned_to: true })); }}
-                                        className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {project.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                    </select>
+                                        onChange={(v) => { setBulkAction((s) => ({ ...s, assigned_to: v })); setBulkTouched((t) => ({ ...t, assigned_to: true })); }}
+                                        options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name }))]}
+                                    />
 
                                     <PrimaryButton
                                         disabled={bulkProcessing || !(bulkTouched.status || bulkTouched.priority || bulkTouched.assigned_to)}

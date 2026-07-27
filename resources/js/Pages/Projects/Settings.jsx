@@ -7,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
 import BackButton from '@/Components/BackButton';
 import Avatar from '@/Components/Avatar';
+import FilterSelect from '@/Components/FilterSelect';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
 import RichTextEditor from '@/Components/RichTextEditor';
@@ -138,16 +139,14 @@ export default function Settings({ project, role }) {
                                 <p className="text-sm text-gray-400 dark:text-gray-500">No other members to transfer ownership to yet.</p>
                             ) : (
                                 <form onSubmit={submitTransfer} className="space-y-3">
-                                    <select
+                                    <FilterSelect
                                         value={transferForm.data.user_id}
-                                        onChange={(e) => transferForm.setData('user_id', e.target.value)}
-                                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    >
-                                        <option value="">Choose a member...</option>
-                                        {transferTargets.map((m) => (
-                                            <option key={m.id} value={m.id}>{m.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(v) => transferForm.setData('user_id', v)}
+                                        options={[
+                                            { value: '', label: 'Choose a member...' },
+                                            ...transferTargets.map((m) => ({ value: m.id, label: m.name })),
+                                        ]}
+                                    />
                                     <InputError message={transferForm.errors.user_id} />
 
                                     {selectedMember && (

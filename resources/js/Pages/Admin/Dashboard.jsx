@@ -211,7 +211,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                     <AttentionPanel items={attentionItems} />
 
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.users} sub={`${stats.activeUsers} active · ${stats.inactiveUsers} inactive`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.users} />
                         <StatCard label="Admins" value={stats.admins} sub="Users with elevated platform access" icon={statIcons.admins} />
                         <StatCard label="Projects" value={stats.projects} sub="Total projects created" pct={stats.projectGrowthRate} icon={statIcons.projects} />

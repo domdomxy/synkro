@@ -102,19 +102,26 @@ export default function LogEntryRow({ log, dense = false }) {
                                     ) : (
                                         <div>
                                             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
-                                            <div className="mt-1 flex items-center gap-2 text-sm">
-                                                <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 line-through dark:bg-red-900/40 dark:text-red-400">
-                                                    {item.oldValue || '-'}
+                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                                                <span className="break-words rounded bg-red-100 px-2 py-0.5 text-red-700 line-through decoration-red-700/60 dark:bg-red-900/40 dark:text-red-400 dark:decoration-red-400/60">
+                                                    {item.oldValue ? <Linkify text={item.oldValue} /> : '-'}
                                                 </span>
                                                 <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                                 </svg>
-                                                <span className="rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                    {item.newValue || '-'}
+                                                <span className="break-words rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                                                    {item.newValue ? <Linkify text={item.newValue} /> : '-'}
                                                 </span>
                                             </div>
                                         </div>
                                     )
+                                ) : item.label === 'Comment' ? (
+                                    <div>
+                                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                        <dd className="mt-1 whitespace-pre-wrap break-words rounded-md border-l-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                                            <Linkify text={item.value} />
+                                        </dd>
+                                    </div>
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
