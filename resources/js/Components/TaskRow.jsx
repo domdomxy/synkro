@@ -1081,17 +1081,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     : 'border-l-gray-400'
             }`}
         >
-            {selectable && (
-                <label className="absolute left-3 top-4 z-10 flex h-5 w-5 cursor-pointer items-center justify-center">
-                    <input
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() => onToggleSelect?.(task.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
-                    />
-                </label>
-            )}
-            <div className={`p-4 ${selectable ? 'pl-10' : ''}`}>
+            <div className="p-4">
             {!!task.pending_resolution && canManage && (
                 <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
                     <p className="text-sm text-amber-800 dark:text-amber-200">
@@ -1234,51 +1224,62 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </form>
             ) : (
                 <>
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                                {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
-                                <p className="break-words font-semibold text-gray-900 dark:text-gray-100">
-                                    {task.title}
-                                    {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
-                                </p>
-                                {task.is_pinned && (
-                                    <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                )}
+                    <div className="flex items-start gap-2">
+                        {selectable && (
+                            <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => onToggleSelect?.(task.id)}
+                                aria-label={`Select "${task.title}"`}
+                                className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                            />
+                        )}
+                        <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                    {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
+                                    <p className="break-words font-semibold text-gray-900 dark:text-gray-100">
+                                        {task.title}
+                                        {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
+                                    </p>
+                                    {task.is_pinned && (
+                                        <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                    )}
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                    {!task.assignee && <span>Unassigned</span>}
+                                    {task.assignee && <span>{task.assignee.name}</span>}
+                                    {task.due_date && (
+                                        <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
+                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {formatDue(task.due_date)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                {!task.assignee && <span>Unassigned</span>}
-                                {task.assignee && <span>{task.assignee.name}</span>}
-                                {task.due_date && (
-                                    <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        {formatDue(task.due_date)}
+                            <div className="flex shrink-0 items-center gap-2">
+                                {task.priority && task.priority !== 'medium' && (
+                                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                        {priorityLabels[task.priority] ?? task.priority}
                                     </span>
                                 )}
-                            </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                            {task.priority && task.priority !== 'medium' && (
-                                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
-                                    {priorityLabels[task.priority] ?? task.priority}
+                                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                    {task.status.replace('_', ' ')}
                                 </span>
-                            )}
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                {task.status.replace('_', ' ')}
-                            </span>
-                            <KebabMenu
-                                canManage={canManage}
-                                canViewHistory={!!task.can_view_history}
-                                isPinned={!!task.is_pinned}
-                                isDone={task.status === 'done'}
-                                onEdit={() => setIsEditing(true)}
-                                onDelete={deleteTask}
-                                onPin={togglePin}
-                                onRequestChanges={() => setShowReopenPanel(true)}
-                                onShowHistory={() => setShowHistory(true)}
-                            />
+                                <KebabMenu
+                                    canManage={canManage}
+                                    canViewHistory={!!task.can_view_history}
+                                    isPinned={!!task.is_pinned}
+                                    isDone={task.status === 'done'}
+                                    onEdit={() => setIsEditing(true)}
+                                    onDelete={deleteTask}
+                                    onPin={togglePin}
+                                    onRequestChanges={() => setShowReopenPanel(true)}
+                                    onShowHistory={() => setShowHistory(true)}
+                                />
+                            </div>
                         </div>
                     </div>
                     {task.description && (
