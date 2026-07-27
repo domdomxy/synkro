@@ -11,7 +11,7 @@ function initials(name) {
     return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-export default function Avatar({ user, size = 'h-8 w-8', rounded = 'rounded-full', className = '' }) {
+export default function Avatar({ user, size = 'h-8 w-8', rounded = 'rounded-lg', className = '' }) {
     if (user?.avatar_path) {
         return <img src={`/storage/${user.avatar_path}`} alt={user.name} className={`${size} ${rounded} object-cover ${className}`} />;
     }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { NoteList, notePreview } from '@/utils/noteFormat';
 import useConfirm from '@/hooks/useConfirm';
+import StatCard from '@/Components/StatCard';
 
 const statusLabels = {
     todo: 'To Do',
@@ -90,25 +91,6 @@ function StatusDonut({ tasksByStatus, total, size = 160, strokeWidth = 18 }) {
                 Tasks
             </text>
         </svg>
-    );
-}
-
-function StatCard({ label, value, sub, icon, accentColor }) {
-    return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-                    <p className={`mt-1 text-3xl font-semibold ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-                    {sub && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
-                </div>
-                {icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
-                        {icon}
-                    </div>
-                )}
-            </div>
-        </div>
     );
 }
 
@@ -621,7 +603,7 @@ function RemindersPanel({ reminders }) {
 
 export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
-    const totals = stats.activityTotals ?? { completed: 0, created: 0, projects: 0 };
+    const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
 
     const dateRangeLabel = (() => {
         if (range === 'custom' && customFrom && customTo) {
@@ -652,10 +634,10 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard label="Active Tasks" value={stats.activeTasksCount} sub="Assigned to you, not yet done" icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />
-                        <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Marked done, assigned to you" icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
-                        <StatCard label="Projects" value={stats.projectsCount} sub="You're a member of" icon={statIcons.projects} />
-                        <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
+                        <StatCard label="Active Tasks" value={stats.activeTasksCount} sub={`${activeRatio}% of your tasks · ${stats.activeDueSoonCount} due within 7 days`} icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />
+                        <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Marked done, assigned to you" pct={stats.doneTasksTrend} icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
+                        <StatCard label="Projects" value={stats.projectsCount} sub="You're a member of" pct={stats.projectsTrend} icon={statIcons.projects} />
+                        <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" pct={stats.pendingReviewTrend} icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
 
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
@@ -665,21 +647,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         </div>
 
                         <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
-
-                        <div className="mb-4 grid grid-cols-3 gap-3">
-                            <div className="rounded-md bg-green-50 p-3 text-center dark:bg-green-950/30">
-                                <p className="text-xl font-semibold text-green-700 dark:text-green-400">{totals.completed}</p>
-                                <p className="text-xs text-green-600 dark:text-green-500">Tasks Completed</p>
-                            </div>
-                            <div className="rounded-md bg-amber-50 p-3 text-center dark:bg-amber-950/30">
-                                <p className="text-xl font-semibold text-amber-700 dark:text-amber-400">{totals.created}</p>
-                                <p className="text-xs text-amber-600 dark:text-amber-500">Assigned</p>
-                            </div>
-                            <div className="rounded-md bg-indigo-50 p-3 text-center dark:bg-indigo-950/30">
-                                <p className="text-xl font-semibold text-indigo-700 dark:text-indigo-400">{totals.projects}</p>
-                                <p className="text-xs text-indigo-600 dark:text-indigo-500">Projects Joined</p>
-                            </div>
-                        </div>
 
                         <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
                             <AreaChart data={stats.chartData}>

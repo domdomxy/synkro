@@ -13,6 +13,23 @@ use Inertia\Inertia;
 class DashboardController extends Controller
 {
     /**
+     * Real period-over-period change for a count that has a genuine "when did
+     * this happen" timestamp column (created_at, submitted_at, etc). Mirrors
+     * AdminController::monthOverMonthChange — real historical data, never a
+     * fabricated/hardcoded percentage.
+     */
+    private function monthOverMonthChange($query, string $column): float
+    {
+        $startOfMonth = now()->startOfMonth();
+        $before = (clone $query)->where($column, '<', $startOfMonth)->count();
+        $thisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count();
+
+        return $before > 0
+            ? round($thisMonth / $before * 100, 1)
+            : ($thisMonth > 0 ? 100.0 : 0.0);
+    }
+
+    /**
      * Safe replacement for range(0, $count). PHP 8.3 throws a ValueError from
      * range() when $count is 0 (step 1 is no longer "less than" a zero span),
      * which happens whenever a custom date range covers a single day/week/month.
@@ -132,11 +149,31 @@ class DashboardController extends Controller
             ];
         }, $this->buckets($range, request('from'), request('to')));
 
-        $activityTotals = [
-            'completed' => array_sum(array_column($chartData, 'completed')),
-            'created' => array_sum(array_column($chartData, 'created')),
-            'projects' => array_sum(array_column($chartData, 'projects')),
-        ];
+        // Real, non-fabricated trend/composition figures for the top stat cards, following
+        // the same rule the admin users page uses: a percentage only gets treated as a
+        // period-over-period "trend" (colored +/-%) when it's backed by a genuine "when did
+        // this happen" timestamp. Project membership (project_user.created_at) and task
+        // submission (submitted_at) both have one. "Done" doesn't have a dedicated
+        // completion timestamp, so — consistent with how the activity chart above already
+        // treats it — updated_at is used as the completion-time proxy. "Active" tasks have
+        // no such timestamp at all (a task drifts in and out of "active" with every status
+        // change), so instead of a fake trend it gets an honest composition ratio.
+        $projectsTrend = $this->monthOverMonthChange($user->projects(), 'project_user.created_at');
+        $doneTasksTrend = $this->monthOverMonthChange(
+            Task::where('assigned_to', $user->id)->where('status', 'done'),
+            'updated_at'
+        );
+        $pendingReviewTrend = $this->monthOverMonthChange(
+            Task::whereIn('project_id', $reviewerProjectIds)->where('status', 'submitted'),
+            'submitted_at'
+        );
+        $activeTasksCount = (clone $myTasksQuery)->whereNotIn('status', ['done'])->count();
+        $activeDueSoonCount = (clone $myTasksQuery)
+            ->whereNotIn('status', ['done'])
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', [now(), now()->addDays(7)])
+            ->count();
+
         // Calendar: all tasks with due dates in the next 90 days
         $calendarTasks = Task::where('assigned_to', $user->id)
             ->whereNotNull('due_date')
@@ -157,13 +194,16 @@ class DashboardController extends Controller
             'customTo' => request('to'),
             'stats' => [
                 'projectsCount' => $user->projects()->count(),
-                'activeTasksCount' => (clone $myTasksQuery)->whereNotIn('status', ['done'])->count(),
+                'projectsTrend' => $projectsTrend,
+                'activeTasksCount' => $activeTasksCount,
+                'activeDueSoonCount' => $activeDueSoonCount,
                 'doneTasksCount' => $tasksByStatus['done'] ?? 0,
+                'doneTasksTrend' => $doneTasksTrend,
                 'pendingReview' => $pendingReview,
+                'pendingReviewTrend' => $pendingReviewTrend,
                 'tasksByStatus' => $tasksByStatus,
                 'dueSoon' => $dueSoon,
                 'chartData' => $chartData,
-                'activityTotals' => $activityTotals,
                 'calendarTasks' => $calendarTasks,
                 'reminders' => $reminders,
             ],
