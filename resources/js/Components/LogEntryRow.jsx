@@ -1,4 +1,5 @@
 import Linkify from '@/Components/Linkify';
+import RichTextContent from '@/Components/RichTextContent';
 import { describeLog, getLogDetails, ICON_PATHS, actionIconConfig } from '@/utils/activityLog';
 import { useState } from 'react';
 
@@ -77,24 +78,18 @@ export default function LogEntryRow({ log, dense = false }) {
                                             <div className="mt-1.5 space-y-2">
                                                 <div className="rounded-md border border-red-100 bg-red-50/50 p-2.5 dark:border-red-900 dark:bg-red-950/20">
                                                     <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">Previous</p>
-                                                    <div
+                                                    <RichTextContent
                                                         className="max-w-none whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300"
-                                                        dangerouslySetInnerHTML={{
-                                                            __html: item.oldValue && item.oldValue !== '-'
-                                                                ? item.oldValue
-                                                                : '<span class="italic text-gray-400">Empty</span>',
-                                                        }}
+                                                        html={item.oldValue && item.oldValue !== '-' ? item.oldValue : null}
+                                                        fallback='<span class="italic text-gray-400">Empty</span>'
                                                     />
                                                 </div>
                                                 <div className="rounded-md border border-green-100 bg-green-50/50 p-2.5 dark:border-green-900 dark:bg-green-950/20">
                                                     <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-green-500 dark:text-green-400">Updated</p>
-                                                    <div
+                                                    <RichTextContent
                                                         className="max-w-none whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300"
-                                                        dangerouslySetInnerHTML={{
-                                                            __html: item.newValue && item.newValue !== '-'
-                                                                ? item.newValue
-                                                                : '<span class="italic text-gray-400">Empty</span>',
-                                                        }}
+                                                        html={item.newValue && item.newValue !== '-' ? item.newValue : null}
+                                                        fallback='<span class="italic text-gray-400">Empty</span>'
                                                     />
                                                 </div>
                                             </div>

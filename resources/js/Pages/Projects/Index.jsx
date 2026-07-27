@@ -12,6 +12,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichTextEditor from '@/Components/RichTextEditor';
+import RichTextContent from '@/Components/RichTextContent';
 import useConfirm from '@/hooks/useConfirm';
 
 const roleStyles = {
@@ -381,10 +382,11 @@ export default function Index({ projects, showingArchived }) {
                                                 {project.pivot?.role}
                                             </span>
                                         </div>
-                                        <div
+                                        <RichTextContent
                                             className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100"
                                             style={{ tabSize: 4 }}
-                                            dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
+                                            html={project.description}
+                                            fallback='<span class="text-gray-400">No description provided.</span>'
                                         />
 
                                         <div className="mt-4 flex items-center justify-between gap-2">

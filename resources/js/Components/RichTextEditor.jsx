@@ -298,6 +298,15 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
 
     const applyTextColor = (color) => { exec('foreColor', color); setOpenPopover(null); };
 
+    // "Default" isn't one of the fixed swatches - it clears any explicit color back to the theme's
+    // normal text color instead of picking a new fixed one. execCommand('foreColor', ..., 'inherit')
+    // (with styleWithCSS forced on above) wraps the selection in `<span style="color: inherit;">`,
+    // which then follows whatever text color is active wherever the content is rendered - including
+    // switching automatically between light/dark/black themes, rather than baking in a fixed hex
+    // that can go unreadable after a theme switch (see utils/richTextColor.js for the equivalent fix
+    // applied to already-saved fixed colors when rendering them elsewhere in the app).
+    const applyDefaultTextColor = () => { exec('foreColor', 'inherit'); setOpenPopover(null); };
+
     // Custom colors picked via the native <input type="color"> get remembered here so they show up
     // as reusable swatches instead of requiring the OS color picker to be reopened every time.
     const MAX_CUSTOM_COLORS = 8;
@@ -541,6 +550,19 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                     }
                 >
                     <p className="mb-1.5 px-1 text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500">Text Color</p>
+                    <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={applyDefaultTextColor}
+                        title="Default (follows theme)"
+                        className="mb-1.5 flex w-full items-center gap-1.5 rounded px-1 py-1 text-left text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <span
+                            className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full border border-gray-300 dark:border-gray-500"
+                            style={{ background: 'linear-gradient(to bottom right, #111827 49.5%, #ffffff 50.5%)' }}
+                        />
+                        Default
+                    </button>
                     <div className="grid grid-cols-5 gap-1.5 px-1">
                         {TEXT_COLORS.map((c) => (
                             <ColorSwatch key={c} color={c} onClick={() => { setCustomColor(c); applyTextColor(c); }} />

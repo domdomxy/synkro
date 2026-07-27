@@ -38,6 +38,16 @@ const categoryIcons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
     ),
+    mentions: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 0c0 1.657 1.007 3 2.25 3S21 13.657 21 12a9 9 0 10-2.636 6.364M16.5 12V8.25" />
+        </svg>
+    ),
+    replies: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6m-6 6h12a6 6 0 010 12h-3" />
+        </svg>
+    ),
     assignments: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -69,6 +79,8 @@ const notificationTitles = {
     assignments: 'Task Assignments',
     reviews: 'Reviews',
     membership: 'Project Membership',
+    mentions: 'Mentions',
+    replies: 'Replies',
     reminders: 'Reminders',
     administration: 'Administration',
 };
@@ -106,6 +118,53 @@ const settingsNavItems = [
         id: 'trusted-sites',
         label: 'Trusted Sites',
         icon: <LinkIcon className="h-5 w-5" />,
+    },
+];
+
+// Appearance picker options. `swatch` gives each card a small preview of that theme's background
+// so the choice is recognizable at a glance instead of relying on the label alone; `icon` is drawn
+// in that background's contrasting color (set via the swatch class) rather than currentColor from
+// the button, since it needs to stay legible against its own preview regardless of selection state.
+const THEME_OPTIONS = [
+    {
+        id: 'system',
+        label: 'System',
+        swatch: 'bg-gray-400',
+        icon: (
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'light',
+        label: 'Light',
+        swatch: 'bg-white',
+        icon: (
+            <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1.5M12 19.5V21M4.219 4.219l1.06 1.06M18.72 18.72l1.06 1.06M3 12h1.5M19.5 12H21M4.219 19.781l1.06-1.06M18.72 5.28l1.06-1.06M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'dark',
+        label: 'Dark',
+        swatch: 'bg-gray-700',
+        icon: (
+            <svg className="h-5 w-5 text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'black',
+        label: 'Black',
+        swatch: 'bg-black',
+        icon: (
+            <svg className="h-5 w-5 text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m0-18a9 9 0 000 18 9 9 0 000-18z" />
+            </svg>
+        ),
     },
 ];
 
@@ -177,6 +236,40 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
     const notificationForm = useForm({ preferences: notificationPreferences });
     const [theme, setThemeState] = useState(getStoredTheme());
     const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
+    const [activeSection, setActiveSection] = useState(settingsNavItems[0].id);
+
+    // Highlights whichever section is currently in view in the nav (both the sticky desktop
+    // sidebar and the horizontal mobile pill bar), so it's clear where you are on a page this
+    // long instead of the nav just being a set of static jump links. Picks the entry closest to
+    // the top of the viewport among those currently intersecting, which reads better than a
+    // single fixed rootMargin band when sections vary a lot in height (Email Notifications is
+    // much taller than Appearance).
+    useEffect(() => {
+        const sections = settingsNavItems
+            .map((s) => document.getElementById(s.id))
+            .filter(Boolean);
+        if (sections.length === 0) return;
+
+        const visible = new Map();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        visible.set(entry.target.id, entry.boundingClientRect.top);
+                    } else {
+                        visible.delete(entry.target.id);
+                    }
+                });
+                if (visible.size > 0) {
+                    const topMost = [...visible.entries()].sort((a, b) => a[1] - b[1])[0][0];
+                    setActiveSection(topMost);
+                }
+            },
+            { rootMargin: '-100px 0px -70% 0px', threshold: 0 }
+        );
+        sections.forEach((el) => observer.observe(el));
+        return () => observer.disconnect();
+    }, []);
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);
@@ -246,6 +339,31 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
             <Head title="Settings" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <p className="mb-6 px-4 text-sm text-gray-500 dark:text-gray-400 sm:px-0">
+                        Manage your appearance, notifications, and trusted sites.
+                    </p>
+
+                    {/* Mobile section nav - the sticky sidebar below is desktop-only (lg:), so this
+                        horizontal pill bar is the only way to jump between sections on small screens. */}
+                    <nav className="-mx-4 mb-6 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:hidden">
+                        <div className="flex w-max gap-2">
+                            {settingsNavItems.map((s) => (
+                                <a
+                                    key={s.id}
+                                    href={`#${s.id}`}
+                                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
+                                        activeSection === s.id
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white text-gray-600 shadow-sm hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                    {s.label}
+                                </a>
+                            ))}
+                        </div>
+                    </nav>
+
                     <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
 
                         {/* Section nav */}
@@ -255,7 +373,11 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                                     <a
                                         key={s.id}
                                         href={`#${s.id}`}
-                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                        className={`flex items-center gap-2 rounded-md border-l-2 px-3 py-2 text-sm transition ${
+                                            activeSection === s.id
+                                                ? 'border-indigo-600 bg-indigo-50 font-medium text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300'
+                                                : 'border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                                        }`}
                                     >
                                         <span className="h-4 w-4 shrink-0">{s.icon}</span>
                                         {s.label}
@@ -275,21 +397,37 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                 </svg>
                             </div>
-                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h3>
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h3>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">Choose how Synkro looks on this device</p>
+                            </div>
                         </div>
-                        <div className="flex gap-2">
-                            {['system', 'light', 'dark', 'black'].map((option) => (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            {THEME_OPTIONS.map(({ id, label, icon, swatch }) => (
                                 <button
-                                    key={option}
+                                    key={id}
                                     type="button"
-                                    onClick={() => handleThemeChange(option)}
-                                    className={`flex-1 rounded-md px-3 py-2 text-sm capitalize ${
-                                        theme === option
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                    onClick={() => handleThemeChange(id)}
+                                    aria-pressed={theme === id}
+                                    className={`group relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition ${
+                                        theme === id
+                                            ? 'border-indigo-600 bg-indigo-50/60 dark:border-indigo-500 dark:bg-indigo-950/30'
+                                            : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                                     }`}
                                 >
-                                    {option}
+                                    {theme === id && (
+                                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white shadow">
+                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </span>
+                                    )}
+                                    <span className={`flex h-10 w-full items-center justify-center rounded-md border border-black/5 ${swatch}`}>
+                                        {icon}
+                                    </span>
+                                    <span className={`text-xs font-medium ${theme === id ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                                        {label}
+                                    </span>
                                 </button>
                             ))}
                         </div>

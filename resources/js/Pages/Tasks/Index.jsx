@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
 import ViewToggle from '@/Components/ViewToggle';
+import RichTextContent from '@/Components/RichTextContent';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -347,10 +348,10 @@ export default function Index({ tasks }) {
                                             </span>
                                         )}
                                         {task.description && (
-                                            <div
+                                            <RichTextContent
                                                 className="prose-sm mt-2 line-clamp-2 max-w-none whitespace-pre-wrap break-words text-sm text-gray-500 dark:text-gray-400"
                                                 style={{ tabSize: 4 }}
-                                                dangerouslySetInnerHTML={{ __html: task.description }}
+                                                html={task.description}
                                             />
                                         )}
                                         <p className="mt-3 truncate text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500" title={task.project?.name}>

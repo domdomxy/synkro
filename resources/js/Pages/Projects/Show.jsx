@@ -13,6 +13,7 @@ import UserSearchInput from '@/Components/UserSearchInput';
 import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
+import RichTextContent from '@/Components/RichTextContent';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
 import { localDateTimeToIso } from '@/utils/datetime';
@@ -544,10 +545,11 @@ function ProjectInfoModal({ show, onClose, project }) {
 
                 <div className="overflow-y-auto p-6 pt-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Description</p>
-                    <div
+                    <RichTextContent
                         className="mt-2 whitespace-pre-wrap break-words text-base text-gray-900 dark:text-gray-100"
                         style={{ tabSize: 4 }}
-                        dangerouslySetInnerHTML={{ __html: project.description || '<span class="text-gray-400">No description provided.</span>' }}
+                        html={project.description}
+                        fallback='<span class="text-gray-400">No description provided.</span>'
                     />
                 </div>
 

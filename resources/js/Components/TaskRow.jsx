@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
+import RichTextContent from '@/Components/RichTextContent';
 import MentionTextarea, { extractRoleMentions, ROLE_LABELS } from '@/Components/MentionTextarea';
 import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
@@ -1243,7 +1244,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                     {task.description && (
                         <div className="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
-                            <div
+                            <RichTextContent
                                 ref={descriptionRef}
                                 onClick={isDescriptionTruncated ? (e) => {
                                     // Let links inside the description (Linkify/Linkifier-generated
@@ -1264,7 +1265,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     isDescriptionTruncated ? '-mx-1.5 -my-0.5 cursor-pointer rounded-md px-1.5 py-0.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/40' : ''
                                 }`}
                                 style={{ tabSize: 4 }}
-                                dangerouslySetInnerHTML={{ __html: task.description }}
+                                html={task.description}
                             />
                             {isDescriptionTruncated && (
                                 <div className="mt-0.5 flex justify-end">
