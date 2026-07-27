@@ -105,35 +105,43 @@ function truncate(raw, length) {
     return plain.length > length ? plain.slice(0, length).trimEnd() + '…' : plain;
 }
 
-// Builds a real parent -> children tree from the flat comments array, so
-// replies can be nested under their exact direct parent at any depth
-// (Reddit-style), rather than flattened to one indented tier. A comment
-// whose parent_id points at nothing we have (parent deleted) is promoted
-// to a root so it still renders, and its parent_id is preserved so the UI
-// can show a "replying to a deleted comment" note for it.
+// Groups the flat comments array into two tiers only (Facebook-style):
+// a root comment and, beneath it, every reply anywhere under it - however
+// many levels deep it really replies to - collapsed into one flat, ordered
+// list rather than indented further at each level. A reply's real parent_id
+// is preserved, so a reply-to-reply can still carry a "Replying to X" tag
+// standing in for the nesting a Reddit-style tree would otherwise show. A
+// comment whose parent chain eventually points at nothing we have (its
+// nearest ancestor was hard-deleted) is promoted to a root of its own, same
+// as before.
 function buildCommentTree(comments) {
     const list = comments ?? [];
     const byId = new Map(list.map((c) => [c.id, c]));
-    const childrenByParent = new Map();
+
+    function findRootId(comment) {
+        let current = comment;
+        const seen = new Set();
+        while (current.parent_id && byId.has(current.parent_id) && !seen.has(current.id)) {
+            seen.add(current.id);
+            current = byId.get(current.parent_id);
+        }
+        return current.id;
+    }
+
     const roots = [];
+    const repliesByRoot = new Map();
 
     list.forEach((comment) => {
-        if (comment.parent_id && byId.has(comment.parent_id)) {
-            if (!childrenByParent.has(comment.parent_id)) childrenByParent.set(comment.parent_id, []);
-            childrenByParent.get(comment.parent_id).push(comment);
-        } else {
+        const rootId = findRootId(comment);
+        if (rootId === comment.id) {
             roots.push(comment);
+            return;
         }
+        if (!repliesByRoot.has(rootId)) repliesByRoot.set(rootId, []);
+        repliesByRoot.get(rootId).push(comment);
     });
 
-    return { roots, childrenByParent, byId };
-}
-
-// Total number of replies nested (at any depth) under a comment - shown in
-// the collapsed summary line, e.g. "3 replies hidden".
-function countDescendants(commentId, childrenByParent) {
-    const kids = childrenByParent.get(commentId) ?? [];
-    return kids.reduce((sum, kid) => sum + 1 + countDescendants(kid.id, childrenByParent), 0);
+    return { roots, repliesByRoot, byId };
 }
 
 function getExtension(name) {
@@ -418,6 +426,21 @@ function CommentEntry({
                         </div>
                         <div className="mt-1 flex items-center gap-2 px-1">
                             <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeAgo(comment.created_at)}</span>
+                            {/* Only a moderator can purge a tombstone outright - its own
+                                author already said everything they can here by deleting
+                                it in the first place. */}
+                            {canManage && (
+                                <>
+                                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    <button
+                                        onClick={() => onDelete(comment.id)}
+                                        title="Permanently remove this placeholder and its replies"
+                                        className="text-[11px] font-medium text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                                    >
+                                        Delete
+                                    </button>
+                                </>
+                            )}
                             <span className="text-gray-300 dark:text-gray-600">·</span>
                             <button
                                 onClick={() => onStartReply(comment)}
@@ -457,24 +480,30 @@ function CommentEntry({
                     </form>
                 ) : (
                     <>
-                        {/* Only shown for a reply whose parent was deleted - real nesting
-                            already makes a direct reply-to-parent relationship obvious. */}
+                        {/* Shown whenever this reply's real parent isn't the thread's
+                            root (a genuine reply-to-reply, now common since replies are
+                            flattened to one tier) or its parent was deleted outright. */}
                         {quoteParent !== undefined && (
                             <button
                                 type="button"
                                 onClick={() => quoteParent && onScrollToComment(quoteParent.id)}
                                 disabled={!quoteParent}
-                                className="mb-0.5 flex items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-indigo-600 disabled:hover:text-gray-400 dark:text-gray-500 dark:hover:text-indigo-400"
+                                className="mb-0.5 flex min-w-0 max-w-full items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-indigo-600 disabled:hover:text-gray-400 dark:text-gray-500 dark:hover:text-indigo-400"
                             >
                                 <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
                                 </svg>
                                 {quoteParent && !quoteParent.is_deleted ? (
-                                    <span className="truncate">
+                                    // min-w-0 is load-bearing here: as a flex child, this span's
+                                    // default min-width is its own unwrapped text width, which
+                                    // silently overrides `truncate`'s ellipsis and pushes the
+                                    // whole row (and the page, on a narrow viewport) wider than
+                                    // intended instead of actually clipping.
+                                    <span className="min-w-0 truncate">
                                         Replying to <span className="font-medium">{quoteParent.user.name}</span>: {truncate(quoteParent.body, 60)}
                                     </span>
                                 ) : (
-                                    <span className="italic">Replying to a deleted comment</span>
+                                    <span className="min-w-0 truncate italic">Replying to a deleted comment</span>
                                 )}
                             </button>
                         )}
@@ -497,7 +526,7 @@ function CommentEntry({
                                 ? 'bg-green-50 dark:bg-green-950/30'
                                 : 'bg-gray-100 dark:bg-gray-700/60'
                         }`}>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                     {comment.user.name}
                                 </span>
@@ -565,17 +594,20 @@ function CommentEntry({
     );
 }
 
-// Recursively renders one comment plus its full reply tree beneath it,
-// indented one notch deeper at every level (Reddit-style, not flattened).
-// When this comment is the active reply target, the shared composer is
-// rendered as the last item in its children column - directly under its
-// existing replies, or immediately under itself if it has none yet.
+// Renders one root comment plus its full reply list as a single flat tier
+// beneath it (Facebook-style): every reply - however many levels deep it
+// really replies to - sits in the same column at the same indent, in the
+// order it was posted, rather than stepping in further at each level. A
+// reply that's actually answering another reply (not the root itself)
+// carries a small "Replying to X" tag in place of the nesting a Reddit-style
+// tree would otherwise show. Clicking the root's own bubble is still the
+// only way to collapse/expand the whole list - a reply is never itself
+// collapsible, and collapsing always hides the entire flat list at once.
 function CommentThread({
     comment,
-    isReply,
-    childrenByParent,
+    replies,
     byId,
-    collapsedIds,
+    isCollapsed,
     onToggleCollapse,
     replyingToId,
     composer,
@@ -592,20 +624,14 @@ function CommentThread({
     onStartReply,
     onScrollToComment,
 }) {
-    const children = childrenByParent.get(comment.id) ?? [];
-    const descendantCount = countDescendants(comment.id, childrenByParent);
-    const isCollapsed = collapsedIds.has(comment.id);
-    const isReplyingHere = replyingToId === comment.id;
-    const isDeleted = !!comment.is_deleted;
-    // Only a root comment with replies can be collapsed - a reply (whatever
-    // is nested under it) never gets a click-to-toggle affordance of its own,
-    // and it's the reply *list* that hides/shows, never the root's own text.
-    const canCollapse = !isReply && descendantCount > 0;
-    const hasNestedContent = !isCollapsed && (children.length > 0 || isReplyingHere);
-    // A quote line only makes sense for a comment whose parent was deleted
-    // (it lost its real nesting spot); a properly nested reply doesn't need
-    // one since its position in the tree already shows who it's replying to.
-    const quoteParent = !isReply && comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
+    const descendantCount = replies.length;
+    const isReplyingToRoot = replyingToId === comment.id;
+    const canCollapse = descendantCount > 0;
+    const hasNestedContent = !isCollapsed && (replies.length > 0 || isReplyingToRoot);
+    // A quote line only makes sense for a comment whose real parent was
+    // deleted (it lost its actual reply target); this only ever applies to
+    // the root here, since a root promoted this way is still its own root.
+    const quoteParent = comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
     const authorRole = members.find((m) => m.id === comment.user.id)?.pivot?.role ?? null;
     const toggle = () => onToggleCollapse(comment.id);
 
@@ -613,27 +639,18 @@ function CommentThread({
         // No `items-start` here on purpose: leaving this row at the default
         // stretch alignment lets the avatar column below match the full
         // height of the content column next to it (comment + every reply
-        // nested under it), so the rail can span exactly that height instead
-        // of a fixed/guessed one. `relative` is for the reply's own elbow
-        // curve below, which is positioned against this row.
+        // below it), so the trunk can span exactly that height instead of a
+        // fixed/guessed one.
         <div id={`comment-${comment.id}`} className="relative flex gap-2">
-            {/* The curve that peels off the parent's rail (a fixed distance
-                to the left - one avatar's width plus the gap) and runs down
-                into this reply's own avatar, so every reply branches visibly
-                off the trunk instead of just sitting parallel to it. */}
-            {isReply && (
-                <span
-                    aria-hidden="true"
-                    className="absolute -left-[22px] top-0 h-4 w-[22px] rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
-                />
-            )}
             <div className="flex shrink-0 flex-col items-center">
-                <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 ${isDeleted ? 'opacity-40 grayscale' : ''}`} />
+                <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 ${comment.is_deleted ? 'opacity-40 grayscale' : ''}`} />
                 {/* The trunk: starts right at the bottom of this avatar
                     (touching it) and stretches (flex-1) to fill whatever
-                    height the replies beside it take up, so it always
-                    reaches exactly as far as the last reply below - never
-                    further, never short of it. */}
+                    height the flat reply list beside it takes up, so it
+                    always reaches exactly as far as the last reply - never
+                    further, never short of it. Every reply below branches
+                    off this same trunk via its own elbow curve, instead of
+                    each level growing a trunk of its own. */}
                 {hasNestedContent && (
                     <div className="my-1 w-0.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700" />
                 )}
@@ -659,9 +676,6 @@ function CommentThread({
                     onStartReply={onStartReply}
                     onScrollToComment={onScrollToComment}
                 />
-                {/* The only place the reply count / collapse control shows -
-                    a plain reply never gets one, even if it has its own
-                    replies nested under it. */}
                 {canCollapse && (
                     <button
                         type="button"
@@ -675,32 +689,55 @@ function CommentThread({
                 )}
                 {hasNestedContent && (
                     <div className="mt-3 space-y-3">
-                        {children.map((child) => (
-                            <CommentThread
-                                key={child.id}
-                                comment={child}
-                                isReply
-                                childrenByParent={childrenByParent}
-                                byId={byId}
-                                collapsedIds={collapsedIds}
-                                onToggleCollapse={onToggleCollapse}
-                                replyingToId={replyingToId}
-                                composer={composer}
-                                highlightedCommentId={highlightedCommentId}
-                                editingCommentId={editingCommentId}
-                                editCommentForm={editCommentForm}
-                                currentUserId={currentUserId}
-                                canManage={canManage}
-                                members={members}
-                                onSaveEdit={onSaveEdit}
-                                onStartEdit={onStartEdit}
-                                onCancelEdit={onCancelEdit}
-                                onDelete={onDelete}
-                                onStartReply={onStartReply}
-                                onScrollToComment={onScrollToComment}
-                            />
-                        ))}
-                        {isReplyingHere && composer}
+                        {!isCollapsed && replies.map((reply) => {
+                            const directParent = reply.parent_id ? byId.get(reply.parent_id) : undefined;
+                            // Only tag a reply when it's really answering another
+                            // reply (or a comment whose own parent was deleted) -
+                            // a plain reply straight to the root needs no tag,
+                            // since its spot in the flat list already says that.
+                            const quoteTarget = directParent && directParent.id !== comment.id
+                                ? directParent
+                                : (reply.parent_id && !directParent ? null : undefined);
+
+                            return (
+                                <div key={reply.id} id={`comment-${reply.id}`} className="relative flex gap-2">
+                                    {/* The elbow that peels off the root's trunk (a fixed
+                                        distance to the left - one avatar's width plus the
+                                        gap) and runs into this reply's own avatar, so every
+                                        reply branches visibly off the trunk instead of just
+                                        sitting parallel to it. */}
+                                    <span
+                                        aria-hidden="true"
+                                        className="absolute -left-[22px] top-0 h-4 w-[22px] rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
+                                    />
+                                    <Avatar user={reply.user} size="h-7 w-7" className={`mt-0.5 shrink-0 ${reply.is_deleted ? 'opacity-40 grayscale' : ''}`} />
+                                    <div className="min-w-0 flex-1">
+                                        <CommentEntry
+                                            comment={reply}
+                                            quoteParent={quoteTarget}
+                                            canCollapse={false}
+                                            isCollapsed={false}
+                                            onToggleCollapse={undefined}
+                                            highlightedCommentId={highlightedCommentId}
+                                            editingCommentId={editingCommentId}
+                                            editCommentForm={editCommentForm}
+                                            currentUserId={currentUserId}
+                                            canManage={canManage}
+                                            members={members}
+                                            authorRole={members.find((m) => m.id === reply.user.id)?.pivot?.role ?? null}
+                                            onSaveEdit={onSaveEdit}
+                                            onStartEdit={onStartEdit}
+                                            onCancelEdit={onCancelEdit}
+                                            onDelete={onDelete}
+                                            onStartReply={onStartReply}
+                                            onScrollToComment={onScrollToComment}
+                                        />
+                                        {replyingToId === reply.id && composer}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {isReplyingToRoot && composer}
                     </div>
                 )}
             </div>
@@ -1716,10 +1753,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             <CommentThread
                                 key={comment.id}
                                 comment={comment}
-                                isReply={false}
-                                childrenByParent={commentTree.childrenByParent}
+                                replies={commentTree.repliesByRoot.get(comment.id) ?? []}
                                 byId={commentTree.byId}
-                                collapsedIds={collapsedIds}
+                                isCollapsed={collapsedIds.has(comment.id)}
                                 onToggleCollapse={toggleCommentCollapse}
                                 replyingToId={replyingTo?.id ?? null}
                                 composer={commentComposer}

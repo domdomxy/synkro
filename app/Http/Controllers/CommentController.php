@@ -188,10 +188,34 @@ class CommentController extends Controller
     {
         $this->authorize('delete', $comment);
 
-        abort_if($comment->is_deleted, 404);
-
         $task = $comment->task;
         $projectId = $task->project_id;
+        $isModerator = in_array($task->project->roleFor(Auth::user()), ['owner', 'manager'], true);
+
+        // A tombstoned comment ("Original comment was deleted") has nothing
+        // left that its own author could delete - the body's already gone.
+        // Only a moderator can act on it from here, and what they're doing
+        // is purging the tombstone itself: the placeholder and every reply
+        // beneath it disappear for good, same as a moderator deleting any
+        // other comment. Anyone else hitting this route is stale UI.
+        if ($comment->is_deleted) {
+            abort_unless($isModerator, 404);
+
+            ProjectActivityLog::log($task->project, 'comment_deleted', [
+                'task_title' => $task->title,
+                'preview' => '[deleted]',
+            ], $task);
+
+            $descendantIds = $this->collectDescendantIds($comment);
+            if (! empty($descendantIds)) {
+                Comment::whereIn('id', $descendantIds)->delete();
+            }
+            $comment->delete();
+
+            broadcast(new CommentDeleted($projectId))->toOthers();
+
+            return back()->with('success', 'Comment deleted.');
+        }
 
         ProjectActivityLog::log($task->project, 'comment_deleted', [
             'task_title' => $task->title,
@@ -205,8 +229,6 @@ class CommentController extends Controller
         // body is cleared and deleted_at is stamped, and the frontend renders
         // it as "Original comment was deleted" while the replies stay right
         // where they were. Either way, a childless comment is just removed.
-        $isModerator = in_array($task->project->roleFor(Auth::user()), ['owner', 'manager'], true);
-
         if ($isModerator) {
             $descendantIds = $this->collectDescendantIds($comment);
             if (! empty($descendantIds)) {
