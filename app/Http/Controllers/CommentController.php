@@ -198,14 +198,22 @@ class CommentController extends Controller
             'preview' => Str::limit($comment->body, 200),
         ], $task);
 
-        // A comment with replies can't be hard-deleted - its children point at
-        // it by parent_id, and removing the row would either orphan them or
-        // (via the nullOnDelete constraint) silently detach them from the
-        // thread they're actually part of. Instead it's tombstoned in place:
-        // the body is cleared and deleted_at is stamped, and the frontend
-        // renders it as "Original comment was deleted" while its replies stay
-        // exactly where they were. A childless comment is still removed outright.
-        if ($comment->replies()->exists()) {
+        // An owner/manager deleting a comment is a moderation action - it and
+        // every reply underneath it are gone for good, no tombstone. Anyone
+        // else (deleting their own comment) still can't blow away replies
+        // that don't belong to them, so that path tombstones instead: the
+        // body is cleared and deleted_at is stamped, and the frontend renders
+        // it as "Original comment was deleted" while the replies stay right
+        // where they were. Either way, a childless comment is just removed.
+        $isModerator = in_array($task->project->roleFor(Auth::user()), ['owner', 'manager'], true);
+
+        if ($isModerator) {
+            $descendantIds = $this->collectDescendantIds($comment);
+            if (! empty($descendantIds)) {
+                Comment::whereIn('id', $descendantIds)->delete();
+            }
+            $comment->delete();
+        } elseif ($comment->replies()->exists()) {
             $comment->forceFill([
                 'body' => '',
                 'is_feedback' => false,
@@ -221,6 +229,22 @@ class CommentController extends Controller
         
         return back()->with('success', 'Comment deleted.');
     }
+
+    // Depth-first collection of every reply id nested under $comment, however
+    // many levels deep - parent_id only points one level up, so there's no
+    // single query for "all descendants" without a recursive CTE.
+    private function collectDescendantIds(Comment $comment): array
+    {
+        $ids = [];
+
+        foreach ($comment->replies()->get() as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $this->collectDescendantIds($child));
+        }
+
+        return $ids;
+    }
+
     public function update(Request $request, Comment $comment)
     {
         abort_unless($comment->user_id === Auth::id(), 403);

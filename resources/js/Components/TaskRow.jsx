@@ -132,20 +132,6 @@ function countDescendants(commentId, childrenByParent) {
     return kids.reduce((sum, kid) => sum + 1 + countDescendants(kid.id, childrenByParent), 0);
 }
 
-// Instead of one long gray rail running down the whole thread, each nesting
-// level gets its own color that cycles as replies go deeper - a reply-to-a-
-// reply-to-a-reply reads as a little color trail rather than everything
-// hugging the same straight line. Depth 1 is the first level of replies.
-const THREAD_COLORS = [
-    { ring: 'ring-indigo-300 dark:ring-indigo-600', line: 'border-indigo-300 dark:border-indigo-700', dot: 'bg-indigo-400 dark:bg-indigo-500' },
-    { ring: 'ring-fuchsia-300 dark:ring-fuchsia-600', line: 'border-fuchsia-300 dark:border-fuchsia-700', dot: 'bg-fuchsia-400 dark:bg-fuchsia-500' },
-    { ring: 'ring-amber-300 dark:ring-amber-600', line: 'border-amber-300 dark:border-amber-700', dot: 'bg-amber-400 dark:bg-amber-500' },
-    { ring: 'ring-emerald-300 dark:ring-emerald-600', line: 'border-emerald-300 dark:border-emerald-700', dot: 'bg-emerald-400 dark:bg-emerald-500' },
-];
-function threadColor(depth) {
-    return THREAD_COLORS[Math.max(depth - 1, 0) % THREAD_COLORS.length];
-}
-
 function getExtension(name) {
     return name?.split('.').pop()?.toLowerCase() ?? '';
 }
@@ -382,15 +368,13 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
     );
 }
 
-// Renders a single comment (top-level or reply). Rather than a continuous
-// rail running down the thread, each reply gets a short color-coded tick
-// linking it to its parent and a matching ring around its avatar - the color
-// cycles with depth so a deep sub-thread reads as a little color trail
-// instead of one long straight line.
+// Renders a single comment (top-level or reply). Replies are drawn indented,
+// with a connecting line + curve on the left that runs up to the avatar of
+// the comment they're replying to - there's no dedicated collapse button;
+// clicking the comment itself toggles its thread open/closed.
 function CommentEntry({
     comment,
     isReply,
-    depth,
     quoteParent,
     isCollapsed,
     descendantCount,
@@ -408,39 +392,25 @@ function CommentEntry({
     onStartReply,
     onScrollToComment,
 }) {
-    const color = isReply ? threadColor(depth) : null;
     const isDeleted = !!comment.is_deleted;
 
     return (
         <div id={`comment-${comment.id}`} className={`relative flex items-start gap-2 ${isReply ? 'pt-3' : ''}`}>
             {isReply && (
-                <span aria-hidden="true" className={`absolute -left-4 top-0 h-7 w-4 rounded-bl-2xl border-b-2 border-l-2 ${color.line}`}>
-                    <span className={`absolute -bottom-[3px] -right-[3px] h-1.5 w-1.5 rounded-full ${color.dot}`} />
-                </span>
-            )}
-            {/* Click to minimize/maximize this comment's thread - matches the
-                collapse control on Reddit-style threaded comments. */}
-            <button
-                type="button"
-                onClick={onToggleCollapse}
-                title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
-                className="mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-gray-300 text-[10px] font-bold leading-none text-gray-400 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400"
-            >
-                {isCollapsed ? '+' : '−'}
-            </button>
-            <button type="button" onClick={onToggleCollapse} className="shrink-0">
-                <Avatar
-                    user={comment.user}
-                    size="h-7 w-7"
-                    className={`mt-0.5 ${isDeleted ? 'opacity-40 grayscale' : ''} ${
-                        isReply && !isCollapsed ? `ring-2 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900 ${color.ring}` : ''
-                    }`}
+                <span
+                    aria-hidden="true"
+                    className="absolute -left-4 top-0 h-7 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
                 />
-            </button>
+            )}
+            <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 shrink-0 ${isDeleted ? 'opacity-40 grayscale' : ''}`} />
             <div className="min-w-0 flex-1">
                 {isDeleted && !isCollapsed ? (
                     <>
-                        <div className="flex items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3.5 py-2 text-sm italic text-gray-400 dark:border-gray-600 dark:text-gray-500">
+                        <div
+                            onClick={onToggleCollapse}
+                            title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
+                            className="flex cursor-pointer items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3.5 py-2 text-sm italic text-gray-400 transition hover:border-gray-400 dark:border-gray-600 dark:text-gray-500 dark:hover:border-gray-500"
+                        >
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
                             </svg>
@@ -517,9 +487,12 @@ function CommentEntry({
                                 )}
                             </button>
                         )}
-                        <div className={`rounded-2xl px-3.5 py-2 transition ${
-                            isReply ? `border-l-2 ${color.line}` : ''
-                        } ${
+                        {/* Clicking the comment itself (not a separate +/- control)
+                            collapses or expands its thread. */}
+                        <div
+                            onClick={onToggleCollapse}
+                            title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
+                            className={`cursor-pointer rounded-2xl px-3.5 py-2 transition hover:brightness-95 dark:hover:brightness-110 ${
                             highlightedCommentId === comment.id
                                 ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
                                 : ''
@@ -533,13 +506,9 @@ function CommentEntry({
                                 : 'bg-gray-100 dark:bg-gray-700/60'
                         }`}>
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={onToggleCollapse}
-                                    className="text-sm font-semibold text-gray-800 hover:text-indigo-600 dark:text-gray-200 dark:hover:text-indigo-400"
-                                >
+                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                     {comment.user.name}
-                                </button>
+                                </span>
                                 {!!comment.is_reopened && (
                                     <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900 dark:text-orange-300">
                                         Reopened
@@ -608,7 +577,6 @@ function CommentEntry({
 function CommentThread({
     comment,
     isReply,
-    depth = 0,
     childrenByParent,
     byId,
     collapsedIds,
@@ -635,15 +603,12 @@ function CommentThread({
     // (it lost its real nesting spot); a properly nested reply doesn't need
     // one since its position in the tree already shows who it's replying to.
     const quoteParent = !isReply && comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
-    // The color a brand-new reply typed into this thread's composer would get.
-    const nextColor = threadColor(depth + 1);
 
     return (
         <div>
             <CommentEntry
                 comment={comment}
                 isReply={isReply}
-                depth={depth}
                 quoteParent={quoteParent}
                 isCollapsed={isCollapsed}
                 descendantCount={countDescendants(comment.id, childrenByParent)}
@@ -661,18 +626,17 @@ function CommentThread({
                 onStartReply={onStartReply}
                 onScrollToComment={onScrollToComment}
             />
-            {/* No continuous rail down the column here - each child draws its
-                own short color-coded tick back up to this point (see
-                CommentEntry), so a deep thread reads as indentation + a trail
-                of colored dots rather than one long straight line. */}
+            {/* This rail starts right where the comment above ends, so it reads
+                as running straight down from that comment's avatar into each
+                reply's own elbow connector (see CommentEntry) rather than
+                floating disconnected from what it's replying to. */}
             {!isCollapsed && (children.length > 0 || isReplyingHere) && (
-                <div className="ml-3.5 pl-5">
+                <div className="ml-3.5 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
                     {children.map((child) => (
                         <CommentThread
                             key={child.id}
                             comment={child}
                             isReply
-                            depth={depth + 1}
                             childrenByParent={childrenByParent}
                             byId={byId}
                             collapsedIds={collapsedIds}
@@ -695,9 +659,10 @@ function CommentThread({
                     ))}
                     {isReplyingHere && (
                         <div className="relative pt-3">
-                            <span aria-hidden="true" className={`absolute -left-4 top-0 h-9 w-4 rounded-bl-2xl border-b-2 border-l-2 ${nextColor.line}`}>
-                                <span className={`absolute -bottom-[3px] -right-[3px] h-1.5 w-1.5 rounded-full ${nextColor.dot}`} />
-                            </span>
+                            <span
+                                aria-hidden="true"
+                                className="absolute -left-4 top-0 h-9 w-4 rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
+                            />
                             {composer}
                         </div>
                     )}

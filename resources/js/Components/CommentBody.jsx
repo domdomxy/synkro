@@ -14,7 +14,7 @@ export default function CommentBody({ text }) {
     const display = isLong && !expanded ? str.slice(0, TRUNCATE_LENGTH).trimEnd() + '…' : str;
 
     return (
-        <>
+        <div onClick={(e) => e.stopPropagation()}>
             <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">
                 <Linkify text={display} />
             </p>
@@ -27,6 +27,6 @@ export default function CommentBody({ text }) {
                     {expanded ? 'Show less' : 'Show more'}
                 </button>
             )}
-        </>
+        </div>
     );
 }
