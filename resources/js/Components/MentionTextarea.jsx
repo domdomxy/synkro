@@ -18,6 +18,29 @@ const ROLE_LABELS = {
 // nothing about how a posted comment or notification renders, needs to change.
 const MENTION_TOKEN = /@\[([^\]]+)\]\((user:\d+|role:[a-z]+)\)/g;
 
+// Matches only role:token mentions (not user:ID ones) inside a raw comment
+// body. Used by callers (TaskRow) to decide whether posting/editing a
+// comment should be confirmed first, since a role mention notifies a whole
+// group of people at once rather than a single person.
+const ROLE_MENTION_TOKEN = /@\[([^\]]+)\]\(role:([a-z]+)\)/g;
+
+/**
+ * Returns the distinct role tokens (e.g. ['manager', 'everyone']) mentioned
+ * in a raw comment body, in first-seen order.
+ */
+export function extractRoleMentions(raw) {
+    if (!raw) return [];
+    const roles = [];
+    let match;
+    ROLE_MENTION_TOKEN.lastIndex = 0;
+    while ((match = ROLE_MENTION_TOKEN.exec(raw)) !== null) {
+        if (!roles.includes(match[2])) roles.push(match[2]);
+    }
+    return roles;
+}
+
+export { ROLE_LABELS };
+
 /**
  * Splits a raw value into an ordered list of plain-text and mention segments,
  * for building the editable DOM from a `value` that came from outside this
@@ -125,7 +148,7 @@ function findActiveMention(container) {
  * `members` should be the project's member list (each with `id`, `name`, and
  * optionally `pivot.role`) - the same shape already passed around elsewhere.
  */
-export default function MentionTextarea({ value, onChange, members = [], onKeyDown, placeholder, className = '', autoFocus, ...props }) {
+export default function MentionTextarea({ value, onChange, members = [], onKeyDown, placeholder, className = '', autoFocus, canMentionEveryone = true, ...props }) {
     const containerRef = useRef(null);
     const lastSyncedRef = useRef(); // raw value the DOM currently reflects
     const [mention, setMention] = useState(null); // { node, start, cursor, query } | null
@@ -133,7 +156,10 @@ export default function MentionTextarea({ value, onChange, members = [], onKeyDo
     const [empty, setEmpty] = useState(!value);
 
     const availableRoles = Array.from(new Set(members.map((m) => m.pivot?.role).filter(Boolean)));
-    const roleOptions = ['everyone', ...availableRoles].map((role) => ({
+    // "everyone" pings the whole project at once, so only managers/owners get
+    // it offered as a suggestion - mirrors the backend check in
+    // CommentController, which rejects it from anyone else regardless.
+    const roleOptions = [...(canMentionEveryone ? ['everyone'] : []), ...availableRoles].map((role) => ({
         type: 'role',
         token: role,
         label: ROLE_LABELS[role] ?? role,

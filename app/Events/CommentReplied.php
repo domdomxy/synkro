@@ -8,7 +8,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class TaskCommented implements ShouldBroadcastNow
+class CommentReplied implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
@@ -21,7 +21,7 @@ class TaskCommented implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'task.commented';
+        return 'comment.replied';
     }
 
     public function broadcastWith(): array
@@ -33,7 +33,7 @@ class TaskCommented implements ShouldBroadcastNow
             'task_id' => $this->comment->task->id,
             'comment_id' => $this->comment->id,
             'commenter_name' => $this->comment->user->name,
-            'type' => 'task_commented',
+            'type' => 'comment_replied',
         ];
     }
 }

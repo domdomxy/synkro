@@ -14,6 +14,7 @@ use App\Events\CommentDeleted;
 use App\Events\CommentUpdated;
 use App\Events\TaskCommented;
 use App\Events\TaskMentioned;
+use App\Events\CommentReplied;
 use App\Support\MentionParser;
 use App\Support\NotificationMailer;
 use App\Support\NotificationPreferences;
@@ -26,10 +27,20 @@ class CommentController extends Controller
 
         $validated = $request->validate([
             'body' => 'required|string|max:2000',
+            'parent_id' => 'nullable|integer|exists:comments,id',
         ]);
+
+        $parentComment = null;
+        if (! empty($validated['parent_id'])) {
+            $parentComment = Comment::find($validated['parent_id']);
+            // A reply only makes sense within the same task's thread - reject
+            // anything else rather than silently dropping the parent link.
+            abort_unless($parentComment && (int) $parentComment->task_id === (int) $task->id, 422, 'Invalid reply target.');
+        }
 
         $comment = $task->comments()->create([
             'user_id' => Auth::id(),
+            'parent_id' => $parentComment?->id,
             'body' => $validated['body'],
         ]);
 
@@ -44,8 +55,24 @@ class CommentController extends Controller
         // instead of the generic "commented" one below, so they aren't notified twice
         // for the same comment.
         $mentions = MentionParser::extract($validated['body']);
+
+        // @everyone pings the whole project at once, so only managers/owners
+        // may use it - the frontend already hides it from the suggestion list
+        // for anyone else, this is the backstop.
+        if (in_array('everyone', $mentions['roles'], true) && ! in_array($task->project->roleFor(Auth::user()), ['owner', 'manager'], true)) {
+            return back()->withErrors(['body' => 'Only managers and owners can mention everyone.'])->withInput();
+        }
+
         $mentionedRecipients = MentionParser::resolveRecipients($task->project, $mentions, Auth::id());
         $mentionedIds = $mentionedRecipients->pluck('id');
+
+        // Replying to someone gives them the stronger "replied to your comment"
+        // signal instead of the generic "commented" one below (and instead of
+        // "mentioned", if they were also @mentioned - one notification per
+        // comment per person is enough).
+        $replyToUserId = ($parentComment && (int) $parentComment->user_id !== (int) Auth::id())
+            ? (int) $parentComment->user_id
+            : null;
 
         // Recipients = the assignee plus anyone else who has commented on this task
         // (i.e. the thread's participants), minus whoever just posted. Previously only
@@ -62,6 +89,7 @@ class CommentController extends Controller
             ->filter()
             ->reject(fn ($id) => (int) $id === (int) Auth::id())
             ->reject(fn ($id) => $mentionedIds->contains((int) $id))
+            ->reject(fn ($id) => (int) $id === $replyToUserId)
             ->unique();
 
         $preview = Str::limit($validated['body'], 200);
@@ -123,6 +151,36 @@ class CommentController extends Controller
             );
         }
 
+        if ($replyToUserId && ! $mentionedIds->contains($replyToUserId)) {
+            $replyRecipient = \App\Models\User::find($replyToUserId);
+            if ($replyRecipient && $task->project->isMember($replyRecipient)) {
+                if (NotificationPreferences::wantsType($replyRecipient, 'comment_replied')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $replyRecipient->id,
+                        'type' => 'comment_replied',
+                        'message' => "New reply\n" . Auth::user()->name . " replied to your comment on \"{$task->title}\"",
+                        'url' => $url,
+                    ]);
+
+                    try {
+                        broadcast(new CommentReplied($comment, $replyRecipient->id, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                NotificationMailer::send(
+                    $replyRecipient,
+                    'task.replied',
+                    Auth::user()->name . " replied to your comment on \"{$task->title}\"",
+                    [Auth::user()->name . " replied to your comment on \"{$task->title}\":"],
+                    url($url),
+                    'View Reply',
+                    ['label' => 'Reply', 'content' => $preview]
+                );
+            }
+        }
+
         return back()->with('success', 'Comment added.');
     }
 
@@ -153,6 +211,11 @@ class CommentController extends Controller
         ]);
 
         $oldBody = $comment->body;
+
+        $newMentions = MentionParser::extract($validated['body']);
+        if (in_array('everyone', $newMentions['roles'], true) && ! in_array($comment->task->project->roleFor(Auth::user()), ['owner', 'manager'], true)) {
+            return back()->withErrors(['body' => 'Only managers and owners can mention everyone.'])->withInput();
+        }
 
         $comment->update([
             'body' => $validated['body'],

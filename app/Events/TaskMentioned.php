@@ -31,6 +31,7 @@ class TaskMentioned implements ShouldBroadcastNow
             'title' => $this->comment->task->title,
             'project_id' => $this->comment->task->project_id,
             'task_id' => $this->comment->task->id,
+            'comment_id' => $this->comment->id,
             'commenter_name' => $this->comment->user->name,
             'type' => 'task_mentioned',
         ];

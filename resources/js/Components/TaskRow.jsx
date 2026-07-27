@@ -6,7 +6,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
-import MentionTextarea from '@/Components/MentionTextarea';
+import MentionTextarea, { extractRoleMentions, ROLE_LABELS } from '@/Components/MentionTextarea';
 import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
@@ -88,6 +88,17 @@ function timeAgo(dateString) {
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}d ago`;
     return new Date(dateString).toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
+// Strips mention/link tokens down to their plain label for a short quoted
+// preview (e.g. of a reply's parent comment), then truncates to length.
+function truncate(raw, length) {
+    const plain = (raw ?? '')
+        .replace(/@\[([^\]]+)\]\((?:user:\d+|role:[a-z]+)\)/g, '@$1')
+        .replace(/\[([^\]]+)\]\(https?:\/\/[^\s)]+\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return plain.length > length ? plain.slice(0, length).trimEnd() + '…' : plain;
 }
 
 function getExtension(name) {
@@ -347,6 +358,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [isDescriptionTruncated, setIsDescriptionTruncated] = useState(false);
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
+    const [replyingTo, setReplyingTo] = useState(null); // comment object being replied to, or null
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
@@ -407,7 +419,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const checklistForm = useForm({ title: '' });
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
-    const commentForm = useForm({ body: '' });
+    const commentForm = useForm({ body: '', parent_id: null });
     const editCommentForm = useForm({ body: '' });
     const reopenForm = useForm({ feedback: '' });
 
@@ -551,9 +563,37 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         });
     };
 
-    const submitComment = (e) => {
+    // A role mention (@managers, @everyone, ...) notifies a whole group at
+    // once rather than a single person, so it's confirmed before sending -
+    // same reasoning as any other bulk/irreversible action in this app.
+    const confirmRoleMentions = async (body) => {
+        const roles = extractRoleMentions(body);
+        if (roles.length === 0) return true;
+        const labels = roles.map((r) => ROLE_LABELS[r] ?? r);
+        const message = roles.includes('everyone')
+            ? 'This will notify every member of this project.'
+            : `This will notify all ${labels.join(' and ')} on this project.`;
+        return confirm(message, { title: 'Notify a whole role?', confirmLabel: 'Send' });
+    };
+
+    const submitComment = async (e) => {
         e.preventDefault();
-        commentForm.post(route('comments.store', task.id), { preserveScroll: true, onSuccess: () => commentForm.reset() });
+        if (!(await confirmRoleMentions(commentForm.data.body))) return;
+        commentForm.post(route('comments.store', task.id), {
+            preserveScroll: true,
+            onSuccess: () => { commentForm.reset(); setReplyingTo(null); },
+        });
+    };
+
+    const startReply = (comment) => {
+        setEditingCommentId(null);
+        setReplyingTo(comment);
+        commentForm.setData('parent_id', comment.id);
+    };
+
+    const cancelReply = () => {
+        setReplyingTo(null);
+        commentForm.setData('parent_id', null);
     };
 
     const startEditComment = (comment) => {
@@ -561,8 +601,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         editCommentForm.setData('body', comment.body);
     };
 
-    const saveCommentEdit = (e, commentId) => {
+    const saveCommentEdit = async (e, commentId) => {
         e.preventDefault();
+        if (!(await confirmRoleMentions(editCommentForm.data.body))) return;
         editCommentForm.patch(route('comments.update', commentId), {
             preserveScroll: true,
             onSuccess: () => setEditingCommentId(null),
@@ -571,6 +612,15 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const deleteComment = async (commentId) => {
         if (await confirm('Delete this comment?', { title: 'Delete Comment?', danger: true, confirmLabel: 'Delete' })) router.delete(route('comments.destroy', commentId), { preserveScroll: true });
+    };
+
+    // Jumps to and briefly highlights a comment already in view (used by the
+    // "Replying to ..." quote line) - same highlight mechanism the
+    // notification-driven autoOpenCommentId effect above uses.
+    const scrollToComment = (commentId) => {
+        setHighlightedCommentId(commentId);
+        document.getElementById(`comment-${commentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => setHighlightedCommentId((id) => (id === commentId ? null : id)), 2000);
     };
 
     const deleteTask = async () => {
@@ -1245,6 +1295,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                                 value={editCommentForm.data.body}
                                                 onChange={(val) => editCommentForm.setData('body', val)}
                                                 members={members}
+                                                canMentionEveryone={canManage}
                                                 autoFocus
                                                 className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             />
@@ -1268,6 +1319,28 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         </form>
                                     ) : (
                                         <>
+                                            {!!comment.parent_id && (() => {
+                                                const parent = task.comments?.find((c) => c.id === comment.parent_id);
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => parent && scrollToComment(parent.id)}
+                                                        disabled={!parent}
+                                                        className="mb-0.5 flex items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-indigo-600 disabled:hover:text-gray-400 dark:text-gray-500 dark:hover:text-indigo-400"
+                                                    >
+                                                        <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
+                                                        </svg>
+                                                        {parent ? (
+                                                            <span className="truncate">
+                                                                Replying to <span className="font-medium">{parent.user.name}</span>: {truncate(parent.body, 60)}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="italic">Replying to a deleted comment</span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })()}
                                             <div className={`rounded-2xl px-3.5 py-2 transition ${
                                                 highlightedCommentId === comment.id
                                                     ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
@@ -1328,6 +1401,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                                         </button>
                                                     </>
                                                 )}
+                                                <span className="text-gray-300 dark:text-gray-600">·</span>
+                                                <button
+                                                    onClick={() => startReply(comment)}
+                                                    className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                                                >
+                                                    Reply
+                                                </button>
                                             </div>
                                         </>
                                     )}
@@ -1340,17 +1420,39 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
                         <form onSubmit={submitComment} className="flex items-start gap-2.5 pt-1">
                             <div className="min-w-0 flex-1">
+                                {replyingTo && (
+                                    <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs dark:bg-indigo-950/40">
+                                        <svg className="h-3.5 w-3.5 shrink-0 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />
+                                        </svg>
+                                        <span className="min-w-0 flex-1 truncate text-indigo-700 dark:text-indigo-300">
+                                            Replying to <span className="font-medium">{replyingTo.user.name}</span>: {truncate(replyingTo.body, 50)}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={cancelReply}
+                                            className="shrink-0 text-indigo-400 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-300"
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                )}
                                 <MentionTextarea
                                     value={commentForm.data.body}
                                     onChange={(val) => commentForm.setData('body', val)}
                                     members={members}
+                                    canMentionEveryone={canManage}
+                                    autoFocus={!!replyingTo}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
                                             if (commentForm.data.body.trim()) submitComment(e);
                                         }
+                                        if (e.key === 'Escape' && replyingTo) cancelReply();
                                     }}
-                                    placeholder="Write a comment... (@ to mention someone)"
+                                    placeholder={replyingTo ? `Reply to ${replyingTo.user.name}...` : 'Write a comment... (@ to mention someone)'}
                                     title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
                                     className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
