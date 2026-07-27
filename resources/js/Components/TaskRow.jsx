@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
+import MentionTextarea from '@/Components/MentionTextarea';
 import { localDateTimeToIso } from '@/utils/datetime';
 import useConfirm from '@/hooks/useConfirm';
 import Linkify from '@/Components/Linkify';
@@ -1223,9 +1224,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 <div className="min-w-0 flex-1">
                                     {editingCommentId === comment.id ? (
                                         <form onSubmit={(e) => saveCommentEdit(e, comment.id)} className="space-y-1.5">
-                                            <AutoGrowTextarea
+                                            <MentionTextarea
                                                 value={editCommentForm.data.body}
-                                                onChange={(e) => editCommentForm.setData('body', e.target.value)}
+                                                onChange={(val) => editCommentForm.setData('body', val)}
+                                                members={members}
                                                 autoFocus
                                                 className="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             />
@@ -1317,17 +1319,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
                         <form onSubmit={submitComment} className="flex items-start gap-2.5 pt-1">
                             <div className="min-w-0 flex-1">
-                                <AutoGrowTextarea
+                                <MentionTextarea
                                     value={commentForm.data.body}
-                                    onChange={(e) => commentForm.setData('body', e.target.value)}
+                                    onChange={(val) => commentForm.setData('body', val)}
+                                    members={members}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
                                             if (commentForm.data.body.trim()) submitComment(e);
                                         }
                                     }}
-                                    placeholder="Write a comment..."
-                                    title="Tip: [label](url) turns into a clickable link"
+                                    placeholder="Write a comment... (@ to mention someone)"
+                                    title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
                                     className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
                                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}

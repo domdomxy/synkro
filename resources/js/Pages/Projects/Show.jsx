@@ -673,7 +673,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [newTaskDependencyPick, setNewTaskDependencyPick] = useState('');
     const leaveForm = useForm({ reason: '' });
 
-    useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted'], () => {
+    useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted', '.comment.updated'], () => {
         router.reload({ only: ['project'] });
     });
 

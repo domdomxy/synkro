@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
+import DeliverableViewer from '@/Components/DeliverableViewer';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -117,7 +118,7 @@ function DownloadIcon({ className = 'h-4 w-4' }) {
     );
 }
 
-function TaskFolder({ task }) {
+function TaskFolder({ task, onPreview }) {
     const [open, setOpen] = useState(false);
     const files = task.deliverables.filter((d) => d.type === 'file');
     if (files.length === 0) return null;
@@ -146,11 +147,16 @@ function TaskFolder({ task }) {
             {open && (
                 <div className="pb-1.5 pl-11">
                     {files.map((f) => (
-                        <div key={f.id} className="flex items-center gap-2 py-1 text-sm text-gray-600 dark:text-gray-400">
+                        <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => onPreview(f)}
+                            className="flex w-full items-center gap-2 py-1 text-left text-sm text-gray-600 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                        >
                             <FileTypeIcon name={f.original_name} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
                             <span className="truncate">{f.original_name}</span>
                             {formatSize(f.size) && <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{formatSize(f.size)}</span>}
-                        </div>
+                        </button>
                     ))}
                 </div>
             )}
@@ -162,6 +168,7 @@ export default function Deliverables({ project, tasks }) {
     const folderTasks = tasks.filter((t) => t.deliverables.some((d) => d.type === 'file'));
     const linkTasks = tasks.filter((t) => t.deliverables.some((d) => d.type === 'link'));
     const hasAnyFiles = folderTasks.length > 0;
+    const [previewingDeliverable, setPreviewingDeliverable] = useState(null);
 
     return (
         <AuthenticatedLayout header={
@@ -197,7 +204,7 @@ export default function Deliverables({ project, tasks }) {
                                 <p className="text-sm text-gray-400 dark:text-gray-500">No files yet. They'll show up here once tasks with attached files are marked done.</p>
                             </div>
                         ) : (
-                            folderTasks.map((task) => <TaskFolder key={task.id} task={task} />)
+                            folderTasks.map((task) => <TaskFolder key={task.id} task={task} onPreview={setPreviewingDeliverable} />)
                         )}
                     </div>
 
@@ -228,6 +235,8 @@ export default function Deliverables({ project, tasks }) {
                     )}
                 </div>
             </div>
+
+            <DeliverableViewer deliverable={previewingDeliverable} onClose={() => setPreviewingDeliverable(null)} />
         </AuthenticatedLayout>
     );
 }

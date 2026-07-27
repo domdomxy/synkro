@@ -54,21 +54,28 @@ class NoteFormatter
 
     /**
      * Turn markdown-style [label](https://url) and bare https:// URLs into
-     * anchor tags. Runs on already-HTML-escaped text, so it's safe to call
-     * after formatLine's escaping step; the single regex pass (markdown
-     * pattern first, bare URL as fallback) avoids re-linkifying text we
-     * just inserted into an href/label.
+     * anchor tags, and @[Label](user:ID) / @[Label](role:token) mention tokens
+     * into a styled chip — the email equivalent of the chip Linkify.jsx renders
+     * client-side, so a comment with a mention doesn't show raw markup in the
+     * notification email. Runs on already-HTML-escaped text, so it's safe to
+     * call after formatLine's escaping step; the single regex pass (mention,
+     * then markdown link, then bare URL as fallback) avoids re-processing text
+     * we just inserted into an href/label/chip.
      */
     private static function linkify(string $escapedText): string
     {
-        $pattern = '/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/';
+        $pattern = '/@\[([^\]]+)\]\((?:user:\d+|role:[a-z]+)\)|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/';
 
         return preg_replace_callback($pattern, function ($m) {
-            if (! empty($m[2])) {
-                return self::anchor($m[2], $m[1]);
+            if (! empty($m[1])) {
+                return self::mentionChip($m[1]);
             }
 
-            $url = $m[3] ?? $m[0];
+            if (! empty($m[3])) {
+                return self::anchor($m[3], $m[2]);
+            }
+
+            $url = $m[4] ?? $m[0];
             $trailing = '';
 
             // Don't sweep trailing sentence punctuation into the URL.
@@ -79,6 +86,11 @@ class NoteFormatter
 
             return self::anchor($url, $url).$trailing;
         }, $escapedText);
+    }
+
+    private static function mentionChip(string $label): string
+    {
+        return '<span style="background-color:#eef2ff; color:#4338ca; font-weight:600; padding:1px 6px; border-radius:4px; white-space:nowrap;">@'.$label.'</span>';
     }
 
     private static function anchor(string $url, string $label): string

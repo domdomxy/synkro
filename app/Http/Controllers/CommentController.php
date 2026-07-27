@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Events\CommentPosted;
 use App\Events\CommentDeleted;
+use App\Events\CommentUpdated;
 use App\Events\TaskCommented;
+use App\Events\TaskMentioned;
+use App\Support\MentionParser;
 use App\Support\NotificationMailer;
 use App\Support\NotificationPreferences;
 
@@ -37,6 +40,13 @@ class CommentController extends Controller
 
         broadcast(new CommentPosted($comment))->toOthers();
 
+        // Anyone @mentioned (by name or by role) gets the stronger "mentioned" signal
+        // instead of the generic "commented" one below, so they aren't notified twice
+        // for the same comment.
+        $mentions = MentionParser::extract($validated['body']);
+        $mentionedRecipients = MentionParser::resolveRecipients($task->project, $mentions, Auth::id());
+        $mentionedIds = $mentionedRecipients->pluck('id');
+
         // Recipients = the assignee plus anyone else who has commented on this task
         // (i.e. the thread's participants), minus whoever just posted. Previously only
         // the assignee was notified, so a manager/tester replying to another manager's
@@ -51,6 +61,7 @@ class CommentController extends Controller
             ->push($task->assigned_to)
             ->filter()
             ->reject(fn ($id) => (int) $id === (int) Auth::id())
+            ->reject(fn ($id) => $mentionedIds->contains((int) $id))
             ->unique();
 
         $preview = Str::limit($validated['body'], 200);
@@ -82,6 +93,33 @@ class CommentController extends Controller
                 [Auth::user()->name . " commented on \"{$task->title}\": \"{$preview}\""],
                 url($url),
                 'View Task'
+            );
+        }
+
+        foreach ($mentionedRecipients as $recipient) {
+            if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
+                $notification = UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'task_mentioned',
+                    'message' => "You were mentioned\n" . Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                    'url' => $url,
+                ]);
+
+                try {
+                    broadcast(new TaskMentioned($comment, $recipient->id, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            NotificationMailer::send(
+                $recipient,
+                'task.mentioned',
+                Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                [Auth::user()->name . " mentioned you in a comment on \"{$task->title}\":"],
+                url($url),
+                'View Task',
+                ['label' => 'Comment', 'content' => $preview]
             );
         }
 
@@ -121,6 +159,8 @@ class CommentController extends Controller
             'edited_at' => now(),
         ]);
 
+        broadcast(new CommentUpdated($comment->task->project_id))->toOthers();
+
         if ($oldBody !== $validated['body']) {
             $task = $comment->task;
             ProjectActivityLog::log($task->project, 'comment_edited', [
@@ -128,6 +168,52 @@ class CommentController extends Controller
                 'old_preview' => Str::limit($oldBody, 200),
                 'new_preview' => Str::limit($validated['body'], 200),
             ], $task);
+
+            // Only notify people newly swept in by the edit — anyone already mentioned
+            // (or resolved via a role they already held) before the edit was made has
+            // presumably already seen the original comment, so re-notifying them here
+            // would just be noise.
+            $oldMentionedIds = MentionParser::resolveRecipients(
+                $task->project,
+                MentionParser::extract($oldBody),
+                Auth::id()
+            )->pluck('id');
+
+            $newMentionedRecipients = MentionParser::resolveRecipients(
+                $task->project,
+                MentionParser::extract($validated['body']),
+                Auth::id()
+            )->reject(fn ($user) => $oldMentionedIds->contains($user->id));
+
+            $preview = Str::limit($validated['body'], 200);
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+
+            foreach ($newMentionedRecipients as $recipient) {
+                if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'task_mentioned',
+                        'message' => "You were mentioned\n" . Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                        'url' => $url,
+                    ]);
+
+                    try {
+                        broadcast(new TaskMentioned($comment, $recipient->id, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                NotificationMailer::send(
+                    $recipient,
+                    'task.mentioned',
+                    Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                    [Auth::user()->name . " mentioned you in a comment on \"{$task->title}\":"],
+                    url($url),
+                    'View Task',
+                    ['label' => 'Comment', 'content' => $preview]
+                );
+            }
         }
 
         return back();

@@ -11,6 +11,7 @@ const categoryMap = {
     task_updated: 'assignments',
     task_deleted: 'assignments',
     task_commented: 'assignments',
+    task_mentioned: 'mentions',
     task_overdue: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
@@ -44,6 +45,11 @@ const typeStyles = {
         bg: 'bg-sky-100 dark:bg-sky-900',
         text: 'text-sky-600 dark:text-sky-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
+    },
+    task_mentioned: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v5a3 3 0 006 0v-1a9 9 0 10-3.6 7.2M16 8v5a3 3 0 01-6 0V8a3 3 0 016 0z" />,
     },
     task_approved: {
         bg: 'bg-green-100 dark:bg-green-900',
@@ -202,6 +208,7 @@ export default function NotificationBell() {
             '.task.assigned',
             '.task.reviewed',
             '.task.commented',
+            '.task.mentioned',
             '.task.reopened',
             '.member.left',
             '.project.invitation',
@@ -277,6 +284,9 @@ export default function NotificationBell() {
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_commented') {
                 message = `New comment\n${payload.commenter_name} commented on "${payload.title}"`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}`;
+            } else if (payload.type === 'task_mentioned') {
+                message = `You were mentioned\n${payload.commenter_name} mentioned you on "${payload.title}"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
                 // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }

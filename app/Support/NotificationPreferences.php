@@ -14,6 +14,7 @@ class NotificationPreferences
             'assignments' => 'Task assignments, updates, deletions, and overdue alerts',
             'reviews' => 'Review requests and submission decisions',
             'membership' => 'Project invitations, role changes, member joins, edits, ownership transfers, and removals',
+            'mentions' => 'Someone @mentions you or your role in a comment',
             'reminders' => 'Reminders you set going off',
         ];
 
@@ -44,6 +45,7 @@ class NotificationPreferences
             'task_updated' => 'assignments',
             'task_deleted' => 'assignments',
             'task_commented' => 'assignments',
+            'task_mentioned' => 'mentions',
             'task_approved' => 'reviews',
             'task_rejected' => 'reviews',
             'task_reopened' => 'reviews',
