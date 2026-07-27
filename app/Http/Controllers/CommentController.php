@@ -188,6 +188,8 @@ class CommentController extends Controller
     {
         $this->authorize('delete', $comment);
 
+        abort_if($comment->is_deleted, 404);
+
         $task = $comment->task;
         $projectId = $task->project_id;
 
@@ -196,7 +198,24 @@ class CommentController extends Controller
             'preview' => Str::limit($comment->body, 200),
         ], $task);
 
-        $comment->delete();
+        // A comment with replies can't be hard-deleted - its children point at
+        // it by parent_id, and removing the row would either orphan them or
+        // (via the nullOnDelete constraint) silently detach them from the
+        // thread they're actually part of. Instead it's tombstoned in place:
+        // the body is cleared and deleted_at is stamped, and the frontend
+        // renders it as "Original comment was deleted" while its replies stay
+        // exactly where they were. A childless comment is still removed outright.
+        if ($comment->replies()->exists()) {
+            $comment->forceFill([
+                'body' => '',
+                'is_feedback' => false,
+                'is_rejection' => false,
+                'is_reopened' => false,
+                'deleted_at' => now(),
+            ])->save();
+        } else {
+            $comment->delete();
+        }
 
         broadcast(new CommentDeleted($projectId))->toOthers();
         
@@ -205,6 +224,7 @@ class CommentController extends Controller
     public function update(Request $request, Comment $comment)
     {
         abort_unless($comment->user_id === Auth::id(), 403);
+        abort_if($comment->is_deleted, 404);
 
         $validated = $request->validate([
             'body' => 'required|string|max:2000',
