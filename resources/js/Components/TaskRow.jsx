@@ -326,7 +326,7 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, onJumpToTask }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, onJumpToTask }) {
     const isAssignee = task.assigned_to === currentUserId;
 
     const [isEditing, setIsEditing] = useState(false);
@@ -374,6 +374,23 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     useEffect(() => {
         if (autoOpenHistory) setShowHistory(true);
     }, [autoOpenHistory]);
+
+    const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+
+    // A comment/mention notification or email links to ?task=X&comment=Y. If this
+    // is that task and it still has that comment, open the comments panel (it's
+    // collapsed by default) and scroll straight to it, instead of just landing on
+    // the task and leaving the person to scroll through the whole thread.
+    useEffect(() => {
+        if (!autoOpenCommentId || !task.comments?.some((c) => c.id === autoOpenCommentId)) return;
+        setActiveSection('comments');
+        setHighlightedCommentId(autoOpenCommentId);
+        const scrollTimer = setTimeout(() => {
+            document.getElementById(`comment-${autoOpenCommentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+        const clearTimer = setTimeout(() => setHighlightedCommentId(null), 3000);
+        return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+    }, [autoOpenCommentId, task.comments]);
 
     const assigneeStillMember = task.assigned_to != null && members?.some((m) => m.id === task.assigned_to);
 
@@ -1219,7 +1236,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 {showComments && (
                     <div className="mt-2 space-y-3 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {task.comments?.map((comment) => (
-                            <div key={comment.id} className="flex items-start gap-2.5">
+                            <div key={comment.id} id={`comment-${comment.id}`} className="flex items-start gap-2.5">
                                 <Avatar user={comment.user} size="h-7 w-7" className="mt-0.5 shrink-0" />
                                 <div className="min-w-0 flex-1">
                                     {editingCommentId === comment.id ? (
@@ -1251,7 +1268,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         </form>
                                     ) : (
                                         <>
-                                            <div className={`rounded-2xl px-3.5 py-2 ${
+                                            <div className={`rounded-2xl px-3.5 py-2 transition ${
+                                                highlightedCommentId === comment.id
+                                                    ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
+                                                    : ''
+                                            } ${
                                                 comment.is_reopened
                                                     ? 'bg-orange-50 dark:bg-orange-950/30'
                                                     : comment.is_rejection

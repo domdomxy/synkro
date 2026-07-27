@@ -907,7 +907,8 @@ class TaskController extends Controller
         $decisionLabel = $validated['decision'] === 'approve' ? 'approved' : 'sent back for changes';
         $decisionTitle = $validated['decision'] === 'approve' ? 'Task approved' : 'Changes requested';
         $message = "{$decisionTitle}\n\"{$task->title}\" was {$decisionLabel}" . (! empty($validated['feedback']) ? ": {$validated['feedback']}" : '');
-        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id
+            . (isset($comment) ? '&comment=' . $comment->id : '');
  
         $decisionType = $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected';
 
@@ -1078,7 +1079,7 @@ class TaskController extends Controller
         // Same reasoning as review(): a frozen task stays assigned to a removed/left member for
         // history's sake, but they shouldn't hear about it being reopened on a project they've left.
         if ($task->assignee && $task->project->isMember($task->assignee)) {
-            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $comment->id;
  
             if (NotificationPreferences::wantsType($task->assignee, 'task_reopened')) {
                 $notification = UserNotification::create([

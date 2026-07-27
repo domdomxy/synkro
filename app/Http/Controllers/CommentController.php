@@ -65,7 +65,7 @@ class CommentController extends Controller
             ->unique();
 
         $preview = Str::limit($validated['body'], 200);
-        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $comment->id;
         $recipients = \App\Models\User::whereIn('id', $recipientIds)
             ->get()
             ->filter(fn ($user) => $task->project->isMember($user));
@@ -186,7 +186,7 @@ class CommentController extends Controller
             )->reject(fn ($user) => $oldMentionedIds->contains($user->id));
 
             $preview = Str::limit($validated['body'], 200);
-            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
+            $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $comment->id;
 
             foreach ($newMentionedRecipients as $recipient) {
                 if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {

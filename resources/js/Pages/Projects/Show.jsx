@@ -642,6 +642,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
     const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
+    const [autoOpenCommentId, setAutoOpenCommentId] = useState(null);
 
     const jumpToTaskInList = (taskId) => {
         setViewMode('list');
@@ -681,10 +682,18 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         const params = new URLSearchParams(window.location.search);
         const taskId = params.get('task');
         if (!taskId) return;
-        setHighlightedTaskId(Number(taskId));
         if (params.get('history') === '1') {
             setAutoOpenHistoryTaskId(Number(taskId));
         }
+        const commentId = params.get('comment');
+        if (commentId) {
+            // A comment link should land on and highlight the comment itself
+            // (handled by TaskRow's own autoOpenCommentId effect below), not the
+            // task row - so skip the task-level highlight/scroll entirely here.
+            setAutoOpenCommentId(Number(commentId));
+            return;
+        }
+        setHighlightedTaskId(Number(taskId));
         const scrollTimer = setTimeout(() => {
             document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
@@ -1112,6 +1121,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         canReview={canReview}
                                         isHighlighted={task.id === highlightedTaskId}
                                         autoOpenHistory={task.id === autoOpenHistoryTaskId}
+                                        autoOpenCommentId={autoOpenCommentId}
                                         members={project.members}
                                         selectable={canManage}
                                         selected={selectedTaskIds.includes(task.id)}
