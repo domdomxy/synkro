@@ -364,7 +364,7 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                         </div>
                     </nav>
 
-                    <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
 
                         {/* Section nav */}
                         <nav className="hidden lg:block">

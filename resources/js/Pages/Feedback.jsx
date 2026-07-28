@@ -470,7 +470,7 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                 </div>
                             ) : (
                                 <form onSubmit={submitFeedback} className="space-y-5">
-                                    <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Name <span className="text-red-400">*</span>

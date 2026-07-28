@@ -122,7 +122,7 @@ export default function Edit({ mustVerifyEmail, status }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
 
                         {/* Section nav */}
                         <nav className="hidden lg:block">

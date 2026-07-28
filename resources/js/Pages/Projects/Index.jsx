@@ -351,7 +351,7 @@ export default function Index({ projects, showingArchived }) {
                     )}
 
                     {view === 'grid' && (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {filtered.map((project) => {
                             const progress = project.tasks_count > 0
                                 ? Math.round((project.done_tasks_count / project.tasks_count) * 100)

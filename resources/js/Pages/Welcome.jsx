@@ -335,7 +335,7 @@ export default function Welcome({ auth, stats }) {
                     </section>
 
                     <section className="mx-auto max-w-6xl px-6 pb-20">
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             {features.map((feature, i) => (
                                 <FeatureCard key={feature.title} feature={feature} index={i} />
                             ))}

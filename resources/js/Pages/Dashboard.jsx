@@ -671,7 +671,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         </ResponsiveContainer>
                     </div>
 
-                    <div className="grid gap-6 xl:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
                             <div className="flex flex-col items-center gap-6 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
@@ -701,7 +701,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
-                    <div className="grid gap-6 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <DueSoonPanel dueSoon={stats.dueSoon} />
 
                         <RemindersPanel reminders={stats.reminders} />
