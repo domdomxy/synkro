@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/reminders/{reminder}/dismiss', [ReminderController::class, 'dismiss'])->name('reminders.dismiss');
     Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy');
     Route::post('/suspended-logout', [AuthenticatedSessionController::class, 'suspendedLogout'])->name('suspended-logout');
+    Route::post('/password-reset-logout', [AuthenticatedSessionController::class, 'passwordResetLogout'])->name('password-reset-logout');
 
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');

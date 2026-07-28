@@ -396,10 +396,10 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                         </p>
                     </div>
 
-                    <div className="mb-6 flex gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
+                    <div className="mb-6 flex gap-1 rounded-xl border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
                         <button
                             onClick={() => setActiveTab('submit')}
-                            className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-sm font-medium transition ${
+                            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
                                 activeTab === 'submit'
                                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
                                     : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -412,7 +412,7 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                         </button>
                         <button
                             onClick={() => setActiveTab('track')}
-                            className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-sm font-medium transition ${
+                            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
                                 activeTab === 'track'
                                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
                                     : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'

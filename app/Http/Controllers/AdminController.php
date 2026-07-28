@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Models\Feedback;
 use App\Events\UserSuspended;
+use App\Events\PasswordResetByAdmin;
 use App\Events\AdminStatusChanged;
 use App\Models\SuspensionLog;
 use App\Models\AdminLog;
@@ -679,6 +680,12 @@ public function suspend(Request $request, User $user)
         ]);
 
         AdminLog::log('user.password_reset', "Reset password for {$user->name} ({$user->email})", $user);
+
+        // If the user has an active session open right now, this kicks them out of it
+        // immediately rather than leaving a stale session running on the old password.
+        // Harmless to broadcast even if they're not currently logged in: private channel
+        // user.{id} only has a listener while an authenticated session for that user exists.
+        event(new PasswordResetByAdmin($user));
 
         NotificationMailer::send(
             $user,

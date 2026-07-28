@@ -202,7 +202,7 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
 }
 
 export default function Login({ status, canResetPassword, passwordExpired, appealLimitMessage }) {
-    const { suspension } = usePage().props;
+    const { suspension, passwordReset } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -260,6 +260,19 @@ export default function Login({ status, canResetPassword, passwordExpired, appea
             subtitle="Enter your email and password to get back to your projects."
         >
             <Head title="Log in" />
+
+            {passwordReset && (
+                <div className="mb-4 flex items-start gap-2.5 rounded-lg bg-indigo-50 px-3 py-2.5 text-sm text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
+                    <LockIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                        <p className="font-medium">An administrator has reset your password.</p>
+                        <p className="mt-0.5 text-indigo-600/90 dark:text-indigo-400/90">
+                            You were signed out for your security. Check your email
+                            {passwordReset.email ? ` at ${passwordReset.email}` : ''} for a temporary password to log back in.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {status && (
                 <div className="mb-4 flex items-start gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">

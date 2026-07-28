@@ -31,6 +31,7 @@ class AuthenticatedSessionController extends Controller
             'status' => session('status'),
             'suspension' => $suspension,
             'passwordExpired' => session('passwordExpired'),
+            'passwordReset' => session('passwordReset'),
             'appealLimitMessage' => AppealRateLimiter::message($suspension['email'] ?? null, $request),
         ]);
     }
@@ -134,6 +135,10 @@ class AuthenticatedSessionController extends Controller
             "If this wasn't you, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately and change your password.'
         );
 
+        if ($user->must_change_password) {
+            return redirect()->route('password.force-change');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -180,5 +185,20 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('suspension', $suspensionData);
+    }
+
+    public function passwordResetLogout(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        $passwordResetData = $user ? [
+            'email' => $user->email,
+        ] : null;
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('passwordReset', $passwordResetData);
     }
 }
