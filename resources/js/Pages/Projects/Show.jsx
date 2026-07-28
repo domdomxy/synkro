@@ -22,6 +22,16 @@ import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { roleStyles } from '@/utils/roleStyles';
 
+// Must match Project::DELETION_EMAIL_COOLDOWN_SECONDS on the backend - this only
+// drives the countdown display, the backend is what actually enforces it.
+const DELETION_EMAIL_COOLDOWN_SECONDS = 60;
+
+function secondsUntilResendAvailable(sentAt) {
+    if (!sentAt) return 0;
+    const elapsed = (Date.now() - new Date(sentAt).getTime()) / 1000;
+    return Math.max(0, Math.ceil(DELETION_EMAIL_COOLDOWN_SECONDS - elapsed));
+}
+
 const statusBarColors = {
     todo: 'bg-gray-400',
     in_progress: 'bg-blue-500',
@@ -698,6 +708,37 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         router.reload({ only: ['project'] });
     });
 
+    useEcho(`project.${project.id}`, ['.project.deletion_requested', '.project.deletion_cancelled'], () => {
+        router.reload({ only: ['project'] });
+    });
+
+    const cancelDeletion = async () => {
+        if (await confirm(`Cancel the pending deletion of "${project.name}"? It will stay exactly as it is.`, { title: 'Cancel Deletion Request?' })) {
+            router.post(route('projects.deletion.cancel', project.id));
+        }
+    };
+
+    const [resendingDeletion, setResendingDeletion] = useState(false);
+    const [deletionCooldown, setDeletionCooldown] = useState(secondsUntilResendAvailable(project.deletion_email_sent_at));
+
+    useEffect(() => {
+        setDeletionCooldown(secondsUntilResendAvailable(project.deletion_email_sent_at));
+    }, [project.deletion_email_sent_at]);
+
+    useEffect(() => {
+        if (deletionCooldown <= 0) return;
+        const timer = setInterval(() => setDeletionCooldown((s) => Math.max(0, s - 1)), 1000);
+        return () => clearInterval(timer);
+    }, [deletionCooldown > 0]);
+
+    const resendDeletionEmail = () => {
+        setResendingDeletion(true);
+        router.post(route('projects.deletion.resend', project.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setResendingDeletion(false),
+        });
+    };
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const taskId = params.get('task');
@@ -853,6 +894,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             `}</style>
             <div className="py-12">
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+                    {project.deletion_requested_at && (
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+                            <span>
+                                {isOwner
+                                    ? 'You requested to delete this project. Check your email for the confirmation link — nothing has been deleted yet.'
+                                    : 'The project owner has requested to delete this project. It will be permanently removed once they confirm by email.'}
+                            </span>
+                            {isOwner && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <SecondaryButton onClick={cancelDeletion}>Cancel Deletion Request</SecondaryButton>
+                                    <SecondaryButton onClick={resendDeletionEmail} disabled={resendingDeletion || deletionCooldown > 0}>
+                                        {deletionCooldown > 0 ? `Resend Confirmation Email (${deletionCooldown}s)` : 'Resend Confirmation Email'}
+                                    </SecondaryButton>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <div className="mb-3 flex gap-1 rounded-lg bg-gray-200/70 p-1 dark:bg-gray-900/60 lg:hidden">
                         {[
                             { label: 'Team', ref: teamPaneRef },

@@ -12,7 +12,10 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'owner_id','is_archived',];
+    /** Minimum gap between deletion-confirmation email sends, in seconds. */
+    public const DELETION_EMAIL_COOLDOWN_SECONDS = 60;
+
+    protected $fillable = ['name', 'description', 'owner_id','is_archived', 'deletion_requested_at', 'deletion_email_sent_at'];
 
     public function owner(): BelongsTo
     {
@@ -50,10 +53,36 @@ class Project extends Model
     {
         return $this->hasMany(ProjectNote::class);
     }
+
+    /** True while a deletion request is awaiting the owner's email confirmation. */
+    public function hasPendingDeletion(): bool
+    {
+        return $this->deletion_requested_at !== null;
+    }
+
+    /** When the resend button becomes clickable again, or null if it's clickable now. */
+    public function deletionEmailAvailableAt(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->deletion_email_sent_at) {
+            return null;
+        }
+
+        $availableAt = $this->deletion_email_sent_at->addSeconds(self::DELETION_EMAIL_COOLDOWN_SECONDS);
+
+        return $availableAt->isFuture() ? $availableAt : null;
+    }
+
+    public function canResendDeletionEmail(): bool
+    {
+        return $this->deletionEmailAvailableAt() === null;
+    }
+
     protected function casts(): array
     {
         return [
             'is_archived' => 'boolean',
+            'deletion_requested_at' => 'datetime',
+            'deletion_email_sent_at' => 'datetime',
         ];
     }
 

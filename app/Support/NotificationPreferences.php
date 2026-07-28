@@ -40,6 +40,7 @@ class NotificationPreferences
             'project.edited' => 'A project you belong to was edited',
             'project.ownership_transferred' => 'Project ownership was transferred to you',
             'project.role_changed' => 'Your role in a project changed',
+            'project.deletion_requested' => 'A project you belong to has a pending deletion request',
             'project.deleted' => 'A project you belonged to was deleted',
             'reminders.due' => 'A reminder you set is due',
         ];
@@ -90,6 +91,7 @@ class NotificationPreferences
             'invitation_denied' => 'project.invitation_denied',
             'project_updated' => 'project.edited',
             'project_ownership_transferred' => 'project.ownership_transferred',
+            'project_deletion_requested' => 'project.deletion_requested',
             'project_deleted' => 'project.deleted',
             'reminder' => 'reminders.due',
             'feedback_replied' => 'admin.ticket_reply',

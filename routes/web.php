@@ -59,18 +59,10 @@ Route::get('/appeal', function () {
     return Inertia::render('Auth/Appeal');
 })->name('appeal.page');
 
-// Public: reached from the account-deletion confirmation email, which may be
-// opened from a different browser/device than the one that requested it, or
-// after the requesting session has already expired.
-Route::get('/account/{user}/confirm-deletion', [AccountController::class, 'confirmDeletion'])
-    ->middleware(['signed', 'throttle:6,1'])
-    ->name('account.destroy.confirm');
-
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
-    Route::delete('/account', [AccountController::class, 'requestDeletion'])->name('account.destroy');
-    Route::post('/account/cancel-deletion', [AccountController::class, 'cancelDeletion'])->name('account.destroy.cancel');
+    Route::delete('/account', [AccountController::class, 'destroy'])->name('account.destroy');
     Route::post('/account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
     Route::delete('/account/avatar', [AccountController::class, 'destroyAvatar'])->name('account.avatar.destroy');
     Route::post('/account/deactivate', [AccountController::class, 'deactivate'])->name('account.deactivate');
@@ -80,6 +72,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
     Route::delete('/projects/{project}/leave', [ProjectMemberController::class, 'leave'])->name('projects.leave');
     Route::patch('/projects/{project}/transfer-ownership', [ProjectController::class, 'transferOwnership'])->name('projects.transfer-ownership');
+    Route::get('/projects/{project}/confirm-deletion', [ProjectController::class, 'confirmDeletion'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('projects.deletion.confirm');
+    Route::post('/projects/{project}/cancel-deletion', [ProjectController::class, 'cancelDeletion'])->name('projects.deletion.cancel');
+    Route::post('/projects/{project}/resend-deletion-email', [ProjectController::class, 'resendDeletionConfirmation'])
+        ->middleware('throttle:5,1')
+        ->name('projects.deletion.resend');
     Route::post('/projects/{project}/notes', [ProjectNoteController::class, 'store'])->name('projects.notes.store');
     Route::patch('/notes/{note}', [ProjectNoteController::class, 'update'])->name('projects.notes.update');
     Route::delete('/notes/{note}', [ProjectNoteController::class, 'destroy'])->name('projects.notes.destroy');

@@ -11,6 +11,18 @@ import FilterSelect from '@/Components/FilterSelect';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
 import RichTextEditor from '@/Components/RichTextEditor';
+import { useEcho } from '@laravel/echo-react';
+import { useEffect, useState } from 'react';
+
+// Must match Project::DELETION_EMAIL_COOLDOWN_SECONDS on the backend - this only
+// drives the countdown display, the backend is what actually enforces it.
+const DELETION_EMAIL_COOLDOWN_SECONDS = 60;
+
+function secondsUntilResendAvailable(sentAt) {
+    if (!sentAt) return 0;
+    const elapsed = (Date.now() - new Date(sentAt).getTime()) / 1000;
+    return Math.max(0, Math.ceil(DELETION_EMAIL_COOLDOWN_SECONDS - elapsed));
+}
 
 function SectionCard({ icon, title, description, children, danger }) {
     return (
@@ -60,10 +72,43 @@ export default function Settings({ project, role }) {
     };
 
     const deleteProject = async () => {
-        if (await confirm(`"${project.name}" will be permanently deleted. This cannot be undone.`, { title: 'Delete Project?', danger: true, confirmLabel: 'Delete' })) {
+        if (await confirm(`A confirmation link will be emailed to you. "${project.name}" is only deleted once you click it — this cannot be undone after that.`, { title: 'Request Deletion?', danger: true, confirmLabel: 'Send Confirmation Email' })) {
             router.delete(route('projects.destroy', project.id));
         }
     };
+
+    const cancelDeletion = async () => {
+        if (await confirm(`Cancel the pending deletion of "${project.name}"? It will stay exactly as it is.`, { title: 'Cancel Deletion Request?' })) {
+            router.post(route('projects.deletion.cancel', project.id));
+        }
+    };
+
+    const [resending, setResending] = useState(false);
+    const [cooldown, setCooldown] = useState(secondsUntilResendAvailable(project.deletion_email_sent_at));
+
+    useEffect(() => {
+        setCooldown(secondsUntilResendAvailable(project.deletion_email_sent_at));
+    }, [project.deletion_email_sent_at]);
+
+    useEffect(() => {
+        if (cooldown <= 0) return;
+        const timer = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+        return () => clearInterval(timer);
+    }, [cooldown > 0]);
+
+    const resendDeletionEmail = () => {
+        setResending(true);
+        router.post(route('projects.deletion.resend', project.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setResending(false),
+        });
+    };
+
+    // Keeps the pending-deletion banner (and any other member's Settings tab) in sync
+    // in real time, whether the request was just sent or just cancelled.
+    useEcho(`project.${project.id}`, ['.project.deletion_requested', '.project.deletion_cancelled'], () => {
+        router.reload({ only: ['project'] });
+    });
 
     const transferTargets = project.members.filter((m) => m.id !== project.owner_id);
     const selectedMember = transferTargets.find((m) => m.id === Number(transferForm.data.user_id));
@@ -178,7 +223,21 @@ export default function Settings({ project, role }) {
                                 </svg>
                             }
                         >
-                            <DangerButton onClick={deleteProject}>Delete Project</DangerButton>
+                            {project.deletion_requested_at ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-red-600 dark:text-red-400">
+                                        Deletion requested — check your email for the confirmation link. Nothing has been deleted yet.
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <SecondaryButton onClick={cancelDeletion}>Cancel Deletion Request</SecondaryButton>
+                                        <SecondaryButton onClick={resendDeletionEmail} disabled={resending || cooldown > 0}>
+                                            {cooldown > 0 ? `Resend Confirmation Email (${cooldown}s)` : 'Resend Confirmation Email'}
+                                        </SecondaryButton>
+                                    </div>
+                                </div>
+                            ) : (
+                                <DangerButton onClick={deleteProject}>Delete Project</DangerButton>
+                            )}
                         </SectionCard>
                     )}
                 </div>

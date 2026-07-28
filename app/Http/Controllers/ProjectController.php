@@ -201,9 +201,133 @@ class ProjectController extends Controller
         return redirect()->route('projects.show', $project)->with('success', 'Project updated.');
     }
 
+    /**
+     * Deleting a project no longer removes it immediately - it now only starts a
+     * deletion request. The project is actually removed by confirmDeletion() once the
+     * owner clicks the signed link mailed out below, so a stray click (or someone else
+     * getting hold of the button) can't destroy a project outright.
+     */
     public function destroy(Project $project)
     {
         $this->authorize('delete', $project);
+
+        if ($project->hasPendingDeletion()) {
+            return back()->with('success', 'A deletion request is already pending confirmation by email.');
+        }
+
+        $project->update([
+            'deletion_requested_at' => now(),
+            'deletion_email_sent_at' => now(),
+        ]);
+
+        ProjectActivityLog::log($project, 'project_deletion_requested');
+
+        $this->sendDeletionConfirmationEmail($project);
+
+        $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+
+        foreach ($recipients as $recipient) {
+            if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deletion_requested')) {
+                \App\Models\UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'project_deletion_requested',
+                    'message' => "Deletion requested\n" . Auth::user()->name . " requested to delete \"{$project->name}\"",
+                    'url' => route('projects.settings', $project->id, false),
+                ]);
+            }
+
+            NotificationMailer::send(
+                $recipient,
+                'project.deletion_requested',
+                "{$project->name} deletion requested",
+                [Auth::user()->name . " has requested to delete the project \"{$project->name}\" (#{$project->id}). It will be permanently removed once the owner confirms by email, unless cancelled first."],
+                url(route('projects.settings', $project->id, false)),
+                'View Project Settings'
+            );
+        }
+
+        // One broadcast on the shared project channel, not one per recipient - anyone
+        // currently viewing the project sees the pending state appear live.
+        try {
+            broadcast(new \App\Events\ProjectDeletionRequested($project->id, $project->name, Auth::user()->name))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', 'Deletion requested. Check your email to confirm.');
+    }
+
+    /**
+     * Re-sends the confirmation link for an already-pending deletion, gated by
+     * Project::DELETION_EMAIL_COOLDOWN_SECONDS so the mail queue (and the owner's
+     * inbox) can't be hammered by repeated clicks. The 'throttle' route middleware is
+     * a second, coarser backstop against the same thing at the HTTP layer.
+     */
+    public function resendDeletionConfirmation(Project $project)
+    {
+        $this->authorize('delete', $project);
+
+        if (! $project->hasPendingDeletion()) {
+            return back()->with('success', 'There is no pending deletion to resend a confirmation for.');
+        }
+
+        $availableAt = $project->deletionEmailAvailableAt();
+        if ($availableAt) {
+            return back()->withErrors([
+                'deletion_email' => 'Please wait ' . now()->diffInSeconds($availableAt) . ' more second(s) before resending.',
+            ]);
+        }
+
+        $project->update(['deletion_email_sent_at' => now()]);
+
+        $this->sendDeletionConfirmationEmail($project);
+
+        return back()->with('success', 'Confirmation email resent.');
+    }
+
+    /**
+     * Security-critical, like password-reset or email-verification mail: this must
+     * reach the owner regardless of their notification preferences, so it's sent
+     * directly rather than through NotificationMailer/EmailPreferences::wants().
+     */
+    private function sendDeletionConfirmationEmail(Project $project): void
+    {
+        $confirmUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'projects.deletion.confirm',
+            now()->addHours(24),
+            ['project' => $project->id]
+        );
+
+        try {
+            \Illuminate\Support\Facades\Mail::to(Auth::user()->email)->queue(
+                new \App\Mail\SynkroNotificationMail(
+                    Auth::user()->name,
+                    "Confirm deletion of {$project->name}",
+                    [
+                        "You requested to permanently delete the project \"{$project->name}\" (#{$project->id}). This cannot be undone once confirmed.",
+                        'This link expires in 24 hours. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
+                    ],
+                    $confirmUrl,
+                    'Confirm Deletion'
+                )
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Reached only via the signed link mailed out by destroy() above - the 'signed'
+     * route middleware rejects the request outright if the URL has been tampered with
+     * or has expired, so no extra token comparison is needed here.
+     */
+    public function confirmDeletion(Project $project)
+    {
+        $this->authorize('delete', $project);
+
+        if (! $project->hasPendingDeletion()) {
+            return redirect()->route('projects.settings', $project)->with('success', 'There is no pending deletion to confirm.');
+        }
 
         ProjectActivityLog::log($project, 'project_deleted');
 
@@ -240,6 +364,39 @@ class ProjectController extends Controller
         $project->delete();
 
         return redirect()->route('projects.index')->with('success', 'Project deleted.');
+    }
+
+    public function cancelDeletion(Project $project)
+    {
+        $this->authorize('delete', $project);
+
+        if (! $project->hasPendingDeletion()) {
+            return back()->with('success', 'There is no pending deletion to cancel.');
+        }
+
+        $project->update(['deletion_requested_at' => null, 'deletion_email_sent_at' => null]);
+
+        ProjectActivityLog::log($project, 'project_deletion_cancelled');
+
+        $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+        foreach ($recipients as $recipient) {
+            NotificationMailer::send(
+                $recipient,
+                'project.deletion_requested',
+                "{$project->name} deletion cancelled",
+                ["The pending deletion of \"{$project->name}\" (#{$project->id}) was cancelled by " . Auth::user()->name . '.'],
+                url(route('projects.show', $project->id, false)),
+                'View Project'
+            );
+        }
+
+        try {
+            broadcast(new \App\Events\ProjectDeletionCancelled($project->id, $project->name))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', 'Deletion request cancelled.');
     }
 
     public function transferOwnership(Request $request, Project $project)

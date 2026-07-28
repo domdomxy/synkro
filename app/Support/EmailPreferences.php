@@ -33,6 +33,7 @@ class EmailPreferences
                     'project.edited' => 'A project you belong to was edited',
                     'project.ownership_transferred' => 'Project ownership was transferred to you',
                     'project.role_changed' => 'Your role in a project changed',
+                    'project.deletion_requested' => 'A project you belong to has a pending deletion request',
                     'project.deleted' => 'A project you belonged to was deleted',
                 ],
             ],
@@ -102,7 +103,6 @@ class EmailPreferences
             'account.password_reset',
             'account.suspended',
             'account.email_verification',
-            'account.deletion_requested',
             'account.temp_password',
             'account.welcome',
             'account.suspension_lifted',
@@ -110,6 +110,7 @@ class EmailPreferences
             'account.email_changed_security_alert',
             'account.admin_granted',
             'account.admin_revoked',
+            'project.deletion_confirm',
         ];
     }
 
