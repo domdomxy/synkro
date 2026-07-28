@@ -13,7 +13,7 @@ class Project extends Model
     use HasFactory;
 
     /** Minimum gap between deletion-confirmation email sends, in seconds. */
-    public const DELETION_EMAIL_COOLDOWN_SECONDS = 60;
+    public const DELETION_EMAIL_COOLDOWN_SECONDS = 20;
 
     protected $fillable = ['name', 'description', 'owner_id','is_archived', 'deletion_requested_at', 'deletion_email_sent_at'];
 

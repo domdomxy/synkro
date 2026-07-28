@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 
 // Must match Project::DELETION_EMAIL_COOLDOWN_SECONDS on the backend - this only
 // drives the countdown display, the backend is what actually enforces it.
-const DELETION_EMAIL_COOLDOWN_SECONDS = 60;
+const DELETION_EMAIL_COOLDOWN_SECONDS = 20;
 
 function secondsUntilResendAvailable(sentAt) {
     if (!sentAt) return 0;

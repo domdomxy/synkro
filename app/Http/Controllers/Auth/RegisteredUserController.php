@@ -47,6 +47,11 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
+        // Sent directly (not left to the queued core `Registered` listener) so the
+        // code is guaranteed to exist and be emailed before the user is redirected
+        // to the verify-email screen — see AppServiceProvider for why.
+        $user->sendEmailVerificationNotification();
+
         NotificationMailer::send(
             $user,
             'account.welcome',
@@ -67,6 +72,6 @@ class RegisteredUserController extends Controller
         // immediately, same as it does on every login after this one. Redirecting somewhere
         // ungated here was letting a brand-new unverified user use the app freely until their
         // next login, instead of hitting the verify-email screen right away.
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('dashboard', absolute: false))->with('status', 'verification-code-sent');
     }
 }
