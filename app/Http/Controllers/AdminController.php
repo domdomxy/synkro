@@ -686,11 +686,15 @@ public function suspend(Request $request, User $user)
             'Your password has been reset',
             [
                 'An administrator has reset your Synkro password.',
-                "Your new temporary password is: {$newPassword}",
                 'This password expires in 24 hours. Please log in and set a new password as soon as possible.',
             ],
             url(route('login', [], false)),
-            'Log In Now'
+            'Log In Now',
+            [
+                'label' => 'Temporary Password',
+                'content' => $newPassword,
+                'mono' => true,
+            ]
         );
 
         return back()->with('success', 'Password reset and emailed to the user.');

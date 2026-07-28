@@ -57,8 +57,8 @@ const dangerSections = [
         id: 'delete-account',
         label: 'Delete Account',
         description: [
-            'Once your account is deleted, all of its resources and data will be permanently deleted.',
-            'Before deleting your account, please download any data or information that you wish to retain.',
+            "We'll email you a confirmation link first. Your account isn't deleted until you click it.",
+            'Before confirming, please download any data or information that you wish to retain.',
         ],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -107,7 +107,7 @@ function SectionCard({ id, label, description, icon, children, danger }) {
     );
 }
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
     const allNavItems = [...sections, ...dangerSections];
 
     return (
@@ -176,7 +176,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                     </SectionCard>
 
                                     <SectionCard {...dangerSections[1]} danger>
-                                        <DeleteUserForm className="max-w-xl" />
+                                        <DeleteUserForm className="max-w-xl" deletionRequestedAt={deletionRequestedAt} />
                                     </SectionCard>
                                 </div>
                             </div>

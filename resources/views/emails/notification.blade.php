@@ -33,6 +33,9 @@
         .email-highlight { background-color:rgba(255,255,255,0.04) !important; border-color:#374151 !important; }
         .email-highlight-label { color:#818cf8 !important; }
         .email-highlight-content { color:#d1d5db !important; }
+        .email-mono-chip { background-color:#1f2937 !important; border-color:#4b5563 !important; }
+        .email-highlight-mono { color:#f9fafb !important; }
+        .email-highlight-hint { color:#9ca3af !important; }
         .email-btn-cell { background-color:#4f46e5 !important; }
         .email-footer-divider { border-color:#374151 !important; }
         .email-footer-text { color:#9ca3af !important; }
@@ -52,6 +55,9 @@
     [data-ogsc] .email-highlight { background-color:rgba(255,255,255,0.04) !important; border-color:#374151 !important; }
     [data-ogsc] .email-highlight-label { color:#818cf8 !important; }
     [data-ogsc] .email-highlight-content { color:#d1d5db !important; }
+    [data-ogsc] .email-mono-chip { background-color:#1f2937 !important; border-color:#4b5563 !important; }
+    [data-ogsc] .email-highlight-mono { color:#f9fafb !important; }
+    [data-ogsc] .email-highlight-hint { color:#9ca3af !important; }
     [data-ogsc] .email-btn-cell { background-color:#4f46e5 !important; }
     [data-ogsc] .email-footer-divider { border-color:#374151 !important; }
     [data-ogsc] .email-footer-text { color:#9ca3af !important; }
@@ -115,13 +121,30 @@
                 @if (!empty($highlight))
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-highlight" style="margin:8px 0 8px; background-color:#f9fafb; border:1px solid #f0f1f5; border-radius:14px;">
                         <tr>
-                            <td style="padding:20px 22px; text-align:left;">
+                            <td style="padding:20px 22px; text-align:{{ !empty($highlight['mono']) ? 'center' : 'left' }};">
                                 @if (!empty($highlight['label']))
-                                    <p class="email-highlight-label" style="margin:0 0 8px; font-size:11px; font-weight:700; color:#4f46e5; text-transform:uppercase; letter-spacing:.06em;">
+                                    <p class="email-highlight-label" style="margin:0 0 8px; font-size:11px; font-weight:700; color:#4f46e5; text-transform:uppercase; letter-spacing:.06em; text-align:{{ !empty($highlight['mono']) ? 'center' : 'left' }};">
                                         {{ $highlight['label'] }}
                                     </p>
                                 @endif
-                                @if (!empty($highlight['html']))
+                                @if (!empty($highlight['mono']))
+                                    {{-- Password/code display: monospace and letter-spaced so every
+                                         character is unambiguous, and user-select:all so a single
+                                         click (where the client honors it) selects the whole value
+                                         instead of requiring a careful drag or triple-click. --}}
+                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td align="center" class="email-mono-chip" style="padding:14px 16px; background-color:#ffffff; border:1px dashed #d1d5db; border-radius:10px;">
+                                                <span class="email-highlight-mono" style="font-family:'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size:20px; font-weight:700; letter-spacing:2px; color:#111827; word-break:break-all; -webkit-user-select:all; user-select:all;">
+                                                    {{ $highlight['content'] }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p class="email-highlight-hint" style="margin:10px 0 0; font-size:12px; color:#9ca3af; line-height:1.5; text-align:center;">
+                                        Tap and hold the password above to copy it, or select it manually.
+                                    </p>
+                                @elseif (!empty($highlight['html']))
                                     <div class="email-highlight-content" style="margin:0; font-size:15px; color:#374151; line-height:1.65;">{!! $highlight['content'] !!}</div>
                                 @else
                                     <p class="email-highlight-content" style="margin:0; font-size:15px; color:#374151; line-height:1.65; white-space:pre-line;">{!! \App\Support\NoteFormatter::line($highlight['content']) !!}</p>

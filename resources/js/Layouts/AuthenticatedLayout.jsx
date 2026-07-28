@@ -9,6 +9,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import SuspensionListener from '@/Components/SuspensionListener';
+import AccountDeletedListener from '@/Components/AccountDeletedListener';
 
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
     const user = usePage().props.auth.user;
@@ -232,6 +233,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                 </div>
             </nav>
             <SuspensionListener />
+            <AccountDeletedListener />
             {header && (
                 <header className="bg-white shadow dark:bg-gray-800">
                     <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>

@@ -59,10 +59,18 @@ Route::get('/appeal', function () {
     return Inertia::render('Auth/Appeal');
 })->name('appeal.page');
 
+// Public: reached from the account-deletion confirmation email, which may be
+// opened from a different browser/device than the one that requested it, or
+// after the requesting session has already expired.
+Route::get('/account/{user}/confirm-deletion', [AccountController::class, 'confirmDeletion'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('account.destroy.confirm');
+
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
-    Route::delete('/account', [AccountController::class, 'destroy'])->name('account.destroy');
+    Route::delete('/account', [AccountController::class, 'requestDeletion'])->name('account.destroy');
+    Route::post('/account/cancel-deletion', [AccountController::class, 'cancelDeletion'])->name('account.destroy.cancel');
     Route::post('/account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
     Route::delete('/account/avatar', [AccountController::class, 'destroyAvatar'])->name('account.avatar.destroy');
     Route::post('/account/deactivate', [AccountController::class, 'deactivate'])->name('account.deactivate');

@@ -102,6 +102,7 @@ class EmailPreferences
             'account.password_reset',
             'account.suspended',
             'account.email_verification',
+            'account.deletion_requested',
             'account.temp_password',
             'account.welcome',
             'account.suspension_lifted',

@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
@@ -85,6 +86,8 @@ export default function UpdatePasswordForm({ className = '' }) {
                     />
 
                     <InputError message={errors.password} className="mt-2" />
+
+                    <PasswordStrengthMeter password={data.password} />
                 </div>
 
                 <div>

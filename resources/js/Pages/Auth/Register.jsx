@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
+import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import { UserIcon, MailIcon, LockIcon } from '@/Components/Auth/icons';
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -68,6 +69,8 @@ export default function Register() {
                     error={errors.password}
                     required
                 />
+
+                <PasswordStrengthMeter password={data.password} className="-mt-2" />
 
                 <AuthField
                     id="password_confirmation"

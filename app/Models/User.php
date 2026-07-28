@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name', 'email', 'password', 'role', 'is_active', 'avatar_path', 'is_suspended', 'suspended_until',
     'suspension_reason', 'suspended_by', 'email_preferences', 'active_status_changed_at', 'role_changed_at',
     'must_change_password', 'temp_password_expires_at', 'notification_preferences',
+    'deletion_requested_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -63,6 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'notification_preferences' => 'array',
             'active_status_changed_at' => 'datetime',
             'role_changed_at' => 'datetime',
+            'deletion_requested_at' => 'datetime',
         ];
     }
     public function pinnedTasks()
@@ -112,6 +114,34 @@ class User extends Authenticatable implements MustVerifyEmail
             ],
             $verificationUrl,
             'Verify Email Address'
+        );
+    }
+
+    /**
+     * Send the account deletion confirmation email. The account is not touched
+     * until the user clicks this signed link, so requesting deletion (e.g. from
+     * a hijacked or shared session) can't destroy the account by itself.
+     */
+    public function sendAccountDeletionConfirmationNotification(): void
+    {
+        $expireMinutes = 60;
+
+        $confirmUrl = URL::temporarySignedRoute(
+            'account.destroy.confirm',
+            now()->addMinutes($expireMinutes),
+            ['user' => $this->getKey()]
+        );
+
+        NotificationMailer::send(
+            $this,
+            'account.deletion_requested',
+            'Confirm account deletion',
+            [
+                'We received a request to permanently delete your Synkro account. Nothing has been deleted yet.',
+                "This link expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email and your account will stay exactly as it is.",
+            ],
+            $confirmUrl,
+            'Permanently Delete My Account'
         );
     }
 

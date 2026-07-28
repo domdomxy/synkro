@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AccountUpdateRequest;
 use App\Models\AccountActivityLog;
+use App\Models\User;
+use App\Events\AccountDeleted;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +29,7 @@ class AccountController extends Controller
         return Inertia::render('Account/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'deletionRequestedAt' => $request->user()->deletion_requested_at,
         ]);
     }
 
@@ -88,15 +91,57 @@ class AccountController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Step 1 of account deletion: verify the password and email a signed
+     * confirmation link. Nothing about the account is deleted here — the
+     * account only actually gets deleted once that link is clicked (see
+     * confirmDeletion below). This means a compromised or shared session
+     * can't destroy the account by itself; the owner's inbox has to agree too.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function requestDeletion(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
+
+        $user->forceFill(['deletion_requested_at' => now()])->save();
+
+        AccountActivityLog::log('account_deletion_requested');
+
+        $user->sendAccountDeletionConfirmationNotification();
+
+        return Redirect::route('account.edit')->with(
+            'success',
+            "We've sent a confirmation link to {$user->email}. Your account won't be deleted until you click it."
+        );
+    }
+
+    /**
+     * Step 2: the actual deletion, only reachable via the signed link emailed
+     * in requestDeletion(). Deliberately does NOT require an authenticated
+     * session, since the link may be opened from a different device/browser
+     * than the one that requested deletion, or after the original session
+     * has already expired.
+     */
+    public function confirmDeletion(Request $request, User $user): RedirectResponse
+    {
+        // The request must still be pending. Guards against a stale/reused
+        // link after the user already cancelled the request (or it was
+        // already carried out) from firing a second time.
+        if (! $user->deletion_requested_at) {
+            return Redirect::route('login')->with(
+                'status',
+                'This account deletion link has already been used or cancelled.'
+            );
+        }
+
+        // If the person confirming is still logged in as this same user,
+        // log them out. If the link is opened from a different session
+        // (or no session at all), leave whatever session is active alone.
+        if (Auth::check() && Auth::id() === $user->id) {
+            Auth::logout();
+        }
 
         // For every project the user belongs to, handle their tasks
         foreach ($user->projects as $project) {
@@ -162,15 +207,42 @@ class AccountController extends Controller
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
         );
-        Auth::logout();
 
         $user->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Let any other open tab/device for this user know in real time,
+        // instead of waiting for their next navigation to bounce them to
+        // login once the session can no longer resolve a user.
+        try {
+            event(new AccountDeleted($user->id));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
-        return Redirect::to('/');
+        if (! Auth::check()) {
+            // Only true if we logged the confirming session out above, i.e.
+            // it belonged to the account that was just deleted.
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return Redirect::route('login')->with('status', 'Your account has been permanently deleted.');
     }
+
+    /**
+     * Cancel a pending deletion request before its confirmation link is used.
+     */
+    public function cancelDeletion(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $user->forceFill(['deletion_requested_at' => null])->save();
+
+        AccountActivityLog::log('account_deletion_cancelled');
+
+        return Redirect::route('account.edit')->with('success', 'Account deletion cancelled.');
+    }
+
     public function updateAvatar(Request $request): RedirectResponse
     {
         $request->validate(['avatar' => ['required', 'image', 'max:2048']]);

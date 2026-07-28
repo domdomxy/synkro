@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
+import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import { MailIcon, LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
@@ -56,6 +57,8 @@ export default function ResetPassword({ token, email }) {
                     onChange={(e) => setData('password', e.target.value)}
                     error={errors.password}
                 />
+
+                <PasswordStrengthMeter password={data.password} className="-mt-2" />
 
                 <AuthField
                     id="password_confirmation"

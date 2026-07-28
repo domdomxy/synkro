@@ -47,6 +47,8 @@ const actionLabels = {
     avatar_updated: 'Avatar Updated',
     avatar_removed: 'Avatar Removed',
     account_deactivated: 'Account Deactivated',
+    account_deletion_requested: 'Account Deletion Requested',
+    account_deletion_cancelled: 'Account Deletion Cancelled',
 };
 
 /** Fallback for any action not explicitly mapped above: "some_action" -> "Some Action". */
@@ -132,6 +134,8 @@ const actionIconConfig = {
     avatar_updated: { path: ICON_PATHS.person, color: 'text-blue-500' },
     avatar_removed: { path: ICON_PATHS.person, color: 'text-amber-500' },
     account_deactivated: { path: ICON_PATHS.minus, color: 'text-red-500' },
+    account_deletion_requested: { path: ICON_PATHS.trash, color: 'text-amber-500' },
+    account_deletion_cancelled: { path: ICON_PATHS.undo, color: 'text-green-500' },
 };
 
 /** This feed is always "your" actions, so the actor is always addressed as "You". */
@@ -173,6 +177,8 @@ function describeLog(log) {
         case 'avatar_updated': return `${actor} updated your profile photo`;
         case 'avatar_removed': return `${actor} removed your profile photo`;
         case 'account_deactivated': return `${actor} deactivated your account`;
+        case 'account_deletion_requested': return `${actor} requested account deletion — check your email to confirm`;
+        case 'account_deletion_cancelled': return `${actor} cancelled the pending account deletion`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
