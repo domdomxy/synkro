@@ -299,6 +299,7 @@ export default function Users({ users, stats, filters }) {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
+                                    <SortableHeader label="ID" column="id" sort={sort} direction={direction} onSort={handleSort} />
                                     <SortableHeader label="User" column="name" sort={sort} direction={direction} onSort={handleSort} />
                                     <SortableHeader label="Role" column="role" sort={sort} direction={direction} onSort={handleSort} />
                                     <th className="px-6 py-3">Status</th>
@@ -311,6 +312,9 @@ export default function Users({ users, stats, filters }) {
                                     const isSelf = user.id === auth.user.id;
                                     return (
                                         <tr key={user.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                            <td className="px-6 py-3 font-mono text-xs text-gray-400 dark:text-gray-500">
+                                                #{user.id}
+                                            </td>
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar user={user} size="h-9 w-9" />
@@ -364,7 +368,7 @@ export default function Users({ users, stats, filters }) {
                                 })}
                                 {users.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
                                             No users match your filters.
                                         </td>
                                     </tr>

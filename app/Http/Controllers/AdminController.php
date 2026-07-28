@@ -247,7 +247,7 @@ class AdminController extends Controller
         }
 
         // Whitelisted so `sort` can't be used to order by an arbitrary column.
-        $sortable = ['name' => 'name', 'email' => 'email', 'role' => 'role', 'joined' => 'created_at', 'verified' => 'email_verified_at'];
+        $sortable = ['id' => 'id', 'name' => 'name', 'email' => 'email', 'role' => 'role', 'joined' => 'created_at', 'verified' => 'email_verified_at'];
         $sort = $sortable[$request->sort] ?? 'name';
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
         $users = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();

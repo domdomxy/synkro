@@ -56,6 +56,12 @@ const ROLE_OPTIONS = [
     { value: 'tester', label: 'Tester' },
 ];
 
+// Owner outranks everyone (there's only ever one), then manager, then tester,
+// then member - matches the order role badges/permissions escalate in
+// throughout the rest of the app. Any role not in this map (shouldn't
+// happen) sorts last rather than crashing the comparator.
+const ROLE_ORDER = { owner: 0, manager: 1, tester: 2, member: 3 };
+
 function SearchIcon() {
     return (
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -668,6 +674,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         setTimeout(() => setHighlightedTaskId(null), 3000);
     };
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+    const [showInviteForm, setShowInviteForm] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [showBoardModal, setShowBoardModal] = useState(false);
@@ -763,10 +770,17 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const filteredMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
-        if (!term) return project.members;
-        return project.members.filter((m) =>
-            m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term) || m.pivot?.role?.toLowerCase().includes(term)
-        );
+        const list = term
+            ? project.members.filter((m) =>
+                  m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term) || m.pivot?.role?.toLowerCase().includes(term)
+              )
+            : project.members;
+
+        return [...list].sort((a, b) => {
+            const roleDiff = (ROLE_ORDER[a.pivot?.role] ?? 99) - (ROLE_ORDER[b.pivot?.role] ?? 99);
+            if (roleDiff !== 0) return roleDiff;
+            return a.name.localeCompare(b.name);
+        });
     }, [project.members, memberSearch]);
 
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
@@ -860,22 +874,38 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         {/* LEFT: Team — Invite, Members, and Pending Invitations grouped together */}
                         <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && (
-                                <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                                    <h3 className="mb-3 text-base font-semibold dark:text-gray-100">Invite a Member</h3>
-                                    <form onSubmit={submitMember} className="space-y-3">
-                                        <div>
-                                            <InputLabel htmlFor="email" value="Name or Email" />
-                                            <UserSearchInput value={memberForm.data.email} onChange={(val) => memberForm.setData('email', val)} />
-                                            <InputError message={memberForm.errors.email} className="mt-2" />
-                                        </div>
-                                        <div>
-                                            <InputLabel htmlFor="role" value="Role" />
-                                            <FilterSelect id="role" className="mt-1" value={memberForm.data.role} onChange={(v) => memberForm.setData('role', v)} options={ROLE_OPTIONS} />
-                                        </div>
-                                        <button type="submit" disabled={memberForm.processing} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                            Send Invitation
-                                        </button>
-                                    </form>
+                                <div className="rounded-lg bg-white shadow dark:bg-gray-800">
+                                    <button
+                                        onClick={() => setShowInviteForm((v) => !v)}
+                                        className="flex w-full items-center justify-between p-4"
+                                    >
+                                        <span className="flex items-center gap-2 text-sm font-semibold dark:text-gray-100">
+                                            <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Invite a Member
+                                        </span>
+                                        <svg className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${showInviteForm ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {showInviteForm && (
+                                        <form onSubmit={submitMember} className="space-y-3 px-4 pb-4">
+                                            <div>
+                                                <InputLabel htmlFor="email" value="Name or Email" />
+                                                <UserSearchInput value={memberForm.data.email} onChange={(val) => memberForm.setData('email', val)} />
+                                                <InputError message={memberForm.errors.email} className="mt-2" />
+                                            </div>
+                                            <div>
+                                                <InputLabel htmlFor="role" value="Role" />
+                                                <FilterSelect id="role" className="mt-1" value={memberForm.data.role} onChange={(v) => memberForm.setData('role', v)} options={ROLE_OPTIONS} />
+                                            </div>
+                                            <button type="submit" disabled={memberForm.processing} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                                Send Invitation
+                                            </button>
+                                        </form>
+                                    )}
                                 </div>
                             )}
 
