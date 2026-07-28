@@ -5,22 +5,49 @@ namespace App\Support;
 class NotificationPreferences
 {
     /**
-     * Categories shown in Settings' In-App Notifications section. 'administration'
-     * is admin-only, mirroring EmailPreferences's admin-only 'admin' group.
+     * Categories shown in Settings' Notifications section. Deliberately mirrors
+     * EmailPreferences::catalog()'s key names 1:1 (task.assigned, project.deleted,
+     * etc.) wherever an in-app UserNotification actually exists for that event, so
+     * Settings can render a single unified list with an email column and an in-app
+     * column per row instead of two separately-grained sections. Events that only
+     * ever send email (account.* security alerts, tickets.* for guest submitters
+     * with no User account) are intentionally left out here - EmailPreferences is
+     * the superset, this is the subset that also has a bell notification.
+     * 'admin.*' is admin-only, mirroring EmailPreferences's admin-only 'admin' group.
      */
     public static function catalog(?\App\Models\User $user = null): array
     {
         $catalog = [
-            'assignments' => 'Task assignments, updates, deletions, and overdue alerts',
-            'reviews' => 'Review requests and submission decisions',
-            'membership' => 'Project invitations, role changes, member joins, edits, ownership transfers, and removals',
-            'mentions' => 'Someone @mentions you or your role in a comment',
-            'replies' => 'Someone replies to your comment',
-            'reminders' => 'Reminders you set going off',
+            'task.assigned' => 'A task was assigned to you',
+            'task.unassigned' => 'A task was taken away from you',
+            'task.updated' => 'A task assigned to you was updated',
+            'task.deleted' => 'A task assigned to you was deleted',
+            'task.commented' => 'Someone commented on a task assigned to you',
+            'task.mentioned' => 'Someone @mentioned you or your role in a comment',
+            'task.replied' => 'Someone replied to your comment',
+            'task.review_needed' => 'A task is waiting for your review (testers)',
+            'task.approved' => 'Your submission was approved',
+            'task.rejected' => 'Your submission was sent back for changes',
+            'task.reopened' => 'A completed task was reopened for changes',
+            'task.done' => 'A task you manage was marked done',
+            'task.overdue' => 'A task assigned to you passed its due date',
+            'project.invitation_received' => 'Someone invited you to a project',
+            'project.invitation_accepted' => 'Your invitation was accepted',
+            'project.invitation_denied' => 'Your invitation was declined',
+            'project.member_added' => 'A new member joined a project you belong to',
+            'project.member_left' => 'A member left a project you own or manage',
+            'project.removed' => 'You were removed from a project',
+            'project.edited' => 'A project you belong to was edited',
+            'project.ownership_transferred' => 'Project ownership was transferred to you',
+            'project.role_changed' => 'Your role in a project changed',
+            'project.deleted' => 'A project you belonged to was deleted',
+            'reminders.due' => 'A reminder you set is due',
         ];
 
         if ($user?->role === 'admin') {
-            $catalog['administration'] = 'New tickets, new appeals, ticket replies, and feedback status changes';
+            $catalog['admin.ticket_reply'] = 'A user replied to a ticket you responded to';
+            $catalog['admin.ticket_created'] = 'A new feedback ticket was submitted';
+            $catalog['admin.appeal_created'] = 'A new suspension appeal was submitted';
         }
 
         return $catalog;
@@ -33,42 +60,46 @@ class NotificationPreferences
     }
 
     /**
-     * Maps each UserNotification 'type' value to the category it's gated by.
-     * Kept in sync with NotificationBell.jsx's client-side categoryMap (used
-     * there for filtering only; this is the server-side source of truth for
-     * whether the notification gets created at all).
+     * Maps each UserNotification 'type' value to the granular EmailPreferences-style
+     * key it's gated by (see catalog() above). Kept in sync with NotificationBell.jsx's
+     * client-side categoryMap (which groups these same types into broad filter tabs
+     * for the bell dropdown - a display-only concern, independent of this gating).
      */
     public static function typeCategoryMap(): array
     {
         return [
-            'task_assigned' => 'assignments',
-            'task_unassigned' => 'assignments',
-            'task_updated' => 'assignments',
-            'task_deleted' => 'assignments',
-            'task_commented' => 'assignments',
-            'task_mentioned' => 'mentions',
-            'comment_replied' => 'replies',
-            'task_approved' => 'reviews',
-            'task_rejected' => 'reviews',
-            'task_reopened' => 'reviews',
-            'task_review_needed' => 'reviews',
-            'task_done' => 'reviews',
-            'task_overdue' => 'assignments',
-            'member_left' => 'membership',
-            'project_member_added' => 'membership',
-            'project_role_changed' => 'membership',
-            'removed_from_project' => 'membership',
-            'project_invitation' => 'membership',
-            'invitation_accepted' => 'membership',
-            'invitation_denied' => 'membership',
-            'project_updated' => 'membership',
-            'project_ownership_transferred' => 'membership',
-            'project_deleted' => 'membership',
-            'reminder' => 'reminders',
-            'feedback_replied' => 'administration',
-            'admin_status_changed' => 'administration',
-            'ticket_created' => 'administration',
-            'appeal_created' => 'administration',
+            'task_assigned' => 'task.assigned',
+            'task_unassigned' => 'task.unassigned',
+            'task_updated' => 'task.updated',
+            'task_deleted' => 'task.deleted',
+            'task_commented' => 'task.commented',
+            'task_mentioned' => 'task.mentioned',
+            'comment_replied' => 'task.replied',
+            'task_approved' => 'task.approved',
+            'task_rejected' => 'task.rejected',
+            'task_reopened' => 'task.reopened',
+            'task_review_needed' => 'task.review_needed',
+            'task_done' => 'task.done',
+            'task_overdue' => 'task.overdue',
+            'member_left' => 'project.member_left',
+            'project_member_added' => 'project.member_added',
+            'project_role_changed' => 'project.role_changed',
+            'removed_from_project' => 'project.removed',
+            'project_invitation' => 'project.invitation_received',
+            'invitation_accepted' => 'project.invitation_accepted',
+            'invitation_denied' => 'project.invitation_denied',
+            'project_updated' => 'project.edited',
+            'project_ownership_transferred' => 'project.ownership_transferred',
+            'project_deleted' => 'project.deleted',
+            'reminder' => 'reminders.due',
+            'feedback_replied' => 'admin.ticket_reply',
+            'ticket_created' => 'admin.ticket_created',
+            'appeal_created' => 'admin.appeal_created',
+            // 'admin_status_changed' has no toggle of its own (there's no
+            // EmailPreferences equivalent either - the accompanying emails,
+            // account.admin_granted/admin_revoked, always send regardless of
+            // preference since they're security-relevant). Deliberately left
+            // unmapped so wantsType() falls through to its "always true" branch.
         ];
     }
 

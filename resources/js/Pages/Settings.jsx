@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/utils/trustedHosts';
 import { useEffect, useState } from 'react';
+import useConfirm from '@/hooks/useConfirm';
 
 function LinkIcon({ className }) {
     return (
@@ -38,51 +39,11 @@ const categoryIcons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
     ),
-    mentions: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 0c0 1.657 1.007 3 2.25 3S21 13.657 21 12a9 9 0 10-2.636 6.364M16.5 12V8.25" />
-        </svg>
-    ),
-    replies: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6m-6 6h12a6 6 0 010 12h-3" />
-        </svg>
-    ),
-    assignments: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-    ),
-    reviews: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l5.5 5.5M10 17a7 7 0 100-14 7 7 0 000 14z" />
-        </svg>
-    ),
-    membership: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a4 4 0 10-4-4" />
-        </svg>
-    ),
     admin: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
     ),
-    administration: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-    ),
-};
-
-const notificationTitles = {
-    assignments: 'Task Assignments',
-    reviews: 'Reviews',
-    membership: 'Project Membership',
-    mentions: 'Mentions',
-    replies: 'Replies',
-    reminders: 'Reminders',
-    administration: 'Administration',
 };
 
 // Section nav (left sidebar), same pattern as Account/Edit.jsx's section nav.
@@ -97,27 +58,18 @@ const settingsNavItems = [
         ),
     },
     {
-        id: 'in-app-notifications',
-        label: 'In-App Notifications',
+        id: 'trusted-sites',
+        label: 'Trusted Sites',
+        icon: <LinkIcon className="h-5 w-5" />,
+    },
+    {
+        id: 'notifications',
+        label: 'Notifications',
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
         ),
-    },
-    {
-        id: 'email-notifications',
-        label: 'Email Notifications',
-        icon: (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-        ),
-    },
-    {
-        id: 'trusted-sites',
-        label: 'Trusted Sites',
-        icon: <LinkIcon className="h-5 w-5" />,
     },
 ];
 
@@ -196,10 +148,58 @@ function Toggle({ enabled, onClick }) {
     );
 }
 
-function CategoryCard({ groupKey, title, items, preferences, onToggle, onToggleAll }) {
+function TrustedSiteRow({ host, onRevoke }) {
+    const [faviconFailed, setFaviconFailed] = useState(false);
+
+    return (
+        <div className="flex items-center justify-between gap-3 rounded-md border border-gray-100 px-3 py-2.5 transition hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:border-gray-600 dark:hover:bg-gray-700/30">
+            <span className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
+                    {faviconFailed ? (
+                        <LinkIcon className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                    ) : (
+                        <img
+                            src={`https://www.google.com/s2/favicons?domain=${host}&sz=64`}
+                            alt=""
+                            className="h-4 w-4"
+                            onError={() => setFaviconFailed(true)}
+                        />
+                    )}
+                </span>
+                <span className="truncate text-sm text-gray-700 dark:text-gray-300">{host}</span>
+            </span>
+            <button
+                type="button"
+                onClick={onRevoke}
+                className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+            >
+                Revoke
+            </button>
+        </div>
+    );
+}
+
+function NotificationCategoryCard({ groupKey, title, items, emailPreferences, notificationCatalog, notificationPreferences, onToggleEmail, onToggleEmailMany, onToggleNotification, onToggleNotificationMany }) {
     const keys = Object.keys(items);
-    const enabledCount = keys.filter((key) => preferences[key]).length;
-    const allOn = enabledCount === keys.length;
+    const notifKeys = keys.filter((key) => notificationCatalog[key] !== undefined);
+
+    let totalChannels = 0;
+    let enabledChannels = 0;
+    keys.forEach((key) => {
+        totalChannels += 1;
+        if (emailPreferences[key]) enabledChannels += 1;
+    });
+    notifKeys.forEach((key) => {
+        totalChannels += 1;
+        if (notificationPreferences[key]) enabledChannels += 1;
+    });
+    const allOn = enabledChannels === totalChannels;
+
+    const toggleAll = () => {
+        const next = !allOn;
+        onToggleEmailMany(keys, next);
+        if (notifKeys.length > 0) onToggleNotificationMany(notifKeys, next);
+    };
 
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
@@ -210,23 +210,44 @@ function CategoryCard({ groupKey, title, items, preferences, onToggle, onToggleA
                     </div>
                     <div>
                         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{enabledCount} of {keys.length} enabled</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{enabledChannels} of {totalChannels} enabled</p>
                     </div>
                 </div>
                 <button
-                    onClick={() => onToggleAll(keys, !allOn)}
+                    type="button"
+                    onClick={toggleAll}
                     className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:underline dark:text-indigo-400 dark:hover:bg-indigo-950/30"
                 >
                     {allOn ? 'Turn all off' : 'Turn all on'}
                 </button>
             </div>
+            <div className="grid grid-cols-[1fr_56px_56px] items-center gap-2 pb-2 sm:grid-cols-[1fr_72px_72px] sm:gap-3">
+                <span></span>
+                <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Email</span>
+                <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">In App</span>
+            </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                {Object.entries(items).map(([key, label]) => (
-                    <label key={key} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                        <Toggle enabled={!!preferences[key]} onClick={() => onToggle(key, !preferences[key])} />
-                    </label>
-                ))}
+                {Object.entries(items).map(([key, label]) => {
+                    const hasNotification = notificationCatalog[key] !== undefined;
+                    return (
+                        <div key={key} className="grid grid-cols-[1fr_56px_56px] items-center gap-2 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[1fr_72px_72px] sm:gap-3">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                            <div className="flex justify-center">
+                                <Toggle enabled={!!emailPreferences[key]} onClick={() => onToggleEmail(key, !emailPreferences[key])} />
+                            </div>
+                            <div className="flex justify-center">
+                                {hasNotification ? (
+                                    <Toggle
+                                        enabled={!!notificationPreferences[key]}
+                                        onClick={() => onToggleNotification(key, !notificationPreferences[key])}
+                                    />
+                                ) : (
+                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="No in-app equivalent for this event">—</span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
@@ -234,6 +255,7 @@ function CategoryCard({ groupKey, title, items, preferences, onToggle, onToggleA
 export default function Settings({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults }) {
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
+    const { confirm, ConfirmDialog } = useConfirm();
     const [theme, setThemeState] = useState(getStoredTheme());
     const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
     const [activeSection, setActiveSection] = useState(settingsNavItems[0].id);
@@ -280,12 +302,14 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
     // theme above - there's no server record to load, and revoking here takes
     // effect immediately for the ExternalLinkGuard already mounted in this tab.
     useEffect(() => subscribeTrustedHosts(setTrustedHosts), []);
-    const revokeTrustedHost = (host) => {
+    const revokeTrustedHost = async (host) => {
+        if (!(await confirm(`Links from ${host} will show the "Leaving Synkro" confirmation again.`, { title: `Revoke trust for ${host}?`, danger: true, confirmLabel: 'Revoke' }))) return;
         const next = trustedHosts.filter((h) => h !== host);
         setTrustedHosts(next);
         saveTrustedHosts(next);
     };
-    const revokeAllTrustedHosts = () => {
+    const revokeAllTrustedHosts = async () => {
+        if (!(await confirm('Every trusted site will show the "Leaving Synkro" confirmation again.', { title: 'Revoke all trusted sites?', danger: true, confirmLabel: 'Revoke All' }))) return;
         setTrustedHosts([]);
         saveTrustedHosts([]);
     };
@@ -299,16 +323,9 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
         keys.forEach((key) => { updated[key] = value; });
         emailForm.setData('preferences', updated);
     };
-    const submitEmail = (e) => {
-        e.preventDefault();
-        emailForm.patch(route('settings.email'));
-    };
     const resetEmailToDefaults = () => {
         emailForm.setData('preferences', { ...emailDefaults });
     };
-    const emailCatalogKeys = Object.values(emailCatalog).flatMap((group) => Object.keys(group.items));
-    const emailTotalKeys = emailCatalogKeys.length;
-    const emailTotalEnabled = emailCatalogKeys.filter((key) => emailForm.data.preferences[key]).length;
     const emailHasChanges = JSON.stringify(emailForm.data.preferences) !== JSON.stringify(emailPreferences);
     const emailAtDefaults = JSON.stringify(emailForm.data.preferences) === JSON.stringify(emailDefaults);
 
@@ -321,22 +338,31 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
         keys.forEach((key) => { updated[key] = value; });
         notificationForm.setData('preferences', updated);
     };
-    const submitNotifications = (e) => {
-        e.preventDefault();
-        notificationForm.patch(route('settings.notifications'));
-    };
     const resetNotificationsToDefaults = () => {
         notificationForm.setData('preferences', { ...notificationDefaults });
     };
-    const notificationKeys = Object.keys(notificationCatalog);
-    const notificationTotalEnabled = notificationKeys.filter((key) => notificationForm.data.preferences[key]).length;
-    const notificationAllOn = notificationTotalEnabled === notificationKeys.length;
     const notificationHasChanges = JSON.stringify(notificationForm.data.preferences) !== JSON.stringify(notificationPreferences);
     const notificationAtDefaults = JSON.stringify(notificationForm.data.preferences) === JSON.stringify(notificationDefaults);
+
+    // --- Combined (unified Notifications section covers both underlying forms) ---
+    const submitNotificationSettings = (e) => {
+        e.preventDefault();
+        if (emailHasChanges) emailForm.patch(route('settings.email'), { preserveScroll: true });
+        if (notificationHasChanges) notificationForm.patch(route('settings.notifications'), { preserveScroll: true });
+    };
+    const resetNotificationSettingsToDefaults = () => {
+        resetEmailToDefaults();
+        resetNotificationsToDefaults();
+    };
+    const notificationSettingsHasChanges = emailHasChanges || notificationHasChanges;
+    const notificationSettingsAtDefaults = emailAtDefaults && notificationAtDefaults;
+    const notificationSettingsProcessing = emailForm.processing || notificationForm.processing;
+    const notificationSettingsRecentlySuccessful = (emailForm.recentlySuccessful || notificationForm.recentlySuccessful) && !notificationSettingsHasChanges;
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Settings</h2>}>
             <Head title="Settings" />
+            {ConfirmDialog}
             <div className="py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <p className="mb-6 px-4 text-sm text-gray-500 dark:text-gray-400 sm:px-0">
@@ -443,7 +469,9 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                                 <div>
                                     <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Trusted Sites</h3>
                                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                                        Sites you've told Synkro to trust skip the "Leaving Synkro" confirmation on external links.
+                                        {trustedHosts.length === 0
+                                            ? 'Sites you\'ve told Synkro to trust skip the "Leaving Synkro" confirmation on external links.'
+                                            : `${trustedHosts.length} site${trustedHosts.length === 1 ? '' : 's'} skip the "Leaving Synkro" confirmation`}
                                     </p>
                                 </div>
                             </div>
@@ -459,146 +487,77 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                         </div>
 
                         {trustedHosts.length === 0 ? (
-                            <p className="rounded-md border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
-                                No trusted sites yet. Tick "Trust ... links from now on" the next time you click an external link to add one here.
-                            </p>
+                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-200 px-4 py-8 text-center dark:border-gray-700">
+                                <LinkIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No trusted sites yet.</p>
+                                <p className="max-w-xs text-xs text-gray-400 dark:text-gray-500">
+                                    Tick "Trust ... links from now on" the next time you click an external link to add one here.
+                                </p>
+                            </div>
                         ) : (
-                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            <div className="grid gap-2 sm:grid-cols-2">
                                 {trustedHosts.map((host) => (
-                                    <div key={host} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
-                                        <span className="flex items-center gap-2 truncate text-sm text-gray-600 dark:text-gray-400">
-                                            <LinkIcon className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
-                                            {host}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => revokeTrustedHost(host)}
-                                            className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                                        >
-                                            Revoke
-                                        </button>
-                                    </div>
+                                    <TrustedSiteRow key={host} host={host} onRevoke={() => revokeTrustedHost(host)} />
                                 ))}
                             </div>
                         )}
                     </div>
 
-                    {/* In-App Notifications */}
-                    <form id="in-app-notifications" onSubmit={submitNotifications} className="scroll-mt-24 space-y-4">
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">In-App Notifications</h3>
-                                <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                    {notificationTotalEnabled} of {notificationKeys.length} categories enabled (controls what shows up in your notification bell)
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => toggleNotificationMany(notificationKeys, !notificationAllOn)}
-                                className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:underline dark:text-indigo-400 dark:hover:bg-indigo-950/30"
-                            >
-                                {notificationAllOn ? 'Turn all off' : 'Turn all on'}
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            {Object.entries(notificationCatalog).map(([key, description]) => (
-                                <div key={key} className="rounded-lg bg-white p-5 shadow dark:bg-gray-800">
-                                    <label className="flex items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                                {categoryIcons[key]}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{notificationTitles[key] ?? key}</p>
-                                                <p className="text-xs text-gray-400 dark:text-gray-500">{description}</p>
-                                            </div>
-                                        </div>
-                                        <Toggle
-                                            enabled={!!notificationForm.data.preferences[key]}
-                                            onClick={() => toggleNotification(key, !notificationForm.data.preferences[key])}
-                                        />
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {notificationHasChanges ? 'You have unsaved changes' : notificationForm.recentlySuccessful ? 'All changes saved' : 'No changes yet'}
-                            </span>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="button"
-                                    onClick={resetNotificationsToDefaults}
-                                    disabled={notificationAtDefaults}
-                                    className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
-                                >
-                                    Reset to defaults
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={notificationForm.processing || !notificationHasChanges}
-                                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                                >
-                                    Save Preferences
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
-                    {/* Email Notifications */}
-                    <form id="email-notifications" onSubmit={submitEmail} className="scroll-mt-24 space-y-6">
+                    {/* Notifications (email + in-app side by side, one row per event) */}
+                    <form id="notifications" onSubmit={submitNotificationSettings} className="scroll-mt-24 space-y-6">
                         <div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Email Notifications</h3>
-                                    <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                        {emailTotalEnabled} of {emailTotalKeys} email types enabled
-                                    </p>
-                                </div>
-                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+                            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+                                Choose how you want to hear about activity on Synkro, by email and in your notification bell.
+                            </p>
                             <div className="mt-3 flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
                                 <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <p className="text-xs text-blue-700 dark:text-blue-300">
                                     Not seeing our emails? Check your spam or junk folder; marking one as "Not spam" usually fixes it for future emails too.
+                                    A dash under "In App" means that event only ever sends an email, with nothing to show in the bell.
                                 </p>
                             </div>
                         </div>
 
                         {Object.entries(emailCatalog).map(([groupKey, group]) => (
-                            <CategoryCard
+                            <NotificationCategoryCard
                                 key={groupKey}
                                 groupKey={groupKey}
                                 title={group.label}
                                 items={group.items}
-                                preferences={emailForm.data.preferences}
-                                onToggle={toggleEmail}
-                                onToggleAll={toggleEmailMany}
+                                emailPreferences={emailForm.data.preferences}
+                                notificationCatalog={notificationCatalog}
+                                notificationPreferences={notificationForm.data.preferences}
+                                onToggleEmail={toggleEmail}
+                                onToggleEmailMany={toggleEmailMany}
+                                onToggleNotification={toggleNotification}
+                                onToggleNotificationMany={toggleNotificationMany}
                             />
                         ))}
 
                         <div className="sticky bottom-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
                             <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {emailHasChanges ? 'You have unsaved changes' : emailForm.recentlySuccessful ? 'All changes saved' : 'No changes yet'}
+                                {notificationSettingsHasChanges ? 'You have unsaved changes' : notificationSettingsRecentlySuccessful ? 'All changes saved' : 'No changes yet'}
                             </span>
                             <div className="flex items-center gap-3">
-                                {emailForm.recentlySuccessful && !emailHasChanges && (
+                                {notificationSettingsRecentlySuccessful && (
                                     <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
                                 )}
                                 <button
                                     type="button"
-                                    onClick={resetEmailToDefaults}
-                                    disabled={emailAtDefaults}
+                                    onClick={resetNotificationSettingsToDefaults}
+                                    disabled={notificationSettingsAtDefaults}
                                     className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
                                 >
                                     Reset to defaults
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={emailForm.processing || !emailHasChanges}
+                                    disabled={notificationSettingsProcessing || !notificationSettingsHasChanges}
                                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                                 >
                                     Save Preferences
