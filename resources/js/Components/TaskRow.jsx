@@ -636,24 +636,9 @@ function CommentThread({
     const toggle = () => onToggleCollapse(comment.id);
 
     return (
-        // No `items-start` here on purpose: leaving this row at the default
-        // stretch alignment lets the avatar column below match the full
-        // height of the content column next to it (comment + every reply
-        // below it), so the trunk can span exactly that height instead of a
-        // fixed/guessed one.
         <div id={`comment-${comment.id}`} className="relative flex gap-2">
             <div className="flex shrink-0 flex-col items-center">
                 <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 ${comment.is_deleted ? 'opacity-40 grayscale' : ''}`} />
-                {/* The trunk: starts right at the bottom of this avatar
-                    (touching it) and stretches (flex-1) to fill whatever
-                    height the flat reply list beside it takes up, so it
-                    always reaches exactly as far as the last reply - never
-                    further, never short of it. Every reply below branches
-                    off this same trunk via its own elbow curve, instead of
-                    each level growing a trunk of its own. */}
-                {hasNestedContent && (
-                    <div className="my-1 w-0.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700" />
-                )}
             </div>
             <div className="min-w-0 flex-1">
                 <CommentEntry
@@ -701,15 +686,6 @@ function CommentThread({
 
                             return (
                                 <div key={reply.id} id={`comment-${reply.id}`} className="relative flex gap-2">
-                                    {/* The elbow that peels off the root's trunk (a fixed
-                                        distance to the left - one avatar's width plus the
-                                        gap) and runs into this reply's own avatar, so every
-                                        reply branches visibly off the trunk instead of just
-                                        sitting parallel to it. */}
-                                    <span
-                                        aria-hidden="true"
-                                        className="absolute -left-[22px] top-0 h-4 w-[22px] rounded-bl-2xl border-b-2 border-l-2 border-gray-200 dark:border-gray-700"
-                                    />
                                     <Avatar user={reply.user} size="h-7 w-7" className={`mt-0.5 shrink-0 ${reply.is_deleted ? 'opacity-40 grayscale' : ''}`} />
                                     <div className="min-w-0 flex-1">
                                         <CommentEntry

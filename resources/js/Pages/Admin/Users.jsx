@@ -226,7 +226,7 @@ export default function Users({ users, stats, filters }) {
         }>
             <Head title="Admin - Users" />
             <div className="py-12">
-                <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.total} sub={`${stats.newUsersThisMonth} new this month`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.total} />
@@ -249,7 +249,7 @@ export default function Users({ users, stats, filters }) {
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                                    placeholder="Search by name or email..."
+                                    placeholder="Search by name, email, or ID..."
                                     className="w-64 pl-9"
                                 />
                             </div>
@@ -312,7 +312,7 @@ export default function Users({ users, stats, filters }) {
                                     const isSelf = user.id === auth.user.id;
                                     return (
                                         <tr key={user.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                            <td className="px-6 py-3 font-mono text-xs text-gray-400 dark:text-gray-500">
+                                            <td className="px-6 py-3 font-mono text-sm text-gray-400 dark:text-gray-500">
                                                 #{user.id}
                                             </td>
                                             <td className="px-6 py-3">

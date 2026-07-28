@@ -630,7 +630,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
         }>
             <Head title="Dashboard" />
             <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Active Tasks" value={stats.activeTasksCount} sub={`${activeRatio}% of your tasks · ${stats.activeDueSoonCount} due within 7 days`} icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />

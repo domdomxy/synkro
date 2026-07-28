@@ -47,7 +47,7 @@ class SendOverdueTaskAlerts extends Command
                     $assignee,
                     'task.overdue',
                     "Overdue: {$task->title}",
-                    ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) is now past its due date."],
+                    ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) is now past its due date."],
                     url($url),
                     'View Task'
                 );

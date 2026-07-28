@@ -200,7 +200,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
         }>
             <Head title="Admin Dashboard" />
             <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <div className="flex flex-wrap gap-3">
                         <Link href={route('admin.users')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Manage Users</Link>

@@ -29,7 +29,7 @@ export default function Edit({ project }) {
                 <div className="mb-4">
                     <BackButton href={route('projects.show', project.id)} label="Back to Project" />
                 </div>
-                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
                     <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <div>
                             <InputLabel htmlFor="name" value="Project Name" />

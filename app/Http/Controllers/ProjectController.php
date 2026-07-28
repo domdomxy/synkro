@@ -191,7 +191,7 @@ class ProjectController extends Controller
                     $recipient,
                     'project.edited',
                     "{$project->name} was updated",
-                    ["The project \"{$project->name}\" (ID {$project->id}) you belong to was edited."],
+                    ["The project \"{$project->name}\" (#{$project->id}) you belong to has been updated."],
                     url(route('projects.show', $project->id, false)),
                     'View Project'
                 );
@@ -233,7 +233,7 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deleted',
                 "{$projectName} was deleted",
-                ["The project \"{$projectName}\" (ID {$projectId}) you belonged to was deleted."],
+                ["The project \"{$projectName}\" (#{$projectId}) you were a member of has been deleted."],
             );
         }
 

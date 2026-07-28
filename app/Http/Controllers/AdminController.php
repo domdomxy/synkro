@@ -243,6 +243,12 @@ class AdminController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
                 ->orWhere('email', 'like', "%{$request->search}%");
+
+                // Lets a search box query like "#42" or a bare "42" find the
+                // user by ID too, alongside the usual name/email match.
+                if (is_numeric(ltrim($request->search, '#'))) {
+                    $q->orWhere('id', ltrim($request->search, '#'));
+                }
             });
         }
 

@@ -181,7 +181,7 @@ export default function Deliverables({ project, tasks }) {
         }>
             <Head title={`Deliverables - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-400 dark:text-gray-500">Files and links from completed tasks</p>

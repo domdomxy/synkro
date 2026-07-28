@@ -111,7 +111,7 @@ class TaskController extends Controller
                 $assignee,
                 'task.assigned',
                 "New task assigned: {$task->title}",
-                ["You've been assigned a new task, \"{$task->title}\", in the project \"{$project->name}\" (ID {$project->id})."],
+                ["You've been assigned a new task, \"{$task->title}\", in the project \"{$project->name}\" (#{$project->id})."],
                 url($url),
                 'View Task'
             );
@@ -216,7 +216,7 @@ class TaskController extends Controller
                     $newAssignee,
                     'task.assigned',
                     "New task assigned: {$task->title}",
-                    ["You've been assigned the task \"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id})."],
+                    ["You've been assigned the task \"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id})."],
                     url($url),
                     'View Task'
                 );
@@ -252,7 +252,7 @@ class TaskController extends Controller
                         $previousUser,
                         'task.unassigned',
                         "Removed from task: {$task->title}",
-                        ["You've been unassigned from \"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id})."],
+                        ["You've been unassigned from \"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id})."],
                         url($projectUrl),
                         'View Project'
                     );
@@ -280,7 +280,7 @@ class TaskController extends Controller
                 $task->assignee,
                 'task.updated',
                 "Task updated: {$task->title}",
-                ["The task \"{$task->title}\" you're assigned to was updated in \"{$task->project->name}\" (ID {$task->project_id})."],
+                ["The task \"{$task->title}\" you're assigned to was updated in the project \"{$task->project->name}\" (#{$task->project_id})."],
                 url($url),
                 'View Task History'
             );
@@ -329,7 +329,7 @@ class TaskController extends Controller
                     $assignee,
                     'task.deleted',
                     "Task deleted: {$taskTitle}",
-                    ["The task \"{$taskTitle}\" you were assigned to was deleted from \"{$projectName}\" (ID {$projectId})."],
+                    ["The task \"{$taskTitle}\" you were assigned to was deleted from the project \"{$projectName}\" (#{$projectId})."],
                     url($projectUrl),
                     'View Project'
                 );
@@ -525,7 +525,7 @@ class TaskController extends Controller
                     $previousUser,
                     'task.unassigned',
                     "{$summary} in {$project->name}",
-                    ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
+                    ["{$summary} in the project \"{$project->name}\" (#{$project->id})."],
                     url($url),
                     'View Project',
                     ['label' => $count > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
@@ -558,7 +558,7 @@ class TaskController extends Controller
                         $assignee,
                         'task.assigned',
                         "{$changedCount} new task(s) assigned in {$project->name}",
-                        ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
+                        ["{$summary} in the project \"{$project->name}\" (#{$project->id})."],
                         url($url),
                         'View Project',
                         ['label' => $changedCount > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
@@ -659,7 +659,7 @@ class TaskController extends Controller
                 $user,
                 'task.updated',
                 "{$headline} in {$project->name}",
-                ["{$summary} in \"{$project->name}\" (ID {$project->id})."],
+                ["{$summary} in the project \"{$project->name}\" (#{$project->id})."],
                 url($url),
                 'View Project',
                 ['label' => $count > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
@@ -786,7 +786,7 @@ class TaskController extends Controller
                     $reviewer,
                     'task.review_needed',
                     "Review needed: {$task->title}",
-                    ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) has been submitted and is waiting for your review."],
+                    ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) has been submitted and is waiting for your review."],
                     url($url),
                     'Review Now'
                 );
@@ -933,7 +933,7 @@ class TaskController extends Controller
         }
  
         if ($assigneeStillMember) {
-            $mailLines = ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) was {$decisionLabel}."];
+            $mailLines = ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) was {$decisionLabel}."];
             if (! empty($validated['feedback'])) {
                 $mailLines[] = "Feedback: {$validated['feedback']}";
             }
@@ -974,7 +974,7 @@ class TaskController extends Controller
                     $recipient,
                     'task.done',
                     "Task completed: {$task->title}",
-                    ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) was marked done."],
+                    ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) was marked done."],
                     url($url),
                     'View Task'
                 );
@@ -1100,7 +1100,7 @@ class TaskController extends Controller
                 $task->assignee,
                 'task.reopened',
                 "Changes requested: {$task->title}",
-                ["\"{$task->title}\" in \"{$task->project->name}\" (ID {$task->project_id}) was reopened for changes.", "Feedback: {$validated['feedback']}"],
+                ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) was reopened for changes.", "Feedback: {$validated['feedback']}"],
                 url($url),
                 'View Task'
             );

@@ -338,7 +338,7 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Settings</h2>}>
             <Head title="Settings" />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <p className="mb-6 px-4 text-sm text-gray-500 dark:text-gray-400 sm:px-0">
                         Manage your appearance, notifications, and trusted sites.
                     </p>

@@ -80,7 +80,7 @@ class InvitationController extends Controller
                 $inviter,
                 'project.invitation_accepted',
                 Auth::user()->name . " joined {$invitation->project->name}",
-                [Auth::user()->name . " accepted your invitation and joined \"{$invitation->project->name}\" (ID {$invitation->project_id})."],
+                [Auth::user()->name . " accepted your invitation and joined the project \"{$invitation->project->name}\" (#{$invitation->project_id})."],
                 url($projectUrl),
                 'View Project'
             );
@@ -116,7 +116,7 @@ class InvitationController extends Controller
                 $recipient,
                 'project.member_added',
                 Auth::user()->name . " joined {$invitation->project->name}",
-                [Auth::user()->name . " joined \"{$invitation->project->name}\" (ID {$invitation->project_id}) as {$invitation->role}."],
+                [Auth::user()->name . " joined the project \"{$invitation->project->name}\" (#{$invitation->project_id}) as {$invitation->role}."],
                 url($projectUrl),
                 'View Project'
             );
@@ -169,7 +169,7 @@ class InvitationController extends Controller
                 $inviter,
                 'project.invitation_denied',
                 Auth::user()->name . " declined your invitation",
-                [Auth::user()->name . " declined your invitation to join \"{$invitation->project->name}\" (ID {$invitation->project_id})."]
+                [Auth::user()->name . " declined your invitation to join the project \"{$invitation->project->name}\" (#{$invitation->project_id})."]
             );
         }
 

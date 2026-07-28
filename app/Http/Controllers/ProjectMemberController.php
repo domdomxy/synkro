@@ -91,7 +91,7 @@ class ProjectMemberController extends Controller
             $user,
             'project.invitation_received',
             "{$request->user()->name} invited you to join {$project->name}",
-            ["{$request->user()->name} invited you to join the project \"{$project->name}\" (ID {$project->id}) as {$validated['role']}."],
+            ["{$request->user()->name} invited you to join the project \"{$project->name}\" (#{$project->id}) as {$validated['role']}."],
             url($inviteUrl),
             'View Invitation'
         );
@@ -267,7 +267,7 @@ class ProjectMemberController extends Controller
                 'project.member_left',
                 "{$leavingName} left {$project->name}",
                 [
-                    "{$leavingName} ({$leavingRole}) left \"{$project->name}\" (ID {$project->id}).",
+                    "{$leavingName} ({$leavingRole}) left the project \"{$project->name}\" (#{$project->id}).",
                 ],
                 url(route('projects.show', $project->id, false)),
                 'View Project',
