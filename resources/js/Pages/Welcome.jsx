@@ -15,39 +15,58 @@ const ACCENTS = {
 const features = [
     {
         title: 'Role-based collaboration',
-        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role, scoped per project rather than globally. Change roles live, transfer ownership, or leave a project at any time.',
+        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role, scoped per project rather than global. Change roles on the fly, transfer ownership, or leave a project whenever you need to.',
         icon: <path d="M9 11a4 4 0 100-8 4 4 0 000 8zm-7 9a7 7 0 0114 0H2zm15-9a4 4 0 100-8 4 4 0 000 8zm-1.5 1.5c.49-.13 1-.2 1.5-.2a6 6 0 016 6H17a7.97 7.97 0 00-3.5-6.6V12.5z" />,
         accent: 'indigo',
     },
     {
         title: 'Full task lifecycle',
-        description: 'Tasks flow from todo → in progress → submitted → in review → done. Attach files or links as deliverables, edit submissions before review begins, and get a full tester approval gate before anything is marked complete.',
+        description: 'Tasks move from todo → in progress → submitted → in review → done. Attach files or links as deliverables, discuss them in threaded comments with @mentions, and get a full tester approval gate before anything is marked complete.',
         icon: <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.4-1.4z" />,
         accent: 'teal',
     },
     {
         title: 'Live notifications',
-        description: 'Task assignments, review decisions, role changes, member joins and departures: every meaningful event arrives live via WebSocket. A persistent notification center with category and read/unread filters keeps you in control.',
+        description: 'Task assignments, review decisions, comments and mentions, role changes, member joins and departures: every meaningful event arrives live via WebSocket. A persistent notification center with category filters and per-type email toggles keeps you in control of what reaches your inbox.',
         icon: <path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
         accent: 'amber',
     },
     {
         title: 'Activity logs',
-        description: 'Every action on a project is logged, including member changes, role updates, task edits, and ownership transfers. Sign-ins get their own dedicated history too, with device, browser, and location on every login plus an instant email alert you can toggle off anytime.',
+        description: 'Every action on a project is logged: member changes, role updates, task edits, and ownership transfers. Sign-ins get their own dedicated history too, with device, browser, and location on every login, plus an instant email alert you can turn off anytime.',
         icon: <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 14l2 2 4-4" />,
         accent: 'pink',
     },
     {
         title: 'Personal dashboard',
-        description: 'A full activity chart, deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay organized.',
+        description: 'A full activity chart, deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay on top of your work.',
         icon: <path d="M16 8v8m-4-5v5m-4-2v2M4 20h16a1 1 0 001-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v13a1 1 0 001 1z" />,
         accent: 'indigo',
     },
     {
         title: 'Platform admin',
-        description: 'A dedicated admin panel for managing users and overseeing platform activity: activate, deactivate, or change global roles, separate from project-level permissions.',
+        description: 'A dedicated admin panel for managing users and overseeing platform activity: suspend or reinstate accounts through a built-in appeals process, reset passwords, triage support tickets, change global roles, and review a full audit log of every admin action, separate from project-level permissions.',
         icon: <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4zm0 4.2L7 8.5v3.7c0 3.4 2.3 6.1 5 7.2 2.7-1.1 5-3.8 5-7.2V8.5l-5-2.3z" />,
         accent: 'teal',
+    },
+];
+
+const securityPoints = [
+    {
+        title: 'Instant session termination',
+        description: 'Suspensions, admin password resets, and account deletions broadcast in real time, logging out every open tab immediately.',
+    },
+    {
+        title: 'Password protection',
+        description: 'A live strength meter guides every new password, and admin-issued temporary passwords expire automatically after 24 hours.',
+    },
+    {
+        title: 'Safer outbound links',
+        description: 'External links get a confirmation prompt before you leave Synkro, with a trusted-sites list so you are only asked once per host.',
+    },
+    {
+        title: 'Full accountability',
+        description: 'Every admin action, from a role change to a password reset, is written to a permanent audit log.',
     },
 ];
 
@@ -294,7 +313,7 @@ export default function Welcome({ auth, stats }) {
                                 heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
                             }`}
                         >
-                            Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders, built for teams that actually want to ship.
+                            Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders, all backed by built-in account security, for teams that actually want to ship.
                         </p>
                         <div
                             className={`mt-10 flex flex-wrap items-center justify-center gap-4 transition-all delay-200 duration-700 ${
@@ -331,6 +350,32 @@ export default function Welcome({ auth, stats }) {
                             }`}
                         >
                             <StatStrip stats={liveStats} />
+                        </div>
+                    </section>
+
+                    <section className="mx-auto max-w-6xl px-6 pb-8">
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800 sm:p-10">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.75">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 10-8 0v2" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Built with security in mind</h2>
+                            </div>
+                            <div className="mt-8 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+                                {securityPoints.map((point) => (
+                                    <div key={point.title} className="flex gap-3">
+                                        <svg className="mt-0.5 h-5 w-5 shrink-0 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-gray-100">{point.title}</p>
+                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{point.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </section>
 

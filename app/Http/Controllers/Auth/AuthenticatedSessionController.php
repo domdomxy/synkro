@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AccountActivityLog;
+use App\Models\User;
 use App\Support\AppealRateLimiter;
 use App\Support\DeviceTimezone;
 use App\Support\GeoLocator;
@@ -14,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -41,7 +43,34 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
+        } catch (ValidationException $e) {
+            // A wrong password on an account with an unexpired admin-issued temporary
+            // password pending is almost always someone still typing their old one.
+            // Reuse the exact same notice passwordResetLogout() shows, instead of the
+            // generic "these credentials do not match" error, so they're pointed at
+            // their email right away rather than left to guess why login is failing.
+            // Scoped to the plain bad-credentials failure only, so a rate-limit
+            // throttle exception still surfaces its own message untouched.
+            $isBadCredentials = ($e->errors()['email'][0] ?? null) === trans('auth.failed');
+
+            $pendingReset = $isBadCredentials
+                ? User::where('email', $request->string('email'))
+                    ->where('must_change_password', true)
+                    ->where(function ($query) {
+                        $query->whereNull('temp_password_expires_at')
+                            ->orWhere('temp_password_expires_at', '>', now());
+                    })
+                    ->first()
+                : null;
+
+            if ($pendingReset) {
+                return redirect()->route('login')->with('passwordReset', ['email' => $pendingReset->email]);
+            }
+
+            throw $e;
+        }
 
         $user = Auth::user();
 
