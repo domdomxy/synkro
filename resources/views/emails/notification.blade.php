@@ -142,7 +142,7 @@
                                         </tr>
                                     </table>
                                     <p class="email-highlight-hint" style="margin:10px 0 0; font-size:12px; color:#9ca3af; line-height:1.5; text-align:center;">
-                                        Tap and hold the password above to copy it, or select it manually.
+                                        {{ $highlight['hint'] ?? 'Tap and hold the password above to copy it, or select it manually.' }}
                                     </p>
                                 @elseif (!empty($highlight['html']))
                                     <div class="email-highlight-content" style="margin:0; font-size:15px; color:#374151; line-height:1.65;">{!! $highlight['content'] !!}</div>

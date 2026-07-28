@@ -21,7 +21,7 @@ export default function ForgotPassword({ status }) {
             icon={MailIcon}
             eyebrow="Password reset"
             title="Forgot your password?"
-            subtitle="No problem. Enter your email and we'll send you a link to choose a new one."
+            subtitle="No problem. Enter your email and we'll send you a 6-digit code to choose a new one."
             align="center"
         >
             <Head title="Forgot Password" />
@@ -50,7 +50,7 @@ export default function ForgotPassword({ status }) {
 
                 <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>
                     {processing && <Spinner className="mr-2 h-4 w-4" />}
-                    {processing ? 'Sending link...' : 'Email Password Reset Link'}
+                    {processing ? 'Sending code...' : 'Email Password Reset Code'}
                 </PrimaryButton>
             </form>
 

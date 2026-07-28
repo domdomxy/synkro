@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -90,30 +91,38 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Send the branded Synkro verification email instead of Laravel's default
-     * plain notification, so it matches every other outbound email.
+     * Generate a fresh 6-digit email verification code, store it (hashed,
+     * like a password) with a 10-minute expiry, and email it to the user.
+     * Replaces the old signed-link flow: nothing here is clickable, the
+     * person types the code back into the verify-email screen instead.
      */
     public function sendEmailVerificationNotification(): void
     {
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(config('auth.verification.expire', 60)),
-            [
-                'id' => $this->getKey(),
-                'hash' => sha1($this->getEmailForVerification()),
-            ]
-        );
+        $code = (string) random_int(100000, 999999);
+        $expireMinutes = 10;
+
+        $this->forceFill([
+            'email_verification_code' => Hash::make($code),
+            'email_verification_code_expires_at' => now()->addMinutes($expireMinutes),
+            'email_verification_attempts' => 0,
+        ])->save();
 
         NotificationMailer::send(
             $this,
             'account.email_verification',
             'Verify your email address',
             [
-                "Thanks for signing up for Synkro! Please confirm this is your email address to unlock your dashboard and get full access to your account.",
-                'This link expires in 60 minutes. If you didn\'t create a Synkro account, you can safely ignore this email.',
+                'Thanks for signing up for Synkro! Enter the code below to confirm this is your email address and unlock full access to your account.',
+                "This code expires in {$expireMinutes} minutes. If you didn't create a Synkro account, you can safely ignore this email.",
             ],
-            $verificationUrl,
-            'Verify Email Address'
+            null,
+            null,
+            [
+                'label' => 'Verification code',
+                'content' => $code,
+                'mono' => true,
+                'hint' => 'Tap and hold the code above to copy it, or select it manually.',
+            ]
         );
     }
 
@@ -146,17 +155,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Send the branded Synkro password reset email instead of Laravel's default
-     * plain notification, so it matches every other outbound email.
+     * Email a 6-digit password reset code, styled the same as every other
+     * branded Synkro email. Called directly with a plaintext code by
+     * PasswordResetLinkController (the code itself is hashed before it's
+     * ever persisted) — this bypasses Laravel's link-based password broker
+     * entirely, so unlike the old sendPasswordResetNotification() this isn't
+     * invoked automatically by the framework.
      */
-    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    public function sendPasswordResetCodeNotification(#[\SensitiveParameter] string $code): void
     {
-        $resetUrl = url(route('password.reset', [
-            'token' => $token,
-            'email' => $this->getEmailForPasswordReset(),
-        ], false));
-
-        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+        $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 15);
 
         NotificationMailer::send(
             $this,
@@ -164,11 +172,17 @@ class User extends Authenticatable implements MustVerifyEmail
             'Reset your password',
             [
                 'You are receiving this email because we received a password reset request for your account.',
-                "This password reset link will expire in {$expireMinutes} minutes.",
+                "This code will expire in {$expireMinutes} minutes.",
                 'If you did not request a password reset, no further action is required.',
             ],
-            $resetUrl,
-            'Reset Password'
+            null,
+            null,
+            [
+                'label' => 'Reset code',
+                'content' => $code,
+                'mono' => true,
+                'hint' => 'Tap and hold the code above to copy it, or select it manually.',
+            ]
         );
     }
 }

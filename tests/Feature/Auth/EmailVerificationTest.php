@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -22,37 +22,45 @@ class EmailVerificationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_email_can_be_verified(): void
+    public function test_email_can_be_verified_with_correct_code(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create([
+            'email_verification_code' => Hash::make('123456'),
+            'email_verification_code_expires_at' => now()->addMinutes(10),
+        ]);
 
         Event::fake();
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1($user->email)]
-        );
-
-        $response = $this->actingAs($user)->get($verificationUrl);
+        $response = $this->actingAs($user)->post('/email/verify', ['code' => '123456']);
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertRedirect(route('projects.index', absolute: false).'?verified=1');
     }
 
-    public function test_email_is_not_verified_with_invalid_hash(): void
+    public function test_email_is_not_verified_with_incorrect_code(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create([
+            'email_verification_code' => Hash::make('123456'),
+            'email_verification_code_expires_at' => now()->addMinutes(10),
+        ]);
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1('wrong-email')]
-        );
+        $this->actingAs($user)->post('/email/verify', ['code' => '000000']);
 
-        $this->actingAs($user)->get($verificationUrl);
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $this->assertSame(1, $user->fresh()->email_verification_attempts);
+    }
 
+    public function test_email_is_not_verified_with_expired_code(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'email_verification_code' => Hash::make('123456'),
+            'email_verification_code_expires_at' => now()->subMinute(),
+        ]);
+
+        $response = $this->actingAs($user)->post('/email/verify', ['code' => '123456']);
+
+        $response->assertSessionHasErrors('code');
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 }

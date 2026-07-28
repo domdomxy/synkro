@@ -9,7 +9,10 @@ use Illuminate\Http\Request;
 class EmailVerificationNotificationController extends Controller
 {
     /**
-     * Send a new email verification notification.
+     * Email a fresh 6-digit verification code. Burst protection is handled
+     * by the throttle:6,1 route middleware; the client also shows its own
+     * cooldown timer so the resend button can't realistically be mashed
+     * fast enough to hit that limit.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -19,6 +22,6 @@ class EmailVerificationNotificationController extends Controller
 
         $request->user()->sendEmailVerificationNotification();
 
-        return back()->with('status', 'verification-link-sent');
+        return back()->with('status', 'verification-code-sent');
     }
 }
