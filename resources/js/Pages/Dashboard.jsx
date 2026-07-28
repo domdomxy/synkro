@@ -496,7 +496,7 @@ function DueSoonPanel({ dueSoon }) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days</p>
                 </div>
             ) : (
-                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1.5">
                     {sorted.map((task) => {
                         const { overdue } = timeLeftParts(task.due_date, now);
                         const relative = timeLeftLabel(task.due_date, now, { short: true });
@@ -613,7 +613,7 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set</p>
                 </div>
             ) : (
-                <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1.5">
                     {sorted.map((r) => (
                         <AlarmRow key={r.id} r={r} now={now} onDelete={() => remove(r.id)} isHighlighted={r.id === highlightedReminderId} />
                     ))}
