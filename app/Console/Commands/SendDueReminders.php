@@ -24,16 +24,19 @@ class SendDueReminders extends Command
             ->get();
 
         foreach ($due as $reminder) {
+            $repeating = $reminder->repeat_interval !== 'none';
+            $dashboardUrl = route('dashboard', $repeating ? ['reminder' => $reminder->id] : [], false);
+
             if (NotificationPreferences::wantsType($reminder->user, 'reminder')) {
                 $notification = UserNotification::create([
                     'user_id' => $reminder->user_id,
                     'type' => 'reminder',
                     'message' => $reminder->note ? "{$reminder->title}\n{$reminder->note}" : $reminder->title,
-                    'url' => route('dashboard', [], false),
+                    'url' => $dashboardUrl,
                 ]);
 
                 try {
-                    broadcast(new ReminderDue($reminder->user_id, $reminder->title, $reminder->note, $notification->id));
+                    broadcast(new ReminderDue($reminder->user_id, $reminder->title, $reminder->note, $notification->id, $reminder->id, $repeating));
                 } catch (\Throwable $e) {
                     report($e);
                 }
@@ -45,7 +48,7 @@ class SendDueReminders extends Command
                     'reminders.due',
                     "Reminder: {$reminder->title}",
                     ["It's time for this reminder."],
-                    url(route('dashboard', [], false)),
+                    url($dashboardUrl),
                     'View Dashboard',
                     $reminder->note ? ['label' => 'Note', 'content' => NoteFormatter::toHtml($reminder->note), 'html' => true] : null
                 );

@@ -48,11 +48,16 @@ const LEVELS = [
     { label: 'Strong', barColor: 'bg-green-500', textColor: 'text-green-600 dark:text-green-400' },
 ];
 
+// Minimum score (index into LEVELS) a password must reach to be accepted.
+// 3 = "Good". Anything below (Very Weak / Weak / Fair) is rejected client-side.
+export const MIN_ACCEPTABLE_SCORE = 3;
+
 /**
  * Scores a candidate password from 0 (very weak) to 4 (strong).
- * Purely a UX nudge — the actual minimum requirement is still enforced
- * server-side by Laravel's Password::defaults() rule, this never blocks
- * submission on its own.
+ * Used both for the live UI meter and to gate form submission — passwords
+ * scoring below MIN_ACCEPTABLE_SCORE ("Good") are rejected before the
+ * request is ever sent. This is still just a UX-layer check: Laravel's
+ * Password::defaults() rule remains the authoritative server-side guard.
  */
 export function scorePassword(password) {
     if (!password) {
@@ -78,4 +83,60 @@ export function scorePassword(password) {
     score = Math.max(0, Math.min(4, score));
 
     return { score, hasInput: true, percent: (Math.max(1, score) / 4) * 100, ...LEVELS[score] };
+}
+
+/**
+ * True once a password reaches at least "Good" (MIN_ACCEPTABLE_SCORE).
+ * Forms should call this on submit and block/setError if it returns false.
+ */
+export function meetsMinimumStrength(password) {
+    return scorePassword(password).score >= MIN_ACCEPTABLE_SCORE;
+}
+
+/**
+ * Concrete, ordered list of what's still missing before a password reaches
+ * MIN_ACCEPTABLE_SCORE ("Good"). Empty once the password is acceptable.
+ * Meant to be shown live under the meter so the person knows exactly what
+ * to change, not just that the password isn't strong enough yet.
+ */
+export function getSuggestions(password) {
+    if (!password) return [];
+
+    if (password.length < 8) {
+        return ['Use at least 8 characters'];
+    }
+
+    if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+        return ['Avoid common, easily guessed passwords'];
+    }
+
+    if (meetsMinimumStrength(password)) return [];
+
+    const suggestions = [];
+
+    if (password.length < 12) {
+        suggestions.push('Use at least 12 characters');
+    }
+
+    const classes = classesPresent(password);
+    if (classes < 3) {
+        const missing = [];
+        if (!/[a-z]/.test(password)) missing.push('a lowercase letter');
+        if (!/[A-Z]/.test(password)) missing.push('an uppercase letter');
+        if (!/[0-9]/.test(password)) missing.push('a number');
+        if (!/[^a-zA-Z0-9]/.test(password)) missing.push('a symbol');
+        suggestions.push(`Add ${missing.slice(0, 3).join(', ')}`);
+    }
+
+    if (hasSequentialRun(password) || hasRepeatedRun(password)) {
+        suggestions.push('Avoid repeated or sequential characters (e.g. "aaa", "1234")');
+    }
+
+    // Fallback in case none of the specific checks above fired but the
+    // password is still below the minimum (e.g. borderline length+class mix).
+    if (suggestions.length === 0) {
+        suggestions.push('Make it longer or mix in more character types');
+    }
+
+    return suggestions;
 }

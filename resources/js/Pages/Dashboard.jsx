@@ -192,11 +192,11 @@ function CalendarView({ tasks }) {
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Deadline Calendar</h3>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <button onClick={() => navigate(-1)} className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">←</button>
                     <span className="min-w-32 text-center text-sm text-gray-600 dark:text-gray-400">{rangeLabel}</span>
                     <button onClick={() => navigate(1)} className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">→</button>
-                    <div className="ml-2 flex gap-1">
+                    <div className="flex gap-1">
                         {['week', 'month', 'year'].map((r) => (
                             <button key={r} onClick={() => setCalRange(r)} className={`rounded-md px-2 py-1 text-xs capitalize ${calRange === r ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                 {r}
@@ -295,12 +295,33 @@ function timeLeftLabel(remindAt, now, { short = false } = {}) {
     return overdue ? `Overdue ${short ? text : `by ${text}`}` : `${short ? 'in ' : ''}${text}`;
 }
 
-function AlarmRow({ r, now, onDelete }) {
+function AlarmRow({ r, now, onDelete, isHighlighted }) {
     const { time, ampm } = formatAlarmTime(r.remind_at);
     const { overdue } = timeLeftParts(r.remind_at, now);
     const label = timeLeftLabel(r.remind_at, now, { short: true });
     const [expanded, setExpanded] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+
+    // A deep-linked reminder (from a notification/email) should open its note
+    // expanded, not just scroll into view collapsed. The scroll has to happen
+    // *after* the expand has actually painted — otherwise it centers on the
+    // shorter, collapsed card and the now-taller expanded one ends up with its
+    // bottom (ring included) pushed outside the visible frame.
+    useEffect(() => {
+        if (!isHighlighted) return;
+        if (r.note) setExpanded(true);
+
+        let raf2;
+        const raf1 = requestAnimationFrame(() => {
+            raf2 = requestAnimationFrame(() => {
+                document.getElementById(`reminder-${r.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+        return () => {
+            cancelAnimationFrame(raf1);
+            if (raf2) cancelAnimationFrame(raf2);
+        };
+    }, [isHighlighted, r.note, r.id]);
 
     const editForm = useForm({
         title: r.title,
@@ -372,8 +393,11 @@ function AlarmRow({ r, now, onDelete }) {
 
     return (
         <li
+            id={`reminder-${r.id}`}
             onClick={() => r.note && setExpanded((v) => !v)}
-            className={`group overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''}`}
+            className={`group overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''} ${
+                isHighlighted ? 'ring-2 ring-indigo-400 dark:ring-indigo-500' : ''
+            }`}
         >
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <div className="min-w-0 flex-1">
@@ -511,7 +535,7 @@ function DueSoonPanel({ dueSoon }) {
     );
 }
 
-function RemindersPanel({ reminders }) {
+function RemindersPanel({ reminders, highlightedReminderId }) {
     const { data, setData, post, processing, reset, errors, transform } = useForm({
         title: '', note: '', remind_at: '', repeat_interval: 'none',
     });
@@ -591,7 +615,7 @@ function RemindersPanel({ reminders }) {
             ) : (
                 <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
                     {sorted.map((r) => (
-                        <AlarmRow key={r.id} r={r} now={now} onDelete={() => remove(r.id)} />
+                        <AlarmRow key={r.id} r={r} now={now} onDelete={() => remove(r.id)} isHighlighted={r.id === highlightedReminderId} />
                     ))}
                 </ul>
             )}
@@ -603,6 +627,15 @@ function RemindersPanel({ reminders }) {
 export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
+    const [highlightedReminderId, setHighlightedReminderId] = useState(null);
+
+    useEffect(() => {
+        const reminderId = new URLSearchParams(window.location.search).get('reminder');
+        if (!reminderId) return;
+        setHighlightedReminderId(Number(reminderId));
+        const clearTimer = setTimeout(() => setHighlightedReminderId(null), 3000);
+        return () => clearTimeout(clearTimer);
+    }, []);
 
     const dateRangeLabel = (() => {
         if (range === 'custom' && customFrom && customTo) {
@@ -704,7 +737,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <DueSoonPanel dueSoon={stats.dueSoon} />
 
-                        <RemindersPanel reminders={stats.reminders} />
+                        <RemindersPanel reminders={stats.reminders} highlightedReminderId={highlightedReminderId} />
                     </div>
                 </div>
             </div>

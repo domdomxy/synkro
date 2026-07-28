@@ -4,6 +4,7 @@ import AuthField from '@/Components/Auth/AuthField';
 import OtpInput from '@/Components/Auth/OtpInput';
 import ResendCodeButton from '@/Components/Auth/ResendCodeButton';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { MailIcon, LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -14,7 +15,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 const RESEND_COOLDOWN_SECONDS = 20;
 
 export default function ResetPassword({ email, status }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors, reset } = useForm({
         email: email ?? '',
         code: '',
         password: '',
@@ -23,6 +24,12 @@ export default function ResetPassword({ email, status }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!meetsMinimumStrength(data.password)) {
+            setError('password', 'Password strength must be at least "Good" before you can continue.');
+            return;
+        }
+        clearErrors('password');
 
         post(route('password.store'), {
             onError: () => reset('code', 'password', 'password_confirmation'),

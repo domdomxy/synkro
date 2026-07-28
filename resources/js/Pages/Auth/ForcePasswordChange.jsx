@@ -1,13 +1,14 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import AuthField from '@/Components/Auth/AuthField';
 import { LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 
 export default function ForcePasswordChange() {
-    const { data, setData, put, processing, errors, reset } = useForm({
+    const { data, setData, put, processing, errors, setError, clearErrors, reset } = useForm({
         current_password: '',
         password: '',
         password_confirmation: '',
@@ -15,6 +16,12 @@ export default function ForcePasswordChange() {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!meetsMinimumStrength(data.password)) {
+            setError('password', 'Password strength must be at least "Good" before you can continue.');
+            return;
+        }
+        clearErrors('password');
 
         put(route('password.update'), {
             onError: (errors) => {

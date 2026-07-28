@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
@@ -15,6 +16,8 @@ export default function UpdatePasswordForm({ className = '' }) {
         data,
         setData,
         errors,
+        setError,
+        clearErrors,
         put,
         reset,
         processing,
@@ -27,6 +30,13 @@ export default function UpdatePasswordForm({ className = '' }) {
 
     const updatePassword = (e) => {
         e.preventDefault();
+
+        if (!meetsMinimumStrength(data.password)) {
+            setError('password', 'Password strength must be at least "Good" before you can continue.');
+            passwordInput.current.focus();
+            return;
+        }
+        clearErrors('password');
 
         put(route('password.update'), {
             preserveScroll: true,

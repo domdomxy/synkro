@@ -308,7 +308,7 @@ export default function NotificationBell() {
                 url = '/projects';
             } else if (payload.type === 'reminder') {
                 message = payload.note ? `${payload.title}\n${payload.note}` : payload.title;
-                url = '/dashboard';
+                url = payload.repeating && payload.reminder_id ? `/dashboard?reminder=${payload.reminder_id}` : '/dashboard';
             } else if (payload.type === 'feedback_replied') {
                 message = `Feedback reply\n${payload.submitter_name} replied to ticket "${payload.subject}"`;
                 url = '/admin/feedbacks';

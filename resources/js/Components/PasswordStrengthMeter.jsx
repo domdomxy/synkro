@@ -1,4 +1,4 @@
-import { scorePassword } from '@/utils/passwordStrength';
+import { scorePassword, getSuggestions, MIN_ACCEPTABLE_SCORE } from '@/utils/passwordStrength';
 
 export default function PasswordStrengthMeter({ password, className = '' }) {
     const { score, hasInput, label, barColor, textColor } = scorePassword(password);
@@ -6,6 +6,8 @@ export default function PasswordStrengthMeter({ password, className = '' }) {
     if (!hasInput) return null;
 
     const filled = Math.max(1, score);
+    const belowMinimum = score < MIN_ACCEPTABLE_SCORE;
+    const suggestions = belowMinimum ? getSuggestions(password) : [];
 
     return (
         <div className={`mt-2 ${className}`} aria-live="polite">
@@ -19,14 +21,14 @@ export default function PasswordStrengthMeter({ password, className = '' }) {
                     />
                 ))}
             </div>
-            <p className={`mt-1 text-xs font-medium ${textColor}`}>
-                {label}
-                {score <= 1 && (
-                    <span className="font-normal text-gray-500 dark:text-gray-400">
-                        {' '}— try a longer password with a mix of letters, numbers, and symbols
-                    </span>
-                )}
-            </p>
+            <p className={`mt-1 text-xs font-medium ${textColor}`}>{label}</p>
+            {belowMinimum && suggestions.length > 0 && (
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {suggestions.map((tip) => (
+                        <li key={tip}>{tip}</li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 }

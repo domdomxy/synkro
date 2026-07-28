@@ -15,7 +15,9 @@ class ReminderDue implements ShouldBroadcastNow
         public int $userId,
         public string $title,
         public ?string $note,
-        public int $notificationId
+        public int $notificationId,
+        public int $reminderId = 0,
+        public bool $repeating = false
     ) {}
 
     public function broadcastOn(): array
@@ -35,6 +37,8 @@ class ReminderDue implements ShouldBroadcastNow
             'title' => $this->title,
             'note' => $this->note,
             'type' => 'reminder',
+            'reminder_id' => $this->reminderId,
+            'repeating' => $this->repeating,
         ];
     }
 }

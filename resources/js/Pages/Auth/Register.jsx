@@ -2,12 +2,13 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { UserIcon, MailIcon, LockIcon } from '@/Components/Auth/icons';
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors, reset } = useForm({
         name: '',
         email: '',
         password: '',
@@ -16,6 +17,12 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!meetsMinimumStrength(data.password)) {
+            setError('password', 'Password strength must be at least "Good" before you can continue.');
+            return;
+        }
+        clearErrors('password');
 
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
