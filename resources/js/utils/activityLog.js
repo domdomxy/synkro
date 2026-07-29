@@ -28,6 +28,8 @@ export const actionIconConfig = {
     project_created: { path: ICON_PATHS.build, color: 'text-green-500' },
     project_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
     project_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    project_deletion_requested: { path: ICON_PATHS.trash, color: 'text-amber-500' },
+    project_deletion_cancelled: { path: ICON_PATHS.undo, color: 'text-green-500' },
     member_added: { path: ICON_PATHS.plus, color: 'text-green-500' },
     member_removed: { path: ICON_PATHS.minus, color: 'text-red-500' },
     member_left: { path: ICON_PATHS.logout, color: 'text-amber-500' },
@@ -157,6 +159,8 @@ export function describeLog(log) {
     switch (log.action) {
         case 'project_created': return `${actor} created the project`;
         case 'project_deleted': return `${actor} deleted the project`;
+        case 'project_deletion_requested': return `${actor} requested project deletion`;
+        case 'project_deletion_cancelled': return `${actor} cancelled the project deletion`;
         case 'project_updated': return `${actor} updated the project`;
         case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
         case 'member_removed': return d.reason ? `${actor} removed ${d.target_name} (${d.role}) — "${d.reason}"` : `${actor} removed ${d.target_name} (${d.role})`;
