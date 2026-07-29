@@ -36,7 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class, 'project_user')->withPivot('role', 'pinned', 'archived')->withTimestamps();
+        return $this->belongsToMany(Project::class, 'project_user')->withPivot('role', 'pinned', 'archived', 'muted')->withTimestamps();
     }
 
     public function ownedProjects(): HasMany
@@ -71,6 +71,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function pinnedTasks()
     {
         return $this->belongsToMany(Task::class, 'pinned_tasks');
+    }
+
+    /** Tasks whose comment notifications (email + in-app) this user has muted. */
+    public function mutedTasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_mutes');
     }
     public function suspendedBy()
     {

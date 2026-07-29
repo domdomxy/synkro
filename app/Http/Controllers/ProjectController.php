@@ -92,6 +92,8 @@ class ProjectController extends Controller
         ]);
 
         $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
+        $mutedTaskIds = Auth::user()->mutedTasks()->pluck('tasks.id')->toArray();
+        $project->is_muted = $project->isMutedBy(Auth::user());
 
         $role = $project->roleFor(Auth::user());
         $canViewAllHistory = in_array($role, ['owner', 'manager', 'tester']);
@@ -101,8 +103,9 @@ class ProjectController extends Controller
         $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
 
         $sortedTasks = $project->tasks
-            ->map(function ($task) use ($pinnedTaskIds, $canViewAllHistory) {
+            ->map(function ($task) use ($pinnedTaskIds, $mutedTaskIds, $canViewAllHistory) {
                 $task->is_pinned = in_array($task->id, $pinnedTaskIds);
+                $task->is_muted = in_array($task->id, $mutedTaskIds);
 
                 // History can reveal feedback, reassignment, and other detail that isn't
                 // any bystander's business — only the assignee living the task and the
@@ -467,6 +470,18 @@ class ProjectController extends Controller
     {
         $project->members()->updateExistingPivot(Auth::id(), ['pinned' => true]);
         return back()->with('success', 'Project pinned.');
+    }
+
+    public function mute(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['muted' => true]);
+        return back()->with('success', 'Notifications muted for this project.');
+    }
+
+    public function unmute(Project $project)
+    {
+        $project->members()->updateExistingPivot(Auth::id(), ['muted' => false]);
+        return back()->with('success', 'Notifications unmuted for this project.');
     }
 
     public function deliverables(Project $project)

@@ -289,7 +289,7 @@ function DeliverableItem({ d, canRemove, onRemove }) {
     );
 }
 
-function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDelete, onPin, onRequestChanges, onShowHistory }) {
+function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted, isDone, onEdit, onDelete, onPin, onToggleMute, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -313,6 +313,23 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isDone, onEdit, onDele
                     <button onClick={() => { setOpen(false); onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
                         {isPinned ? 'Unpin task' : 'Pin task'}
+                    </button>
+                    <button
+                        onClick={() => { if (projectMuted) return; setOpen(false); onToggleMute(); }}
+                        disabled={projectMuted}
+                        title={projectMuted ? 'Notifications for this project are muted - unmute the project to control this task individually' : undefined}
+                        className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm ${projectMuted ? 'cursor-not-allowed text-gray-400 dark:text-gray-500' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    >
+                        {isMuted ? (
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                            </svg>
+                        ) : (
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        )}
+                        {projectMuted ? 'Muted (project-wide)' : (isMuted ? 'Unmute notifications' : 'Mute notifications')}
                     </button>
                     {canViewHistory && (
                         <button onClick={() => { setOpen(false); onShowHistory(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -721,7 +738,7 @@ function CommentThread({
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, onJumpToTask }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, onJumpToTask, projectMuted = false }) {
     const isAssignee = task.assigned_to === currentUserId;
 
     const [isEditing, setIsEditing] = useState(false);
@@ -791,6 +808,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const assigneeStillMember = task.assigned_to != null && members?.some((m) => m.id === task.assigned_to);
 
+    // Muted if this task was muted individually, or the whole project was -
+    // either way comment notifications for it are suppressed, so the icon
+    // should reflect the combined state rather than just the task's own flag.
+    const effectivelyMuted = !!task.is_muted || projectMuted;
+
     const deliverableFiles = task.deliverables?.filter((d) => d.type === 'file') ?? [];
     const deliverableLinks = task.deliverables?.filter((d) => d.type === 'link') ?? [];
 
@@ -820,6 +842,16 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         router.post(route(routeName, task.id), {}, {
             preserveScroll: true,
             onFinish: () => setPinning(false),
+        });
+    };
+
+    const [muting, setMuting] = useState(false);
+    const toggleMute = () => {
+        setMuting(true);
+        const routeName = task.is_muted ? 'tasks.unmute' : 'tasks.mute';
+        router.post(route(routeName, task.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setMuting(false),
         });
     };
 
@@ -1251,6 +1283,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     {task.is_pinned && (
                                         <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                                     )}
+                                    {effectivelyMuted && (
+                                        <svg title={projectMuted && !task.is_muted ? 'Notifications muted (whole project muted)' : 'Notifications muted for this task'} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
+                                        </svg>
+                                    )}
                                 </div>
                                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
                                     {!task.assignee && <span>Unassigned</span>}
@@ -1278,10 +1315,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                     canManage={canManage}
                                     canViewHistory={!!task.can_view_history}
                                     isPinned={!!task.is_pinned}
+                                    isMuted={effectivelyMuted}
+                                    projectMuted={projectMuted}
                                     isDone={task.status === 'done'}
                                     onEdit={() => setIsEditing(true)}
                                     onDelete={deleteTask}
                                     onPin={togglePin}
+                                    onToggleMute={toggleMute}
                                     onRequestChanges={() => setShowReopenPanel(true)}
                                     onShowHistory={() => setShowHistory(true)}
                                 />

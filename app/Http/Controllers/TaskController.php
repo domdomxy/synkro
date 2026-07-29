@@ -1039,6 +1039,17 @@ class TaskController extends Controller
         Auth::user()->pinnedTasks()->detach($task->id);
         return back()->with('success', 'Task unpinned.');
     }
+    public function mute(Task $task)
+    {
+        Auth::user()->mutedTasks()->syncWithoutDetaching([$task->id]);
+        return back()->with('success', 'Notifications muted for this task.');
+    }
+
+    public function unmute(Task $task)
+    {
+        Auth::user()->mutedTasks()->detach($task->id);
+        return back()->with('success', 'Notifications unmuted for this task.');
+    }
     public function reopen(Request $request, Task $task)
     {
         $this->authorize('manageMembers', $task->project); // was: $this->authorize('review', $task);

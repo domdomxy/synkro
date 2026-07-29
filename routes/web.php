@@ -98,6 +98,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::post('/projects/{project}/pin', [ProjectController::class, 'pin'])->name('projects.pin');
     Route::post('/projects/{project}/unpin', [ProjectController::class, 'unpin'])->name('projects.unpin');
+    Route::post('/projects/{project}/mute', [ProjectController::class, 'mute'])->name('projects.mute');
+    Route::post('/projects/{project}/unmute', [ProjectController::class, 'unmute'])->name('projects.unmute');
 
     Route::patch('/tasks/{task}/resolve', [TaskController::class, 'resolvePending'])->name('tasks.resolve');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
@@ -110,6 +112,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');
     Route::post('/tasks/{task}/pin', [TaskController::class, 'pin'])->name('tasks.pin');
     Route::post('/tasks/{task}/unpin', [TaskController::class, 'unpin'])->name('tasks.unpin');
+    Route::post('/tasks/{task}/mute', [TaskController::class, 'mute'])->name('tasks.mute');
+    Route::post('/tasks/{task}/unmute', [TaskController::class, 'unmute'])->name('tasks.unmute');
     Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download');

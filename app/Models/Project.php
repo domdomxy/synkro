@@ -24,7 +24,7 @@ class Project extends Model
 
     public function members()
     {
-        return $this->belongsToMany(User::class, 'project_user')->withPivot('role', 'pinned', 'archived')->withTimestamps();
+        return $this->belongsToMany(User::class, 'project_user')->withPivot('role', 'pinned', 'archived', 'muted')->withTimestamps();
     }
 
     public function tasks(): HasMany
@@ -40,6 +40,12 @@ class Project extends Model
     public function isMember(User $user): bool
     {
         return $this->members()->where('user_id', $user->id)->exists();
+    }
+
+    /** Whether this user has muted comment notifications (email + in-app) for every task in this project. */
+    public function isMutedBy(User $user): bool
+    {
+        return (bool) $this->members()->where('user_id', $user->id)->first()?->pivot->muted;
     }
     public function invitations()
     {

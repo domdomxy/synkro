@@ -98,7 +98,21 @@ class CommentController extends Controller
             ->get()
             ->filter(fn ($user) => $task->project->isMember($user));
 
+        // Muting a task suppresses every comment-driven signal for it - the bell
+        // notification and the email alike - regardless of the person's broader
+        // account-wide preferences. Muting the whole project has the same effect
+        // across every task in it. Both are fetched once up front rather than
+        // per-recipient to avoid a query per person in the loops below.
+        $mutedUserIds = $task->mutedBy()->pluck('users.id')
+            ->merge($task->project->members()->wherePivot('muted', true)->pluck('users.id'))
+            ->unique()
+            ->all();
+
         foreach ($recipients as $recipient) {
+            if (in_array($recipient->id, $mutedUserIds, true)) {
+                continue;
+            }
+
             if (NotificationPreferences::wantsType($recipient, 'task_commented')) {
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
@@ -125,6 +139,10 @@ class CommentController extends Controller
         }
 
         foreach ($mentionedRecipients as $recipient) {
+            if (in_array($recipient->id, $mutedUserIds, true)) {
+                continue;
+            }
+
             if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
@@ -151,7 +169,7 @@ class CommentController extends Controller
             );
         }
 
-        if ($replyToUserId && ! $mentionedIds->contains($replyToUserId)) {
+        if ($replyToUserId && ! $mentionedIds->contains($replyToUserId) && ! in_array($replyToUserId, $mutedUserIds, true)) {
             $replyRecipient = \App\Models\User::find($replyToUserId);
             if ($replyRecipient && $task->project->isMember($replyRecipient)) {
                 if (NotificationPreferences::wantsType($replyRecipient, 'comment_replied')) {
@@ -316,8 +334,16 @@ class CommentController extends Controller
 
             $preview = Str::limit($validated['body'], 200);
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $comment->id;
+            $mutedUserIds = $task->mutedBy()->pluck('users.id')
+                ->merge($task->project->members()->wherePivot('muted', true)->pluck('users.id'))
+                ->unique()
+                ->all();
 
             foreach ($newMentionedRecipients as $recipient) {
+                if (in_array($recipient->id, $mutedUserIds, true)) {
+                    continue;
+                }
+
                 if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,

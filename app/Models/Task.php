@@ -58,6 +58,18 @@ class Task extends Model
         return $this->belongsToMany(User::class, 'pinned_tasks');
     }
 
+    /** Users who've muted comment notifications (email + in-app) for this task. */
+    public function mutedBy()
+    {
+        return $this->belongsToMany(User::class, 'task_mutes');
+    }
+
+    public function isMutedBy(?User $user): bool
+    {
+        if (! $user) return false;
+        return $this->mutedBy()->where('users.id', $user->id)->exists();
+    }
+
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ProjectActivityLog::class)->latest();

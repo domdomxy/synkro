@@ -800,6 +800,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         setShowLeaveModal(true);
     };
 
+    const [projectMuting, setProjectMuting] = useState(false);
+    const toggleProjectMute = () => {
+        setProjectMuting(true);
+        const routeName = project.is_muted ? 'projects.unmute' : 'projects.mute';
+        router.post(route(routeName, project.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setProjectMuting(false),
+        });
+    };
+
     const submitLeave = (e) => {
         e.preventDefault();
         leaveForm.delete(route('projects.leave', project.id), {
@@ -851,12 +861,30 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
             <div className="sticky top-16 z-30 -mx-4 -my-6 flex items-center justify-between gap-3 bg-white/95 px-4 py-4 backdrop-blur dark:bg-gray-800/95 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                <h2 className="min-w-0 truncate text-xl font-semibold text-gray-800 dark:text-gray-200">{project.name}</h2>
+                <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+                    <span className="min-w-0 truncate">{project.name}</span>
+                    {project.is_muted && (
+                        <svg title="Notifications muted for this project" className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
+                        </svg>
+                    )}
+                </h2>
                 <div className="flex shrink-0 items-center gap-1">
                     <HeaderIconButton onClick={() => setShowInfoModal(true)} title="Project Info">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
+                    </HeaderIconButton>
+                    <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
+                        {project.is_muted ? (
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                            </svg>
+                        ) : (
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        )}
                     </HeaderIconButton>
                     <HeaderIconButton href={route('projects.deliverables', project.id)} title="Deliverables">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1210,6 +1238,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         onToggleSelect={toggleTaskSelect}
                                         allTasks={project.tasks}
                                         onJumpToTask={jumpToTaskInList}
+                                        projectMuted={!!project.is_muted}
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
