@@ -1039,9 +1039,19 @@ class TaskController extends Controller
         Auth::user()->pinnedTasks()->detach($task->id);
         return back()->with('success', 'Task unpinned.');
     }
-    public function mute(Task $task)
+    public function mute(Request $request, Task $task)
     {
-        Auth::user()->mutedTasks()->syncWithoutDetaching([$task->id]);
+        $validated = $request->validate([
+            'scope' => 'required|in:in_app,email,both',
+        ]);
+
+        Auth::user()->mutedTasks()->syncWithoutDetaching([
+            $task->id => [
+                'mute_in_app' => in_array($validated['scope'], ['in_app', 'both'], true),
+                'mute_email' => in_array($validated['scope'], ['email', 'both'], true),
+            ],
+        ]);
+
         return back()->with('success', 'Notifications muted for this task.');
     }
 

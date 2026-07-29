@@ -92,8 +92,12 @@ class ProjectController extends Controller
         ]);
 
         $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
-        $mutedTaskIds = Auth::user()->mutedTasks()->pluck('tasks.id')->toArray();
+        // Keyed by task id so each task's individual mute_in_app/mute_email pivot
+        // flags are available below, not just whether a mute row exists at all.
+        $mutedTasks = Auth::user()->mutedTasks()->get()->keyBy('id');
         $project->is_muted = $project->isMutedBy(Auth::user());
+        $project->mute_in_app = $project->inAppMutedBy(Auth::user());
+        $project->mute_email = $project->emailMutedBy(Auth::user());
 
         $role = $project->roleFor(Auth::user());
         $canViewAllHistory = in_array($role, ['owner', 'manager', 'tester']);
@@ -103,9 +107,12 @@ class ProjectController extends Controller
         $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
 
         $sortedTasks = $project->tasks
-            ->map(function ($task) use ($pinnedTaskIds, $mutedTaskIds, $canViewAllHistory) {
+            ->map(function ($task) use ($pinnedTaskIds, $mutedTasks, $canViewAllHistory) {
                 $task->is_pinned = in_array($task->id, $pinnedTaskIds);
-                $task->is_muted = in_array($task->id, $mutedTaskIds);
+                $taskMute = $mutedTasks->get($task->id);
+                $task->is_muted = (bool) $taskMute;
+                $task->mute_in_app = (bool) $taskMute?->pivot->mute_in_app;
+                $task->mute_email = (bool) $taskMute?->pivot->mute_email;
 
                 // History can reveal feedback, reassignment, and other detail that isn't
                 // any bystander's business — only the assignee living the task and the
@@ -472,15 +479,23 @@ class ProjectController extends Controller
         return back()->with('success', 'Project pinned.');
     }
 
-    public function mute(Project $project)
+    public function mute(Request $request, Project $project)
     {
-        $project->members()->updateExistingPivot(Auth::id(), ['muted' => true]);
+        $validated = $request->validate([
+            'scope' => 'required|in:in_app,email,both',
+        ]);
+
+        $project->members()->updateExistingPivot(Auth::id(), [
+            'mute_in_app' => in_array($validated['scope'], ['in_app', 'both'], true),
+            'mute_email' => in_array($validated['scope'], ['email', 'both'], true),
+        ]);
+
         return back()->with('success', 'Notifications muted for this project.');
     }
 
     public function unmute(Project $project)
     {
-        $project->members()->updateExistingPivot(Auth::id(), ['muted' => false]);
+        $project->members()->updateExistingPivot(Auth::id(), ['mute_in_app' => false, 'mute_email' => false]);
         return back()->with('success', 'Notifications unmuted for this project.');
     }
 

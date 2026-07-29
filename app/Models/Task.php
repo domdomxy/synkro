@@ -58,16 +58,26 @@ class Task extends Model
         return $this->belongsToMany(User::class, 'pinned_tasks');
     }
 
-    /** Users who've muted comment notifications (email + in-app) for this task. */
+    /** Users who've muted comment notifications (in-app, email, or both) for this task. */
     public function mutedBy()
     {
-        return $this->belongsToMany(User::class, 'task_mutes');
+        return $this->belongsToMany(User::class, 'task_mutes')->withPivot('mute_in_app', 'mute_email')->withTimestamps();
     }
 
-    public function isMutedBy(?User $user): bool
+    /** Whether $user has muted this task on the given channel ('in_app', 'email', or null for either). */
+    public function isMutedBy(?User $user, ?string $channel = null): bool
     {
         if (! $user) return false;
-        return $this->mutedBy()->where('users.id', $user->id)->exists();
+
+        $pivot = $this->mutedBy()->where('users.id', $user->id)->first()?->pivot;
+
+        if (! $pivot) return false;
+
+        return match ($channel) {
+            'in_app' => (bool) $pivot->mute_in_app,
+            'email' => (bool) $pivot->mute_email,
+            default => (bool) ($pivot->mute_in_app || $pivot->mute_email),
+        };
     }
 
     public function activityLogs(): HasMany

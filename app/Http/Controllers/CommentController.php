@@ -98,22 +98,25 @@ class CommentController extends Controller
             ->get()
             ->filter(fn ($user) => $task->project->isMember($user));
 
-        // Muting a task suppresses every comment-driven signal for it - the bell
-        // notification and the email alike - regardless of the person's broader
-        // account-wide preferences. Muting the whole project has the same effect
-        // across every task in it. Both are fetched once up front rather than
-        // per-recipient to avoid a query per person in the loops below.
-        $mutedUserIds = $task->mutedBy()->pluck('users.id')
-            ->merge($task->project->members()->wherePivot('muted', true)->pluck('users.id'))
+        // Muting a task suppresses comment-driven signals for it on whichever channel(s)
+        // were chosen - the bell notification, the email, or both - regardless of the
+        // person's broader account-wide preferences. Muting the whole project has the
+        // same effect across every task in it. Both are fetched once up front rather
+        // than per-recipient to avoid a query per person in the loops below.
+        $mutedInAppUserIds = $task->mutedBy()->wherePivot('mute_in_app', true)->pluck('users.id')
+            ->merge($task->project->members()->wherePivot('mute_in_app', true)->pluck('users.id'))
+            ->unique()
+            ->all();
+        $mutedEmailUserIds = $task->mutedBy()->wherePivot('mute_email', true)->pluck('users.id')
+            ->merge($task->project->members()->wherePivot('mute_email', true)->pluck('users.id'))
             ->unique()
             ->all();
 
         foreach ($recipients as $recipient) {
-            if (in_array($recipient->id, $mutedUserIds, true)) {
-                continue;
-            }
+            $inAppMuted = in_array($recipient->id, $mutedInAppUserIds, true);
+            $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
-            if (NotificationPreferences::wantsType($recipient, 'task_commented')) {
+            if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_commented')) {
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_commented',
@@ -128,22 +131,23 @@ class CommentController extends Controller
                 }
             }
 
-            NotificationMailer::send(
-                $recipient,
-                'task.commented',
-                Auth::user()->name . " commented on \"{$task->title}\"",
-                ['**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\": \"{$preview}\""],
-                url($url),
-                'View Task'
-            );
+            if (! $emailMuted) {
+                NotificationMailer::send(
+                    $recipient,
+                    'task.commented',
+                    Auth::user()->name . " commented on \"{$task->title}\"",
+                    ['**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\": \"{$preview}\""],
+                    url($url),
+                    'View Task'
+                );
+            }
         }
 
         foreach ($mentionedRecipients as $recipient) {
-            if (in_array($recipient->id, $mutedUserIds, true)) {
-                continue;
-            }
+            $inAppMuted = in_array($recipient->id, $mutedInAppUserIds, true);
+            $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
-            if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
+            if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_mentioned',
@@ -158,21 +162,26 @@ class CommentController extends Controller
                 }
             }
 
-            NotificationMailer::send(
-                $recipient,
-                'task.mentioned',
-                Auth::user()->name . " mentioned you on \"{$task->title}\"",
-                ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
-                url($url),
-                'View Task',
-                ['label' => 'Comment', 'content' => $preview]
-            );
+            if (! $emailMuted) {
+                NotificationMailer::send(
+                    $recipient,
+                    'task.mentioned',
+                    Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                    ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
+                    url($url),
+                    'View Task',
+                    ['label' => 'Comment', 'content' => $preview]
+                );
+            }
         }
 
-        if ($replyToUserId && ! $mentionedIds->contains($replyToUserId) && ! in_array($replyToUserId, $mutedUserIds, true)) {
+        if ($replyToUserId && ! $mentionedIds->contains($replyToUserId)) {
             $replyRecipient = \App\Models\User::find($replyToUserId);
             if ($replyRecipient && $task->project->isMember($replyRecipient)) {
-                if (NotificationPreferences::wantsType($replyRecipient, 'comment_replied')) {
+                $inAppMuted = in_array($replyToUserId, $mutedInAppUserIds, true);
+                $emailMuted = in_array($replyToUserId, $mutedEmailUserIds, true);
+
+                if (! $inAppMuted && NotificationPreferences::wantsType($replyRecipient, 'comment_replied')) {
                     $notification = UserNotification::create([
                         'user_id' => $replyRecipient->id,
                         'type' => 'comment_replied',
@@ -187,15 +196,17 @@ class CommentController extends Controller
                     }
                 }
 
-                NotificationMailer::send(
-                    $replyRecipient,
-                    'task.replied',
-                    Auth::user()->name . " replied to your comment on \"{$task->title}\"",
-                    ['**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\":"],
-                    url($url),
-                    'View Reply',
-                    ['label' => 'Reply', 'content' => $preview]
-                );
+                if (! $emailMuted) {
+                    NotificationMailer::send(
+                        $replyRecipient,
+                        'task.replied',
+                        Auth::user()->name . " replied to your comment on \"{$task->title}\"",
+                        ['**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\":"],
+                        url($url),
+                        'View Reply',
+                        ['label' => 'Reply', 'content' => $preview]
+                    );
+                }
             }
         }
 
@@ -334,17 +345,20 @@ class CommentController extends Controller
 
             $preview = Str::limit($validated['body'], 200);
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $comment->id;
-            $mutedUserIds = $task->mutedBy()->pluck('users.id')
-                ->merge($task->project->members()->wherePivot('muted', true)->pluck('users.id'))
+            $mutedInAppUserIds = $task->mutedBy()->wherePivot('mute_in_app', true)->pluck('users.id')
+                ->merge($task->project->members()->wherePivot('mute_in_app', true)->pluck('users.id'))
+                ->unique()
+                ->all();
+            $mutedEmailUserIds = $task->mutedBy()->wherePivot('mute_email', true)->pluck('users.id')
+                ->merge($task->project->members()->wherePivot('mute_email', true)->pluck('users.id'))
                 ->unique()
                 ->all();
 
             foreach ($newMentionedRecipients as $recipient) {
-                if (in_array($recipient->id, $mutedUserIds, true)) {
-                    continue;
-                }
+                $inAppMuted = in_array($recipient->id, $mutedInAppUserIds, true);
+                $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
-                if (NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
+                if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'task_mentioned',
@@ -359,15 +373,17 @@ class CommentController extends Controller
                     }
                 }
 
-                NotificationMailer::send(
-                    $recipient,
-                    'task.mentioned',
-                    Auth::user()->name . " mentioned you on \"{$task->title}\"",
-                    ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
-                    url($url),
-                    'View Task',
-                    ['label' => 'Comment', 'content' => $preview]
-                );
+                if (! $emailMuted) {
+                    NotificationMailer::send(
+                        $recipient,
+                        'task.mentioned',
+                        Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                        ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
+                        url($url),
+                        'View Task',
+                        ['label' => 'Comment', 'content' => $preview]
+                    );
+                }
             }
         }
 

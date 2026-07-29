@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
 import useConfirm from '@/hooks/useConfirm';
+import useMuteScope from '@/hooks/useMuteScope';
 
 const roleStyles = {
     owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -94,7 +95,7 @@ function ProjectActionsMenu({ project, showingArchived, onPin, onUnpin, onArchiv
     }, [open]);
 
     const isPinned = !!project.pivot?.pinned;
-    const isMuted = !!project.pivot?.muted;
+    const isMuted = !!(project.pivot?.mute_in_app || project.pivot?.mute_email);
 
     return (
         <>
@@ -151,6 +152,7 @@ export default function Index({ projects, showingArchived }) {
         return localStorage.getItem('synkro:projects-view') ?? 'grid';
     });
     const { confirm, ConfirmDialog } = useConfirm();
+    const { askMuteScope, MuteScopeDialog } = useMuteScope();
 
     const changeView = (next) => {
         setView(next);
@@ -196,8 +198,18 @@ export default function Index({ projects, showingArchived }) {
 
     const pinProject = (project) => router.post(route('projects.pin', project.id), {}, { preserveScroll: true });
     const unpinProject = (project) => router.post(route('projects.unpin', project.id), {}, { preserveScroll: true });
-    const muteProject = (project) => router.post(route('projects.mute', project.id), {}, { preserveScroll: true });
     const unmuteProject = (project) => router.post(route('projects.unmute', project.id), {}, { preserveScroll: true });
+    const muteProject = async (project) => {
+        const muteInApp = !!project.pivot?.mute_in_app;
+        const muteEmail = !!project.pivot?.mute_email;
+        const scope = await askMuteScope({
+            title: 'Mute Notifications',
+            message: `Choose which notifications to mute for every task in "${project.name}".`,
+            defaultScope: muteInApp && muteEmail ? 'both' : muteInApp ? 'in_app' : muteEmail ? 'email' : 'both',
+        });
+        if (!scope) return;
+        router.post(route('projects.mute', project.id), { scope }, { preserveScroll: true });
+    };
 
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -338,7 +350,7 @@ export default function Index({ projects, showingArchived }) {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                                             </svg>
                                                         )}
-                                                        {!!project.pivot?.muted && (
+                                                        {!!(project.pivot?.mute_in_app || project.pivot?.mute_email) && (
                                                             <svg title="Notifications muted" className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
                                                             </svg>
@@ -427,7 +439,7 @@ export default function Index({ projects, showingArchived }) {
                                                         Pinned
                                                     </span>
                                                 )}
-                                                {!!project.pivot?.muted && (
+                                                {!!(project.pivot?.mute_in_app || project.pivot?.mute_email) && (
                                                     <span title="Notifications muted" className="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                                                         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
@@ -496,6 +508,7 @@ export default function Index({ projects, showingArchived }) {
                 </form>
             </Modal>
             {ConfirmDialog}
+            {MuteScopeDialog}
         </AuthenticatedLayout>
     );
 }

@@ -11,6 +11,7 @@ import MentionTextarea, { extractRoleMentions, ROLE_LABELS } from '@/Components/
 import { localDateTimeToIso } from '@/utils/datetime';
 import { roleStyles } from '@/utils/roleStyles';
 import useConfirm from '@/hooks/useConfirm';
+import useMuteScope from '@/hooks/useMuteScope';
 import Linkify from '@/Components/Linkify';
 import CommentBody from '@/Components/CommentBody';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
@@ -765,6 +766,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [showHistory, setShowHistory] = useState(false);
     const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
+    const { askMuteScope, MuteScopeDialog } = useMuteScope();
 
     // Re-measure whenever the description is collapsed (line-clamp-2 is only
     // ever active then) or its content changes. When expanded, clientHeight
@@ -846,10 +848,25 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const [muting, setMuting] = useState(false);
-    const toggleMute = () => {
+    const toggleMute = async () => {
+        if (task.is_muted) {
+            setMuting(true);
+            router.post(route('tasks.unmute', task.id), {}, {
+                preserveScroll: true,
+                onFinish: () => setMuting(false),
+            });
+            return;
+        }
+
+        const scope = await askMuteScope({
+            title: 'Mute Notifications',
+            message: `Choose which notifications to mute for "${task.title}".`,
+            defaultScope: task.mute_in_app && task.mute_email ? 'both' : task.mute_in_app ? 'in_app' : task.mute_email ? 'email' : 'both',
+        });
+        if (!scope) return;
+
         setMuting(true);
-        const routeName = task.is_muted ? 'tasks.unmute' : 'tasks.mute';
-        router.post(route(routeName, task.id), {}, {
+        router.post(route('tasks.mute', task.id), { scope }, {
             preserveScroll: true,
             onFinish: () => setMuting(false),
         });
@@ -1835,6 +1852,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         </Modal>
 
         {ConfirmDialog}
+        {MuteScopeDialog}
         </div>
     );
 }

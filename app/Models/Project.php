@@ -24,7 +24,7 @@ class Project extends Model
 
     public function members()
     {
-        return $this->belongsToMany(User::class, 'project_user')->withPivot('role', 'pinned', 'archived', 'muted')->withTimestamps();
+        return $this->belongsToMany(User::class, 'project_user')->withPivot('role', 'pinned', 'archived', 'mute_in_app', 'mute_email')->withTimestamps();
     }
 
     public function tasks(): HasMany
@@ -42,10 +42,22 @@ class Project extends Model
         return $this->members()->where('user_id', $user->id)->exists();
     }
 
-    /** Whether this user has muted comment notifications (email + in-app) for every task in this project. */
+    /** Whether this user has muted comment notifications (in-app, email, or both) for every task in this project. */
     public function isMutedBy(User $user): bool
     {
-        return (bool) $this->members()->where('user_id', $user->id)->first()?->pivot->muted;
+        return $this->inAppMutedBy($user) || $this->emailMutedBy($user);
+    }
+
+    /** Whether this user has muted the in-app bell notification for every task in this project. */
+    public function inAppMutedBy(User $user): bool
+    {
+        return (bool) $this->members()->where('user_id', $user->id)->first()?->pivot->mute_in_app;
+    }
+
+    /** Whether this user has muted the email notification for every task in this project. */
+    public function emailMutedBy(User $user): bool
+    {
+        return (bool) $this->members()->where('user_id', $user->id)->first()?->pivot->mute_email;
     }
     public function invitations()
     {

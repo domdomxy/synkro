@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MemberLeftProject;
 use App\Events\ProjectInvitationSent;
+use App\Events\ProjectRosterUpdated;
 use App\Events\ProjectRoleChanged;
 use App\Models\Comment;
 use App\Models\Project;
@@ -96,13 +97,27 @@ class ProjectMemberController extends Controller
             'View Invitation'
         );
 
+        try {
+            broadcast(new ProjectRosterUpdated($project->id, 'invitation_sent'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return back()->with('success', 'Invitation sent.');
     }
 
     public function destroyInvitation(ProjectInvitation $invitation)
     {
         $this->authorize('manageMembers', $invitation->project);
+        $projectId = $invitation->project_id;
         $invitation->delete();
+
+        try {
+            broadcast(new ProjectRosterUpdated($projectId, 'invitation_cancelled'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return back()->with('success', 'Invitation cancelled.');
     }
 
@@ -148,6 +163,12 @@ class ProjectMemberController extends Controller
                 url(route('projects.show', $project->id, false)),
                 'View Project'
             );
+
+            try {
+                broadcast(new ProjectRosterUpdated($project->id, 'role_changed'))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return back()->with('success', 'Role updated.');
@@ -208,6 +229,12 @@ class ProjectMemberController extends Controller
             'reason' => $reason,
         ]);
 
+        try {
+            broadcast(new ProjectRosterUpdated($project->id, 'member_removed'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return back()->with('success', 'Member removed.');
     }
 
@@ -240,6 +267,12 @@ class ProjectMemberController extends Controller
             'role' => $leavingRole,
             'reason' => $reason,
         ]);
+
+        try {
+            broadcast(new ProjectRosterUpdated($project->id, 'member_left'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $recipients = $project->members()
             ->wherePivotIn('role', ['owner', 'manager'])

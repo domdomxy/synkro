@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Events\InvitationAccepted;
 use App\Events\InvitationDenied;
+use App\Events\ProjectRosterUpdated;
 use App\Models\ProjectActivityLog;
 use App\Models\ProjectInvitation;
 use App\Models\UserNotification;
@@ -51,6 +52,12 @@ class InvitationController extends Controller
 
         $invitation->project->members()->attach(Auth::id(), ['role' => $invitation->role]);
         $invitation->update(['status' => 'accepted']);
+
+        try {
+            broadcast(new ProjectRosterUpdated($invitation->project_id, 'invitation_accepted'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         ProjectActivityLog::log($invitation->project, 'invitation_accepted', [
             'role' => $invitation->role,
@@ -143,6 +150,12 @@ class InvitationController extends Controller
         }
 
         $invitation->update(['status' => 'denied']);
+
+        try {
+            broadcast(new ProjectRosterUpdated($invitation->project_id, 'invitation_denied'))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         ProjectActivityLog::log($invitation->project, 'invitation_denied', [
             'target_name' => Auth::user()->name,

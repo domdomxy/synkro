@@ -9,6 +9,7 @@ import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import TaskBoard from '@/Components/TaskBoard';
 import useConfirm from '@/hooks/useConfirm';
+import useMuteScope from '@/hooks/useMuteScope';
 import UserSearchInput from '@/Components/UserSearchInput';
 import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
@@ -624,7 +625,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [selectedTaskIds, setSelectedTaskIds] = useState([]);
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
-    const [bulkAction, setBulkAction] = useState({ status: 'todo', priority: 'low', assigned_to: '' });
+    const { askMuteScope, MuteScopeDialog } = useMuteScope();
     const [bulkTouched, setBulkTouched] = useState({ status: false, priority: false, assigned_to: false });
     const [bulkProcessing, setBulkProcessing] = useState(false);
 
@@ -710,6 +711,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     useEcho(`project.${project.id}`, ['.project.deletion_requested', '.project.deletion_cancelled'], () => {
         router.reload({ only: ['project'] });
+    });
+
+    // Fires whenever this project's roster changes - an invitation sent, cancelled,
+    // accepted, or denied; a role change; a member removed; or a member leaving -
+    // whether triggered from this browser tab or another manager's, so the Members
+    // and Pending Invitations lists stay in sync without anyone refreshing the page.
+    useEcho(`project.${project.id}`, ['.roster.updated'], () => {
+        router.reload({ only: ['project', 'pendingInvitations'] });
     });
 
     const cancelDeletion = async () => {
@@ -801,10 +810,25 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     };
 
     const [projectMuting, setProjectMuting] = useState(false);
-    const toggleProjectMute = () => {
+    const toggleProjectMute = async () => {
+        if (project.is_muted) {
+            setProjectMuting(true);
+            router.post(route('projects.unmute', project.id), {}, {
+                preserveScroll: true,
+                onFinish: () => setProjectMuting(false),
+            });
+            return;
+        }
+
+        const scope = await askMuteScope({
+            title: 'Mute Notifications',
+            message: `Choose which notifications to mute for every task in "${project.name}".`,
+            defaultScope: project.mute_in_app && project.mute_email ? 'both' : project.mute_in_app ? 'in_app' : project.mute_email ? 'email' : 'both',
+        });
+        if (!scope) return;
+
         setProjectMuting(true);
-        const routeName = project.is_muted ? 'projects.unmute' : 'projects.mute';
-        router.post(route(routeName, project.id), {}, {
+        router.post(route('projects.mute', project.id), { scope }, {
             preserveScroll: true,
             onFinish: () => setProjectMuting(false),
         });
@@ -1302,6 +1326,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 onSubmit={submitLeave}
             />
             {ConfirmDialog}
+            {MuteScopeDialog}
         </AuthenticatedLayout>
     );
 }
