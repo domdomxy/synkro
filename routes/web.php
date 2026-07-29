@@ -34,6 +34,14 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/privacy', function () {
+    return Inertia::render('Privacy');
+})->name('privacy');
+
+Route::get('/terms', function () {
+    return Inertia::render('TermsOfUse');
+})->name('terms');
+
 Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 Route::post('/feedback/track', [FeedbackController::class, 'track'])->name('feedback.track');
 Route::get('/feedback', [FeedbackPageController::class, 'index'])->name('feedback.page');

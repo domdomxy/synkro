@@ -1,13 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import StatCard from '@/Components/StatCard';
-import { Head, Link, router } from '@inertiajs/react';
+import StatusDonut from '@/Components/StatusDonut';
+import RangeButtons from '@/Components/RangeButtons';
+import SectionHeader from '@/Components/SectionHeader';
+import EmptyChartState from '@/Components/EmptyChartState';
+import { Head, Link } from '@inertiajs/react';
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
-
-const statusLabels = { todo: 'To Do', in_progress: 'In Progress', submitted: 'Submitted', in_review: 'In Review', done: 'Done' };
-const statusColors = { todo: 'bg-gray-400', in_progress: 'bg-blue-500', submitted: 'bg-yellow-500', in_review: 'bg-purple-500', done: 'bg-green-500' };
+import { statusLabels, statusColors } from '@/utils/taskStatus';
 
 const statIcons = {
     users: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a4 4 0 10-4-4" /></svg>,
@@ -21,6 +23,8 @@ const statIcons = {
     growth: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
     online: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.652a3.75 3.75 0 010-5.304m5.304 0a3.75 3.75 0 010 5.304m-7.425 2.121a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M12 12h.008v.008H12V12z" /></svg>,
     completed: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    chart: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+    donut: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>,
 };
 
 function HeaderLogsButton({ href, title, children, label }) {
@@ -36,73 +40,18 @@ function HeaderLogsButton({ href, title, children, label }) {
     );
 }
 
-function SectionHeading({ children }) {
-    return <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{children}</h3>;
-}
-
-function StatusDonut({ tasksByStatus, total, size = 140, strokeWidth = 15 }) {
-    const strokeColors = { todo: '#9ca3af', in_progress: '#3b82f6', submitted: '#eab308', in_review: '#a855f7', done: '#22c55e' };
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    let cumulative = 0;
-    const segments = Object.keys(statusLabels).map((key) => {
-        const count = tasksByStatus[key] ?? 0;
-        const dash = total ? (count / total) * circumference : 0;
-        const seg = { key, dash, offset: cumulative, count };
-        cumulative += dash;
-        return seg;
-    });
-    return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100 dark:stroke-gray-700" />
-                {segments.filter((s) => s.count > 0).map((s) => (
-                    <circle key={s.key} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={strokeColors[s.key]} strokeWidth={strokeWidth} strokeDasharray={`${s.dash} ${circumference - s.dash}`} strokeDashoffset={-s.offset} strokeLinecap="round" />
-                ))}
-            </g>
-            <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 dark:fill-gray-100" style={{ fontSize: 26, fontWeight: 700 }}>{total}</text>
-            <text x="50%" y="62%" textAnchor="middle" className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 10 }}>Tasks</text>
-        </svg>
-    );
-}
-
-function RangeButtons({ range, routeName, customFrom, customTo }) {
-    const [showCustom, setShowCustom] = useState(range === 'custom');
-    const [from, setFrom] = useState(customFrom ?? '');
-    const [to, setTo] = useState(customTo ?? '');
-    const applyCustom = () => { if (from && to) router.get(route(routeName, { range: 'custom', from, to }), {}, { preserveScroll: true }); };
-    return (
-        <div className="flex flex-wrap items-center gap-1">
-            {Object.entries({ today: 'Today', week: 'This Week', month: 'This Month' }).map(([key, label]) => (
-                <Link key={key} href={route(routeName, { range: key })} preserveScroll
-                    className={`rounded-md px-3 py-1 text-xs ${range === key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
-                    onClick={() => setShowCustom(false)}>
-                    {label}
-                </Link>
-            ))}
-            <button onClick={() => setShowCustom((v) => !v)} className={`rounded-md px-3 py-1 text-xs ${range === 'custom' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}>Custom</button>
-            {showCustom && (
-                <div className="flex items-center gap-1">
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <span className="text-xs text-gray-400">to</span>
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <button onClick={applyCustom} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
-                </div>
-            )}
-        </div>
-    );
-}
-
 function AttentionPanel({ items }) {
     const visible = items.filter((i) => i.count > 0);
     if (visible.length === 0) return null;
     return (
         <div className="overflow-hidden rounded-lg border border-amber-200 bg-white shadow dark:border-amber-900/40 dark:bg-gray-800">
-            <div className="flex items-center gap-2 border-b border-amber-100 px-5 py-3 dark:border-amber-900/30">
-                <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs Attention</h3>
+            <div className="border-b border-amber-100 px-5 py-3 dark:border-amber-900/30">
+                <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs Attention</h3>
+                </div>
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                 {visible.map((item) => (
@@ -124,8 +73,8 @@ function AttentionPanel({ items }) {
 function TasksByStatusCard({ tasksByStatus, total }) {
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <SectionHeading>Tasks by Status</SectionHeading>
-            <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
+            <SectionHeader title="Tasks by Status" icon={statIcons.donut} />
+            <div className="mt-1 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
                 <StatusDonut tasksByStatus={tasksByStatus} total={total} />
                 <ul className="w-full max-w-xs divide-y divide-gray-100 dark:divide-gray-700">
                     {Object.entries(statusLabels).map(([key, label]) => {
@@ -146,10 +95,10 @@ function TasksByStatusCard({ tasksByStatus, total }) {
     );
 }
 
-function RecentPanel({ title, viewAllHref, viewAllLabel, children }) {
+function RecentPanel({ title, icon, viewAllHref, viewAllLabel, children }) {
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+            <SectionHeader title={title} icon={icon} />
             {children}
             <Link href={viewAllHref} className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                 {viewAllLabel} <span aria-hidden>→</span>
@@ -160,6 +109,7 @@ function RecentPanel({ title, viewAllHref, viewAllLabel, children }) {
 
 export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = stats.tasks;
+    const hasActivity = stats.chartData?.some((d) => (d.completed ?? 0) + (d.created ?? 0) + (d.newUsers ?? 0) + (d.newProjects ?? 0) > 0);
 
     const [liveCounts, setLiveCounts] = useState({
         pendingAppeals: stats.pendingAppeals,
@@ -203,10 +153,22 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <div className="flex flex-wrap gap-3">
-                        <Link href={route('admin.users')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Manage Users</Link>
-                        <Link href={route('admin.projects')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">View Projects</Link>
-                        <Link href={route('admin.feedbacks')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Feedback</Link>
-                        <Link href={route('admin.appeals')} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Appeals</Link>
+                        <Link href={route('admin.users')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                            {statIcons.users}
+                            Manage Users
+                        </Link>
+                        <Link href={route('admin.projects')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                            {statIcons.projects}
+                            View Projects
+                        </Link>
+                        <Link href={route('admin.feedbacks')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                            {statIcons.feedback}
+                            Feedback
+                        </Link>
+                        <Link href={route('admin.appeals')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                            {statIcons.appeal}
+                            Appeals
+                        </Link>
                     </div>
 
                     <AttentionPanel items={attentionItems} />
@@ -216,39 +178,42 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Admins" value={stats.admins} sub="Users with elevated platform access" icon={statIcons.admins} />
                         <StatCard label="Projects" value={stats.projects} sub="Total projects created" pct={stats.projectGrowthRate} icon={statIcons.projects} />
                         <StatCard label="Tasks" value={stats.tasks} sub={`${stats.tasksByStatus.done ?? 0} completed`} pct={stats.taskGrowthRate} icon={statIcons.tasks} />
-                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New user signups this month" icon={statIcons.newThisMonth} />
+                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New user signups this month" accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.newThisMonth} />
                         <StatCard label="Growth Rate" value={`${stats.userGrowthRate > 0 ? '+' : ''}${stats.userGrowthRate}%`} sub="User growth vs last month" accentColor={stats.userGrowthRate > 0 ? 'text-green-600 dark:text-green-400' : stats.userGrowthRate < 0 ? 'text-red-600 dark:text-red-400' : undefined} icon={statIcons.growth} />
-                        <StatCard label="Currently Online" value={stats.currentlyOnline} sub="Active in the last 5 minutes" icon={statIcons.online} />
-                        <StatCard label="Completed Projects" value={stats.completedProjects} sub="Every task in the project is done" icon={statIcons.completed} />
+                        <StatCard label="Currently Online" value={stats.currentlyOnline} sub="Active in the last 5 minutes" accentColor="text-green-600 dark:text-green-400" icon={statIcons.online} />
+                        <StatCard label="Completed Projects" value={stats.completedProjects} sub="Every task in the project is done" accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.completed} />
                     </div>
 
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                            <SectionHeading>Platform Activity</SectionHeading>
+                        <SectionHeader title="Platform Activity" icon={statIcons.chart}>
                             <RangeButtons range={range} routeName="admin.dashboard" customFrom={customFrom} customTo={customTo} />
-                        </div>
+                        </SectionHeader>
                         <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
-                        <div className="text-gray-600 dark:text-gray-300">
-                            <ResponsiveContainer width="100%" height={260}>
-                                <AreaChart data={stats.chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
-                                    <Tooltip />
-                                    <Legend wrapperStyle={{ color: 'currentColor', paddingTop: 12 }} />
-                                    <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
-                                    <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                    <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                                    <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {hasActivity ? (
+                            <div className="text-gray-600 dark:text-gray-300">
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <AreaChart data={stats.chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                        <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                                        <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
+                                        <Tooltip />
+                                        <Legend wrapperStyle={{ color: 'currentColor', paddingTop: 12 }} />
+                                        <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
+                                        <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                                        <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <EmptyChartState height={260} title="No platform activity in this period" subtitle="No tasks, users, or projects changed here yet. Try a wider range." />
+                        )}
                     </div>
 
                     <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
 
                     <div className="grid items-start gap-6 lg:grid-cols-2">
-                        <RecentPanel title="Recent Users" viewAllHref={route('admin.users')} viewAllLabel="View all users">
+                        <RecentPanel title="Recent Users" icon={statIcons.users} viewAllHref={route('admin.users')} viewAllLabel="View all users">
                             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {stats.recentUsers.map((user) => (
                                     <li key={user.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
@@ -263,7 +228,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             </ul>
                         </RecentPanel>
 
-                        <RecentPanel title="Recent Projects" viewAllHref={route('admin.projects')} viewAllLabel="View all projects">
+                        <RecentPanel title="Recent Projects" icon={statIcons.projects} viewAllHref={route('admin.projects')} viewAllLabel="View all projects">
                             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {stats.recentProjects.map((project) => (
                                     <li key={project.id} className="py-2 first:pt-0 last:pb-0">

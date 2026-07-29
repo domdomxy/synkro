@@ -10,10 +10,36 @@
  *   Composition/ratio percentages (a share of a total, not a change over
  *   time) should go in `sub` as plain text instead of `pct`, since they have
  *   no real "up is good, down is bad" direction to color.
+ * - `accentColor` is a Tailwind text-color class pair (e.g.
+ *   "text-indigo-600 dark:text-indigo-400"). When present, the icon badge
+ *   picks up a matching tinted background instead of the plain gray one, so
+ *   the icon reads as "this card's color" at a glance rather than always
+ *   sitting in a neutral circle.
  */
+
+// Maps the color name inside an accentColor string (e.g. "indigo" from
+// "text-indigo-600 ...") to a tinted badge background. Kept as a static
+// lookup of full class strings, not a template literal, so Tailwind's JIT
+// scanner picks these up at build time.
+const BADGE_TINTS = {
+    indigo: 'bg-indigo-50 dark:bg-indigo-950/40',
+    green: 'bg-green-50 dark:bg-green-950/40',
+    purple: 'bg-purple-50 dark:bg-purple-950/40',
+    red: 'bg-red-50 dark:bg-red-950/40',
+    orange: 'bg-orange-50 dark:bg-orange-950/40',
+    amber: 'bg-amber-50 dark:bg-amber-950/40',
+    blue: 'bg-blue-50 dark:bg-blue-950/40',
+    pink: 'bg-pink-50 dark:bg-pink-950/40',
+};
+
+function badgeTintFor(accentColor) {
+    const match = accentColor?.match(/text-([a-z]+)-\d+/);
+    return (match && BADGE_TINTS[match[1]]) || 'bg-gray-50 dark:bg-gray-700';
+}
+
 export default function StatCard({ label, value, sub, pct, accentColor, icon }) {
     return (
-        <div className="min-w-0 rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-6">
+        <div className="min-w-0 rounded-lg bg-white p-4 shadow transition-shadow duration-200 hover:shadow-md dark:bg-gray-800 sm:p-6">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{label}</p>
@@ -30,7 +56,7 @@ export default function StatCard({ label, value, sub, pct, accentColor, icon }) 
                     )}
                 </div>
                 {icon && (
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-700 sm:h-9 sm:w-9 ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${badgeTintFor(accentColor)} ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
                         {icon}
                     </div>
                 )}

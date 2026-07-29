@@ -416,7 +416,19 @@ export default function Welcome({ auth, stats }) {
                 </main>
 
                 <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400 dark:border-gray-800 dark:text-gray-500">
-                    Synkro was built as a PFA project at Kernel Solution &amp; Innovation
+                    Synkro was built as a PFA project at{' '}
+                    <a
+                        href="https://www.kernelsi.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-gray-500 underline decoration-gray-300 underline-offset-2 hover:text-gray-700 dark:text-gray-400 dark:decoration-gray-600 dark:hover:text-gray-200"
+                    >
+                        Kernel Solution &amp; Innovation
+                    </a>
+                    <span className="mx-2 text-gray-300 dark:text-gray-700">&middot;</span>
+                    <Link href={route('privacy')} className="hover:text-gray-700 dark:hover:text-gray-200">Privacy</Link>
+                    <span className="mx-2 text-gray-300 dark:text-gray-700">&middot;</span>
+                    <Link href={route('terms')} className="hover:text-gray-700 dark:hover:text-gray-200">Terms of Use</Link>
                 </footer>
             </div>
         </>

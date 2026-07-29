@@ -7,22 +7,11 @@ import { NoteList, notePreview } from '@/utils/noteFormat';
 import useConfirm from '@/hooks/useConfirm';
 import StatCard from '@/Components/StatCard';
 import FilterSelect from '@/Components/FilterSelect';
-
-const statusLabels = {
-    todo: 'To Do',
-    in_progress: 'In Progress',
-    submitted: 'Submitted',
-    in_review: 'In Review',
-    done: 'Done',
-};
-
-const statusColors = {
-    todo: 'bg-gray-400',
-    in_progress: 'bg-blue-500',
-    submitted: 'bg-yellow-500',
-    in_review: 'bg-purple-500',
-    done: 'bg-green-500',
-};
+import StatusDonut from '@/Components/StatusDonut';
+import RangeButtons from '@/Components/RangeButtons';
+import SectionHeader from '@/Components/SectionHeader';
+import EmptyChartState from '@/Components/EmptyChartState';
+import { statusLabels, statusColors } from '@/utils/taskStatus';
 
 const statIcons = {
     active: (
@@ -47,90 +36,6 @@ const statIcons = {
         </svg>
     ),
 };
-
-function StatusDonut({ tasksByStatus, total, size = 160, strokeWidth = 18 }) {
-    const strokeColors = {
-        todo: '#9ca3af',
-        in_progress: '#3b82f6',
-        submitted: '#eab308',
-        in_review: '#a855f7',
-        done: '#22c55e',
-    };
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    let cumulative = 0;
-    const segments = Object.keys(statusLabels).map((key) => {
-        const count = tasksByStatus[key] ?? 0;
-        const dash = total ? (count / total) * circumference : 0;
-        const seg = { key, dash, offset: cumulative, count };
-        cumulative += dash;
-        return seg;
-    });
-
-    return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100 dark:stroke-gray-700" />
-                {segments.filter((s) => s.count > 0).map((s) => (
-                    <circle
-                        key={s.key}
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        fill="none"
-                        stroke={strokeColors[s.key]}
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={`${s.dash} ${circumference - s.dash}`}
-                        strokeDashoffset={-s.offset}
-                    />
-                ))}
-            </g>
-            <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 dark:fill-gray-100" style={{ fontSize: 30, fontWeight: 700 }}>
-                {total}
-            </text>
-            <text x="50%" y="62%" textAnchor="middle" className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 11 }}>
-                Tasks
-            </text>
-        </svg>
-    );
-}
-
-function RangeButtons({ range, routeName, customFrom, customTo }) {
-    const [showCustom, setShowCustom] = useState(range === 'custom');
-    const [from, setFrom] = useState(customFrom ?? '');
-    const [to, setTo] = useState(customTo ?? '');
-
-    const applyCustom = () => {
-        if (from && to) router.get(route(routeName, { range: 'custom', from, to }), {}, { preserveScroll: true });
-    };
-
-    return (
-        <div className="flex flex-wrap items-center gap-1">
-            {Object.entries({ today: 'Today', week: 'This Week', month: 'This Month' }).map(([key, label]) => (
-                <Link
-                    key={key}
-                    href={route(routeName, { range: key })}
-                    preserveScroll
-                    className={`rounded-md px-3 py-1 text-xs ${range === key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
-                    onClick={() => setShowCustom(false)}
-                >
-                    {label}
-                </Link>
-            ))}
-            <button onClick={() => setShowCustom((v) => !v)} className={`rounded-md px-3 py-1 text-xs ${range === 'custom' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}>
-                Custom
-            </button>
-            {showCustom && (
-                <div className="flex items-center gap-1">
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <span className="text-xs text-gray-400">to</span>
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <button onClick={applyCustom} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
-                </div>
-            )}
-        </div>
-    );
-}
 
 function CalendarView({ tasks }) {
     const [calRange, setCalRange] = useState('month');
@@ -190,8 +95,14 @@ function CalendarView({ tasks }) {
 
     return (
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Deadline Calendar</h3>
+            <SectionHeader
+                title="Deadline Calendar"
+                icon={
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                }
+            >
                 <div className="flex flex-wrap items-center gap-2">
                     <button onClick={() => navigate(-1)} className="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">←</button>
                     <span className="min-w-32 text-center text-sm text-gray-600 dark:text-gray-400">{rangeLabel}</span>
@@ -204,7 +115,7 @@ function CalendarView({ tasks }) {
                         ))}
                     </div>
                 </div>
-            </div>
+            </SectionHeader>
 
             {calRange === 'year' ? (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -474,19 +385,16 @@ function DueSoonPanel({ dueSoon }) {
 
     return (
         <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+            <SectionHeader
+                title="Due Soon"
+                badge={sorted.length > 0 ? sorted.length : undefined}
+                iconColor="bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400"
+                icon={
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Due Soon</h3>
-                {sorted.length > 0 && (
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                        {sorted.length}
-                    </span>
-                )}
-            </div>
+                }
+            />
 
             {sorted.length === 0 ? (
                 <div className="flex flex-col items-center py-6 text-center">
@@ -564,15 +472,14 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
 
     return (
         <div className="min-w-0 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Reminders</h3>
-                </div>
+            <SectionHeader
+                title="Reminders"
+                icon={
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                }
+            >
                 <button onClick={() => setShowForm((v) => !v)} className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-500">
                     {showForm ? 'Cancel' : (
                         <>
@@ -583,7 +490,7 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
                         </>
                     )}
                 </button>
-            </div>
+            </SectionHeader>
 
             {nextUp && !showForm && (
                 <p className="mb-4 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -628,6 +535,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
     const [highlightedReminderId, setHighlightedReminderId] = useState(null);
+    const hasActivity = stats.chartData?.some((d) => (d.completed ?? 0) + (d.created ?? 0) + (d.projects ?? 0) > 0);
 
     useEffect(() => {
         const reminderId = new URLSearchParams(window.location.search).get('reminder');
@@ -673,40 +581,58 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity</h3>
+                        <SectionHeader
+                            title="Activity"
+                            icon={
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            }
+                        >
                             <RangeButtons range={range} routeName="dashboard" customFrom={customFrom} customTo={customTo} />
-                        </div>
+                        </SectionHeader>
 
                         <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
 
-                        <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
-                            <AreaChart data={stats.chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 11, fill: 'currentColor' }}
-                                    axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
-                                    tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
-                                />
-                                <YAxis
-                                    tick={{ fontSize: 11, fill: 'currentColor' }}
-                                    axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
-                                    tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
-                                    allowDecimals={false}
-                                />
-                                <Tooltip />
-                                <Legend wrapperStyle={{ color: 'currentColor' }} />
-                                <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
-                                <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {hasActivity ? (
+                            <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
+                                <AreaChart data={stats.chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                    <XAxis
+                                        dataKey="label"
+                                        tick={{ fontSize: 11, fill: 'currentColor' }}
+                                        axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                        tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 11, fill: 'currentColor' }}
+                                        axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                        tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
+                                        allowDecimals={false}
+                                    />
+                                    <Tooltip />
+                                    <Legend wrapperStyle={{ color: 'currentColor' }} />
+                                    <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
+                                    <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                                    <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <EmptyChartState height={240} title="No activity in this period" subtitle="Nothing was created or completed here yet. Try a wider range, or check back once things start moving." />
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">My Tasks by Status</h3>
+                            <SectionHeader
+                                title="My Tasks by Status"
+                                icon={
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                    </svg>
+                                }
+                            />
                             <div className="flex flex-col items-center gap-6 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-center">
                                 <StatusDonut tasksByStatus={stats.tasksByStatus} total={totalTasks} size={140} strokeWidth={16} />
                                 <div className="w-full max-w-xs space-y-1">

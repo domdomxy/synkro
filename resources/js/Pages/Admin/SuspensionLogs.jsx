@@ -79,13 +79,7 @@ function SuspensionLogRow({ log }) {
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
                     <dl className="space-y-2">
                         <div className="flex items-baseline gap-2">
-                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason</dt>
-                            <dd className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">
-                                {log.reason ? <Linkify text={log.reason} /> : <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
-                            </dd>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Until</dt>
+                            <dt className="w-20 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Until</dt>
                             <dd className="text-sm text-gray-700 dark:text-gray-300">
                                 {log.suspended_until
                                     ? new Date(log.suspended_until).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
@@ -93,7 +87,7 @@ function SuspensionLogRow({ log }) {
                             </dd>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</dt>
+                            <dt className="w-20 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</dt>
                             <dd className="text-sm text-gray-700 dark:text-gray-300">
                                 {lifted
                                     ? (log.lifted_by
@@ -103,6 +97,18 @@ function SuspensionLogRow({ log }) {
                             </dd>
                         </div>
                     </dl>
+
+                    <div className="mt-3 flex items-start gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800/60">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7.17 6.17A5 5 0 002 11c0 2.21 1.34 4.11 3.26 4.92A3 3 0 008 20a1 1 0 100-2 1 1 0 010-2 3 3 0 002.9-3.78A5 5 0 007.17 6.17zM17.17 6.17A5 5 0 0012 11c0 2.21 1.34 4.11 3.26 4.92A3 3 0 0018 20a1 1 0 100-2 1 1 0 010-2 3 3 0 002.9-3.78 5 5 0 00-4.73-5.05z" />
+                        </svg>
+                        <div className="min-w-0 flex-1">
+                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Reason</p>
+                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                {log.reason ? <Linkify text={log.reason} /> : <span className="italic text-gray-400 dark:text-gray-500">No reason given</span>}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
         </li>
