@@ -59,7 +59,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             <FlashMessages />
-            <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/50 backdrop-blur dark:border-gray-700 dark:bg-gray-800/50">
                 <div className="mx-auto w-full px-4 sm:px-6 lg:px-10">
                     <div className="flex h-16 justify-between">
                         <div className="flex">

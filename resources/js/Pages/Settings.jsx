@@ -1,7 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
-import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/utils/trustedHosts';
+import {
+    primeTrustedHosts,
+    subscribeTrustedHosts,
+    revokeTrustedHost as revokeTrustedHostRequest,
+    revokeAllTrustedHosts as revokeAllTrustedHostsRequest,
+} from '@/utils/trustedHosts';
 import { useEffect, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
 
@@ -252,12 +257,12 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
         </div>
     );
 }
-export default function Settings({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults }) {
+export default function Settings({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts }) {
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
     const { confirm, ConfirmDialog } = useConfirm();
     const [theme, setThemeState] = useState(getStoredTheme());
-    const [trustedHosts, setTrustedHosts] = useState(loadTrustedHosts);
+    const [trustedHosts, setTrustedHosts] = useState(trustedLinkHosts ?? []);
     const [activeSection, setActiveSection] = useState(settingsNavItems[0].id);
 
     // Highlights whichever section is currently in view in the nav (both the sticky desktop
@@ -298,20 +303,29 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
         setThemeState(value);
     };
 
-    // Trusted sites are stored client-side (browser localStorage), same as
-    // theme above - there's no server record to load, and revoking here takes
-    // effect immediately for the ExternalLinkGuard already mounted in this tab.
+    // Trusted sites are stored on the account (server-side), not the browser,
+    // so they follow the person to every device/browser they sign into. This
+    // page already gets the current list as a prop from SettingsController,
+    // so seed the shared cache with it instead of re-fetching, then stay in
+    // sync with any change (e.g. a new host trusted via ExternalLinkGuard,
+    // which is mounted separately and outside Inertia's page swapping).
+    useEffect(() => primeTrustedHosts(trustedLinkHosts ?? []), []);
     useEffect(() => subscribeTrustedHosts(setTrustedHosts), []);
     const revokeTrustedHost = async (host) => {
         if (!(await confirm(`Links from ${host} will show the "Leaving Synkro" confirmation again.`, { title: `Revoke trust for ${host}?`, danger: true, confirmLabel: 'Revoke' }))) return;
-        const next = trustedHosts.filter((h) => h !== host);
-        setTrustedHosts(next);
-        saveTrustedHosts(next);
+        try {
+            await revokeTrustedHostRequest(host);
+        } catch {
+            // request failed - leave the list as-is rather than pretending it revoked
+        }
     };
     const revokeAllTrustedHosts = async () => {
         if (!(await confirm('Every trusted site will show the "Leaving Synkro" confirmation again.', { title: 'Revoke all trusted sites?', danger: true, confirmLabel: 'Revoke All' }))) return;
-        setTrustedHosts([]);
-        saveTrustedHosts([]);
+        try {
+            await revokeAllTrustedHostsRequest();
+        } catch {
+            // request failed - leave the list as-is rather than pretending it revoked
+        }
     };
 
     // --- Email preferences ---

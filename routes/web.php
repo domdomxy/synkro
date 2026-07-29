@@ -22,6 +22,7 @@ use App\Http\Controllers\FeedbackPageController;
 use App\Http\Controllers\SuspensionAppealController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TrustedHostController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\TaskChecklistItemController;
 use App\Http\Controllers\TaskDependencyController;
@@ -144,6 +145,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::delete('/notifications', [NotificationController::class, 'destroyAll'])->name('notifications.clear');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/users/search', [UserSearchController::class, 'search'])->name('users.search');
     Route::delete('/deliverables/{deliverable}', [TaskController::class, 'destroyDeliverable'])->name('deliverables.destroy');
     Route::post('/reminders', [ReminderController::class, 'store'])->name('reminders.store');
@@ -163,7 +165,10 @@ Route::middleware('auth')->group(function () {
     Route::match(['patch'], '/settings/notifications', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications');
     Route::match(['patch'], '/settings/notifications-settings', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications-settings');
 
-    
+    Route::get('/trusted-hosts', [TrustedHostController::class, 'index'])->name('trusted-hosts.index');
+    Route::put('/trusted-hosts/{host}', [TrustedHostController::class, 'store'])->name('trusted-hosts.store');
+    Route::delete('/trusted-hosts/{host}', [TrustedHostController::class, 'destroy'])->name('trusted-hosts.destroy');
+    Route::delete('/trusted-hosts', [TrustedHostController::class, 'destroyAll'])->name('trusted-hosts.destroy-all');
 
 });
 

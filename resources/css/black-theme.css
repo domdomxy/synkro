@@ -67,6 +67,10 @@ html.theme-black .shadow-xl {
 /* Opacity */
 html.theme-black .dark\:bg-gray-800\/95 { background-color: rgba(13, 13, 13, 0.95) !important; }
 html.theme-black .dark\:bg-gray-900\/95 { background-color: rgba(0, 0, 0, 0.95) !important; }
+/* Top nav bar (AuthenticatedLayout) - sits over black-theme's true-black page
+   background, so this needs its own near-black rgba rather than falling back
+   to Tailwind's literal (much lighter) gray-800. */
+html.theme-black .dark\:bg-gray-800\/50 { background-color: rgba(13, 13, 13, 0.5) !important; }
 
 /* Reopened-task comment bubble (TaskRow.jsx) — the stock dark:bg-orange-950/30 tint
    is dark enough to nearly vanish against this theme's pure-black surfaces. */

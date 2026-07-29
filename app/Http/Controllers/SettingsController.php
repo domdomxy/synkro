@@ -23,6 +23,7 @@ class SettingsController extends Controller
             'notificationCatalog' => NotificationPreferences::catalog($user),
             'notificationPreferences' => $notificationPrefs,
             'notificationDefaults' => NotificationPreferences::defaults($user),
+            'trustedLinkHosts' => $user->trusted_link_hosts ?? [],
         ]);
     }
 

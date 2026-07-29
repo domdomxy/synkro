@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import ExternalLinkDialog from '@/Components/ExternalLinkDialog';
-import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/utils/trustedHosts';
+import { loadTrustedHosts, trustHost, subscribeTrustedHosts } from '@/utils/trustedHosts';
 
 /**
  * Wraps the whole app (mounted once in app.jsx, outside Inertia's page switching)
@@ -27,8 +27,9 @@ import { loadTrustedHosts, saveTrustedHosts, subscribeTrustedHosts } from '@/uti
  * we don't interrupt it with a confirmation dialog.
  *
  * Hostnames the person has ticked "Trust ... links from now on" for are kept
- * in localStorage (see utils/trustedHosts.js) and skip the dialog entirely on
- * future clicks, same as Discord's equivalent prompt. They can be reviewed
+ * on their account (see utils/trustedHosts.js) - not the browser - and skip
+ * the dialog entirely on future clicks, on any device/browser signed into
+ * that account, same as Discord's equivalent prompt. They can be reviewed
  * and revoked anytime from Settings > Trusted Sites.
  */
 export default function ExternalLinkGuard({ children }) {
@@ -75,9 +76,11 @@ export default function ExternalLinkGuard({ children }) {
     const handleConfirm = () => {
         if (pending) {
             if (trustChecked && !trustedHosts.includes(pending.url.hostname)) {
-                const next = [...trustedHosts, pending.url.hostname];
-                setTrustedHosts(next);
-                saveTrustedHosts(next);
+                // Optimistic local update so a second click in this tab is
+                // recognized immediately; trustHost() broadcasts the
+                // server-confirmed list once the request resolves.
+                setTrustedHosts([...trustedHosts, pending.url.hostname]);
+                trustHost(pending.url.hostname);
             }
             window.open(pending.url.href, pending.anchorTarget, 'noopener,noreferrer');
         }

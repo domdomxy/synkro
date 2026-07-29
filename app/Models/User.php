@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name', 'email', 'password', 'role', 'is_active', 'avatar_path', 'is_suspended', 'suspended_until',
     'suspension_reason', 'suspended_by', 'email_preferences', 'active_status_changed_at', 'role_changed_at',
     'must_change_password', 'temp_password_expires_at', 'notification_preferences',
-    'deletion_requested_at',
+    'deletion_requested_at', 'trusted_link_hosts',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -63,6 +63,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'must_change_password' => 'boolean',
             'temp_password_expires_at' => 'datetime',
             'notification_preferences' => 'array',
+            'trusted_link_hosts' => 'array',
             'active_status_changed_at' => 'datetime',
             'role_changed_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
