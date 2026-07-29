@@ -10,12 +10,12 @@ export function noteLines(note) {
 }
 
 // Splits a single line on **bold** markers and returns an array of React nodes.
-export function noteBoldSegments(line) {
+export function noteBoldSegments(line, boldClassName = 'font-semibold text-gray-700 dark:text-gray-200') {
     const parts = line.split(/(\*\*[^*]+\*\*)/g).filter((part) => part !== '');
     return parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
             return (
-                <strong key={i} className="font-semibold text-gray-700 dark:text-gray-200">
+                <strong key={i} className={boldClassName}>
                     {part.slice(2, -2)}
                 </strong>
             );

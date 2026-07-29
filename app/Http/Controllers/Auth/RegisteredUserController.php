@@ -57,7 +57,7 @@ class RegisteredUserController extends Controller
             'account.welcome',
             'Welcome to Synkro!',
             [
-                "Hi {$user->name}, your Synkro account has been created successfully.",
+                "Hi **{$user->name}**, your Synkro account has been created successfully.",
                 'You can now create projects, manage tasks, and collaborate with your team.',
             ],
             url(route('projects.index', [], false)),

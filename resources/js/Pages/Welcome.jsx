@@ -1,5 +1,6 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link } from '@inertiajs/react';
+import { useEchoPublic } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 
@@ -234,13 +235,19 @@ function FeatureCard({ feature, index }) {
 
 export default function Welcome({ auth, stats }) {
     const [heroVisible, setHeroVisible] = useState(false);
+    const [liveStats, setLiveStats] = useState(stats ?? { users: 0, projects: 0, tasks: 0 });
 
     useEffect(() => {
         const t = setTimeout(() => setHeroVisible(true), 50);
         return () => clearTimeout(t);
     }, []);
 
-    const liveStats = stats ?? { users: 0, projects: 0, tasks: 0 };
+    // Public (not private) channel: this page is reachable by guests who
+    // aren't authenticated at all, so there's no user to authorize a private
+    // channel subscription against.
+    useEchoPublic('platform-stats', '.stats.updated', (payload) => {
+        setLiveStats({ users: payload.users, projects: payload.projects, tasks: payload.tasks });
+    });
 
     return (
         <>

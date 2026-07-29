@@ -78,8 +78,8 @@ class FeedbackAdminController extends Controller
         }
 
         $lines = $statusChanged
-            ? ["The status of your ticket \"{$feedback->subject}\" has been updated, and support added a message:"]
-            : ["Support responded to your ticket \"{$feedback->subject}\":"];
+            ? ["The status of your ticket \"**{$feedback->subject}**\" has been updated, and support added a message:"]
+            : ["Support responded to your ticket \"**{$feedback->subject}**\":"];
 
         if ($statusChanged && $validated['status'] === 'closed') {
             $lines[] = 'If you have further questions, you can reopen it from the tracking page.';

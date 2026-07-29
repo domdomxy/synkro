@@ -76,7 +76,7 @@ class ProjectMemberController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'project_invitation',
-                'message' => "Project invitation\n{$request->user()->name} invited you to join \"{$project->name}\" as {$validated['role']}",
+                'message' => "Project invitation\n**{$request->user()->name}** invited you to join \"**{$project->name}**\" as {$validated['role']}",
                 'url' => $inviteUrl,
             ]);
 
@@ -91,7 +91,7 @@ class ProjectMemberController extends Controller
             $user,
             'project.invitation_received',
             "{$request->user()->name} invited you to join {$project->name}",
-            ["{$request->user()->name} invited you to join the project \"{$project->name}\" (#{$project->id}) as {$validated['role']}."],
+            ["**{$request->user()->name}** invited you to join the project \"**{$project->name}**\" (#{$project->id}) as {$validated['role']}."],
             url($inviteUrl),
             'View Invitation'
         );
@@ -130,7 +130,7 @@ class ProjectMemberController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'project_role_changed',
-                    'message' => "Role changed\nYour role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}",
+                    'message' => "Role changed\nYour role in \"**{$project->name}**\" changed from {$oldRole} to {$validated['role']}",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -144,7 +144,7 @@ class ProjectMemberController extends Controller
                 $user,
                 'project.role_changed',
                 "Your role changed in {$project->name}",
-                ["Your role in \"{$project->name}\" changed from {$oldRole} to {$validated['role']}."],
+                ["Your role in \"**{$project->name}**\" changed from {$oldRole} to {$validated['role']}."],
                 url(route('projects.show', $project->id, false)),
                 'View Project'
             );
@@ -177,7 +177,7 @@ class ProjectMemberController extends Controller
             $notification = \App\Models\UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'removed_from_project',
-                'message' => "Removed from project\nYou were removed from \"{$project->name}\"",
+                'message' => "Removed from project\nYou were removed from \"**{$project->name}**\"",
                 'url' => route('projects.index', [], false),
             ]);
 
@@ -193,7 +193,7 @@ class ProjectMemberController extends Controller
             'project.removed',
             "You were removed from {$project->name}",
             [
-                "You've been removed from the project \"{$project->name}\".",
+                "You've been removed from the project \"**{$project->name}**\".",
             ],
             highlight: [
                 'label' => 'Reason',
@@ -251,7 +251,7 @@ class ProjectMemberController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
-                    'message' => "Member left\n{$leavingName} ({$leavingRole}) left \"{$project->name}\"",
+                    'message' => "Member left\n**{$leavingName}** ({$leavingRole}) left \"**{$project->name}**\"",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -267,7 +267,7 @@ class ProjectMemberController extends Controller
                 'project.member_left',
                 "{$leavingName} left {$project->name}",
                 [
-                    "{$leavingName} ({$leavingRole}) left the project \"{$project->name}\" (#{$project->id}).",
+                    "**{$leavingName}** ({$leavingRole}) left the project \"**{$project->name}**\" (#{$project->id}).",
                 ],
                 url(route('projects.show', $project->id, false)),
                 'View Project',

@@ -90,7 +90,7 @@ class SuspensionAppealController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $admin->id,
                     'type' => 'appeal_created',
-                    'message' => "New appeal submitted\n{$user->name} submitted a suspension appeal",
+                    'message' => "New appeal submitted\n**{$user->name}** submitted a suspension appeal",
                     'url' => $url,
                 ]);
 
@@ -109,7 +109,7 @@ class SuspensionAppealController extends Controller
                 \Illuminate\Support\Facades\Mail::to($admin->email)->queue(new \App\Mail\SynkroNotificationMail(
                     $admin->name,
                     'New suspension appeal submitted',
-                    ["{$user->name} ({$user->email}) submitted a suspension appeal:"],
+                    ["**{$user->name}** ({$user->email}) submitted a suspension appeal:"],
                     $url,
                     'View Appeal',
                     highlight: ['label' => 'Appeal message', 'content' => \App\Support\NoteFormatter::toHtml($appeal->message), 'html' => true],

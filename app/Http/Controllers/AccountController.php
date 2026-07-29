@@ -70,7 +70,7 @@ class AccountController extends Controller
                     $user->name,
                     'Your email address was changed',
                     [
-                        "Your Synkro account email was changed from {$oldEmail} to {$newEmail}.",
+                        "Your Synkro account email was changed from **{$oldEmail}** to **{$newEmail}**.",
                         "If you didn't make this change, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
                     ]
                 ));
@@ -83,7 +83,7 @@ class AccountController extends Controller
                 $user,
                 'account.email_changed',
                 'Your email address was updated',
-                ["Your Synkro account email is now {$newEmail}."]
+                ["Your Synkro account email is now **{$newEmail}**."]
             );
         }
 
@@ -186,7 +186,7 @@ class AccountController extends Controller
                     $notification = \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
-                        'message' => "Member left\n{$user->name} ({$role}) deleted their account; their tasks in \"{$project->name}\" may need attention",
+                        'message' => "Member left\n**{$user->name}** ({$role}) deleted their account; their tasks in \"**{$project->name}**\" may need attention",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -315,7 +315,7 @@ class AccountController extends Controller
                     \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
-                        'message' => "Member left\n{$user->name} ({$role}) deactivated their account; their tasks in \"{$project->name}\" may need attention",
+                        'message' => "Member left\n**{$user->name}** ({$role}) deactivated their account; their tasks in \"**{$project->name}**\" may need attention",
                         'url' => route('projects.show', $project->id, false),
                     ]);
                 }

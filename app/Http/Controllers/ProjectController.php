@@ -176,7 +176,7 @@ class ProjectController extends Controller
                     $notification = \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'project_updated',
-                        'message' => "Project updated\n\"{$project->name}\" was edited",
+                        'message' => "Project updated\n\"**{$project->name}**\" was edited",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -191,7 +191,7 @@ class ProjectController extends Controller
                     $recipient,
                     'project.edited',
                     "{$project->name} was updated",
-                    ["The project \"{$project->name}\" (#{$project->id}) you belong to has been updated."],
+                    ["The project \"**{$project->name}**\" (#{$project->id}) you belong to has been updated."],
                     url(route('projects.show', $project->id, false)),
                     'View Project'
                 );
@@ -231,7 +231,7 @@ class ProjectController extends Controller
                 \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_deletion_requested',
-                    'message' => "Deletion requested\n" . Auth::user()->name . " requested to delete \"{$project->name}\"",
+                    'message' => "Deletion requested\n**" . Auth::user()->name . "** requested to delete \"**{$project->name}**\"",
                     'url' => route('projects.settings', $project->id, false),
                 ]);
             }
@@ -240,7 +240,7 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deletion_requested',
                 "{$project->name} deletion requested",
-                [Auth::user()->name . " has requested to delete the project \"{$project->name}\" (#{$project->id}). It will be permanently removed once the owner confirms by email, unless cancelled first."],
+                ["**" . Auth::user()->name . "** has requested to delete the project \"**{$project->name}**\" (#{$project->id}). It will be permanently removed once the owner confirms by email, unless cancelled first."],
                 url(route('projects.settings', $project->id, false)),
                 'View Project Settings'
             );
@@ -304,7 +304,7 @@ class ProjectController extends Controller
                     Auth::user()->name,
                     "Confirm deletion of {$project->name}",
                     [
-                        "You requested to permanently delete the project \"{$project->name}\" (#{$project->id}). This cannot be undone once confirmed.",
+                        "You requested to permanently delete the project \"**{$project->name}**\" (#{$project->id}). This cannot be undone once confirmed.",
                         'This link expires in 24 hours. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
                     ],
                     $confirmUrl,
@@ -342,7 +342,7 @@ class ProjectController extends Controller
                 $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_deleted',
-                    'message' => "Project deleted\n\"{$projectName}\" was deleted",
+                    'message' => "Project deleted\n\"**{$projectName}**\" was deleted",
                     'url' => route('projects.index', [], false),
                 ]);
 
@@ -357,7 +357,7 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deleted',
                 "{$projectName} was deleted",
-                ["The project \"{$projectName}\" (#{$projectId}) you were a member of has been deleted."],
+                ["The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted."],
             );
         }
 
@@ -384,7 +384,7 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deletion_requested',
                 "{$project->name} deletion cancelled",
-                ["The pending deletion of \"{$project->name}\" (#{$project->id}) was cancelled by " . Auth::user()->name . '.'],
+                ["The pending deletion of \"**{$project->name}**\" (#{$project->id}) was cancelled by **" . Auth::user()->name . '**.'],
                 url(route('projects.show', $project->id, false)),
                 'View Project'
             );
@@ -425,7 +425,7 @@ class ProjectController extends Controller
             $notification = \App\Models\UserNotification::create([
                 'user_id' => $newOwner->id,
                 'type' => 'project_ownership_transferred',
-                'message' => "Ownership transferred\nYou now own \"{$project->name}\"",
+                'message' => "Ownership transferred\nYou now own \"**{$project->name}**\"",
                 'url' => route('projects.show', $project->id, false),
             ]);
 
@@ -440,7 +440,7 @@ class ProjectController extends Controller
             $newOwner,
             'project.ownership_transferred',
             "You now own {$project->name}",
-            ["Ownership of \"{$project->name}\" was transferred to you."],
+            ["Ownership of \"**{$project->name}**\" was transferred to you."],
             url(route('projects.show', $project->id, false)),
             'View Project'
         );

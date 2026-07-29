@@ -33,7 +33,7 @@ class SendOverdueTaskAlerts extends Command
                 $notification = UserNotification::create([
                     'user_id' => $assignee->id,
                     'type' => 'task_overdue',
-                    'message' => "Task overdue\n\"{$task->title}\" is past its due date",
+                    'message' => "Task overdue\n\"**{$task->title}**\" is past its due date",
                     'url' => $url,
                 ]);
 
@@ -47,7 +47,7 @@ class SendOverdueTaskAlerts extends Command
                     $assignee,
                     'task.overdue',
                     "Overdue: {$task->title}",
-                    ["\"{$task->title}\" in the project \"{$task->project->name}\" (#{$task->project_id}) is now past its due date."],
+                    ["\"**{$task->title}**\" in the project \"**{$task->project->name}**\" (#{$task->project_id}) is now past its due date."],
                     url($url),
                     'View Task'
                 );

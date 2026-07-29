@@ -25,19 +25,12 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\TaskChecklistItemController;
 use App\Http\Controllers\TaskDependencyController;
-use App\Models\User;
-use App\Models\Project;
-use App\Models\Task;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'auth' => ['user' => auth()->user()],
         'flash' => session()->only(['feedback_tracking_id']),
-        'stats' => [
-            'users' => User::count(),
-            'projects' => Project::count(),
-            'tasks' => Task::count(),
-        ],
+        'stats' => \App\Support\PlatformStats::counts(),
     ]);
 });
 

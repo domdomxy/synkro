@@ -245,58 +245,58 @@ export default function NotificationBell() {
             let type = payload.type;
 
             if (payload.type === 'member_left') {
-                message = `Member left\n${payload.member_name} (${payload.role}) left "${payload.project_name}"`;
+                message = `Member left\n**${payload.member_name}** (${payload.role}) left "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_invitation') {
-                message = `Project invitation\n${payload.inviter_name} invited you to join "${payload.project_name}" as ${payload.role}`;
+                message = `Project invitation\n**${payload.inviter_name}** invited you to join "**${payload.project_name}**" as ${payload.role}`;
                 url = `/invitations/${payload.token}`;
             } else if (payload.type === 'invitation_accepted') {
-                message = `Invitation accepted\n${payload.accepted_by} accepted your invitation to "${payload.project_name}"`;
+                message = `Invitation accepted\n**${payload.accepted_by}** accepted your invitation to "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'invitation_denied') {
-                message = `Invitation declined\n${payload.denied_by} declined your invitation to "${payload.project_name}"`;
+                message = `Invitation declined\n**${payload.denied_by}** declined your invitation to "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_role_changed') {
-                message = `Role changed\nYour role in "${payload.project_name}" changed from ${payload.old_role} to ${payload.new_role}`;
+                message = `Role changed\nYour role in "**${payload.project_name}**" changed from ${payload.old_role} to ${payload.new_role}`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_member_added') {
-                message = `New member\n${payload.member_name ?? 'Someone'} joined "${payload.project_name}" as ${payload.role}`;
+                message = `New member\n**${payload.member_name ?? 'Someone'}** joined "**${payload.project_name}**" as ${payload.role}`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_updated') {
-                message = `Project updated\n"${payload.project_name}" was edited`;
+                message = `Project updated\n"**${payload.project_name}**" was edited`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_ownership_transferred') {
-                message = `Ownership transferred\nYou now own "${payload.project_name}"`;
+                message = `Ownership transferred\nYou now own "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_deleted') {
-                message = `Project deleted\n"${payload.project_name}" was deleted`;
+                message = `Project deleted\n"**${payload.project_name}**" was deleted`;
                 url = '/projects';
             } else if (payload.type === 'task_reopened') {
-                message = `Task reopened\n"${payload.title}" was reopened for changes${payload.feedback ? ': ' + payload.feedback : ''}`;
+                message = `Task reopened\n"**${payload.title}**" was reopened for changes${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_done') {
-                message = `Task completed\n"${payload.title}" was marked done`;
+                message = `Task completed\n"**${payload.title}**" was marked done`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_review_needed') {
-                message = `Review needed\n"${payload.title}" is waiting for your review`;
+                message = `Review needed\n"**${payload.title}**" is waiting for your review`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_overdue') {
-                message = `Task overdue\n"${payload.title}" is past its due date`;
+                message = `Task overdue\n"**${payload.title}**" is past its due date`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_updated') {
-                message = `Task updated\nTask "${payload.title}" was updated`;
+                message = `Task updated\nTask "**${payload.title}**" was updated`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}&history=1`;
             } else if (payload.type === 'task_unassigned') {
-                message = `Removed from task\nYou were removed from task "${payload.title}"`;
+                message = `Removed from task\nYou were removed from task "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_commented') {
-                message = `New comment\n${payload.commenter_name} commented on "${payload.title}"`;
+                message = `New comment\n**${payload.commenter_name}** commented on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.type === 'task_mentioned') {
-                message = `You were mentioned\n${payload.commenter_name} mentioned you on "${payload.title}"`;
+                message = `You were mentioned\n**${payload.commenter_name}** mentioned you on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.type === 'comment_replied') {
-                message = `New reply\n${payload.commenter_name} replied to your comment on "${payload.title}"`;
+                message = `New reply\n**${payload.commenter_name}** replied to your comment on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
                 // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }
@@ -304,13 +304,13 @@ export default function NotificationBell() {
                 message = payload.message.includes('\n') ? payload.message : `Task deleted\n${payload.message}`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'removed_from_project') {
-                message = `Removed from project\nYou were removed from "${payload.project_name}"`;
+                message = `Removed from project\nYou were removed from "**${payload.project_name}**"`;
                 url = '/projects';
             } else if (payload.type === 'reminder') {
                 message = payload.note ? `${payload.title}\n${payload.note}` : payload.title;
                 url = payload.repeating && payload.reminder_id ? `/dashboard?reminder=${payload.reminder_id}` : '/dashboard';
             } else if (payload.type === 'feedback_replied') {
-                message = `Feedback reply\n${payload.submitter_name} replied to ticket "${payload.subject}"`;
+                message = `Feedback reply\n**${payload.submitter_name}** replied to ticket "**${payload.subject}**"`;
                 url = '/admin/feedbacks';
             } else if (payload.type === 'admin_status_changed') {
                 message = payload.new_role === 'admin'
@@ -318,17 +318,17 @@ export default function NotificationBell() {
                     : 'Removed from admin\nYour administrator access on Synkro was removed.';
                 url = payload.new_role === 'admin' ? '/admin' : '/dashboard';
             } else if (payload.type === 'ticket_created') {
-                message = `New ticket submitted\n${payload.submitter_name} submitted a new ticket "${payload.subject}"`;
+                message = `New ticket submitted\n**${payload.submitter_name}** submitted a new ticket "**${payload.subject}**"`;
                 url = '/admin/feedbacks';
             } else if (payload.type === 'appeal_created') {
-                message = `New appeal submitted\n${payload.user_name} submitted a suspension appeal`;
+                message = `New appeal submitted\n**${payload.user_name}** submitted a suspension appeal`;
                 url = '/admin/appeals';
             } else if (payload.decision) {
                 const decisionTitle = payload.decision === 'approve' ? 'Task approved' : 'Changes requested';
-                message = `${decisionTitle}\n"${payload.title}" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
+                message = `${decisionTitle}\n"**${payload.title}**" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else {
-                message = `Task assigned\nYou were assigned a new task: "${payload.title}"`;
+                message = `Task assigned\nYou were assigned a new task: "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             }
 

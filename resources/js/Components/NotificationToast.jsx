@@ -1,6 +1,7 @@
 import { useEcho } from '@laravel/echo-react';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { noteBoldSegments } from '../utils/noteFormat';
 
 export default function NotificationToast() {
     const { auth } = usePage().props;
@@ -12,9 +13,9 @@ export default function NotificationToast() {
         (payload) => {
             if (payload.decision) {
                 const verb = payload.decision === 'approve' ? 'approved' : 'sent back for changes';
-                setToast(`"${payload.title}" was ${verb}${payload.feedback ? ': ' + payload.feedback : ''}`);
+                setToast(`"**${payload.title}**" was ${verb}${payload.feedback ? ': ' + payload.feedback : ''}`);
             } else {
-                setToast(`You were assigned a new task: "${payload.title}"`);
+                setToast(`You were assigned a new task: "**${payload.title}**"`);
             }
         },
         [auth.user.id],
@@ -30,7 +31,7 @@ export default function NotificationToast() {
 
     return (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-lg">
-            {toast}
+            {noteBoldSegments(toast, 'font-semibold text-white')}
         </div>
     );
 }

@@ -36,7 +36,7 @@ class TaskDeleted implements ShouldBroadcastNow
             'task_title' => $this->taskTitle,
             'project_name' => $this->projectName,
             'project_id' => $this->projectId,
-            'message' => "\"{$this->taskTitle}\" was deleted from {$this->projectName}.",
+            'message' => "\"**{$this->taskTitle}**\" was deleted from **{$this->projectName}**.",
         ];
     }
 }

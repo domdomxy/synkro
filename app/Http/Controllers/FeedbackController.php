@@ -174,8 +174,8 @@ class FeedbackController extends Controller
                 $feedback->name,
                 "We've received your ticket ({$feedback->tracking_id})",
                 [
-                    "Thanks for reaching out! We've received your {$feedback->category} ticket \"{$feedback->subject}\" and will get back to you soon.",
-                    "Your tracking ID is {$feedback->tracking_id} — use it on the tracking page to follow this ticket's status or add replies.",
+                    "Thanks for reaching out! We've received your {$feedback->category} ticket \"**{$feedback->subject}**\" and will get back to you soon.",
+                    "Your tracking ID is **{$feedback->tracking_id}** — use it on the tracking page to follow this ticket's status or add replies.",
                 ],
                 url(route('feedback.page', ['tracking' => $feedback->tracking_id], false)),
                 'Track Your Ticket',
@@ -197,7 +197,7 @@ class FeedbackController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $admin->id,
                     'type' => 'ticket_created',
-                    'message' => "New ticket submitted\n{$feedback->name} submitted a new {$feedback->category} ticket: \"{$feedback->subject}\"",
+                    'message' => "New ticket submitted\n**{$feedback->name}** submitted a new {$feedback->category} ticket: \"**{$feedback->subject}**\"",
                     'url' => $url,
                 ]);
 
@@ -216,7 +216,7 @@ class FeedbackController extends Controller
                 Mail::to($admin->email)->queue(new SynkroNotificationMail(
                     $admin->name,
                     "New ticket submitted ({$feedback->tracking_id})",
-                    ["{$feedback->name} submitted a new {$feedback->category} ticket:"],
+                    ["**{$feedback->name}** submitted a new {$feedback->category} ticket:"],
                     $url,
                     'View Ticket',
                     highlight: ['label' => $feedback->subject, 'content' => \App\Support\NoteFormatter::toHtml($feedback->message), 'html' => true],
@@ -254,7 +254,7 @@ class FeedbackController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $admin->id,
                     'type' => 'feedback_replied',
-                    'message' => "Feedback reply\n{$feedback->name} replied to ticket \"{$feedback->subject}\"",
+                    'message' => "Feedback reply\n**{$feedback->name}** replied to ticket \"**{$feedback->subject}**\"",
                     'url' => $url,
                 ]);
 
@@ -273,7 +273,7 @@ class FeedbackController extends Controller
                 Mail::to($admin->email)->queue(new SynkroNotificationMail(
                     $admin->name,
                     "New message on ticket ({$feedback->tracking_id})",
-                    ["{$feedback->name} replied to their ticket \"{$feedback->subject}\":"],
+                    ["**{$feedback->name}** replied to their ticket \"**{$feedback->subject}**\":"],
                     $url,
                     'View Ticket',
                     highlight: ['label' => null, 'content' => \App\Support\NoteFormatter::toHtml($message), 'html' => true],

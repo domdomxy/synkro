@@ -103,7 +103,7 @@ class CommentController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_commented',
-                    'message' => "New comment\n" . Auth::user()->name . " commented on \"{$task->title}\"",
+                    'message' => "New comment\n" . '**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\"",
                     'url' => $url,
                 ]);
 
@@ -118,7 +118,7 @@ class CommentController extends Controller
                 $recipient,
                 'task.commented',
                 Auth::user()->name . " commented on \"{$task->title}\"",
-                [Auth::user()->name . " commented on \"{$task->title}\": \"{$preview}\""],
+                ['**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\": \"{$preview}\""],
                 url($url),
                 'View Task'
             );
@@ -129,7 +129,7 @@ class CommentController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_mentioned',
-                    'message' => "You were mentioned\n" . Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                    'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
                     'url' => $url,
                 ]);
 
@@ -144,7 +144,7 @@ class CommentController extends Controller
                 $recipient,
                 'task.mentioned',
                 Auth::user()->name . " mentioned you on \"{$task->title}\"",
-                [Auth::user()->name . " mentioned you in a comment on \"{$task->title}\":"],
+                ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
                 url($url),
                 'View Task',
                 ['label' => 'Comment', 'content' => $preview]
@@ -158,7 +158,7 @@ class CommentController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $replyRecipient->id,
                         'type' => 'comment_replied',
-                        'message' => "New reply\n" . Auth::user()->name . " replied to your comment on \"{$task->title}\"",
+                        'message' => "New reply\n" . '**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\"",
                         'url' => $url,
                     ]);
 
@@ -173,7 +173,7 @@ class CommentController extends Controller
                     $replyRecipient,
                     'task.replied',
                     Auth::user()->name . " replied to your comment on \"{$task->title}\"",
-                    [Auth::user()->name . " replied to your comment on \"{$task->title}\":"],
+                    ['**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\":"],
                     url($url),
                     'View Reply',
                     ['label' => 'Reply', 'content' => $preview]
@@ -322,7 +322,7 @@ class CommentController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'task_mentioned',
-                        'message' => "You were mentioned\n" . Auth::user()->name . " mentioned you on \"{$task->title}\"",
+                        'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
                         'url' => $url,
                     ]);
 
@@ -337,7 +337,7 @@ class CommentController extends Controller
                     $recipient,
                     'task.mentioned',
                     Auth::user()->name . " mentioned you on \"{$task->title}\"",
-                    [Auth::user()->name . " mentioned you in a comment on \"{$task->title}\":"],
+                    ['**' . Auth::user()->name . '**' . " mentioned you in a comment on \"**{$task->title}**\":"],
                     url($url),
                     'View Task',
                     ['label' => 'Comment', 'content' => $preview]
