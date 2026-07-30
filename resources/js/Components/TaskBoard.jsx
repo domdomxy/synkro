@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { router } from '@inertiajs/react';
 import Avatar from '@/Components/Avatar';
 import Modal from '@/Components/Modal';
@@ -73,6 +74,14 @@ const TRANSITIONS = {
     'in_review->in_progress': { type: 'reject', requires: 'review' },
 };
 
+// Plain-language description of each entry in TRANSITIONS, used only by BoardLegendModal below.
+const TRANSITION_DETAILS = {
+    'todo->in_progress': { action: 'Starts the task.', who: 'Assignee or a manager' },
+    'submitted->in_review': { action: 'Begins reviewing the submission.', who: 'A reviewer' },
+    'in_review->done': { action: 'Approves the submission.', who: 'A reviewer' },
+    'in_review->in_progress': { action: 'Sends it back for changes (feedback required).', who: 'A reviewer' },
+};
+
 const BLOCKED_MESSAGES = {
     'in_progress->submitted': 'Submitting needs a file or link attached — do that from the task card.',
     'in_progress->todo': "Moving a task back to To Do isn't supported from the board.",
@@ -90,10 +99,11 @@ const LONG_PRESS_MS = 500;
 // down the column would get misread as a long-press partway through.
 const LONG_PRESS_MOVE_TOLERANCE = 10;
 
-function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
+function TaskCard({ task, draggable, onDragStart, onClick, onTouchDragStart, isTouchDragging }) {
     const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
     const style = STATUS_STYLES[task.status] ?? STATUS_STYLES.todo;
 
+    const cardRef = useRef(null);
     const pressTimer = useRef(null);
     const longPressFired = useRef(false);
     const touchStart = useRef(null);
@@ -106,7 +116,7 @@ function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
     };
 
     const handleTouchStart = (e) => {
-        if (!draggable || !onLongPress) return;
+        if (!draggable || !onTouchDragStart) return;
         longPressFired.current = false;
         const touch = e.touches[0];
         touchStart.current = { x: touch.clientX, y: touch.clientY };
@@ -114,11 +124,14 @@ function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
             longPressFired.current = true;
             pressTimer.current = null;
             if (navigator.vibrate) navigator.vibrate(15);
-            onLongPress(task);
+            const rect = cardRef.current?.getBoundingClientRect();
+            onTouchDragStart(task, touchStart.current, rect);
         }, LONG_PRESS_MS);
     };
 
     const handleTouchMove = (e) => {
+        // Only relevant while we're still waiting for the hold to complete - once the
+        // real drag has started, TaskBoard takes over via document-level listeners.
         if (!pressTimer.current || !touchStart.current) return;
         const touch = e.touches[0];
         const dx = Math.abs(touch.clientX - touchStart.current.x);
@@ -137,6 +150,7 @@ function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
 
     return (
         <div
+            ref={cardRef}
             draggable={draggable}
             onDragStart={(e) => onDragStart(e, task)}
             onClick={() => {
@@ -150,9 +164,9 @@ function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={clearPressTimer}
-            onContextMenu={(e) => { if (draggable && onLongPress) e.preventDefault(); }}
-            title={draggable ? (onLongPress ? 'Drag on desktop, or press and hold to move on touch' : undefined) : 'You can open this task, but only its assignee or a reviewer can drag it'}
-            className={`group cursor-pointer touch-manipulation select-none rounded-lg border border-l-[3px] p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${style.border} ${style.accent} ${style.bg} ${draggable ? 'active:cursor-grabbing active:translate-y-0 active:shadow-sm' : 'opacity-90'}`}
+            onContextMenu={(e) => { if (draggable && onTouchDragStart) e.preventDefault(); }}
+            title={draggable ? (onTouchDragStart ? 'Drag on desktop, or press and hold then drag on touch' : undefined) : 'You can open this task, but only its assignee or a reviewer can drag it'}
+            className={`group cursor-pointer touch-manipulation select-none rounded-lg border border-l-[3px] p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${style.border} ${style.accent} ${style.bg} ${draggable ? 'active:cursor-grabbing active:translate-y-0 active:shadow-sm' : 'opacity-90'} ${isTouchDragging ? 'opacity-30' : ''}`}
         >
             <div className="flex items-start gap-1.5">
                 <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
@@ -211,6 +225,68 @@ function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
     );
 }
 
+// Reference card for what the board can do, shown from the info button above the columns.
+// Exported so the page hosting <TaskBoard> can trigger it from its own modal header (e.g. next
+// to the same close button that wraps the whole board), the same way Project Info works.
+export function BoardLegendModal({ show, onClose }) {
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70">
+            <div className="flex max-h-[80vh] flex-col">
+                <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">How Board Moves Work</h2>
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                            Drag a card onto another column (or on touch, press and hold then drag) to trigger one of these moves.
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto p-6 pt-4">
+                    <div className="space-y-2.5">
+                        {Object.entries(TRANSITIONS).map(([key]) => {
+                            const [fromStatus, toStatus] = key.split('->');
+                            const fromCol = COLUMNS.find((c) => c.status === fromStatus);
+                            const toCol = COLUMNS.find((c) => c.status === toStatus);
+                            const details = TRANSITION_DETAILS[key];
+
+                            return (
+                                <div key={key} className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                                    <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-gray-200">
+                                        <span className={`h-2 w-2 rounded-full ${STATUS_STYLES[fromStatus]?.dot ?? STATUS_STYLES.todo.dot}`} />
+                                        {fromCol?.label}
+                                        <svg className="h-3.5 w-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                        </svg>
+                                        <span className={`h-2 w-2 rounded-full ${STATUS_STYLES[toStatus]?.dot ?? STATUS_STYLES.todo.dot}`} />
+                                        {toCol?.label}
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{details?.action}</p>
+                                    <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                        {details?.who}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+                        Any other move — submitting work, reopening a completed task, or moving something back to To Do —
+                        isn't available from the board. Open the task card for those.
+                    </p>
+                </div>
+
+                <div className="flex justify-end border-t border-gray-100 p-4 dark:border-gray-700">
+                    <SecondaryButton onClick={onClose}>Close</SecondaryButton>
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 export default function TaskBoard({ tasks, canManage, canReview, currentUserId, projectId, onCardClick }) {
     const [draggedId, setDraggedId] = useState(null);
     const [dragOverStatus, setDragOverStatus] = useState(null);
@@ -219,7 +295,23 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
     const [rejectFeedback, setRejectFeedback] = useState('');
     const [rejectError, setRejectError] = useState(null);
     const [processing, setProcessing] = useState(false);
-    const [moveTarget, setMoveTarget] = useState(null); // task whose mobile "move to..." menu is open
+    const [showLegend, setShowLegend] = useState(false);
+
+    // Real touch drag state: dragSession holds the static info captured at the moment the hold
+    // completes (which task, and where the finger sits relative to the card so the floating
+    // ghost doesn't jump under the finger). dragPos is the live pointer position, updated on
+    // every touchmove so the ghost tracks the finger; it's kept separate from dragSession so
+    // the document-level listener effect below (keyed on dragSession) doesn't get torn down
+    // and re-attached on every single move event.
+    const [dragSession, setDragSession] = useState(null);
+    const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+    const dragPosRef = useRef({ x: 0, y: 0 });
+    // The horizontally-scrolling columns row - used so a drag held near the left/right edge
+    // can auto-scroll it to reveal offscreen columns, same as the desktop drag would let you
+    // do by just moving the mouse there (browsers auto-scroll under native HTML5 DnD; touch
+    // gets no such thing for free, and preventDefault() in handleMove below blocks manual
+    // scroll attempts too, so without this a held edge does nothing at all).
+    const boardScrollRef = useRef(null);
 
     const flash = (text) => {
         setNotice(text);
@@ -235,27 +327,13 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
         return false;
     };
 
-    // Same set of moves a drag-and-drop would allow from this status - used to build
-    // the press-and-hold menu on touch devices, where dragging isn't available.
-    const movesFor = (task) => COLUMNS.filter((col) => TRANSITIONS[`${task.status}->${col.status}`]);
-
-    const openMoveMenu = (task) => {
-        if (!isDraggable(task) || processing) return;
-        setMoveTarget(task);
-    };
-
-    const chooseMove = (toStatus) => {
-        const task = moveTarget;
-        setMoveTarget(null);
-        if (task) runTransition(task, toStatus);
-    };
-
     const handleDragStart = (e, task) => {
         if (!isDraggable(task)) {
             e.preventDefault();
             return;
         }
         setDraggedId(task.id);
+        dragPosRef.current = { x: e.clientX, y: e.clientY };
         e.dataTransfer.effectAllowed = 'move';
     };
 
@@ -307,6 +385,120 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
         runTransition(task, status);
     };
 
+    // Begins a real touch drag: called once the press-and-hold threshold in TaskCard fires.
+    const startTouchDrag = (task, point, rect) => {
+        if (!isDraggable(task) || processing || !rect) return;
+        setDraggedId(task.id);
+        dragPosRef.current = point;
+        setDragPos(point);
+        setDragSession({
+            task,
+            offsetX: point.x - rect.left,
+            offsetY: point.y - rect.top,
+            width: rect.width,
+        });
+    };
+
+    // Document-level listeners so the drag keeps tracking the finger anywhere on screen, not
+    // just while it stays over the card it started on (touch events don't re-target like that).
+    // Keyed on dragSession (not dragPos) so this only attaches/detaches at drag start/end.
+    useEffect(() => {
+        if (!dragSession) return;
+
+        const handleMove = (e) => {
+            // Blocks the page from scrolling under the drag - requires passive: false below,
+            // since browsers default touchmove listeners to passive (where preventDefault is a no-op).
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (!touch) return;
+            const point = { x: touch.clientX, y: touch.clientY };
+            dragPosRef.current = point;
+            setDragPos(point);
+            const el = document.elementFromPoint(point.x, point.y);
+            const columnEl = el?.closest('[data-column-status]');
+            setDragOverStatus(columnEl?.dataset.columnStatus ?? null);
+        };
+
+        const endDrag = (shouldDrop) => {
+            if (shouldDrop) {
+                const { x, y } = dragPosRef.current;
+                const el = document.elementFromPoint(x, y);
+                const columnEl = el?.closest('[data-column-status]');
+                if (columnEl) {
+                    handleDrop(columnEl.dataset.columnStatus);
+                } else {
+                    setDraggedId(null);
+                    setDragOverStatus(null);
+                }
+            } else {
+                setDraggedId(null);
+                setDragOverStatus(null);
+            }
+            setDragSession(null);
+        };
+
+        const handleTouchEnd = () => endDrag(true);
+        const handleTouchCancel = () => endDrag(false);
+
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
+        document.addEventListener('touchcancel', handleTouchCancel);
+
+        return () => {
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+            document.removeEventListener('touchcancel', handleTouchCancel);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dragSession]);
+
+    // Desktop counterpart to the touchmove tracker above: native HTML5 drag doesn't fire
+    // regular mousemove events while dragging, it fires dragover instead - this just keeps
+    // dragPosRef current for the edge auto-scroll loop below, no drop-target logic here
+    // (that's already handled per-column by the existing onDragOver handlers).
+    useEffect(() => {
+        if (draggedId == null) return;
+
+        const handleDragOverGlobal = (e) => {
+            dragPosRef.current = { x: e.clientX, y: e.clientY };
+        };
+
+        document.addEventListener('dragover', handleDragOverGlobal);
+        return () => document.removeEventListener('dragover', handleDragOverGlobal);
+    }, [draggedId]);
+
+    // Edge auto-scroll: runs every frame for as long as any drag is active - touch or desktop
+    // - independent of whether a move event is currently firing (it won't be if the pointer is
+    // held still at the edge), so holding there keeps scrolling instead of stalling after one
+    // move event. Keyed on draggedId (set at the start of both drag paths) rather than
+    // dragSession (touch-only) so desktop drags get the same smooth scrolling.
+    useEffect(() => {
+        if (draggedId == null) return;
+
+        const EDGE_ZONE = 56; // px from the container's edge that starts auto-scroll
+        const MAX_SPEED = 16; // px scrolled per frame right at the edge
+
+        let rafId;
+        const step = () => {
+            const container = boardScrollRef.current;
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                const x = dragPosRef.current.x;
+                let speed = 0;
+                if (x < rect.left + EDGE_ZONE) {
+                    speed = -MAX_SPEED * Math.min(1, (rect.left + EDGE_ZONE - x) / EDGE_ZONE);
+                } else if (x > rect.right - EDGE_ZONE) {
+                    speed = MAX_SPEED * Math.min(1, (x - (rect.right - EDGE_ZONE)) / EDGE_ZONE);
+                }
+                if (speed !== 0) container.scrollLeft += speed;
+            }
+            rafId = requestAnimationFrame(step);
+        };
+        rafId = requestAnimationFrame(step);
+
+        return () => cancelAnimationFrame(rafId);
+    }, [draggedId]);
+
     const submitReject = (e) => {
         e.preventDefault();
         if (!rejectFeedback.trim()) {
@@ -326,14 +518,29 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
         });
     };
 
+    const dragGhostStyle = dragSession ? STATUS_STYLES[dragSession.task.status] ?? STATUS_STYLES.todo : null;
+
     return (
         <div>
+            <div className="mb-2 flex items-center justify-end">
+                <button
+                    type="button"
+                    onClick={() => setShowLegend(true)}
+                    title="How moves work"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </div>
+
             {notice && (
                 <div className="mb-2 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                     {notice}
                 </div>
             )}
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div ref={boardScrollRef} className="flex gap-3 overflow-x-auto pb-2">
                 {COLUMNS.map((col) => {
                     const columnTasks = tasks.filter((t) => t.status === col.status);
 
@@ -342,6 +549,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                     return (
                         <div
                             key={col.status}
+                            data-column-status={col.status}
                             onDragOver={(e) => { if (draggedId != null) { e.preventDefault(); setDragOverStatus(col.status); } }}
                             onDragLeave={() => setDragOverStatus((s) => (s === col.status ? null : s))}
                             onDrop={(e) => { e.preventDefault(); handleDrop(col.status); }}
@@ -367,8 +575,9 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                                         task={task}
                                         draggable={isDraggable(task) && !processing}
                                         onDragStart={handleDragStart}
-                                        onLongPress={openMoveMenu}
+                                        onTouchDragStart={startTouchDrag}
                                         onClick={onCardClick}
+                                        isTouchDragging={dragSession?.task.id === task.id}
                                     />
                                 ))}
                                 {columnTasks.length === 0 && (
@@ -387,6 +596,23 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                     );
                 })}
             </div>
+
+            {dragSession && createPortal(
+                <div
+                    className={`pointer-events-none fixed z-[100] scale-105 rounded-lg border border-l-[3px] p-3 text-sm shadow-2xl ${dragGhostStyle.border} ${dragGhostStyle.accent} ${dragGhostStyle.bg}`}
+                    style={{
+                        left: dragPos.x - dragSession.offsetX,
+                        top: dragPos.y - dragSession.offsetY,
+                        width: dragSession.width,
+                    }}
+                >
+                    <div className="flex items-start gap-1.5">
+                        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dragGhostStyle.dot}`} />
+                        <p className="font-medium leading-snug text-gray-800 dark:text-gray-200 line-clamp-2">{dragSession.task.title}</p>
+                    </div>
+                </div>,
+                document.body,
+            )}
 
             <Modal show={!!rejectTarget} onClose={() => (processing ? null : setRejectTarget(null))} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
                 <form onSubmit={submitReject} className="p-6">
@@ -409,28 +635,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                 </form>
             </Modal>
 
-            <Modal show={!!moveTarget} onClose={() => setMoveTarget(null)} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
-                <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Move Task</h3>
-                    <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">"{moveTarget?.title}"</p>
-                    <div className="mt-4 space-y-1.5">
-                        {moveTarget && movesFor(moveTarget).map((col) => (
-                            <button
-                                key={col.status}
-                                type="button"
-                                onClick={() => chooseMove(col.status)}
-                                className="flex w-full items-center gap-2.5 rounded-lg border border-gray-200 px-3.5 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40"
-                            >
-                                <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_STYLES[col.status]?.dot ?? STATUS_STYLES.todo.dot}`} />
-                                {col.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                        <SecondaryButton type="button" onClick={() => setMoveTarget(null)}>Cancel</SecondaryButton>
-                    </div>
-                </div>
-            </Modal>
+            <BoardLegendModal show={showLegend} onClose={() => setShowLegend(false)} />
         </div>
     );
 }
