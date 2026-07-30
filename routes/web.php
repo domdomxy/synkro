@@ -50,9 +50,9 @@ Route::post('/feedback/reply', [FeedbackController::class, 'reply'])->middleware
 Route::post('/feedback/close', [FeedbackController::class, 'close'])->middleware('throttle:10,60')->name('feedback.close');
 Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middleware('throttle:10,60')->name('feedback.reopen');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
-Route::get('/activity', [DashboardController::class, 'activity'])->middleware(['auth', 'verified'])->name('activity.index');
-Route::get('/activity/login-history', [DashboardController::class, 'loginHistory'])->middleware(['auth', 'verified'])->name('activity.login-history');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'password.change'])->name('dashboard');
+Route::get('/activity', [DashboardController::class, 'activity'])->middleware(['auth', 'verified', 'password.change'])->name('activity.index');
+Route::get('/activity/login-history', [DashboardController::class, 'loginHistory'])->middleware(['auth', 'verified', 'password.change'])->name('activity.login-history');
 
 Route::post('/appeal', [SuspensionAppealController::class, 'store'])
     ->name('appeal.store');
@@ -68,7 +68,15 @@ Route::get('/account/{user}/confirm-deletion', [AccountController::class, 'confi
     ->middleware(['signed', 'throttle:6,1'])
     ->name('account.destroy.confirm');
 
-Route::middleware('auth')->group(function () {
+// Everything a logged-in user can actually do with the app (projects, tasks,
+// account, settings, invitations, etc.) requires a verified email, same as
+// /dashboard — otherwise a freshly-registered, unverified account (which is
+// auto-logged-in at registration) could reach all of this directly, e.g. via
+// the "View Your Projects" link in the welcome email, bypassing verification
+// entirely. It also requires an admin-issued temporary password to have
+// actually been changed (see EnsurePasswordIsChanged) rather than only
+// nudging for it once at login.
+Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
     Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
     Route::delete('/account', [AccountController::class, 'requestDeletion'])->name('account.destroy');
@@ -172,7 +180,7 @@ Route::middleware('auth')->group(function () {
 
 });
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::post('/users/{user}/suspend', [AdminController::class, 'suspend'])->name('users.suspend');

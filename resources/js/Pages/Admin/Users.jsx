@@ -294,6 +294,11 @@ export default function Users({ users, stats, filters }) {
                         </p>
                     </div>
 
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={users} />
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -375,10 +380,6 @@ export default function Users({ users, stats, filters }) {
                                 )}
                             </tbody>
                         </table>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-                            <Pagination meta={users} />
                         </div>
                     </div>
                 </div>

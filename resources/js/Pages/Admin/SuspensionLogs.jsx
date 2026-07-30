@@ -216,6 +216,11 @@ export default function SuspensionLogs({ logs, filters }) {
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={logs} />
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         {logs.data.length === 0 ? (
                             <div className="px-6 py-10 text-center">
@@ -235,10 +240,6 @@ export default function SuspensionLogs({ logs, filters }) {
                                 ))}
                             </ul>
                         )}
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-                            <Pagination meta={logs} />
-                        </div>
                     </div>
                 </div>
             </div>

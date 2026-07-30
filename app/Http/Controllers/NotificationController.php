@@ -45,7 +45,7 @@ class NotificationController extends Controller
         $notifications = $query->paginate($this->perPage($request, 10))->withQueryString();
 
         return Inertia::render('Notifications', [
-            'notifications' => $notifications,
+            'notificationsList' => $notifications,
             'filters' => [
                 'filter' => $filter,
                 'category' => $category,

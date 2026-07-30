@@ -82,6 +82,11 @@ export default function Projects({ projects, filters }) {
                         {projects.total} project{projects.total !== 1 ? 's' : ''} match{projects.total === 1 ? 'es' : ''} your search
                     </p>
 
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={projects} />
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         <div className="hidden sm:block">
                             <table className="w-full text-left text-sm">
@@ -182,11 +187,6 @@ export default function Projects({ projects, filters }) {
                                     No projects match your search.
                                 </div>
                             )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-                            <Pagination meta={projects} />
                         </div>
                     </div>
                 </div>

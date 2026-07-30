@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountActivityLog;
 use App\Models\User;
 use App\Support\NotificationMailer;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,11 +44,11 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        event(new Registered($user));
-
-        // Sent directly (not left to the queued core `Registered` listener) so the
-        // code is guaranteed to exist and be emailed before the user is redirected
-        // to the verify-email screen — see AppServiceProvider for why.
+        // Verification is sent directly (not via `event(new Registered($user))`,
+        // which would additionally trigger the framework's built-in Registered
+        // listener and send a second code/email) so it's guaranteed to be sent
+        // exactly once, synchronously, before the user is redirected to the
+        // verify-email screen — see AppServiceProvider for why.
         $user->sendEmailVerificationNotification();
 
         NotificationMailer::send(

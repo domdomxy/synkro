@@ -236,7 +236,9 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
     const [copied, setCopied] = useState(false);
     const [previews, setPreviews] = useState([]); // [{ file, url }]
     const [lightboxIndex, setLightboxIndex] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);
+    const dragCounter = useRef(0);
 
     const MAX_ATTACHMENTS = 5;
 
@@ -281,6 +283,7 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
             reset();
             previews.forEach((p) => URL.revokeObjectURL(p.url));
             setPreviews([]);
+            setLightboxIndex(null);
         }
     }, [flash]);
 
@@ -289,17 +292,53 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
         post(route('feedback.store'), { forceFormData: true });
     };
 
-    const onFilesChange = (e) => {
-        const incoming = Array.from(e.target.files);
+    const addFiles = (fileList) => {
+        const incoming = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
         const room = MAX_ATTACHMENTS - data.attachments.length;
         const accepted = incoming.slice(0, room);
+        if (accepted.length === 0) return;
 
         setData('attachments', [...data.attachments, ...accepted]);
         setPreviews((prev) => [
             ...prev,
             ...accepted.map((file) => ({ file, url: URL.createObjectURL(file) })),
         ]);
+    };
+
+    const onFilesChange = (e) => {
+        addFiles(e.target.files);
         e.target.value = '';
+    };
+
+    const onDragEnter = (e) => {
+        e.preventDefault();
+        dragCounter.current += 1;
+        if (e.dataTransfer.types.includes('Files')) {
+            setIsDragging(true);
+        }
+    };
+
+    const onDragOver = (e) => {
+        // Required so the browser allows a drop here instead of opening the file.
+        e.preventDefault();
+    };
+
+    const onDragLeave = (e) => {
+        e.preventDefault();
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+            dragCounter.current = 0;
+            setIsDragging(false);
+        }
+    };
+
+    const onDrop = (e) => {
+        e.preventDefault();
+        dragCounter.current = 0;
+        setIsDragging(false);
+        if (e.dataTransfer.files?.length) {
+            addFiles(e.dataTransfer.files);
+        }
     };
 
     const removeAttachment = (index) => {
@@ -358,6 +397,10 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
     };
 
     const selectedCategory = categories.find((c) => c.key === data.category);
+
+    // Same { src, alt } shape as trackAttachmentImages below so both reuse the
+    // one ImageLightbox/lightboxIndex pair.
+    const previewImages = previews.map((p) => ({ src: p.url, alt: p.file.name }));
 
     // Flattened so the lightbox can page through every attachment on this
     // ticket (legacy single attachment_path + the newer attachments array).
@@ -587,21 +630,38 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                             <button
                                                 type="button"
                                                 onClick={() => fileInputRef.current.click()}
-                                                className="mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-3 text-sm text-gray-500 transition hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                                                onDragEnter={onDragEnter}
+                                                onDragOver={onDragOver}
+                                                onDragLeave={onDragLeave}
+                                                onDrop={onDrop}
+                                                className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-dashed py-3 text-sm transition ${
+                                                    isDragging
+                                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400'
+                                                        : 'border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400'
+                                                }`}
                                             >
                                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
-                                                {previews.length > 0
-                                                    ? `Add more (${previews.length}/${MAX_ATTACHMENTS})`
-                                                    : 'Click to attach screenshots'}
+                                                {isDragging
+                                                    ? 'Drop screenshots here'
+                                                    : previews.length > 0
+                                                        ? `Add more (${previews.length}/${MAX_ATTACHMENTS})`
+                                                        : 'Click or drag & drop to attach screenshots'}
                                             </button>
                                         )}
                                         {previews.length > 0 && (
                                             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
                                                 {previews.map((p, i) => (
                                                     <div key={i} className="group relative">
-                                                        <img src={p.url} alt={p.file.name} className="h-20 w-full rounded-md object-cover shadow" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setLightboxIndex(i)}
+                                                            title={p.file.name}
+                                                            className="block w-full overflow-hidden rounded-md shadow"
+                                                        >
+                                                            <img src={p.url} alt={p.file.name} className="h-20 w-full object-cover transition group-hover:brightness-90" />
+                                                        </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => removeAttachment(i)}
@@ -616,6 +676,12 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                                 ))}
                                             </div>
                                         )}
+                                        <ImageLightbox
+                                            images={previewImages}
+                                            index={lightboxIndex}
+                                            onClose={() => setLightboxIndex(null)}
+                                            onIndexChange={setLightboxIndex}
+                                        />
                                         {errors.attachments && <p className="mt-1 text-xs text-red-500">{errors.attachments}</p>}
                                     </div>
 

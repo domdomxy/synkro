@@ -13,7 +13,7 @@ import useConfirm from '@/hooks/useConfirm';
 const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { filter: 'all', category: 'all', per_page: DEFAULT_PER_PAGE };
 
-export default function Notifications({ notifications, filters }) {
+export default function Notifications({ notificationsList, filters }) {
     const { auth } = usePage().props;
     const [filter, setFilter] = useState(filters?.filter ?? 'all');
     const [category, setCategory] = useState(filters?.category ?? 'all');
@@ -58,7 +58,7 @@ export default function Notifications({ notifications, filters }) {
         router.delete(route('notifications.clear'), { preserveScroll: true });
     };
 
-    const unreadOnPage = notifications.data.some((n) => !n.read_at);
+    const unreadOnPage = notificationsList.data.some((n) => !n.read_at);
 
     return (
         <AuthenticatedLayout header={
@@ -73,7 +73,7 @@ export default function Notifications({ notifications, filters }) {
                             Mark all read
                         </button>
                     )}
-                    {notifications.total > 0 && (
+                    {notificationsList.total > 0 && (
                         <button onClick={clearAll} className="text-sm font-medium text-gray-500 hover:underline dark:text-gray-400">
                             Clear all
                         </button>
@@ -118,11 +118,16 @@ export default function Notifications({ notifications, filters }) {
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
-                        {notifications.total} notification{notifications.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ''}
+                        {notificationsList.total} notification{notificationsList.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ''}
                     </p>
 
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={notificationsList} />
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        {notifications.data.length === 0 ? (
+                        {notificationsList.data.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
                                 <svg className="h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -138,7 +143,7 @@ export default function Notifications({ notifications, filters }) {
                             </div>
                         ) : (
                             <ul>
-                                {notifications.data.map((note) => {
+                                {notificationsList.data.map((note) => {
                                     const style = typeStyles[note.type] ?? typeStyles.task_assigned;
                                     const { title, description } = splitMessage(note.message);
                                     return (
@@ -184,11 +189,6 @@ export default function Notifications({ notifications, filters }) {
                                 })}
                             </ul>
                         )}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
-                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-                        <Pagination meta={notifications} />
                     </div>
                 </div>
             </div>

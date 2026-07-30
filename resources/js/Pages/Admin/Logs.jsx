@@ -219,6 +219,11 @@ export default function Logs({ logs, actionCatalog, filters }) {
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                        <Pagination meta={logs} />
+                    </div>
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         {logs.data.length === 0 ? (
                             <div className="px-6 py-10 text-center">
@@ -238,11 +243,6 @@ export default function Logs({ logs, actionCatalog, filters }) {
                                 ))}
                             </ul>
                         )}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
-                        <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-                        <Pagination meta={logs} />
                     </div>
                 </div>
             </div>

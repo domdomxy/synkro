@@ -12,11 +12,10 @@ class ForcePasswordChangeController extends Controller
 {
     /**
      * Show the "set a new password" prompt landed on right after signing in
-     * with a temporary password an admin issued. This is only the redirect
-     * target of a successful login (see AuthenticatedSessionController::store),
-     * not something middleware re-checks on every request, so a user who
-     * picks "Do it later" and continues into the app isn't interrupted again
-     * until their next fresh login.
+     * with a temporary password an admin issued. Also re-shown on every
+     * subsequent request to the protected app area (see
+     * EnsurePasswordIsChanged) — there's no way past this until the user
+     * actually sets a new password.
      */
     public function edit(Request $request): Response|RedirectResponse
     {

@@ -5,7 +5,7 @@ import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import AuthField from '@/Components/Auth/AuthField';
 import { LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 
 export default function ForcePasswordChange() {
     const { data, setData, put, processing, errors, setError, clearErrors, reset } = useForm({
@@ -35,14 +35,12 @@ export default function ForcePasswordChange() {
         });
     };
 
-    const skip = () => router.visit(route('dashboard'));
-
     return (
         <GuestLayout
             icon={LockIcon}
             eyebrow="Account security"
             title="Set a new password"
-            subtitle="You signed in with a temporary password. We recommend setting a new one now, though you can do this later from Account settings instead."
+            subtitle="You signed in with a temporary password. Set a new one below to continue to your account."
             align="center"
         >
             <Head title="Set a New Password" />
@@ -92,14 +90,6 @@ export default function ForcePasswordChange() {
                     {processing && <Spinner className="mr-2 h-4 w-4" />}
                     {processing ? 'Updating...' : 'Update Password'}
                 </PrimaryButton>
-
-                <button
-                    type="button"
-                    onClick={skip}
-                    className="w-full rounded-md py-1 text-center text-sm text-gray-500 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                    Do it later
-                </button>
             </form>
         </GuestLayout>
     );
