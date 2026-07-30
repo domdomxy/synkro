@@ -39,7 +39,7 @@ function badgeTintFor(accentColor) {
 
 export default function StatCard({ label, value, sub, pct, accentColor, icon }) {
     return (
-        <div className="min-w-0 rounded-lg bg-white p-4 shadow transition-shadow duration-200 hover:shadow-md dark:bg-gray-800 sm:p-6">
+        <div className="min-w-0 rounded-lg bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-800 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 sm:p-6">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{label}</p>

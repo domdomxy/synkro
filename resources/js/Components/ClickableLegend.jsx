@@ -17,13 +17,14 @@
  *   <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedKeys} onToggle={toggleKey} />} />
  *   <Area dataKey="completed" hide={selectedKeys.length > 0 && !selectedKeys.includes('completed')} ... />
  */
-export default function ClickableLegend({ payload, selectedKeys = [], onToggle }) {
+export default function ClickableLegend({ payload, selectedKeys = [], onToggle, colorMap }) {
     if (!payload?.length) return null;
 
     return (
         <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs">
             {payload.map((entry) => {
                 const key = entry.dataKey ?? entry.value;
+                const color = colorMap?.[key] ?? entry.color;
                 const isSelected = selectedKeys.includes(key);
                 const isDimmed = selectedKeys.length > 0 && !isSelected;
                 const title = isSelected
@@ -49,7 +50,7 @@ export default function ClickableLegend({ payload, selectedKeys = [], onToggle }
                             isDimmed ? 'opacity-40' : 'opacity-100'
                         } ${isSelected ? 'ring-1 ring-inset ring-current/30' : ''}`}
                     >
-                        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
                         <span className="text-gray-600 dark:text-gray-300">{entry.value}</span>
                     </li>
                 );
