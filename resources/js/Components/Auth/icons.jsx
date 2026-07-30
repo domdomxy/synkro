@@ -66,3 +66,11 @@ export function ScaleIcon(props) {
         </svg>
     );
 }
+
+export function RestoreIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 9a7.5 7.5 0 1113.44 4.5M4.5 9V4.5M4.5 9H9" />
+        </svg>
+    );
+}

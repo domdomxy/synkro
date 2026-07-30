@@ -14,6 +14,7 @@ use App\Support\UserAgentParser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -34,6 +35,7 @@ class AuthenticatedSessionController extends Controller
             'suspension' => $suspension,
             'passwordExpired' => session('passwordExpired'),
             'passwordReset' => session('passwordReset'),
+            'pendingDeletion' => session('pendingDeletion'),
             'appealLimitMessage' => AppealRateLimiter::message($suspension['email'] ?? null, $request),
         ]);
     }
@@ -54,6 +56,22 @@ class AuthenticatedSessionController extends Controller
             // Scoped to the plain bad-credentials failure only, so a rate-limit
             // throttle exception still surfaces its own message untouched.
             $isBadCredentials = ($e->errors()['email'][0] ?? null) === trans('auth.failed');
+
+            // Auth::attempt() can never succeed for a soft-deleted account (the global
+            // SoftDeletes scope hides it from the credentials query), so a correct
+            // password against one always surfaces here as an ordinary "bad credentials"
+            // failure. Look past that so a still-restorable account gets a self-service
+            // restore prompt instead of a dead-end error.
+            $trashedUser = $isBadCredentials
+                ? User::withTrashed()->whereNotNull('deleted_at')->where('email', $request->string('email'))->first()
+                : null;
+
+            if ($trashedUser && Hash::check($request->string('password'), $trashedUser->password) && $trashedUser->isRestorable()) {
+                return redirect()->route('login')->with('pendingDeletion', [
+                    'email' => $trashedUser->email,
+                    'restoreBy' => $trashedUser->deletionGraceEndsAt()->toIso8601String(),
+                ]);
+            }
 
             $pendingReset = $isBadCredentials
                 ? User::where('email', $request->string('email'))

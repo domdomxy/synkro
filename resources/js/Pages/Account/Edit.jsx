@@ -149,7 +149,7 @@ function ProfileHeader({ user }) {
     );
 }
 
-export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
+export default function Edit({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays }) {
     const user = usePage().props.auth.user;
     const allNavItems = [...sections, ...dangerSections];
     const [activeSection, setActiveSection] = useState(allNavItems[0].id);
@@ -288,7 +288,7 @@ export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
                                     </SectionCard>
 
                                     <SectionCard {...dangerSections[1]} danger>
-                                        <DeleteUserForm className="max-w-xl" deletionRequestedAt={deletionRequestedAt} />
+                                        <DeleteUserForm className="max-w-xl" deletionRequestedAt={deletionRequestedAt} deletionGraceDays={deletionGraceDays} />
                                     </SectionCard>
                                 </div>
                             </div>

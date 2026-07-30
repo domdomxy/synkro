@@ -6,7 +6,7 @@ import PasswordInput from '@/Components/PasswordInput';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
-export default function DeleteUserForm({ className = '', deletionRequestedAt = null }) {
+export default function DeleteUserForm({ className = '', deletionRequestedAt = null, deletionGraceDays = 7 }) {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef();
 
@@ -95,7 +95,9 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
                     </h2>
 
                     <p className="mt-2.5 text-[15px] leading-relaxed text-red-600 dark:text-red-400">
-                        Once your account is deleted, all of its resources and data will be permanently deleted.
+                        Once deleted, your account is kept for {deletionGraceDays} days before it's permanently
+                        erased — plenty of time to change your mind. Just log back in with your usual email and
+                        password within that window to restore everything yourself.
                     </p>
                     <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
                         Enter your password to send a confirmation link to your email. Your account is only

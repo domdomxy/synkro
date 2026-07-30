@@ -6,11 +6,11 @@ import TextInput from '@/Components/TextInput';
 import Spinner from '@/Components/Spinner';
 import Linkify from '@/Components/Linkify';
 import AuthField from '@/Components/Auth/AuthField';
-import { MailIcon, LockIcon, ClockIcon, BanIcon } from '@/Components/Auth/icons';
+import { MailIcon, LockIcon, ClockIcon, BanIcon, RestoreIcon } from '@/Components/Auth/icons';
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 function timeRemaining(dateString) {
     const ms = new Date(dateString) - new Date();
@@ -201,8 +201,92 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
     );
 }
 
+function PendingDeletionNotice({ pendingDeletion }) {
+    const restoreForm = useForm({
+        email: pendingDeletion.email,
+        password: '',
+    });
+    const passwordInput = useRef();
+
+    const remaining = timeRemaining(pendingDeletion.restoreBy);
+
+    const submitRestore = (e) => {
+        e.preventDefault();
+        restoreForm.post(route('account.restore'), {
+            preserveScroll: true,
+            onError: () => passwordInput.current?.focus(),
+            onFinish: () => restoreForm.reset('password'),
+        });
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-950/30">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                    <ClockIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        Scheduled for deletion
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {remaining
+                            ? `Permanently deleted in ${remaining}`
+                            : 'This account can no longer be restored.'}
+                    </p>
+                </div>
+            </div>
+
+            {remaining ? (
+                <form onSubmit={submitRestore} className="space-y-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Enter your password again to restore <span className="font-medium">{pendingDeletion.email}</span> and
+                        everything in it, exactly as it was.
+                    </p>
+
+                    <div>
+                        <InputLabel htmlFor="restore-password" value="Password" className="sr-only" />
+                        <input
+                            id="restore-password"
+                            ref={passwordInput}
+                            type="password"
+                            autoFocus
+                            value={restoreForm.data.password}
+                            onChange={(e) => restoreForm.setData('password', e.target.value)}
+                            placeholder="Password"
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        />
+                        <InputError message={restoreForm.errors.email} className="mt-2" />
+                    </div>
+
+                    <PrimaryButton
+                        className="w-full justify-center py-2.5"
+                        disabled={restoreForm.processing || !restoreForm.data.password}
+                    >
+                        {restoreForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                        {restoreForm.processing ? 'Restoring...' : 'Restore My Account'}
+                    </PrimaryButton>
+                </form>
+            ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    If you need help, please{' '}
+                    <Link href={route('feedback.page')} className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                        contact support
+                    </Link>.
+                </p>
+            )}
+
+            <p className="pt-1 text-center text-xs text-gray-400 dark:text-gray-500">
+                <Link href={route('login')} className="hover:underline">
+                    Back to login
+                </Link>
+            </p>
+        </div>
+    );
+}
+
 export default function Login({ status, canResetPassword, passwordExpired, appealLimitMessage }) {
-    const { suspension, passwordReset } = usePage().props;
+    const { suspension, passwordReset, pendingDeletion } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -216,6 +300,21 @@ export default function Login({ status, canResetPassword, passwordExpired, appea
             onFinish: () => reset('password'),
         });
     };
+
+    if (pendingDeletion) {
+        return (
+            <AuthSplitLayout
+                icon={RestoreIcon}
+                iconTone="amber"
+                eyebrow="Account access"
+                title="Restore Your Account"
+                subtitle="Your account is scheduled for deletion, but it's not too late."
+            >
+                <Head title="Restore Your Account" />
+                <PendingDeletionNotice pendingDeletion={pendingDeletion} />
+            </AuthSplitLayout>
+        );
+    }
 
     if (suspension) {
         return (

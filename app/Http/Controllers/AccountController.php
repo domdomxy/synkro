@@ -10,6 +10,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,6 +31,7 @@ class AccountController extends Controller
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'deletionRequestedAt' => $request->user()->deletion_requested_at,
+            'deletionGraceDays' => (int) config('synkro.account_deletion_grace_days', 7),
         ]);
     }
 
@@ -198,17 +200,24 @@ class AccountController extends Controller
                 }
             }
         }
+        $user->delete();
+
+        AccountActivityLog::log('account_deleted', [], $user->id);
+
+        $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
+        $graceEndsAt = $user->deletionGraceEndsAt();
+
         NotificationMailer::send(
             $user,
             'account.deleted',
             'Your account has been deleted',
             [
-                'Your Synkro account and associated data have been permanently deleted.',
+                "Your Synkro account has been deleted and is no longer accessible.",
+                "It will be kept for {$graceDays} more day(s) (until " . $graceEndsAt->format('M j, Y') . ') in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
+                "After that, it will be permanently deleted and can't be recovered.",
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
         );
-
-        $user->delete();
 
         // Let any other open tab/device for this user know in real time,
         // instead of waiting for their next navigation to bounce them to
@@ -226,7 +235,10 @@ class AccountController extends Controller
             $request->session()->regenerateToken();
         }
 
-        return Redirect::route('login')->with('status', 'Your account has been permanently deleted.');
+        return Redirect::route('login')->with(
+            'status',
+            "Your account has been deleted. You can restore it by logging back in within {$graceDays} day(s) — after that it's gone for good."
+        );
     }
 
     /**
@@ -241,6 +253,54 @@ class AccountController extends Controller
         AccountActivityLog::log('account_deletion_cancelled');
 
         return Redirect::route('account.edit')->with('success', 'Account deletion cancelled.');
+    }
+
+    /**
+     * Self-service restore for an account still inside its post-deletion
+     * grace period. Deliberately unauthenticated (a soft-deleted account
+     * can't hold a session), so re-checks the password itself rather than
+     * trusting anything carried over from the login attempt that got
+     * redirected here.
+     */
+    public function restore(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = User::withTrashed()->where('email', $request->string('email'))->first();
+
+        if (! $user || ! $user->trashed() || ! Hash::check($request->string('password'), $user->password)) {
+            // Only re-show the restore prompt if this email is actually still
+            // restorable — otherwise fall through to the generic login error,
+            // same as any other unrecognized email/password combination.
+            if ($user && $user->trashed() && $user->isRestorable()) {
+                return Redirect::route('login')
+                    ->withErrors(['email' => 'Incorrect password.'])
+                    ->with('pendingDeletion', [
+                        'email' => $user->email,
+                        'restoreBy' => $user->deletionGraceEndsAt()->toIso8601String(),
+                    ]);
+            }
+
+            return Redirect::route('login')->withErrors(['email' => trans('auth.failed')]);
+        }
+
+        if (! $user->isRestorable()) {
+            return Redirect::route('login')->withErrors([
+                'email' => "This account's grace period has ended and it can no longer be restored. Please contact support if you need help.",
+            ]);
+        }
+
+        $user->restore();
+        $user->forceFill(['deletion_requested_at' => null])->save();
+
+        AccountActivityLog::log('account_restored', [], $user->id);
+
+        $user->sendAccountRestoredNotification();
+
+        return Redirect::route('login')->with('status', 'Your account has been restored. You can log back in now.');
     }
 
     public function updateAvatar(Request $request): RedirectResponse

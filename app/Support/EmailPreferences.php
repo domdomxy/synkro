@@ -19,6 +19,7 @@ class EmailPreferences
                     'account.password_changed' => 'Your password was changed',
                     'account.deactivated' => 'Your account was deactivated',
                     'account.deleted' => 'Your account was deleted',
+                    'account.restored' => 'Your account was restored',
                 ],
             ],
             'project' => [
@@ -110,6 +111,7 @@ class EmailPreferences
             'account.email_changed_security_alert',
             'account.admin_granted',
             'account.admin_revoked',
+            'account.restored',
             'project.deletion_confirm',
         ];
     }

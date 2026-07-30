@@ -8,6 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
@@ -45,7 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -134,6 +135,26 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The moment this account becomes eligible for permanent purging by the
+     * accounts:purge-deleted scheduled command. Null if the account isn't
+     * currently in its post-deletion grace period at all.
+     */
+    public function deletionGraceEndsAt(): ?\Carbon\Carbon
+    {
+        if (! $this->deleted_at) {
+            return null;
+        }
+
+        return $this->deleted_at->copy()->addDays((int) config('synkro.account_deletion_grace_days', 7));
+    }
+
+    /** Still soft-deleted and inside the window where it can self-restore. */
+    public function isRestorable(): bool
+    {
+        return $this->trashed() && (bool) $this->deletionGraceEndsAt()?->isFuture();
+    }
+
+    /**
      * Send the account deletion confirmation email. The account is not touched
      * until the user clicks this signed link, so requesting deletion (e.g. from
      * a hijacked or shared session) can't destroy the account by itself.
@@ -158,6 +179,22 @@ class User extends Authenticatable implements MustVerifyEmail
             ],
             $confirmUrl,
             'Permanently Delete My Account'
+        );
+    }
+
+    /**
+     * Confirms a self-service restore during the deletion grace period.
+     */
+    public function sendAccountRestoredNotification(): void
+    {
+        NotificationMailer::send(
+            $this,
+            'account.restored',
+            'Your account has been restored',
+            [
+                'Your Synkro account has been restored and is no longer scheduled for deletion.',
+                "If you didn't do this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
+            ]
         );
     }
 

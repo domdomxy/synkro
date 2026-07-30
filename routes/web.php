@@ -69,6 +69,12 @@ Route::get('/account/{user}/confirm-deletion', [AccountController::class, 'confi
     ->middleware(['signed', 'throttle:6,1'])
     ->name('account.destroy.confirm');
 
+// Public, same reasoning as above: a soft-deleted account has no session to
+// authenticate the request with, so restore() re-verifies the password itself.
+Route::post('/account/restore', [AccountController::class, 'restore'])
+    ->middleware(['throttle:6,1'])
+    ->name('account.restore');
+
 // Everything a logged-in user can actually do with the app (projects, tasks,
 // account, settings, invitations, etc.) requires a verified email, same as
 // /dashboard — otherwise a freshly-registered, unverified account (which is
