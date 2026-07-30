@@ -56,6 +56,9 @@ export const actionIconConfig = {
     comment_added: { path: ICON_PATHS.chat, color: 'text-blue-500' },
     comment_edited: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
     comment_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    resource_added: { path: ICON_PATHS.plus, color: 'text-green-500' },
+    resource_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
+    resource_removed: { path: ICON_PATHS.trash, color: 'text-red-500' },
 };
 
 export const fieldLabels = {
@@ -135,6 +138,23 @@ export function getLogDetails(log) {
         ].filter((r) => r.value);
     }
 
+    if (log.action === 'resource_added' || log.action === 'resource_removed') {
+        return [
+            { label: 'File', value: d.name },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'resource_updated') {
+        return [
+            d.old_name !== undefined && d.name !== undefined && {
+                label: 'File',
+                oldValue: d.old_name || '-',
+                newValue: d.name || '-',
+                isChange: true,
+            },
+        ].filter(Boolean);
+    }
+
     if (log.action === 'member_added') {
         return [
             { label: 'User', value: d.target_name },
@@ -188,6 +208,9 @@ export function describeLog(log) {
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
+        case 'resource_added': return `${actor} added the file "${d.name}"`;
+        case 'resource_updated': return `${actor} updated the file "${d.old_name}"`;
+        case 'resource_removed': return `${actor} removed the file "${d.name}"`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }

@@ -15,6 +15,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserSearchController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ProjectNoteController;
+use App\Http\Controllers\ProjectResourceController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\FeedbackAdminController;
 use App\Http\Controllers\Admin\FeedbackCategoryController;
@@ -111,6 +112,10 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
     Route::get('/projects/{project}/deliverables', [ProjectController::class, 'deliverables'])->name('projects.deliverables');
     Route::get('/projects/{project}/deliverables/download', [ProjectController::class, 'downloadDeliverables'])->name('projects.deliverables.download');
+    Route::get('/projects/{project}/resources', [ProjectResourceController::class, 'index'])->name('projects.resources');
+    Route::post('/projects/{project}/resources', [ProjectResourceController::class, 'store'])->name('projects.resources.store');
+    Route::post('/resources/{resource}', [ProjectResourceController::class, 'update'])->name('projects.resources.update');
+    Route::delete('/resources/{resource}', [ProjectResourceController::class, 'destroy'])->name('projects.resources.destroy');
     Route::post('/projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
     Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::post('/projects/{project}/pin', [ProjectController::class, 'pin'])->name('projects.pin');

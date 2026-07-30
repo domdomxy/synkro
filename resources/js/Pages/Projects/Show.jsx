@@ -915,6 +915,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                         </svg>
                     </HeaderIconButton>
+                    <HeaderIconButton href={route('projects.resources', project.id)} title="Resources">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v13" />
+                        </svg>
+                    </HeaderIconButton>
                     {canManage && (
                         <HeaderIconButton href={route('projects.settings', project.id)} title={isOwner ? 'Owner Settings' : 'Manager Settings'}>
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

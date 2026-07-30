@@ -2,6 +2,7 @@ import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
+import PasswordInput from '@/Components/PasswordInput';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -53,14 +54,13 @@ export default function DeactivateAccountForm({ className = '' }) {
                     </p>
                     <div className="mt-4">
                         <InputLabel htmlFor="password" value="Password" className="sr-only" />
-                        <input
+                        <PasswordInput
                             id="password"
-                            type="password"
                             name="password"
                             ref={passwordInput}
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            className="mt-1 w-full"
                             placeholder="Confirm your password"
                         />
                         <InputError message={errors.password} className="mt-2" />

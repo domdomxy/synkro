@@ -72,6 +72,11 @@ class Project extends Model
         return $this->hasMany(ProjectNote::class);
     }
 
+    public function resources(): HasMany
+    {
+        return $this->hasMany(ProjectResource::class)->latest();
+    }
+
     /** True while a deletion request is awaiting the owner's email confirmation. */
     public function hasPendingDeletion(): bool
     {

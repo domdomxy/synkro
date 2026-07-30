@@ -45,4 +45,10 @@ class ProjectPolicy
     {
         return in_array($project->roleFor($user), ['owner', 'manager']);
     }
+
+    /** Upload, rename/edit, replace, or delete a project resource (package/source/reference file). */
+    public function manageResources(User $user, Project $project): bool
+    {
+        return in_array($project->roleFor($user), ['owner', 'manager']);
+    }
 }
