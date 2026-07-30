@@ -201,6 +201,8 @@ Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('adm
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
+    Route::get('/users/{user}/logs', [AdminController::class, 'userLogs'])->name('users.logs');
+    Route::get('/users/{user}/login-history', [AdminController::class, 'userLoginHistory'])->name('users.login-history');
     Route::get('/projects/{project}/logs', [AdminController::class, 'projectLogs'])->name('projects.logs');
     Route::get('/suspension-logs', [AdminController::class, 'suspensionLogs'])->name('suspension-logs');
     Route::get('/logs', [AdminController::class, 'logs'])->name('logs');

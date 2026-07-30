@@ -52,6 +52,32 @@ const features = [
     },
 ];
 
+// A genuine sequence, not a decorative one: this is the actual path a task takes through
+// Synkro, in order, so numbering it and connecting the steps with a line encodes something
+// true rather than just styling a list.
+const steps = [
+    {
+        n: '01',
+        title: 'Create a project',
+        description: 'Set up a project and invite your team, each person with the role that fits them: owner, manager, member, or tester.',
+    },
+    {
+        n: '02',
+        title: 'Assign the work',
+        description: 'Break it into tasks, set priorities and due dates, and assign each one to the person doing it.',
+    },
+    {
+        n: '03',
+        title: 'Move it through review',
+        description: 'Tasks go from in progress to submitted to in review, deliverables attached, discussed right there in threaded comments.',
+    },
+    {
+        n: '04',
+        title: 'Ship it, tracked',
+        description: 'A tester approves the work, it gets marked done, and the whole history stays in the activity log.',
+    },
+];
+
 const securityPoints = [
     {
         title: 'Instant session termination',
@@ -183,6 +209,47 @@ function RadarRings({ ringClassName = 'border-indigo-300/40 dark:border-indigo-5
     );
 }
 
+// Subtle glow that follows the cursor across the hero, desktop-only (pointer:fine) so it never
+// costs anything on touch devices, and always low-opacity so it reads as atmosphere, not a
+// second spotlight fighting the radar rings for attention.
+function HeroSpotlight() {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        if (typeof window !== 'undefined' && !window.matchMedia?.('(pointer: fine)').matches) return;
+
+        const handleMove = (e) => {
+            const rect = node.parentElement.getBoundingClientRect();
+            node.style.setProperty('--x', `${e.clientX - rect.left}px`);
+            node.style.setProperty('--y', `${e.clientY - rect.top}px`);
+            node.style.opacity = '1';
+        };
+        const handleLeave = () => { node.style.opacity = '0'; };
+
+        const parent = node.parentElement;
+        parent.addEventListener('mousemove', handleMove);
+        parent.addEventListener('mouseleave', handleLeave);
+        return () => {
+            parent.removeEventListener('mousemove', handleMove);
+            parent.removeEventListener('mouseleave', handleLeave);
+        };
+    }, []);
+
+    return (
+        <div
+            ref={ref}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-500"
+            style={{
+                background: 'radial-gradient(480px circle at var(--x, 50%) var(--y, 0px), rgba(79, 70, 229, 0.08), transparent 70%)',
+            }}
+        />
+    );
+}
+
 function StatColumn({ label, value, accent }) {
     const count = useCountUp(value);
     return (
@@ -222,7 +289,7 @@ function FeatureCard({ feature, index }) {
             }`}
         >
             <span className={`absolute inset-x-0 top-0 h-1 ${accent.bar} opacity-70 transition-opacity group-hover:opacity-100`} />
-            <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${accent.iconBg} ${accent.iconText}`}>
+            <div className={`flex h-11 w-11 items-center justify-center rounded-lg transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110 ${accent.iconBg} ${accent.iconText}`}>
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
                     {feature.icon}
                 </svg>
@@ -233,13 +300,64 @@ function FeatureCard({ feature, index }) {
     );
 }
 
+function StepItem({ step, index }) {
+    const [ref, visible] = useFadeInOnScroll();
+    return (
+        <div
+            ref={ref}
+            style={{ transitionDelay: `${index * 90}ms` }}
+            className={`relative flex items-start gap-4 transition-all duration-500 sm:flex-col sm:items-center sm:gap-0 sm:text-center ${
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+        >
+            <span
+                style={MONO}
+                className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-indigo-500 bg-gray-50 text-sm font-bold text-indigo-600 dark:bg-gray-900 dark:text-indigo-400"
+            >
+                {step.n}
+            </span>
+            <div className="sm:mt-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{step.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{step.description}</p>
+            </div>
+        </div>
+    );
+}
+
 export default function Welcome({ auth, stats }) {
     const [heroVisible, setHeroVisible] = useState(false);
     const [liveStats, setLiveStats] = useState(stats ?? { users: 0, projects: 0, tasks: 0 });
+    const [scrolled, setScrolled] = useState(false);
+    const [scrollProgress, setScrollProgress] = useState(0);
+    const [showBackToTop, setShowBackToTop] = useState(false);
 
     useEffect(() => {
         const t = setTimeout(() => setHeroVisible(true), 50);
         return () => clearTimeout(t);
+    }, []);
+
+    // rAF-throttled: only the header's blur/shadow state, the top progress bar's scaleX, and
+    // the back-to-top button's visibility read from this, so one listener covers all three
+    // instead of three separate ones each re-measuring the page.
+    useEffect(() => {
+        let ticking = false;
+        const measure = () => {
+            const doc = document.documentElement;
+            const scrollTop = window.scrollY;
+            const scrollable = doc.scrollHeight - doc.clientHeight;
+            setScrolled(scrollTop > 24);
+            setShowBackToTop(scrollTop > 640);
+            setScrollProgress(scrollable > 0 ? Math.min(1, scrollTop / scrollable) : 0);
+            ticking = false;
+        };
+        const handleScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(measure);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        measure();
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     // Public (not private) channel: this page is reachable by guests who
@@ -253,6 +371,10 @@ export default function Welcome({ auth, stats }) {
         <>
             <Head title="Welcome" />
             <style>{`
+                html { scroll-behavior: smooth; }
+                @media (prefers-reduced-motion: reduce) {
+                    html { scroll-behavior: auto; }
+                }
                 @keyframes synkro-radar-pulse {
                     0% { transform: translate(-50%, -50%) scale(0.55); opacity: 0.55; }
                     100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
@@ -265,34 +387,55 @@ export default function Welcome({ auth, stats }) {
                 }
             `}</style>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-                    <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-xl font-bold">Synkro</span>
-                    </div>
+                <div
+                    aria-hidden="true"
+                    className="fixed inset-x-0 top-0 z-50 h-[3px] origin-left bg-indigo-500 transition-transform duration-150 ease-out"
+                    style={{ transform: `scaleX(${scrollProgress})` }}
+                />
 
-                    <nav className="flex items-center gap-3">
-                        <ThemeToggleButton />
-                        {auth.user ? (
-                            <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
-                                Projects
-                            </Link>
-                        ) : (
-                            <div className="flex items-center gap-4">
-                                <Link href={route('login')} className="text-sm font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
-                                    Log in
+                <header
+                    className={`sticky top-0 z-40 transition-all duration-300 ${
+                        scrolled
+                            ? 'border-b border-gray-200/80 bg-white/80 shadow-sm backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-900/80'
+                            : 'border-b border-transparent bg-transparent'
+                    }`}
+                >
+                    <div className="mx-auto flex max-w-6xl items-center gap-8 px-6 py-4">
+                        <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
+                            <span className="text-xl font-bold">Synkro</span>
+                        </div>
+
+                        <nav className="hidden items-center gap-6 text-sm font-medium text-gray-500 dark:text-gray-400 sm:flex">
+                            <a href="#how-it-works" className="transition hover:text-gray-900 dark:hover:text-gray-100">How it works</a>
+                            <a href="#features" className="transition hover:text-gray-900 dark:hover:text-gray-100">Features</a>
+                            <a href="#security" className="transition hover:text-gray-900 dark:hover:text-gray-100">Security</a>
+                        </nav>
+
+                        <nav className="ml-auto flex items-center gap-3">
+                            <ThemeToggleButton />
+                            {auth.user ? (
+                                <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
+                                    Projects
                                 </Link>
-                                <Link href={route('register')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
-                                    Get Started
-                                </Link>
-                            </div>
-                        )}
-                    </nav>
+                            ) : (
+                                <div className="flex items-center gap-4">
+                                    <Link href={route('login')} className="text-sm font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
+                                        Log in
+                                    </Link>
+                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
+                                        Get Started
+                                    </Link>
+                                </div>
+                            )}
+                        </nav>
+                    </div>
                 </header>
 
                 <main>
                     <section className="relative mx-auto max-w-4xl px-6 py-20 text-center">
                         <RadarRings />
+                        <HeroSpotlight />
 
                         <div
                             className={`inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 transition-all duration-700 dark:border-gray-700 dark:bg-gray-800 ${
@@ -320,7 +463,8 @@ export default function Welcome({ auth, stats }) {
                                 heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
                             }`}
                         >
-                            Synkro is a collaborative project and task management platform with real review workflows, live notifications, activity logs, deadline calendars, and personal reminders, all backed by built-in account security, for teams that actually want to ship.
+                            Real review workflows, live notifications, and deadline calendars, with account security built in from the start,
+                            for teams that actually want to ship.
                         </p>
                         <div
                             className={`mt-10 flex flex-wrap items-center justify-center gap-4 transition-all delay-200 duration-700 ${
@@ -360,7 +504,52 @@ export default function Welcome({ auth, stats }) {
                         </div>
                     </section>
 
-                    <section className="mx-auto max-w-6xl px-6 pb-8">
+                    <section id="how-it-works" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-500 dark:text-indigo-400">
+                                How it works
+                            </span>
+                            <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:text-3xl">
+                                Four steps, start to done
+                            </h2>
+                            <p className="mt-3 text-gray-500 dark:text-gray-400">
+                                The same path every task takes on Synkro, from the moment a project exists to the moment work is shipped.
+                            </p>
+                        </div>
+                        <div className="relative mx-auto mt-14 max-w-5xl">
+                            <div
+                                aria-hidden="true"
+                                className="absolute top-6 hidden h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-gray-700 sm:block"
+                                style={{ left: '12.5%', right: '12.5%' }}
+                            />
+                            <div className="relative grid grid-cols-1 gap-10 sm:grid-cols-4 sm:gap-6">
+                                {steps.map((step, i) => (
+                                    <StepItem key={step.n} step={step} index={i} />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-500 dark:text-indigo-400">
+                                What's inside
+                            </span>
+                            <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:text-3xl">
+                                Everything your team needs, in one place
+                            </h2>
+                            <p className="mt-3 text-gray-500 dark:text-gray-400">
+                                No plugins to configure and no separate tools to stitch together, it's all here by default.
+                            </p>
+                        </div>
+                        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {features.map((feature, i) => (
+                                <FeatureCard key={feature.title} feature={feature} index={i} />
+                            ))}
+                        </div>
+                    </section>
+
+                    <section id="security" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800 sm:p-10">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
@@ -383,14 +572,6 @@ export default function Welcome({ auth, stats }) {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    </section>
-
-                    <section className="mx-auto max-w-6xl px-6 pb-20">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {features.map((feature, i) => (
-                                <FeatureCard key={feature.title} feature={feature} index={i} />
-                            ))}
                         </div>
                     </section>
 
@@ -430,6 +611,18 @@ export default function Welcome({ auth, stats }) {
                     <span className="mx-2 text-gray-300 dark:text-gray-700">&middot;</span>
                     <Link href={route('terms')} className="hover:text-gray-700 dark:hover:text-gray-200">Terms of Use</Link>
                 </footer>
+
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    aria-label="Back to top"
+                    className={`fixed bottom-6 right-6 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-500 shadow-lg backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-400 dark:hover:text-gray-100 ${
+                        showBackToTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
+                    }`}
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
             </div>
         </>
     );

@@ -140,9 +140,15 @@ const actionIconConfig = {
     account_deletion_cancelled: { path: ICON_PATHS.undo, color: 'text-green-500' },
 };
 
-/** This feed is always "your" actions, so the actor is always addressed as "You". */
-function describeLog(log) {
-    const actor = 'You';
+/**
+ * Self-service view always addresses the actor as "You" ("You changed your password"). When an
+ * admin is looking at someone else's logs, actorName is that person's first name instead, and
+ * every "your" becomes "the" so it reads as "Jane changed the password" rather than assuming a
+ * pronoun that isn't ours to guess.
+ */
+function describeLog(log, actorName = null) {
+    const actor = actorName ?? 'You';
+    const possessive = actorName ? 'the' : 'your';
     const d = log.details ?? {};
     switch (log.action) {
         case 'project_created': return `${actor} created the project`;
@@ -174,14 +180,16 @@ function describeLog(log) {
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
-        case 'account_created': return `${actor} created your account`;
-        case 'password_changed': return `${actor} changed your password`;
-        case 'password_reset': return `${actor} reset your password`;
-        case 'profile_updated': return `${actor} updated your profile`;
-        case 'avatar_updated': return `${actor} updated your account photo`;
-        case 'avatar_removed': return `${actor} removed your account photo`;
-        case 'account_deactivated': return `${actor} deactivated your account`;
-        case 'account_deletion_requested': return `${actor} requested account deletion — check your email to confirm`;
+        case 'account_created': return `${actor} created ${possessive} account`;
+        case 'password_changed': return `${actor} changed ${possessive} password`;
+        case 'password_reset': return `${actor} reset ${possessive} password`;
+        case 'profile_updated': return `${actor} updated ${possessive} profile`;
+        case 'avatar_updated': return `${actor} updated ${possessive} account photo`;
+        case 'avatar_removed': return `${actor} removed ${possessive} account photo`;
+        case 'account_deactivated': return `${actor} deactivated ${possessive} account`;
+        case 'account_deletion_requested': return actorName
+            ? `${actor} requested account deletion`
+            : `${actor} requested account deletion — check your email to confirm`;
         case 'account_deletion_cancelled': return `${actor} cancelled the pending account deletion`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
@@ -297,7 +305,7 @@ function timeAgo(dateString) {
     return null;
 }
 
-function LogRow({ log }) {
+function LogRow({ log, actorName }) {
     const [open, setOpen] = useState(false);
     const details = getDetails(log);
     const hasDetails = details.length > 0;
@@ -314,7 +322,7 @@ function LogRow({ log }) {
                     <Icon path={iconConfig.path} className="h-4 w-4" />
                 </span>
                 <div className="flex-1">
-                    <p className="text-sm text-gray-800 dark:text-gray-200">{describeLog(log)}</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-200">{describeLog(log, actorName)}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                         {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         {relative && <span className="text-gray-300 dark:text-gray-600">· {relative}</span>}
@@ -403,16 +411,24 @@ function LogRow({ log }) {
 const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', project: 'all', per_page: DEFAULT_PER_PAGE };
 
-export default function ActivityLogs({ logs, userProjects, filters }) {
+export default function ActivityLogs({ logs, userProjects, filters, backHref, backLabel, viewingUser }) {
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [project, setProject] = useState(filters?.project ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
 
+    // Same page component serves two routes: a user's own Activity Logs, and (when viewingUser
+    // is present) an admin's read-only look at someone else's. Everything below just needs to
+    // GET back to whichever route rendered it, so this picks the matching route + params once
+    // rather than threading an admin/self branch through every handler.
+    const indexRoute = viewingUser ? route('admin.users.logs', viewingUser.id) : route('activity.index');
+    const loginHistoryRoute = viewingUser ? route('admin.users.login-history', viewingUser.id) : route('activity.login-history');
+    const actorName = viewingUser ? viewingUser.name.split(' ')[0] : null;
+
     const applyFilters = (overrides = {}) => {
         const next = { action, project, from, to, per_page: perPage, ...overrides };
-        router.get(route('activity.index'), cleanParams(next, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(indexRoute, cleanParams(next, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const handleActionChange = (v) => { setAction(v); applyFilters({ action: v }); };
@@ -426,7 +442,7 @@ export default function ActivityLogs({ logs, userProjects, filters }) {
         setFrom('');
         setTo('');
         setPerPage(DEFAULT_PER_PAGE);
-        router.get(route('activity.index'));
+        router.get(indexRoute);
     };
 
     const hasActiveFilters = action !== 'all' || project !== 'all' || from !== '' || to !== '';
@@ -435,22 +451,32 @@ export default function ActivityLogs({ logs, userProjects, filters }) {
         <AuthenticatedLayout header={
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <BackButton href={route('dashboard')} label="Back to Dashboard" />
+                    <BackButton href={backHref ?? route('dashboard')} label={backLabel ?? 'Back to Dashboard'} />
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                        Activity Logs
+                        {viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'}
                     </h2>
                 </div>
                 <a
-                    href={route('activity.login-history')}
+                    href={loginHistoryRoute}
                     className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                     Login History
                 </a>
             </div>
         }>
-            <Head title="Activity Logs" />
+            <Head title={viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'} />
             <div className="py-12">
                 <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                    {viewingUser && (
+                        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
+                            <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>
+                                You're viewing {viewingUser.name}'s activity for support and moderation purposes. This is read-only and is recorded in the admin audit log.
+                            </p>
+                        </div>
+                    )}
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FilterSelect
                             value={project}
@@ -499,7 +525,7 @@ export default function ActivityLogs({ logs, userProjects, filters }) {
                         ) : (
                             <ul>
                                 {logs.data.map((log) => (
-                                    <LogRow key={`${log.source}-${log.id}`} log={log} />
+                                    <LogRow key={`${log.source}-${log.id}`} log={log} actorName={actorName} />
                                 ))}
                             </ul>
                         )}

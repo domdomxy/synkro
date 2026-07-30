@@ -3,7 +3,7 @@ import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
 import StatCard from '@/Components/StatCard';
 import SortableHeader from '@/Components/SortableHeader';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
@@ -128,6 +128,13 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
                     style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
                     className="z-50 overflow-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
+                    <Link
+                        href={route('admin.users.logs', user.id)}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        View Activity Logs
+                    </Link>
+                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                     <button
                         onClick={() => { setOpen(false); onToggleRole(user); }}
                         disabled={isSelf}

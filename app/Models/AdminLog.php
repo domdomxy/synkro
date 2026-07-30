@@ -42,6 +42,8 @@ class AdminLog extends Model
             'user.suspension_lifted' => 'Suspension lifted',
             'user.role_changed' => 'Role changed',
             'user.password_reset' => 'Password reset',
+            'user.logs_viewed' => 'Activity logs viewed',
+            'user.login_history_viewed' => 'Login history viewed',
             'appeal.reviewed' => 'Appeal reviewed',
             'appeal.dismissed' => 'Appeal dismissed',
             'ticket.status_changed' => 'Ticket status changed',

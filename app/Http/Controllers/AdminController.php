@@ -336,6 +336,172 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Raw DB::table() rows come back with created_at as a bare "Y-m-d H:i:s" string with no
+     * timezone marker. Same fix as DashboardController::toIsoUtc() — kept as a separate copy
+     * here rather than a shared trait since these two controllers don't otherwise share state,
+     * and the fix is a single line.
+     */
+    private function toIsoUtc(string $rawDateTime): string
+    {
+        return \Carbon\Carbon::parse($rawDateTime, 'UTC')->toJSON();
+    }
+
+    /** Mirrors DashboardController::EXCLUDED_ACCOUNT_ACTIONS for the same reason: preference-update
+     * noise isn't meaningful activity, and login/logout gets its own dedicated view. */
+    private const EXCLUDED_ACCOUNT_ACTIONS = [
+        'email_preferences_updated',
+        'notification_preferences_updated',
+        'logged_in',
+        'logged_out',
+    ];
+
+    /**
+     * Admin-side view of one user's Activity Logs (their account activity plus every project
+     * they're in), reusing the exact same ActivityLogs page a user sees for themselves. Access
+     * is read-only and exists for support and moderation purposes: investigating a suspicious
+     * account, confirming what actually happened during a suspension appeal, or troubleshooting
+     * a "my task/comment disappeared" ticket.
+     *
+     * This does NOT notify the user being viewed. Every other admin action here (suspend, reset
+     * password, role change) changes something about the account, so it gets logged AND the user
+     * finds out (email, forced logout, etc). Reading a log is not a state change, and proactively
+     * telling someone "an admin looked at your login history" on every read would either be
+     * pure noise for routine support lookups, or actively counterproductive during an abuse/
+     * security investigation where tipping off the account isn't in anyone's interest. Full
+     * accountability is instead kept the same way every other admin action already is: an
+     * AdminLog entry below, visible to admins on /admin/logs.
+     */
+    public function userLogs(Request $request, User $user)
+    {
+        AdminLog::log('user.logs_viewed', "Viewed activity logs for {$user->name} ({$user->email})", $user);
+
+        $action = $request->input('action', 'all');
+        $projectFilter = $request->input('project', 'all');
+
+        $projectLogs = DB::table('project_activity_logs')
+            ->select('id', DB::raw("'project' as source"), 'project_id', 'action', 'details', 'created_at')
+            ->where('user_id', $user->id);
+
+        $accountLogs = DB::table('account_activity_logs')
+            ->select('id', DB::raw("'account' as source"), DB::raw('NULL as project_id'), 'action', 'details', 'created_at')
+            ->where('user_id', $user->id)
+            ->whereNotIn('action', self::EXCLUDED_ACCOUNT_ACTIONS);
+
+        if ($action !== 'all') {
+            $projectLogs->where('action', $action);
+            $accountLogs->where('action', $action);
+        }
+
+        if ($projectFilter !== 'all') {
+            $projectLogs->where('project_id', $projectFilter);
+            $accountLogs->whereRaw('1 = 0');
+        }
+
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        if ($from) {
+            $projectLogs->whereDate('created_at', '>=', $from);
+            $accountLogs->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $projectLogs->whereDate('created_at', '<=', $to);
+            $accountLogs->whereDate('created_at', '<=', $to);
+        }
+
+        $logs = $projectLogs->unionAll($accountLogs)
+            ->orderByDesc('created_at')
+            ->paginate($this->perPage($request, 10))
+            ->withQueryString();
+
+        $projectIds = collect($logs->items())->pluck('project_id')->filter()->unique()->values();
+        $projectNames = Project::whereIn('id', $projectIds)->pluck('name', 'id');
+
+        $logs->getCollection()->transform(fn ($row) => [
+            'id' => $row->id,
+            'source' => $row->source,
+            'action' => $row->action,
+            'details' => $row->details ? json_decode($row->details, true) : null,
+            'created_at' => $this->toIsoUtc($row->created_at),
+            'project' => $row->project_id ? [
+                'id' => $row->project_id,
+                'name' => $projectNames[$row->project_id] ?? 'Unknown Project',
+            ] : null,
+        ]);
+
+        return Inertia::render('ActivityLogs', [
+            'logs' => $logs,
+            'userProjects' => $user->projects()->orderBy('projects.name')->get(['projects.id', 'projects.name'])
+                ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])
+                ->values(),
+            'filters' => [
+                'action' => $action,
+                'project' => $projectFilter,
+                'from' => $from ?? '',
+                'to' => $to ?? '',
+                'per_page' => (string) $this->perPage($request, 10),
+            ],
+            'backHref' => route('admin.users'),
+            'backLabel' => 'Back to Users',
+            'viewingUser' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email],
+        ]);
+    }
+
+    /**
+     * Admin-side view of one user's Login History (logged_in/logged_out only), reached from the
+     * Activity Logs view above the same way the self-service pages link to each other. Same
+     * read-only, no-notification logic as userLogs() above.
+     */
+    public function userLoginHistory(Request $request, User $user)
+    {
+        AdminLog::log('user.login_history_viewed', "Viewed login history for {$user->name} ({$user->email})", $user);
+
+        $action = $request->input('action', 'all');
+
+        $query = DB::table('account_activity_logs')
+            ->where('user_id', $user->id)
+            ->whereIn('action', ['logged_in', 'logged_out']);
+
+        if ($action !== 'all') {
+            $query->where('action', $action);
+        }
+
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $logs = $query->orderByDesc('created_at')
+            ->paginate($this->perPage($request, 10))
+            ->withQueryString();
+
+        $logs->getCollection()->transform(fn ($row) => [
+            'id' => $row->id,
+            'action' => $row->action,
+            'details' => $row->details ? json_decode($row->details, true) : null,
+            'created_at' => $this->toIsoUtc($row->created_at),
+        ]);
+
+        return Inertia::render('LoginHistory', [
+            'logs' => $logs,
+            'filters' => [
+                'action' => $action,
+                'from' => $from ?? '',
+                'to' => $to ?? '',
+                'per_page' => (string) $this->perPage($request, 10),
+            ],
+            'backHref' => route('admin.users.logs', $user->id),
+            'backLabel' => "Back to {$user->name}'s Activity Logs",
+            'viewingUser' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email],
+        ]);
+    }
+
     public function projects(Request $request)
     {
         $query = Project::with('owner')->withCount(['members', 'tasks']);

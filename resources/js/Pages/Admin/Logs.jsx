@@ -34,6 +34,7 @@ const ICON_PATHS = {
     lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4',
     pencil: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
     close_or_x: 'M6 18L18 6M6 6l12 12',
+    eye: 'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
     dot: 'M12 12h.01',
 };
 
@@ -42,6 +43,8 @@ const actionIconConfig = {
     'user.suspension_lifted': { path: ICON_PATHS.check, color: 'text-green-500' },
     'user.role_changed': { path: ICON_PATHS.swap, color: 'text-purple-500' },
     'user.password_reset': { path: ICON_PATHS.lock, color: 'text-amber-500' },
+    'user.logs_viewed': { path: ICON_PATHS.eye, color: 'text-sky-500' },
+    'user.login_history_viewed': { path: ICON_PATHS.eye, color: 'text-sky-500' },
     'appeal.reviewed': { path: ICON_PATHS.check, color: 'text-teal-500' },
     'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
     'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
@@ -56,6 +59,8 @@ const actionColors = {
     'user.suspension_lifted': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     'user.role_changed': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
     'user.password_reset': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+    'user.logs_viewed': 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300',
+    'user.login_history_viewed': 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300',
     'appeal.reviewed': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
     'appeal.dismissed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     'ticket.status_changed': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
