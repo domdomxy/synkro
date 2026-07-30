@@ -201,7 +201,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         {hasActivity ? (
                             <div className="text-gray-600 dark:text-gray-300">
                                 <ResponsiveContainer width="100%" height={260}>
-                                    <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, left: -20, bottom: 5 }}>
+                                    <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
                                         <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
                                         <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />

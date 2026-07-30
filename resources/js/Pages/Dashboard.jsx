@@ -605,7 +605,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                         {hasActivity ? (
                             <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
-                                <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, bottom: 5, left: -20 }}>
+                                <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
                                     <XAxis
                                         dataKey="label"
