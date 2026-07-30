@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import Avatar from '@/Components/Avatar';
 import Modal from '@/Components/Modal';
@@ -85,17 +85,74 @@ const BLOCKED_MESSAGES = {
     'done->in_review': 'Reopen a completed task from its card — reopening needs a reason.',
 };
 
-function TaskCard({ task, draggable, onDragStart, onClick }) {
+const LONG_PRESS_MS = 500;
+// Finger has to stay roughly put for a hold to count - otherwise a scroll gesture
+// down the column would get misread as a long-press partway through.
+const LONG_PRESS_MOVE_TOLERANCE = 10;
+
+function TaskCard({ task, draggable, onDragStart, onClick, onLongPress }) {
     const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
     const style = STATUS_STYLES[task.status] ?? STATUS_STYLES.todo;
+
+    const pressTimer = useRef(null);
+    const longPressFired = useRef(false);
+    const touchStart = useRef(null);
+
+    const clearPressTimer = () => {
+        if (pressTimer.current) {
+            clearTimeout(pressTimer.current);
+            pressTimer.current = null;
+        }
+    };
+
+    const handleTouchStart = (e) => {
+        if (!draggable || !onLongPress) return;
+        longPressFired.current = false;
+        const touch = e.touches[0];
+        touchStart.current = { x: touch.clientX, y: touch.clientY };
+        pressTimer.current = setTimeout(() => {
+            longPressFired.current = true;
+            pressTimer.current = null;
+            if (navigator.vibrate) navigator.vibrate(15);
+            onLongPress(task);
+        }, LONG_PRESS_MS);
+    };
+
+    const handleTouchMove = (e) => {
+        if (!pressTimer.current || !touchStart.current) return;
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - touchStart.current.x);
+        const dy = Math.abs(touch.clientY - touchStart.current.y);
+        if (dx > LONG_PRESS_MOVE_TOLERANCE || dy > LONG_PRESS_MOVE_TOLERANCE) clearPressTimer();
+    };
+
+    const handleTouchEnd = (e) => {
+        clearPressTimer();
+        // The long-press already acted; swallow the synthetic click that mobile
+        // browsers fire right after touchend so it doesn't also open the task.
+        if (longPressFired.current) {
+            e.preventDefault();
+        }
+    };
 
     return (
         <div
             draggable={draggable}
             onDragStart={(e) => onDragStart(e, task)}
-            onClick={() => onClick(task)}
-            title={draggable ? undefined : 'You can open this task, but only its assignee or a reviewer can drag it'}
-            className={`group cursor-pointer rounded-lg border border-l-[3px] p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${style.border} ${style.accent} ${style.bg} ${draggable ? 'active:cursor-grabbing active:translate-y-0 active:shadow-sm' : 'opacity-90'}`}
+            onClick={() => {
+                if (longPressFired.current) {
+                    longPressFired.current = false;
+                    return;
+                }
+                onClick(task);
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={clearPressTimer}
+            onContextMenu={(e) => { if (draggable && onLongPress) e.preventDefault(); }}
+            title={draggable ? (onLongPress ? 'Drag on desktop, or press and hold to move on touch' : undefined) : 'You can open this task, but only its assignee or a reviewer can drag it'}
+            className={`group cursor-pointer touch-manipulation select-none rounded-lg border border-l-[3px] p-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${style.border} ${style.accent} ${style.bg} ${draggable ? 'active:cursor-grabbing active:translate-y-0 active:shadow-sm' : 'opacity-90'}`}
         >
             <div className="flex items-start gap-1.5">
                 <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
@@ -162,6 +219,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
     const [rejectFeedback, setRejectFeedback] = useState('');
     const [rejectError, setRejectError] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [moveTarget, setMoveTarget] = useState(null); // task whose mobile "move to..." menu is open
 
     const flash = (text) => {
         setNotice(text);
@@ -175,6 +233,21 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
         if (task.status === 'todo') return canStartTask(task);
         if (task.status === 'submitted' || task.status === 'in_review') return canReview;
         return false;
+    };
+
+    // Same set of moves a drag-and-drop would allow from this status - used to build
+    // the press-and-hold menu on touch devices, where dragging isn't available.
+    const movesFor = (task) => COLUMNS.filter((col) => TRANSITIONS[`${task.status}->${col.status}`]);
+
+    const openMoveMenu = (task) => {
+        if (!isDraggable(task) || processing) return;
+        setMoveTarget(task);
+    };
+
+    const chooseMove = (toStatus) => {
+        const task = moveTarget;
+        setMoveTarget(null);
+        if (task) runTransition(task, toStatus);
     };
 
     const handleDragStart = (e, task) => {
@@ -294,6 +367,7 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                                         task={task}
                                         draggable={isDraggable(task) && !processing}
                                         onDragStart={handleDragStart}
+                                        onLongPress={openMoveMenu}
                                         onClick={onCardClick}
                                     />
                                 ))}
@@ -333,6 +407,29 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
                         <DangerButton type="submit" disabled={processing}>Send back</DangerButton>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal show={!!moveTarget} onClose={() => setMoveTarget(null)} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
+                <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Move Task</h3>
+                    <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">"{moveTarget?.title}"</p>
+                    <div className="mt-4 space-y-1.5">
+                        {moveTarget && movesFor(moveTarget).map((col) => (
+                            <button
+                                key={col.status}
+                                type="button"
+                                onClick={() => chooseMove(col.status)}
+                                className="flex w-full items-center gap-2.5 rounded-lg border border-gray-200 px-3.5 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40"
+                            >
+                                <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_STYLES[col.status]?.dot ?? STATUS_STYLES.todo.dot}`} />
+                                {col.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                        <SecondaryButton type="button" onClick={() => setMoveTarget(null)}>Cancel</SecondaryButton>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

@@ -372,6 +372,8 @@ function AddResourcesModal({ show, onClose, project }) {
 function EditResourceModal({ resource, onClose }) {
     const isLink = resource?.type === 'link';
     const fileInputRef = useRef(null);
+    const [isDraggingFile, setIsDraggingFile] = useState(false);
+    const fileDragCounter = useRef(0);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: resource?.name ?? '',
@@ -390,9 +392,33 @@ function EditResourceModal({ resource, onClose }) {
                 file: null,
             });
             clearErrors();
+            setIsDraggingFile(false);
+            fileDragCounter.current = 0;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resource?.id]);
+
+    const handleFileDragEnter = (e) => {
+        e.preventDefault();
+        fileDragCounter.current++;
+        setIsDraggingFile(true);
+    };
+
+    const handleFileDragLeave = (e) => {
+        e.preventDefault();
+        fileDragCounter.current = Math.max(0, fileDragCounter.current - 1);
+        if (fileDragCounter.current === 0) setIsDraggingFile(false);
+    };
+
+    const handleFileDragOver = (e) => e.preventDefault();
+
+    const handleFileDrop = (e) => {
+        e.preventDefault();
+        fileDragCounter.current = 0;
+        setIsDraggingFile(false);
+        const dropped = e.dataTransfer.files?.[0];
+        if (dropped) setData('file', dropped);
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -423,17 +449,6 @@ function EditResourceModal({ resource, onClose }) {
                     <FieldError message={errors.name} />
                 </div>
 
-                <div className="mt-4">
-                    <FieldLabel>Description (optional)</FieldLabel>
-                    <FieldTextarea
-                        rows={3}
-                        value={data.description}
-                        onChange={(e) => setData('description', e.target.value)}
-                        placeholder="What is this for, and how should members use it?"
-                    />
-                    <FieldError message={errors.description} />
-                </div>
-
                 {isLink ? (
                     <div className="mt-4">
                         <FieldLabel>URL</FieldLabel>
@@ -453,34 +468,60 @@ function EditResourceModal({ resource, onClose }) {
                             onChange={(e) => setData('file', e.target.files[0] ?? null)}
                             className="hidden"
                         />
-                        {data.file ? (
-                            <div className="mt-1.5 flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/30">
-                                <FileTypeIcon name={data.file.name} className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-300" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm text-indigo-700 dark:text-indigo-300">{data.file.name}</p>
-                                    <p className="text-xs text-indigo-400 dark:text-indigo-400/80">{formatSize(data.file.size)} &middot; will replace the current file</p>
+                        <div
+                            onDragEnter={handleFileDragEnter}
+                            onDragOver={handleFileDragOver}
+                            onDragLeave={handleFileDragLeave}
+                            onDrop={handleFileDrop}
+                            className={`mt-1.5 rounded-lg border-2 border-dashed p-2 transition ${
+                                isDraggingFile
+                                    ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-950/30'
+                                    : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/40'
+                            }`}
+                        >
+                            {data.file ? (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/30">
+                                    <FileTypeIcon name={data.file.name} className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-300" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm text-indigo-700 dark:text-indigo-300">{data.file.name}</p>
+                                        <p className="text-xs text-indigo-400 dark:text-indigo-400/80">{formatSize(data.file.size)} &middot; will replace the current file</p>
+                                    </div>
+                                    <RemoveButton onClick={() => setData('file', null)} title="Keep current file" />
                                 </div>
-                                <RemoveButton onClick={() => setData('file', null)} title="Keep current file" />
-                            </div>
-                        ) : (
-                            <div className="mt-1.5 flex items-center gap-2.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/40">
-                                <FileTypeIcon name={resource.original_name} className="h-4 w-4 shrink-0 text-neutral-400" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{resource.original_name}</p>
-                                    <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatSize(resource.size)}</p>
+                            ) : (
+                                <div className="flex items-center gap-2.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/40">
+                                    <FileTypeIcon name={resource.original_name} className="h-4 w-4 shrink-0 text-neutral-400" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{resource.original_name}</p>
+                                        <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatSize(resource.size)}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                                    >
+                                        Replace
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current.click()}
-                                    className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
-                                >
-                                    Replace
-                                </button>
-                            </div>
-                        )}
+                            )}
+                            <p className="mt-1.5 px-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                {isDraggingFile ? 'Drop to replace' : 'or drag and drop a file anywhere here'}
+                            </p>
+                        </div>
                         <FieldError message={errors.file} />
                     </div>
                 )}
+
+                <div className="mt-4">
+                    <FieldLabel>Description (optional)</FieldLabel>
+                    <FieldTextarea
+                        rows={3}
+                        value={data.description}
+                        onChange={(e) => setData('description', e.target.value)}
+                        placeholder="What is this for, and how should members use it?"
+                    />
+                    <FieldError message={errors.description} />
+                </div>
 
                 <DialogActions>
                     <DialogCancelButton onClick={close} disabled={processing} />

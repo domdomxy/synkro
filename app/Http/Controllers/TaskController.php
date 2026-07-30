@@ -130,7 +130,14 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
             'priority' => 'nullable|in:low,medium,high',
+            'dependencies' => 'nullable|array',
+            'dependencies.*' => 'integer|exists:tasks,id',
         ]);
+
+        // Present (even as []) whenever the edit form's Dependencies section submitted -
+        // null means the field wasn't part of this request at all, so leave deps untouched.
+        $dependencyIds = $request->has('dependencies') ? ($validated['dependencies'] ?? []) : null;
+        unset($validated['dependencies']);
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
@@ -178,6 +185,8 @@ class TaskController extends Controller
         }
  
         $task->save();
+
+        $skippedDependencyNames = $dependencyIds !== null ? $this->syncDependencies($task, $dependencyIds) : [];
  
         if ($contentChanged) {
             ProjectActivityLog::log($task->project, 'task_updated', [
@@ -286,7 +295,90 @@ class TaskController extends Controller
             );
         }
  
+        if (! empty($skippedDependencyNames)) {
+            return back()->withErrors([
+                'error' => 'Task updated, but these dependencies were skipped (would create a circular dependency): '.implode(', ', $skippedDependencyNames),
+            ]);
+        }
+
         return back()->with('success', 'Task updated.');
+    }
+
+    /**
+     * Reconciles a task's dependencies to exactly $dependencyIds: detaches whatever
+     * was removed, attaches whatever's new (skipping anything that would create a
+     * cycle), and logs each change the same way TaskDependencyController does.
+     * Returns the titles of any dependencies that were skipped.
+     */
+    private function syncDependencies(Task $task, array $dependencyIds): array
+    {
+        $dependencyIds = array_values(array_unique(array_map('intval', $dependencyIds)));
+        $dependencyIds = array_values(array_filter($dependencyIds, fn ($id) => $id !== $task->id));
+
+        $validIds = $task->project->tasks()->whereIn('id', $dependencyIds)->pluck('id')->all();
+        $currentIds = $task->dependencies()->pluck('tasks.id')->all();
+
+        $toRemove = array_diff($currentIds, $validIds);
+        $toAdd = array_diff($validIds, $currentIds);
+
+        foreach ($toRemove as $removeId) {
+            $removedTask = Task::find($removeId);
+            $task->dependencies()->detach($removeId);
+
+            ProjectActivityLog::log($task->project, 'dependency_removed', [
+                'task_title' => $task->title,
+                'depends_on_title' => $removedTask?->title ?? 'Unknown task',
+            ], $task);
+        }
+
+        $skipped = [];
+
+        foreach ($toAdd as $addId) {
+            $dependsOnTask = Task::find($addId);
+            if (! $dependsOnTask) {
+                continue;
+            }
+
+            if ($this->wouldCreateDependencyCycle($task, $dependsOnTask)) {
+                $skipped[] = $dependsOnTask->title;
+                continue;
+            }
+
+            $task->dependencies()->attach($addId);
+
+            ProjectActivityLog::log($task->project, 'dependency_added', [
+                'task_title' => $task->title,
+                'depends_on_title' => $dependsOnTask->title,
+            ], $task);
+        }
+
+        return $skipped;
+    }
+
+    /** Mirrors TaskDependencyController::wouldCreateCycle. */
+    private function wouldCreateDependencyCycle(Task $task, Task $newDependency): bool
+    {
+        $visited = [];
+        $queue = [$newDependency->id];
+
+        while (! empty($queue)) {
+            $currentId = array_shift($queue);
+
+            if ($currentId === $task->id) {
+                return true;
+            }
+
+            if (in_array($currentId, $visited, true)) {
+                continue;
+            }
+
+            $visited[] = $currentId;
+
+            $nextIds = Task::find($currentId)?->dependencies()->pluck('tasks.id')->all() ?? [];
+            $queue = array_merge($queue, $nextIds);
+        }
+
+        return false;
     }
  
     public function destroy(Task $task)

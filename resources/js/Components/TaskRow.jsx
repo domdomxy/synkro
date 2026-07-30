@@ -764,7 +764,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [collapsedIds, setCollapsedIds] = useState(() => new Set()); // ids of comments whose thread is minimized
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [dependencyPick, setDependencyPick] = useState('');
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();
 
@@ -824,6 +823,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         due_date: toDatetimeLocalValue(task.due_date),
         assigned_to: task.assigned_to ?? '',
         priority: task.priority ?? 'medium',
+        dependencies: task.dependencies?.map((d) => d.id) ?? [],
     });
     const checklistForm = useForm({ title: '' });
     const submitForm = useForm({ files: [], links: [] });
@@ -936,17 +936,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         router.delete(route('checklist.destroy', item.id), { preserveScroll: true });
     };
 
-    const addDependency = () => {
-        if (!dependencyPick) return;
-        router.post(route('dependencies.store', task.id), { depends_on_task_id: dependencyPick }, {
-            preserveScroll: true,
-            onSuccess: () => setDependencyPick(''),
-        });
-    };
-
-    const removeDependency = (dependsOnTaskId) => {
-        router.delete(route('dependencies.destroy', [task.id, dependsOnTaskId]), { preserveScroll: true });
-    };
+    // Add/remove within the edit form only stage the change locally in
+    // editForm.data.dependencies now - nothing hits the server until Save
+    // Changes submits the whole edit (see saveEdit / the Dependencies block
+    // in the edit form JSX below).
 
     const addLink = () => {
         if (!linkInput.trim()) return;
@@ -1226,50 +1219,53 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     <div>
                         <InputLabel value="Dependencies" />
                         <div className="mt-1 space-y-2 rounded-md border border-indigo-100 bg-white p-2.5 dark:border-indigo-900 dark:bg-gray-900/40">
-                            {(!task.dependencies || task.dependencies.length === 0) && (
+                            {canManage && (
+                                <FilterSelect
+                                    value=""
+                                    onChange={(v) => {
+                                        if (!v) return;
+                                        editForm.setData('dependencies', [...editForm.data.dependencies, Number(v)]);
+                                    }}
+                                    options={[
+                                        { value: '', label: 'Add a dependency…' },
+                                        ...allTasks
+                                            .filter((t) => t.id !== task.id && !editForm.data.dependencies.includes(t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
+                                            .map((t) => ({ value: t.id, label: t.title })),
+                                    ]}
+                                />
+                            )}
+                            {editForm.data.dependencies.length === 0 && (
                                 <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
                             )}
-                            {task.dependencies?.map((dep) => (
-                                <div key={dep.id} className="flex items-center gap-2 text-sm group">
-                                    <button
-                                        type="button"
-                                        onClick={() => onJumpToTask?.(dep.id)}
-                                        title={`Go to "${dep.title}"`}
-                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-0.5 text-left transition hover:text-indigo-600 dark:hover:text-indigo-400"
-                                    >
-                                        <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                        <span className="min-w-0 flex-1 truncate text-gray-700 group-hover:underline dark:text-gray-300">{dep.title}</span>
-                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
-                                    </button>
-                                    {canManage && (
+                            {editForm.data.dependencies
+                                .map((id) => allTasks.find((t) => t.id === id) ?? task.dependencies?.find((d) => d.id === id))
+                                .filter(Boolean)
+                                .map((dep) => (
+                                    <div key={dep.id} className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm group dark:border-gray-700 dark:bg-gray-800/60">
                                         <button
                                             type="button"
-                                            onClick={() => removeDependency(dep.id)}
-                                            className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
-                                            title="Remove dependency"
+                                            onClick={() => onJumpToTask?.(dep.id)}
+                                            title={`Go to "${dep.title}"`}
+                                            className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left transition hover:text-indigo-600 dark:hover:text-indigo-400"
                                         >
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
+                                            <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                            <span className="min-w-0 flex-1 truncate text-gray-700 group-hover:underline dark:text-gray-300">{dep.title}</span>
+                                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
                                         </button>
-                                    )}
-                                </div>
-                            ))}
-                            {canManage && (
-                                <div className="flex items-center gap-2 pt-1">
-                                    <FilterSelect
-                                        value={dependencyPick}
-                                        onChange={setDependencyPick}
-                                        options={[
-                                            { value: '', label: 'Add a dependency…' },
-                                            ...allTasks
-                                                .filter((t) => t.id !== task.id && !task.dependencies?.some((d) => d.id === t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
-                                                .map((t) => ({ value: t.id, label: t.title })),
-                                        ]}
-                                    />
-                                    <SecondaryButton type="button" onClick={addDependency} disabled={!dependencyPick}>Add</SecondaryButton>
-                                </div>
-                            )}
+                                        {canManage && (
+                                            <button
+                                                type="button"
+                                                onClick={() => editForm.setData('dependencies', editForm.data.dependencies.filter((id) => id !== dep.id))}
+                                                className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
+                                                title="Remove dependency"
+                                            >
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                         </div>
                     </div>
                     <div className="flex gap-2">

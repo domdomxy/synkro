@@ -146,7 +146,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                 </div>
                             </div>
 
-                            <div className="flex items-center sm:hidden">
+                            <div className="relative flex items-center sm:hidden">
                                 <button
                                     onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
                                     className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
@@ -168,6 +168,12 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         />
                                     </svg>
                                 </button>
+                                {/* Testing/Admin badges live inside the collapsed menu, so surface a
+                                    plain dot on the trigger itself while it's closed - otherwise
+                                    there'd be no hint anything needs attention until it's opened. */}
+                                {!showingNavigationDropdown && (hasPendingAlert || pendingTestCount > 0) && (
+                                    <span className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
+                                )}
                             </div>
                         </div>
                     </div>
