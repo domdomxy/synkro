@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ProjectResource extends Model
 {
     protected $fillable = [
-        'project_id', 'user_id', 'name', 'description', 'original_name', 'path', 'mime_type', 'size',
+        'project_id', 'user_id', 'type', 'name', 'description', 'original_name', 'path', 'url', 'mime_type', 'size',
     ];
 
     public function project(): BelongsTo
