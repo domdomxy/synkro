@@ -11,6 +11,8 @@ import StatusDonut from '@/Components/StatusDonut';
 import RangeButtons from '@/Components/RangeButtons';
 import SectionHeader from '@/Components/SectionHeader';
 import EmptyChartState from '@/Components/EmptyChartState';
+import ClickableLegend from '@/Components/ClickableLegend';
+import { computeYAxisWidth } from '@/utils/chartAxis';
 import { statusLabels, statusColors } from '@/utils/taskStatus';
 
 const statIcons = {
@@ -535,7 +537,14 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
     const [highlightedReminderId, setHighlightedReminderId] = useState(null);
-    const hasActivity = stats.chartData?.some((d) => (d.completed ?? 0) + (d.created ?? 0) + (d.projects ?? 0) > 0);
+    const hasActivity = stats.chartData?.some((d) => (d.completed ?? 0) + (d.created ?? 0) + (d.projects ?? 0) + (d.submitted ?? 0) > 0);
+    const [selectedChartKeys, setSelectedChartKeys] = useState([]);
+    const toggleChartKey = (key) =>
+        setSelectedChartKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    const yAxisWidth = useMemo(
+        () => computeYAxisWidth(stats.chartData, ['completed', 'created', 'submitted', 'projects']),
+        [stats.chartData]
+    );
 
     useEffect(() => {
         const reminderId = new URLSearchParams(window.location.search).get('reminder');
@@ -575,7 +584,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Active Tasks" value={stats.activeTasksCount} sub={`${activeRatio}% of tasks · ${stats.activeDueSoonCount} due in 7d`} icon={statIcons.active} accentColor="text-indigo-600 dark:text-indigo-400" />
-                        <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Marked done, assigned to you" pct={stats.doneTasksTrend} icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
+                        <StatCard label="Tasks Completed" value={stats.doneTasksCount} sub="Assigned to you" pct={stats.doneTasksTrend} icon={statIcons.done} accentColor="text-green-600 dark:text-green-400" />
                         <StatCard label="Projects" value={stats.projectsCount} sub="You're a member of" pct={stats.projectsTrend} icon={statIcons.projects} />
                         <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" pct={stats.pendingReviewTrend} icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
@@ -596,7 +605,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                         {hasActivity ? (
                             <ResponsiveContainer width="100%" height={240} className="text-gray-600 dark:text-gray-300">
-                                <AreaChart data={stats.chartData}>
+                                <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, bottom: 5, left: -20 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
                                     <XAxis
                                         dataKey="label"
@@ -605,16 +614,52 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                                         tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
                                     />
                                     <YAxis
+                                        width={yAxisWidth}
                                         tick={{ fontSize: 11, fill: 'currentColor' }}
                                         axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
                                         tickLine={{ stroke: '#9ca3af', strokeOpacity: 0.4 }}
                                         allowDecimals={false}
                                     />
                                     <Tooltip />
-                                    <Legend wrapperStyle={{ color: 'currentColor' }} />
-                                    <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} />
-                                    <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                    <Line type="monotone" dataKey="projects" name="Projects Joined" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" />
+                                    <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedChartKeys} onToggle={toggleChartKey} />} />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="completed"
+                                        name="Tasks Done"
+                                        stroke="#4f46e5"
+                                        fill="#4f46e5"
+                                        fillOpacity={0.2}
+                                        hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('completed')}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="created"
+                                        name="Tasks Created"
+                                        stroke="#f59e0b"
+                                        strokeWidth={2}
+                                        dot={false}
+                                        hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('created')}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="submitted"
+                                        name="Tasks Submitted"
+                                        stroke="#10b981"
+                                        strokeWidth={2}
+                                        dot={false}
+                                        strokeDasharray="4 2"
+                                        hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('submitted')}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="projects"
+                                        name="Projects Joined"
+                                        stroke="#ec4899"
+                                        strokeWidth={2}
+                                        dot={false}
+                                        strokeDasharray="2 2"
+                                        hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('projects')}
+                                    />
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (

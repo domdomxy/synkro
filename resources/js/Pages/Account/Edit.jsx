@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import Avatar from '@/Components/Avatar';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateAccountInformationForm from './Partials/UpdateAccountInformationForm';
@@ -107,8 +109,79 @@ function SectionCard({ id, label, description, icon, children, danger }) {
     );
 }
 
+function ProfileHeader({ user }) {
+    const memberSince = user.created_at
+        ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+        : null;
+
+    return (
+        <div className="mb-6 flex flex-col gap-4 rounded-lg bg-white p-4 shadow sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:bg-gray-800">
+            <div className="flex min-w-0 items-center gap-4">
+                <Avatar user={user} size="h-14 w-14" rounded="rounded-xl" />
+                <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
+                    <p className="truncate text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                {user.role === 'admin' && (
+                    <span className="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        Admin
+                    </span>
+                )}
+                {user.email_verified_at ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Verified
+                    </span>
+                ) : (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                        Unverified
+                    </span>
+                )}
+                {memberSince && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Member since {memberSince}</span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
+    const user = usePage().props.auth.user;
     const allNavItems = [...sections, ...dangerSections];
+    const [activeSection, setActiveSection] = useState(allNavItems[0].id);
+
+    // Highlights whichever section is currently in view in the nav, same scroll-spy pattern as
+    // Settings.jsx's section nav: picks the entry closest to the top of the viewport among those
+    // currently intersecting, so the highlighted item tracks scroll position instead of the nav
+    // being a set of static jump links with no sense of "where you are".
+    useEffect(() => {
+        const els = allNavItems.map((s) => document.getElementById(s.id)).filter(Boolean);
+        if (els.length === 0) return;
+
+        const visible = new Map();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        visible.set(entry.target.id, entry.boundingClientRect.top);
+                    } else {
+                        visible.delete(entry.target.id);
+                    }
+                });
+                if (visible.size > 0) {
+                    const topMost = [...visible.entries()].sort((a, b) => a[1] - b[1])[0][0];
+                    setActiveSection(topMost);
+                }
+            },
+            { rootMargin: '-100px 0px -70% 0px', threshold: 0 }
+        );
+        els.forEach((el) => observer.observe(el));
+        return () => observer.disconnect();
+    }, []);
 
     return (
         <AuthenticatedLayout
@@ -122,25 +195,64 @@ export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
 
-                        {/* Section nav */}
-                        <nav className="hidden lg:block">
-                            <div className="sticky top-24 space-y-1">
-                                {allNavItems.map((s) => (
+                    <ProfileHeader user={user} />
+
+                    {/* Mobile section nav - the sticky desktop sidebar below is lg:-only, so this
+                        horizontal pill bar is the only way to jump between sections on small screens,
+                        matching Settings.jsx's mobile nav. */}
+                    <nav className="-mx-4 mb-6 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:hidden">
+                        <div className="flex w-max gap-2">
+                            {allNavItems.map((s) => {
+                                const danger = dangerSections.includes(s);
+                                const active = activeSection === s.id;
+                                return (
                                     <a
                                         key={s.id}
                                         href={`#${s.id}`}
-                                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
-                                            dangerSections.includes(s)
-                                                ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30'
-                                                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
+                                            active
+                                                ? danger
+                                                    ? 'bg-red-600 text-white'
+                                                    : 'bg-indigo-600 text-white'
+                                                : 'bg-white text-gray-600 shadow-sm hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                                         }`}
                                     >
                                         <span className="h-4 w-4 shrink-0">{s.icon}</span>
                                         {s.label}
                                     </a>
-                                ))}
+                                );
+                            })}
+                        </div>
+                    </nav>
+
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+
+                        {/* Section nav */}
+                        <nav className="hidden lg:block">
+                            <div className="sticky top-24 space-y-1">
+                                {allNavItems.map((s) => {
+                                    const danger = dangerSections.includes(s);
+                                    const active = activeSection === s.id;
+                                    return (
+                                        <a
+                                            key={s.id}
+                                            href={`#${s.id}`}
+                                            className={`flex items-center gap-2 rounded-md border-l-2 px-3 py-2 text-sm transition ${
+                                                active
+                                                    ? danger
+                                                        ? 'border-red-600 bg-red-50 font-medium text-red-700 dark:border-red-500 dark:bg-red-950/40 dark:text-red-300'
+                                                        : 'border-indigo-600 bg-indigo-50 font-medium text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300'
+                                                    : danger
+                                                      ? 'border-transparent text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30'
+                                                      : 'border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                                            }`}
+                                        >
+                                            <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                            {s.label}
+                                        </a>
+                                    );
+                                })}
                             </div>
                         </nav>
 
@@ -163,7 +275,7 @@ export default function Edit({ mustVerifyEmail, status, deletionRequestedAt }) {
                             </SectionCard>
 
                             {/* Danger zone */}
-                            <div className="pt-4">
+                            <div className="rounded-xl bg-red-50/40 p-4 pt-4 dark:bg-red-950/10">
                                 <div className="mb-4 flex items-center gap-2">
                                     <svg className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

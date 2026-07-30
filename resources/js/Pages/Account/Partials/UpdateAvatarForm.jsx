@@ -61,32 +61,40 @@ export default function UpdateAvatarForm({ className = '' }) {
     return (
         <section className={className}>
 
-            <form onSubmit={submit} className="mt-4 flex items-center gap-5">
+            <form onSubmit={submit} className="mt-4 flex flex-wrap items-start gap-5">
                 {preview ? (
                     <img src={preview} alt="Preview" className="h-24 w-24 rounded-2xl object-cover ring-2 ring-indigo-400" />
                 ) : (
                     <Avatar user={user} size="h-24 w-24" rounded="rounded-2xl" />
                 )}
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <input ref={fileInput} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
-                    <SecondaryButton type="button" onClick={pickFile}>
-                        {preview ? 'Choose a Different Photo' : 'Choose Photo'}
-                    </SecondaryButton>
+                <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <input ref={fileInput} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
+                        <SecondaryButton type="button" onClick={pickFile}>
+                            {preview ? 'Choose a Different Photo' : 'Choose Photo'}
+                        </SecondaryButton>
 
-                    {preview && (
-                        <>
-                            <PrimaryButton disabled={processing}>Save Avatar</PrimaryButton>
-                            <button type="button" onClick={cancelPreview} className="text-sm text-gray-500 hover:underline">
-                                Cancel
-                            </button>
-                        </>
-                    )}
+                        {preview && (
+                            <>
+                                <PrimaryButton disabled={processing}>{processing ? 'Saving…' : 'Save Avatar'}</PrimaryButton>
+                                <button type="button" onClick={cancelPreview} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
+                                    Cancel
+                                </button>
+                            </>
+                        )}
 
-                    {!preview && user.avatar_path && (
-                        <DangerButton type="button" onClick={removeAvatar}>
-                            Remove Avatar
-                        </DangerButton>
+                        {!preview && user.avatar_path && (
+                            <DangerButton type="button" onClick={removeAvatar}>
+                                Remove Avatar
+                            </DangerButton>
+                        )}
+                    </div>
+
+                    {!preview && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                            Any photo works — you'll be able to crop and zoom it next.
+                        </p>
                     )}
                 </div>
             </form>

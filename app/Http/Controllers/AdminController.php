@@ -141,6 +141,7 @@ class AdminController extends Controller
                 'label' => $bucket['label'],
                 'completed' => Task::where('status', 'done')->whereBetween('updated_at', [$bucket['start'], $bucket['end']])->count(),
                 'created' => Task::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
+                'submitted' => Task::whereNotNull('submitted_at')->whereBetween('submitted_at', [$bucket['start'], $bucket['end']])->count(),
                 'newUsers' => User::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newProjects' => Project::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
             ];
@@ -149,6 +150,7 @@ class AdminController extends Controller
         $activityTotals = [
             'completed' => array_sum(array_column($chartData, 'completed')),
             'created' => array_sum(array_column($chartData, 'created')),
+            'submitted' => array_sum(array_column($chartData, 'submitted')),
             'projects' => array_sum(array_column($chartData, 'newProjects')),
         ];
         $recentUsers = User::latest()->limit(5)->get();

@@ -143,6 +143,10 @@ class DashboardController extends Controller
                 'created' => Task::where('assigned_to', $user->id)
                     ->whereBetween('created_at', [$bucket['start'], $bucket['end']])
                     ->count(),
+                'submitted' => Task::where('assigned_to', $user->id)
+                    ->whereNotNull('submitted_at')
+                    ->whereBetween('submitted_at', [$bucket['start'], $bucket['end']])
+                    ->count(),
                 'projects' => $user->projects()
                     ->whereBetween('project_user.created_at', [$bucket['start'], $bucket['end']])
                     ->count(),

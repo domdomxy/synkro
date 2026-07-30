@@ -3,8 +3,8 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import PasswordInput from '@/Components/PasswordInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import SavedIndicator from '@/Components/SavedIndicator';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
-import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 
@@ -83,6 +83,9 @@ export default function UpdatePasswordForm({ className = '' }) {
 
                 <div>
                     <InputLabel htmlFor="password" value="New Password" />
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        Use 12+ characters with a mix of letters, numbers, and symbols to reach "Good" strength.
+                    </p>
 
                     <PasswordInput
                         id="password"
@@ -121,19 +124,9 @@ export default function UpdatePasswordForm({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>{processing ? 'Saving…' : 'Save'}</PrimaryButton>
 
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600">
-                            Saved.
-                        </p>
-                    </Transition>
+                    <SavedIndicator show={recentlySuccessful} />
                 </div>
             </form>
         </section>
