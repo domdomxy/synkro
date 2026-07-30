@@ -3,11 +3,12 @@ import Avatar from '@/Components/Avatar';
 import StatCard from '@/Components/StatCard';
 import StatusDonut from '@/Components/StatusDonut';
 import RangeButtons from '@/Components/RangeButtons';
+import ChartTypeToggle from '@/Components/ChartTypeToggle';
 import SectionHeader from '@/Components/SectionHeader';
 import EmptyChartState from '@/Components/EmptyChartState';
 import ClickableLegend from '@/Components/ClickableLegend';
 import { Head, Link } from '@inertiajs/react';
-import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, BarChart, ComposedChart, Area, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect, useMemo, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import { computeYAxisWidth } from '@/utils/chartAxis';
@@ -115,6 +116,15 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const [selectedChartKeys, setSelectedChartKeys] = useState([]);
     const toggleChartKey = (key) =>
         setSelectedChartKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    const [chartType, setChartType] = useState('area');
+    const isHidden = (key) => selectedChartKeys.length > 0 && !selectedChartKeys.includes(key);
+    const activitySeries = [
+        { key: 'completed', name: 'Tasks Done', color: '#4f46e5' },
+        { key: 'created', name: 'Tasks Created', color: '#f59e0b' },
+        { key: 'submitted', name: 'Tasks Submitted', color: '#10b981' },
+        { key: 'newUsers', name: 'New Users', color: '#6366f1' },
+        { key: 'newProjects', name: 'New Projects', color: '#ec4899' },
+    ];
     const yAxisWidth = useMemo(
         () => computeYAxisWidth(stats.chartData, ['completed', 'created', 'submitted', 'newUsers', 'newProjects']),
         [stats.chartData]
@@ -195,67 +205,53 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                     <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
                         <SectionHeader title="Platform Activity" icon={statIcons.chart}>
-                            <RangeButtons range={range} routeName="admin.dashboard" customFrom={customFrom} customTo={customTo} />
+                            <div className="flex flex-wrap items-center gap-2">
+                                <ChartTypeToggle value={chartType} onChange={setChartType} />
+                                <RangeButtons range={range} routeName="admin.dashboard" customFrom={customFrom} customTo={customTo} />
+                            </div>
                         </SectionHeader>
                         <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
                         {hasActivity ? (
                             <div className="text-gray-600 dark:text-gray-300">
                                 <ResponsiveContainer width="100%" height={260}>
-                                    <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
-                                        <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
-                                        <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
-                                        <Tooltip />
-                                        <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedChartKeys} onToggle={toggleChartKey} />} />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="completed"
-                                            name="Tasks Done"
-                                            stroke="#4f46e5"
-                                            fill="#4f46e5"
-                                            fillOpacity={0.2}
-                                            hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('completed')}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="created"
-                                            name="Tasks Created"
-                                            stroke="#f59e0b"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('created')}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="submitted"
-                                            name="Tasks Submitted"
-                                            stroke="#10b981"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            strokeDasharray="3 3"
-                                            hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('submitted')}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="newUsers"
-                                            name="New Users"
-                                            stroke="#6366f1"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            strokeDasharray="4 2"
-                                            hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('newUsers')}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="newProjects"
-                                            name="New Projects"
-                                            stroke="#ec4899"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            strokeDasharray="2 2"
-                                            hide={selectedChartKeys.length > 0 && !selectedChartKeys.includes('newProjects')}
-                                        />
-                                    </AreaChart>
+                                    {chartType === 'bar' ? (
+                                        <BarChart data={stats.chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                                            <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
+                                            <Tooltip />
+                                            <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedChartKeys} onToggle={toggleChartKey} />} />
+                                            {activitySeries.map(({ key, name, color }) => (
+                                                <Bar key={key} dataKey={key} name={name} fill={color} radius={[3, 3, 0, 0]} hide={isHidden(key)} />
+                                            ))}
+                                        </BarChart>
+                                    ) : chartType === 'combo' ? (
+                                        <ComposedChart data={stats.chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                                            <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
+                                            <Tooltip />
+                                            <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedChartKeys} onToggle={toggleChartKey} />} />
+                                            <Bar dataKey="completed" name="Tasks Done" fill="#4f46e5" radius={[3, 3, 0, 0]} hide={isHidden('completed')} />
+                                            <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} hide={isHidden('created')} />
+                                            <Line type="monotone" dataKey="submitted" name="Tasks Submitted" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="3 3" hide={isHidden('submitted')} />
+                                            <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" hide={isHidden('newUsers')} />
+                                            <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" hide={isHidden('newProjects')} />
+                                        </ComposedChart>
+                                    ) : (
+                                        <AreaChart data={stats.chartData} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.25} />
+                                            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'currentColor' }} />
+                                            <YAxis width={yAxisWidth} tick={{ fontSize: 11, fill: 'currentColor' }} allowDecimals={false} />
+                                            <Tooltip />
+                                            <Legend content={(props) => <ClickableLegend {...props} selectedKeys={selectedChartKeys} onToggle={toggleChartKey} />} />
+                                            <Area type="monotone" dataKey="completed" name="Tasks Done" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.2} hide={isHidden('completed')} />
+                                            <Line type="monotone" dataKey="created" name="Tasks Created" stroke="#f59e0b" strokeWidth={2} dot={false} hide={isHidden('created')} />
+                                            <Line type="monotone" dataKey="submitted" name="Tasks Submitted" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="3 3" hide={isHidden('submitted')} />
+                                            <Line type="monotone" dataKey="newUsers" name="New Users" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" hide={isHidden('newUsers')} />
+                                            <Line type="monotone" dataKey="newProjects" name="New Projects" stroke="#ec4899" strokeWidth={2} dot={false} strokeDasharray="2 2" hide={isHidden('newProjects')} />
+                                        </AreaChart>
+                                    )}
                                 </ResponsiveContainer>
                             </div>
                         ) : (
