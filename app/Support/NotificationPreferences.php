@@ -50,7 +50,7 @@ class NotificationPreferences
             'tickets.status_changed' => 'Your ticket status changed (e.g. closed)',
         ];
 
-        if ($user?->role === 'admin') {
+        if (in_array($user?->role, ['admin', 'superadmin'], true)) {
             $catalog['admin.ticket_reply'] = 'A user replied to a ticket you responded to';
             $catalog['admin.ticket_created'] = 'A new feedback ticket was submitted';
             $catalog['admin.appeal_created'] = 'A new suspension appeal was submitted';

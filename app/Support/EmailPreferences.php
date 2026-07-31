@@ -73,7 +73,7 @@ class EmailPreferences
             ],
         ];
 
-        if ($user?->role === 'admin') {
+        if (in_array($user?->role, ['admin', 'superadmin'], true)) {
             $catalog['admin'] = [
                 'label' => 'Admin Alerts',
                 'items' => [
@@ -115,6 +115,7 @@ class EmailPreferences
             'account.admin_revoked',
             'account.restored',
             'account.restore_code',
+            'account.deleted_by_admin',
             'project.deletion_confirm',
         ];
     }

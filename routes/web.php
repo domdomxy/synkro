@@ -200,7 +200,12 @@ Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('adm
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::post('/users/{user}/suspend', [AdminController::class, 'suspend'])->name('users.suspend');
     Route::post('/users/{user}/lift-suspension', [AdminController::class, 'liftSuspension'])->name('users.lift-suspension');
-    Route::patch('/users/{user}/toggle-role', [AdminController::class, 'toggleRole'])->name('users.toggle-role');
+    Route::middleware('superadmin')->group(function () {
+        Route::patch('/users/{user}/toggle-role', [AdminController::class, 'toggleRole'])->name('users.toggle-role');
+        Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+        Route::delete('/users/bulk-delete', [AdminController::class, 'destroyBulk'])->name('users.destroy-bulk');
+        Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
+    });
     Route::get('/projects', [AdminController::class, 'projects'])->name('projects');
     Route::delete('/projects/{project}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
     Route::get('/feedbacks', [FeedbackAdminController::class, 'index'])->name('feedbacks');

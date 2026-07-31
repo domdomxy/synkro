@@ -67,7 +67,7 @@ class HandleInertiaRequests extends Middleware
             })(),
             'adminAlerts' => fn () => (function () use ($request) {
                 $user = $request->user();
-                if (! $user || $user->role !== 'admin') {
+                if (! $user || ! $user->isAdmin()) {
                     return null;
                 }
 

@@ -20,6 +20,11 @@ use App\Models\SuspensionLog;
 use App\Models\AdminLog;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
+use App\Mail\SynkroNotificationMail;
+use App\Events\EmailChanged;
+use App\Support\AccountDeletion;
 
 class AdminController extends Controller
 {
@@ -282,7 +287,7 @@ class AdminController extends Controller
 
         $activeTrend = $this->monthOverMonthChange(User::where('is_active', true)->where('is_suspended', false), 'active_status_changed_at');
         $inactiveTrend = $this->monthOverMonthChange(User::where('is_active', false), 'active_status_changed_at');
-        $adminsTrend = $this->monthOverMonthChange(User::where('role', 'admin'), 'role_changed_at');
+        $adminsTrend = $this->monthOverMonthChange(User::whereIn('role', ['admin', 'superadmin']), 'role_changed_at');
         $suspendedTrend = $this->monthOverMonthChange(SuspensionLog::query(), 'created_at');
         $verifiedTrend = $this->monthOverMonthChange(User::whereNotNull('email_verified_at'), 'email_verified_at');
 
@@ -290,7 +295,7 @@ class AdminController extends Controller
         $activeUsers = User::where('is_active', true)->where('is_suspended', false)->count();
         $inactiveUsers = User::where('is_active', false)->count();
         $suspendedUsers = User::where('is_suspended', true)->count();
-        $adminUsers = User::where('role', 'admin')->count();
+        $adminUsers = User::whereIn('role', ['admin', 'superadmin'])->count();
         $verifiedUsers = User::whereNotNull('email_verified_at')->count();
         $unverifiedUsers = User::whereNull('email_verified_at')->count();
         $deletedUsers = User::onlyTrashed()->count();
@@ -787,6 +792,9 @@ public function suspend(Request $request, User $user)
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => "You can't change your own role."]);
         }
+        if ($user->isSuperAdmin()) {
+            return back()->withErrors(['error' => "Superadmin status isn't managed from here."]);
+        }
         $newRole = $user->role === 'admin' ? 'user' : 'admin';
         $user->update(['role' => $newRole, 'role_changed_at' => now()]);
         AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
@@ -842,6 +850,175 @@ public function suspend(Request $request, User $user)
         }
 
         return back()->with('success', 'Role updated.');
+    }
+
+    /**
+     * Superadmin-only: edit a user's name and/or email. Mirrors the security
+     * notifications AccountController::update() sends for a self-service email
+     * change — the OLD address always gets a direct alert regardless of email
+     * preference (that's the account that might be compromised), while the new
+     * address and in-app bell go through the normal preference-gated channel —
+     * just phrased for an admin-initiated change instead of a self-service one.
+     */
+    public function updateUser(Request $request, User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => 'Use your own account settings to edit your info.']);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required', 'string', 'lowercase', 'email', 'max:255',
+                Rule::unique(User::class)->ignore($user->id),
+            ],
+        ]);
+
+        $oldEmail = $user->email;
+        $newEmail = $validated['email'];
+
+        $user->fill($validated);
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+        $user->save();
+
+        if (! $user->wasChanged()) {
+            return back()->with('success', 'No changes made.');
+        }
+
+        $summary = array_filter([
+            $user->wasChanged('name') ? "name to \"{$user->name}\"" : null,
+            $user->wasChanged('email') ? "email to {$newEmail}" : null,
+        ]);
+        AdminLog::log('user.info_updated', "Updated ".implode(' and ', $summary)." for #{$user->id}", $user);
+
+        if ($user->wasChanged('email')) {
+            // Security alert to the OLD address, always sent (same as a self-service change).
+            try {
+                Mail::to($oldEmail)->queue(new SynkroNotificationMail(
+                    $user->name,
+                    'Your email address was changed',
+                    [
+                        "Your Synkro account email was changed by an administrator, from **{$oldEmail}** to **{$newEmail}**.",
+                        "If you weren't expecting this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
+                    ]
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            NotificationMailer::send(
+                $user,
+                'account.email_changed',
+                'Your email address was updated',
+                ["Your Synkro account email is now **{$newEmail}**."]
+            );
+
+            if (NotificationPreferences::wantsType($user, 'email_changed')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'email_changed',
+                    'message' => "Email address changed\nYour account email is now **{$newEmail}**.",
+                    'url' => route('account.edit', [], false),
+                ]);
+
+                try {
+                    broadcast(new EmailChanged($user->id, $newEmail, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+
+        return back()->with('success', 'User info updated.');
+    }
+
+    /**
+     * Shared by destroy() and destroyBulk(): unwinds project memberships (same path
+     * self-service deletion uses), logs the action, and notifies the deleted user.
+     * Uses its own always-sent 'account.deleted_by_admin' preference key rather than
+     * the self-service 'account.deleted' key, since this is security-relevant and
+     * shouldn't be suppressible by a preference the user set for their own actions.
+     */
+    private function performAdminDelete(User $user): void
+    {
+        $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
+        $name = $user->name;
+
+        $graceEndsAt = AccountDeletion::unwindProjectsAndDelete($user);
+
+        AdminLog::log('user.deleted', "Deleted account for {$name} ({$user->email})", $user);
+
+        NotificationMailer::send(
+            $user,
+            'account.deleted_by_admin',
+            'Your account has been deleted',
+            [
+                'Your Synkro account was deleted by an administrator.',
+                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case this was a mistake — log back in with your usual email and password before then to restore it.',
+                "If you believe this was done in error, please [contact support](" . url(route('feedback.page', [], false)) . ').',
+            ]
+        );
+
+        try {
+            event(new \App\Events\AccountDeleted($user->id));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** Superadmin-only: delete a single user account. */
+    public function destroy(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => "You can't delete your own account this way. Use your account settings."]);
+        }
+        if ($user->isSuperAdmin()) {
+            return back()->withErrors(['error' => "Superadmin accounts can't be deleted from here."]);
+        }
+        if ($user->trashed()) {
+            return back()->withErrors(['error' => 'That account is already deleted.']);
+        }
+
+        $name = $user->name;
+        $this->performAdminDelete($user);
+
+        return back()->with('success', "{$name}'s account was deleted.");
+    }
+
+    /**
+     * Superadmin-only: delete several user accounts at once. Skips (rather than
+     * fails) any target that can't be deleted this way — your own account, a
+     * superadmin, or one already deleted — so one bad id in the selection doesn't
+     * block the rest, and reports how many actually went through.
+     */
+    public function destroyBulk(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (User::withTrashed()->whereIn('id', $validated['user_ids'])->get() as $user) {
+            if ($user->id === auth()->id() || $user->isSuperAdmin() || $user->trashed()) {
+                $skipped++;
+                continue;
+            }
+
+            $this->performAdminDelete($user);
+            $deleted++;
+        }
+
+        $message = $deleted === 1 ? '1 account deleted.' : "{$deleted} accounts deleted.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} skipped (your own account or a superadmin can't be deleted this way).";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function resetPassword(User $user)

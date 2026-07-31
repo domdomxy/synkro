@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
 import LiftSuspensionModal from '@/Components/LiftSuspensionModal';
+import EditUserModal from '@/Components/EditUserModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import FilterSelect from '@/Components/FilterSelect';
@@ -93,17 +94,20 @@ function StatusBadge({ user }) {
     );
 }
 
-function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspend, onLiftSuspension }) {
+function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onResetPassword, onSuspend, onLiftSuspension, onEdit, onDelete }) {
     const [open, setOpen] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const btnRef = useRef(null);
     const menuRef = useRef(null);
     const MENU_WIDTH = 200;
     const isDeleted = !!user.deleted_at;
+    const isTargetSuperAdmin = user.role === 'superadmin';
     // Deleted accounts are gone from the app's own perspective — role, password,
     // and suspension no longer mean anything for them, so those actions are
     // disabled rather than hidden (keeps the menu's shape consistent).
     const disabled = isSelf || isDeleted;
+    // Promoting/demoting admins, editing a user's info, and deleting accounts are
+    // superadmin-only (a superadmin's own role also isn't managed from this menu).
 
     const toggle = () => {
         if (!open && btnRef.current) {
@@ -169,13 +173,24 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
                         View Activity Logs
                     </Link>
                     <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                    <button
-                        onClick={() => { setOpen(false); onToggleRole(user); }}
-                        disabled={disabled}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                        {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
-                    </button>
+                    {isSuperAdmin && !isTargetSuperAdmin && (
+                        <button
+                            onClick={() => { setOpen(false); onToggleRole(user); }}
+                            disabled={disabled}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
+                        </button>
+                    )}
+                    {isSuperAdmin && !isTargetSuperAdmin && (
+                        <button
+                            onClick={() => { setOpen(false); onEdit(user); }}
+                            disabled={isDeleted}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            Edit Info
+                        </button>
+                    )}
                     <button
                         onClick={() => { setOpen(false); onResetPassword(user); }}
                         disabled={disabled}
@@ -201,6 +216,18 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
                             Suspend User
                         </button>
                     )}
+                    {isSuperAdmin && !isTargetSuperAdmin && (
+                        <>
+                            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                            <button
+                                onClick={() => { setOpen(false); onDelete(user); }}
+                                disabled={isSelf || isDeleted}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                            >
+                                Delete Account
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </>
@@ -212,6 +239,7 @@ const FILTER_DEFAULTS = { role: 'all', status: 'all', verified: 'all', per_page:
 
 export default function Users({ users, stats, filters }) {
     const { auth } = usePage().props;
+    const isSuperAdmin = auth.user.role === 'superadmin';
     const [search, setSearch] = useState(filters.search ?? '');
     const [roleFilter, setRoleFilter] = useState(filters.role ?? 'all');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
@@ -221,7 +249,27 @@ export default function Users({ users, stats, filters }) {
     const [direction, setDirection] = useState(filters.direction ?? 'asc');
     const [suspendTarget, setSuspendTarget] = useState(null);
     const [liftTarget, setLiftTarget] = useState(null);
+    const [editTarget, setEditTarget] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
     const { confirm, ConfirmDialog } = useConfirm();
+
+    // Only accounts a superadmin could actually select for bulk delete: not
+    // yourself, not another superadmin, not already deleted.
+    const selectableUsers = users.data.filter((u) => u.id !== auth.user.id && u.role !== 'superadmin' && !u.deleted_at);
+    const allSelectableSelected = selectableUsers.length > 0 && selectableUsers.every((u) => selectedIds.includes(u.id));
+
+    const toggleSelected = (id) => {
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedIds(allSelectableSelected ? [] : selectableUsers.map((u) => u.id));
+    };
+
+    useEffect(() => {
+        setSelectedIds([]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [users]);
 
     const applyFilters = () => {
         router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
@@ -257,6 +305,21 @@ export default function Users({ users, stats, filters }) {
     const resetPassword = async (user) => {
         if (!(await confirm(`A new temporary password will be emailed to them, expiring in 24 hours.`, { title: `Reset ${user.name}'s Password?` }))) return;
         router.post(route('admin.users.reset-password', user.id), {}, { preserveScroll: true });
+    };
+
+    const deleteUser = async (user) => {
+        if (!(await confirm(`This deletes ${user.name}'s account. They'll have a grace period to restore it themselves by logging back in.`, { title: `Delete ${user.name}'s Account?`, danger: true, confirmLabel: 'Delete' }))) return;
+        router.delete(route('admin.users.destroy', user.id), { preserveScroll: true });
+    };
+
+    const deleteSelected = async () => {
+        const count = selectedIds.length;
+        if (!(await confirm(`This deletes ${count} account${count !== 1 ? 's' : ''}. Each will have a grace period to be restored by logging back in.`, { title: `Delete ${count} Account${count !== 1 ? 's' : ''}?`, danger: true, confirmLabel: 'Delete' }))) return;
+        router.delete(route('admin.users.destroy-bulk'), {
+            data: { user_ids: selectedIds },
+            preserveScroll: true,
+            onSuccess: () => setSelectedIds([]),
+        });
     };
 
     return (
@@ -302,6 +365,7 @@ export default function Users({ users, stats, filters }) {
                                 className="w-36"
                                 options={[
                                     { value: 'all', label: 'All Roles' },
+                                    { value: 'superadmin', label: 'Super Admin' },
                                     { value: 'admin', label: 'Admin' },
                                     { value: 'user', label: 'User' },
                                 ]}
@@ -343,11 +407,36 @@ export default function Users({ users, stats, filters }) {
                         <Pagination meta={users} />
                     </div>
 
+                    {isSuperAdmin && selectedIds.length > 0 && (
+                        <div className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-rose-50 px-4 py-3 shadow dark:bg-rose-950/40">
+                            <p className="text-sm font-medium text-rose-700 dark:text-rose-300">
+                                {selectedIds.length} account{selectedIds.length !== 1 ? 's' : ''} selected
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setSelectedIds([])} className="text-sm text-rose-600 hover:underline dark:text-rose-400">Clear selection</button>
+                                <button onClick={deleteSelected} className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">
+                                    Delete Selected
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
+                                    {isSuperAdmin && (
+                                        <th className="w-10 px-4 py-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelectableSelected}
+                                                onChange={toggleSelectAll}
+                                                disabled={selectableUsers.length === 0}
+                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                            />
+                                        </th>
+                                    )}
                                     <SortableHeader label="ID" column="id" sort={sort} direction={direction} onSort={handleSort} />
                                     <SortableHeader label="User" column="name" sort={sort} direction={direction} onSort={handleSort} />
                                     <SortableHeader label="Role" column="role" sort={sort} direction={direction} onSort={handleSort} />
@@ -361,6 +450,17 @@ export default function Users({ users, stats, filters }) {
                                     const isSelf = user.id === auth.user.id;
                                     return (
                                         <tr key={user.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                            {isSuperAdmin && (
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(user.id)}
+                                                        onChange={() => toggleSelected(user.id)}
+                                                        disabled={isSelf || user.role === 'superadmin' || !!user.deleted_at}
+                                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-700"
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="px-6 py-3 font-mono text-sm text-gray-400 dark:text-gray-500">
                                                 #{user.id}
                                             </td>
@@ -392,8 +492,8 @@ export default function Users({ users, stats, filters }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3">
-                                                <span className={`rounded-full px-2 py-1 text-xs capitalize ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                    {user.role}
+                                                <span className={`rounded-full px-2 py-1 text-xs capitalize ${user.role === 'superadmin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                    {user.role === 'superadmin' ? 'Super Admin' : user.role}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-3">
@@ -406,10 +506,13 @@ export default function Users({ users, stats, filters }) {
                                                 <UserActionsMenu
                                                     user={user}
                                                     isSelf={isSelf}
+                                                    isSuperAdmin={isSuperAdmin}
                                                     onToggleRole={toggleRole}
                                                     onResetPassword={resetPassword}
                                                     onSuspend={setSuspendTarget}
                                                     onLiftSuspension={liftSuspension}
+                                                    onEdit={setEditTarget}
+                                                    onDelete={deleteUser}
                                                 />
                                             </td>
                                         </tr>
@@ -417,7 +520,7 @@ export default function Users({ users, stats, filters }) {
                                 })}
                                 {users.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
+                                        <td colSpan={isSuperAdmin ? 7 : 6} className="px-6 py-10 text-center text-gray-400 dark:text-gray-500">
                                             No users match your filters.
                                         </td>
                                     </tr>
@@ -437,6 +540,11 @@ export default function Users({ users, stats, filters }) {
                 user={liftTarget}
                 show={liftTarget !== null}
                 onClose={() => setLiftTarget(null)}
+            />
+            <EditUserModal
+                user={editTarget}
+                show={editTarget !== null}
+                onClose={() => setEditTarget(null)}
             />
             {ConfirmDialog}
         </AuthenticatedLayout>

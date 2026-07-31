@@ -30,9 +30,16 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(UserNotification::class)->latest();
     }
+    /** Superadmin has every admin permission plus a few of its own, so it counts as admin too. */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array($this->role, ['admin', 'superadmin'], true);
+    }
+
+    /** Role management (promote/demote admins), user deletion, and editing a user's core info are superadmin-only. */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
     }
 
     public function projects(): BelongsToMany
