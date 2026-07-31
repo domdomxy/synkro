@@ -110,6 +110,8 @@ class EmailPreferences
             'account.welcome',
             'account.suspension_lifted',
             'account.appeal_reviewed',
+            'account.appeal_responded',
+            'account.appeal_auto_closed',
             'account.email_changed_security_alert',
             'account.admin_granted',
             'account.admin_revoked',

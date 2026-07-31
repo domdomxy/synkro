@@ -10,5 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('reminders:send')->everyMinute();
 Schedule::command('suspensions:lift-expired')->everyMinute();
+Schedule::command('feedback:close-inactive')->hourly();
+Schedule::command('appeals:close-inactive')->hourly();
 Schedule::command('tasks:notify-overdue')->everyFifteenMinutes();
 Schedule::command('accounts:purge-deleted')->daily();

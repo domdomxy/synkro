@@ -1124,7 +1124,7 @@ public function suspend(Request $request, User $user)
 
     public function appeals(Request $request)
     {
-        $query = SuspensionAppeal::with('user');
+        $query = SuspensionAppeal::with(['user', 'responses.admin']);
 
         if ($request->search) {
             $query->whereHas('user', function ($q) use ($request) {
@@ -1139,6 +1139,67 @@ public function suspend(Request $request, User $user)
             'appeals' => $appeals,
             'filters' => ['search' => $request->input('search', '')],
         ]);
+    }
+
+    /**
+     * Superadmin/admin: leave a note on a pending appeal without deciding it yet —
+     * e.g. asking a follow-up question, or acknowledging it's being looked into.
+     * Unlike reviewAppeal() this doesn't touch status/outcome, so the appeal stays
+     * pending; it exists mainly so "a supporter has responded" becomes something
+     * CloseInactiveAppeals can actually detect (see that command's doc comment).
+     */
+    public function respondAppeal(Request $request, SuspensionAppeal $appeal)
+    {
+        if ($appeal->status !== 'pending') {
+            return back()->withErrors(['error' => "This appeal has already been decided — there's nothing to add a note to."]);
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $appeal->responses()->create([
+            'admin_id' => auth()->id(),
+            'message' => $validated['message'],
+        ]);
+
+        AdminLog::log(
+            'appeal.responded',
+            "Left a note on {$appeal->user?->name}'s suspension appeal",
+            $appeal,
+            $validated['message']
+        );
+
+        if ($appeal->user) {
+            NotificationMailer::send(
+                $appeal->user,
+                'account.appeal_responded',
+                'An update on your suspension appeal',
+                ['A member of our support team left a note on your suspension appeal:'],
+                url(route('login', [], false)),
+                'View Details',
+                highlight: [
+                    'label' => 'Note from support',
+                    'content' => \App\Support\NoteFormatter::toHtml($validated['message']),
+                    'html' => true,
+                ],
+            );
+
+            $notification = UserNotification::create([
+                'user_id' => $appeal->user->id,
+                'type' => 'appeal_responded',
+                'message' => "Update on your appeal\nA member of our support team left a note on your suspension appeal.",
+                'url' => route('login', [], false),
+            ]);
+
+            try {
+                broadcast(new \App\Events\AppealResponded($appeal->user->id, $appeal->id, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('success', 'Note added.');
     }
 
     public function reviewAppeal(Request $request, SuspensionAppeal $appeal)

@@ -8,55 +8,63 @@ html.dark:not(.theme-black) {
 
 /* Backgrounds */
 
-html.dark:not(.theme-black) .dark\:bg-gray-900 { background:#101214 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-800 { background:#181B20 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-700 { background:#242A31 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-600 { background:#303943 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-500 { background:#3E4956 !important; }
+/* Every rule below deliberately uses the background-color longhand, not the
+   background shorthand. The shorthand resets background-image too, which
+   silently strips the checkmark @tailwindcss/forms draws via background-image
+   on checked checkboxes (any dark:bg-gray-900 checkbox included) — the
+   checkbox still looked checked (indigo/gray fill) but with no visible tick,
+   in dark mode only, since this file doesn't apply outside it. Same trap for
+   anything else styled with a background-image. Keep this longhand. */
 
-html.dark:not(.theme-black) .dark\:bg-gray-300 { background:#CCD3DB !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-200 { background:#E6EBF1 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-900 { background-color:#101214 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-800 { background-color:#181B20 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-700 { background-color:#242A31 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-600 { background-color:#303943 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-500 { background-color:#3E4956 !important; }
+
+html.dark:not(.theme-black) .dark\:bg-gray-300 { background-color:#CCD3DB !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-200 { background-color:#E6EBF1 !important; }
 
 /* Hover */
 
 html.dark:not(.theme-black) .dark\:hover\:bg-gray-700:hover {
-    background:#2C343E !important;
+    background-color:#2C343E !important;
 }
 
 html.dark:not(.theme-black) .dark\:hover\:bg-gray-600:hover {
-    background:#38424E !important;
+    background-color:#38424E !important;
 }
 
 @media (min-width:640px){
 
 html.dark:not(.theme-black) .sm\:dark\:bg-gray-700{
-    background:#242A31 !important;
+    background-color:#242A31 !important;
 }
 
 html.dark:not(.theme-black) .sm\:dark\:hover\:bg-gray-600:hover{
-    background:#38424E !important;
+    background-color:#38424E !important;
 }
 
 }
 
 /* Transparent */
 
-html.dark:not(.theme-black) .dark\:bg-gray-900\/40{background:rgba(16,18,20,.50)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/50{background:rgba(16,18,20,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/60{background:rgba(16,18,20,.70)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/70{background:rgba(16,18,20,.80)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/75{background:rgba(16,18,20,.85)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/80{background:rgba(16,18,20,.90)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/40{background-color:rgba(16,18,20,.50)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/50{background-color:rgba(16,18,20,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/60{background-color:rgba(16,18,20,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/70{background-color:rgba(16,18,20,.80)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/75{background-color:rgba(16,18,20,.85)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/80{background-color:rgba(16,18,20,.90)!important;}
 
-html.dark:not(.theme-black) .dark\:bg-gray-800\/30{background:rgba(24,27,32,.40)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/50{background:rgba(24,27,32,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/60{background:rgba(24,27,32,.70)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/90{background:rgba(24,27,32,.95)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/95{background:rgba(24,27,32,.97)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/30{background-color:rgba(24,27,32,.40)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/50{background-color:rgba(24,27,32,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/60{background-color:rgba(24,27,32,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/90{background-color:rgba(24,27,32,.95)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/95{background-color:rgba(24,27,32,.97)!important;}
 
-html.dark:not(.theme-black) .dark\:bg-gray-700\/40{background:rgba(36,42,49,.50)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-700\/50{background:rgba(36,42,49,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-700\/60{background:rgba(36,42,49,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/40{background-color:rgba(36,42,49,.50)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/50{background-color:rgba(36,42,49,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/60{background-color:rgba(36,42,49,.70)!important;}
 
 /* Borders */
 

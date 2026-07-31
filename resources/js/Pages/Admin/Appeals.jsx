@@ -12,6 +12,7 @@ const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     approved: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     rejected: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+    closed: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
 };
 
 function SearchIcon() {
@@ -25,19 +26,25 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
+    const [note, setNote] = useState('');
+    const [sendingNote, setSendingNote] = useState(false);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const isPending = appeal.status === 'pending';
     const badgeLabel = isPending
         ? 'pending'
-        : appeal.outcome === 'approved'
-            ? (appeal.auto_resolved ? 'approved (automatically)' : 'approved')
-            : (appeal.auto_resolved ? 'rejected (automatically)' : 'rejected');
+        : appeal.outcome === 'closed'
+            ? 'closed (inactive)'
+            : appeal.outcome === 'approved'
+                ? (appeal.auto_resolved ? 'approved (automatically)' : 'approved')
+                : (appeal.auto_resolved ? 'rejected (automatically)' : 'rejected');
     const badgeStyle = isPending
         ? statusStyles.pending
-        : appeal.outcome === 'approved'
-            ? statusStyles.approved
-            : statusStyles.rejected;
+        : appeal.outcome === 'closed'
+            ? statusStyles.closed
+            : appeal.outcome === 'approved'
+                ? statusStyles.approved
+                : statusStyles.rejected;
 
     const decide = async (outcome) => {
         if (!reason.trim()) {
@@ -50,6 +57,16 @@ function AppealItem({ appeal }) {
             : `Reject this appeal?`;
         if (!(await confirm(confirmText, { title: confirmTitle }))) return;
         router.patch(route('admin.appeals.review', appeal.id), { outcome, reason }, { preserveScroll: true });
+    };
+
+    const sendNote = () => {
+        if (!note.trim()) return;
+        setSendingNote(true);
+        router.patch(route('admin.appeals.respond', appeal.id), { message: note }, {
+            preserveScroll: true,
+            onSuccess: () => setNote(''),
+            onFinish: () => setSendingNote(false),
+        });
     };
 
     return (
@@ -116,6 +133,49 @@ function AppealItem({ appeal }) {
                         </p>
                     </div>
 
+                    {appeal.responses?.length > 0 && (
+                        <div className="space-y-2">
+                            {appeal.responses.map((r) => (
+                                <div key={r.id} className="rounded-md border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
+                                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                        <Linkify text={r.message} />
+                                    </p>
+                                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                                        {r.admin?.name ?? 'Admin'} ·{' '}
+                                        {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {isPending && (
+                        <div className="rounded-md border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900/30">
+                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                Leave a note without deciding yet (emailed to {appeal.user?.name ?? 'the user'})
+                            </label>
+                            <div className="flex items-start gap-2">
+                                <textarea
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    rows={2}
+                                    placeholder="e.g. Thanks for reaching out — we're looking into this and will follow up soon."
+                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                                />
+                                <button
+                                    onClick={sendNote}
+                                    disabled={!note.trim() || sendingNote}
+                                    className="shrink-0 rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {isPending ? (
                         <>
                             <div className="rounded-md border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
@@ -151,25 +211,33 @@ function AppealItem({ appeal }) {
                         </>
                     ) : (
                         <div className={`rounded-md border p-3 ${
-                            appeal.outcome === 'approved'
-                                ? 'border-green-100 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
-                                : 'border-red-100 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20'
+                            appeal.outcome === 'closed'
+                                ? 'border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/30'
+                                : appeal.outcome === 'approved'
+                                    ? 'border-green-100 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
+                                    : 'border-red-100 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20'
                         }`}>
                             <p className={`mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide ${
-                                appeal.outcome === 'approved'
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-red-600 dark:text-red-400'
+                                appeal.outcome === 'closed'
+                                    ? 'text-gray-500 dark:text-gray-400'
+                                    : appeal.outcome === 'approved'
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-red-600 dark:text-red-400'
                             }`}>
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    {appeal.outcome === 'approved' ? (
+                                    {appeal.outcome === 'closed' ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    ) : appeal.outcome === 'approved' ? (
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                     ) : (
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     )}
                                 </svg>
-                                {appeal.outcome === 'approved'
-                                    ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted — suspension lifted')
-                                    : (appeal.auto_resolved ? 'Rejected automatically' : 'Rejected')}
+                                {appeal.outcome === 'closed'
+                                    ? 'Closed automatically (inactive 24h)'
+                                    : appeal.outcome === 'approved'
+                                        ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted — suspension lifted')
+                                        : (appeal.auto_resolved ? 'Rejected automatically' : 'Rejected')}
                             </p>
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                 {appeal.admin_reason ? <Linkify text={appeal.admin_reason} /> : 'No reason was given.'}
@@ -231,6 +299,7 @@ export default function Appeals({ appeals, filters }) {
                                 { value: 'pending', label: 'Pending' },
                                 { value: 'approved', label: 'Approved' },
                                 { value: 'rejected', label: 'Rejected' },
+                                { value: 'closed', label: 'Closed (inactive)' },
                             ]}
                         />
                         {pendingCount > 0 && (

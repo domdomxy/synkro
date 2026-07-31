@@ -157,12 +157,14 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
                                     className={`rounded-md p-3 ${
                                         r.sender_type === 'admin'
                                             ? 'bg-indigo-50 dark:bg-indigo-950/30'
-                                            : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+                                            : r.sender_type === 'system'
+                                                ? 'border border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/40'
+                                                : 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
                                     }`}
                                 >
                                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><Linkify text={r.message} /></p>
                                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                        {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : feedback.name}
+                                        {r.sender_type === 'admin' ? (r.admin?.name ?? 'Admin') : r.sender_type === 'system' ? 'Synkro (automated)' : feedback.name}
                                         {r.sender_type === 'user' && <span className="ml-1 italic">(user)</span>}
                                         {' · '}
                                         {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}

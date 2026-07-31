@@ -821,7 +821,9 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                                             className={`rounded-lg border p-3 ${
                                                                 r.sender_type === 'admin'
                                                                     ? 'border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30'
-                                                                    : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
+                                                                    : r.sender_type === 'system'
+                                                                        ? 'border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/40'
+                                                                        : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
                                                             }`}
                                                         >
                                                             <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={r.message} /></p>
@@ -829,7 +831,7 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                                                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                                 </svg>
-                                                                {r.sender_type === 'admin' ? 'Support Team' : 'You'} ·{' '}
+                                                                {r.sender_type === 'admin' ? 'Support Team' : r.sender_type === 'system' ? 'Synkro (automated)' : 'You'} ·{' '}
                                                                 {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                                             </p>
                                                         </div>

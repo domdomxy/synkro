@@ -49,8 +49,11 @@ const actionIconConfig = {
     'user.login_history_viewed': { path: ICON_PATHS.eye, color: 'text-sky-500' },
     'appeal.reviewed': { path: ICON_PATHS.check, color: 'text-teal-500' },
     'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
+    'appeal.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
+    'appeal.auto_closed': { path: ICON_PATHS.dot, color: 'text-gray-400' },
     'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
     'ticket.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
+    'ticket.auto_closed': { path: ICON_PATHS.dot, color: 'text-gray-400' },
     'category.created': { path: ICON_PATHS.check, color: 'text-teal-500' },
     'category.updated': { path: ICON_PATHS.pencil, color: 'text-amber-500' },
     'category.deleted': { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
@@ -73,6 +76,13 @@ const actionColors = {
     'category.updated': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
     'category.deleted': 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
+
+// AdminLog.admin_id is null for both "the admin who did this was later deleted"
+// and "nothing did this, a scheduled job did" — these two are indistinguishable
+// from the foreign key alone, so we disambiguate by action: only the actions a
+// human never performs (both currently: the 24h-inactivity auto-close jobs)
+// get the "automated" label instead of "Deleted admin".
+const AUTOMATED_ACTIONS = new Set(['ticket.auto_closed', 'appeal.auto_closed']);
 
 function timeAgo(dateString) {
     const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -107,7 +117,7 @@ function AdminLogRow({ log, actionCatalog }) {
                     <div className="flex flex-wrap items-center gap-2">
                         <Avatar user={log.admin} size="h-5 w-5" />
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {log.admin?.name ?? 'Deleted admin'}
+                            {log.admin?.name ?? (AUTOMATED_ACTIONS.has(log.action) ? 'Synkro (automated)' : 'Deleted admin')}
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-xs ${actionColors[log.action] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                             {actionCatalog[log.action] ?? log.action}

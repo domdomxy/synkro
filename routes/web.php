@@ -215,6 +215,7 @@ Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('adm
     Route::patch('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'update'])->name('feedback-categories.update');
     Route::delete('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'destroy'])->name('feedback-categories.destroy');
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
+    Route::patch('/appeals/{appeal}/respond', [AdminController::class, 'respondAppeal'])->name('appeals.respond');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/users/{user}/logs', [AdminController::class, 'userLogs'])->name('users.logs')->withTrashed();
