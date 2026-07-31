@@ -88,7 +88,7 @@ export default function Projects({ projects, filters }) {
                     </div>
 
                     <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        <div className="hidden sm:block">
+                        <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                     <tr>
@@ -146,57 +146,6 @@ export default function Projects({ projects, filters }) {
                                     )}
                                 </tbody>
                             </table>
-                        </div>
-
-                        {/* A 6-column table doesn't fit a phone screen usefully even with horizontal scroll
-                           (constant back-and-forth to read one row) — a stacked card per project reads far
-                           better below the sm breakpoint. */}
-                        <div className="divide-y divide-gray-100 dark:divide-gray-700 sm:hidden">
-                            {projects.data.map((project) => (
-                                <div key={project.id} className="p-4">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">#{project.id}</p>
-                                            <p className="truncate font-medium text-gray-800 dark:text-gray-200" title={project.name}>{project.name}</p>
-                                        </div>
-                                        <Link
-                                            href={route('admin.projects.logs', project.id)}
-                                            className="flex shrink-0 items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"
-                                        >
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                            </svg>
-                                            Logs
-                                        </Link>
-                                    </div>
-
-                                    <div className="mt-2 flex items-center gap-2">
-                                        {project.owner ? (
-                                            <>
-                                                <Avatar user={project.owner} size="h-5 w-5" />
-                                                <span className="truncate text-sm text-gray-500 dark:text-gray-400">{project.owner.name}</span>
-                                                {project.owner.deleted_at && (
-                                                    <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                                                        deleted
-                                                    </span>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <span className="text-sm text-gray-400 dark:text-gray-500">No owner</span>
-                                        )}
-                                    </div>
-
-                                    <div className="mt-3 flex gap-4 text-xs text-gray-500 dark:text-gray-400">
-                                        <span><span className="font-medium text-gray-700 dark:text-gray-300">{project.members_count}</span> members</span>
-                                        <span><span className="font-medium text-gray-700 dark:text-gray-300">{project.tasks_count}</span> tasks</span>
-                                    </div>
-                                </div>
-                            ))}
-                            {projects.data.length === 0 && (
-                                <div className="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
-                                    No projects match your search.
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

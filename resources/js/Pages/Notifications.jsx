@@ -107,7 +107,7 @@ export default function Notifications({ notificationsList, filters }) {
                                 { value: 'membership', label: 'Membership' },
                                 { value: 'replies', label: 'Replies' },
                                 { value: 'reminders', label: 'Reminders' },
-                                ...(auth.user.role === 'admin' ? [{ value: 'administration', label: 'Administration' }] : []),
+                                ...(auth.user.role === 'admin' || auth.user.role === 'superadmin' ? [{ value: 'administration', label: 'Administration' }] : []),
                             ]}
                         />
                         {hasActiveFilters && (

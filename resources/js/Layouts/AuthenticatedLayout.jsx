@@ -14,6 +14,12 @@ import PasswordResetListener from '@/Components/PasswordResetListener';
 
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
     const user = usePage().props.auth.user;
+    // Superadmins carry every admin permission plus a few of their own (see
+    // User::isAdmin() on the backend), so anywhere "is this user an admin"
+    // gates something in the UI, superadmin must count too — otherwise a
+    // superadmin loses access to admin-only nav/UI just because their role
+    // string is 'superadmin' rather than literally 'admin'.
+    const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { adminAlerts, testing } = usePage().props;
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
@@ -46,14 +52,14 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
         'admin-alerts',
         ['.alerts.updated'],
         (payload) => {
-            if (user.role !== 'admin') {
+            if (!isAdminRole) {
                 return;
             }
 
             setHasPendingAlert(Boolean(payload.hasPending));
         },
         [],
-        user.role === 'admin' ? 'private' : 'public'
+        isAdminRole ? 'private' : 'public'
     );
 
     return (
@@ -91,7 +97,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         )}
                                     </div>
                                 )}
-                                {user.role === 'admin' && (
+                                {isAdminRole && (
                                     <div className="relative inline-flex">
                                         <NavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
                                             Admin
@@ -202,7 +208,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                 )}
                             </div>
                         )}
-                        {user.role === 'admin' && (
+                        {isAdminRole && (
                             <div className="relative">
                                 <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
                                     Admin

@@ -2,6 +2,8 @@ import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
+import EmailValidityHint from '@/Components/EmailValidityHint';
+import { isValidEmail } from '@/utils/email';
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 
@@ -21,6 +23,12 @@ export default function EditUserModal({ user, show, onClose }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!isValidEmail(form.data.email)) {
+            form.setError('email', 'Please enter a valid email address.');
+            return;
+        }
+
         form.patch(route('admin.users.update', user.id), {
             preserveScroll: true,
             onSuccess: () => onClose(),
@@ -57,6 +65,7 @@ export default function EditUserModal({ user, show, onClose }) {
                         className="mt-1 block w-full"
                         required
                     />
+                    <EmailValidityHint value={form.data.email} onChange={(value) => form.setData('email', value)} />
                     <InputError message={form.errors.email} className="mt-2" />
                 </div>
 

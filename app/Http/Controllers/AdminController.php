@@ -288,6 +288,7 @@ class AdminController extends Controller
         $activeTrend = $this->monthOverMonthChange(User::where('is_active', true)->where('is_suspended', false), 'active_status_changed_at');
         $inactiveTrend = $this->monthOverMonthChange(User::where('is_active', false), 'active_status_changed_at');
         $adminsTrend = $this->monthOverMonthChange(User::whereIn('role', ['admin', 'superadmin']), 'role_changed_at');
+        $superAdminsTrend = $this->monthOverMonthChange(User::where('role', 'superadmin'), 'role_changed_at');
         $suspendedTrend = $this->monthOverMonthChange(SuspensionLog::query(), 'created_at');
         $verifiedTrend = $this->monthOverMonthChange(User::whereNotNull('email_verified_at'), 'email_verified_at');
 
@@ -296,6 +297,7 @@ class AdminController extends Controller
         $inactiveUsers = User::where('is_active', false)->count();
         $suspendedUsers = User::where('is_suspended', true)->count();
         $adminUsers = User::whereIn('role', ['admin', 'superadmin'])->count();
+        $superAdminUsers = User::where('role', 'superadmin')->count();
         $verifiedUsers = User::whereNotNull('email_verified_at')->count();
         $unverifiedUsers = User::whereNull('email_verified_at')->count();
         $deletedUsers = User::onlyTrashed()->count();
@@ -315,6 +317,9 @@ class AdminController extends Controller
             'admins' => $adminUsers,
             'adminsRatio' => $ratio($adminUsers),
             'adminsTrend' => $adminsTrend['change'],
+            'superadmins' => $superAdminUsers,
+            'superadminsRatio' => $ratio($superAdminUsers),
+            'superadminsTrend' => $superAdminsTrend['change'],
             'verified' => $verifiedUsers,
             'verifiedRatio' => $ratio($verifiedUsers),
             'verifiedTrend' => $verifiedTrend['change'],
@@ -848,6 +853,60 @@ public function suspend(Request $request, User $user)
                 'Go to Dashboard'
             );
         }
+
+        return back()->with('success', 'Role updated.');
+    }
+
+    /**
+     * Superadmin-only: promote an existing admin to superadmin, or demote a superadmin
+     * back down to a regular admin. Unlike toggleRole() above (plain user <-> admin),
+     * this never touches a 'user' role directly — someone has to already be an admin
+     * before they can be trusted with superadmin.
+     */
+    public function toggleSuperAdmin(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => "You can't change your own role."]);
+        }
+        if ($user->role === 'user') {
+            return back()->withErrors(['error' => 'Only admins can be promoted to superadmin.']);
+        }
+
+        $newRole = $user->isSuperAdmin() ? 'admin' : 'superadmin';
+        $user->update(['role' => $newRole, 'role_changed_at' => now()]);
+        AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
+
+        $message = $newRole === 'superadmin'
+            ? "Promoted to superadmin\nYou were granted superadmin access on Synkro."
+            : "Demoted to admin\nYour superadmin access on Synkro was removed. You're still an admin.";
+
+        if (NotificationPreferences::wantsType($user, 'admin_status_changed')) {
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'admin_status_changed',
+                'message' => $message,
+                'url' => route('admin.dashboard', [], false),
+            ]);
+
+            try {
+                broadcast(new AdminStatusChanged($user->id, $newRole, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        NotificationMailer::send(
+            $user,
+            $newRole === 'superadmin' ? 'account.admin_granted' : 'account.admin_revoked',
+            $newRole === 'superadmin' ? 'You were granted superadmin access' : 'Your superadmin access was removed',
+            [
+                $newRole === 'superadmin'
+                    ? 'You were granted superadmin access on Synkro.'
+                    : "Your superadmin access on Synkro was removed. You're still an admin.",
+            ],
+            url(route('admin.dashboard', [], false)),
+            'Go to Admin Dashboard'
+        );
 
         return back()->with('success', 'Role updated.');
     }

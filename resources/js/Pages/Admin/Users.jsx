@@ -31,6 +31,7 @@ const statIcons = {
     suspended: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728" /></svg>,
     deleted: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
     admins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    superadmins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" /></svg>,
     verified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" /></svg>,
     unverified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     newThisMonth: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>,
@@ -94,7 +95,7 @@ function StatusBadge({ user }) {
     );
 }
 
-function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onResetPassword, onSuspend, onLiftSuspension, onEdit, onDelete }) {
+function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onToggleSuperAdmin, onResetPassword, onSuspend, onLiftSuspension, onEdit, onDelete }) {
     const [open, setOpen] = useState(false);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const btnRef = useRef(null);
@@ -180,6 +181,15 @@ function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onResetPass
                             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
                         >
                             {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
+                        </button>
+                    )}
+                    {isSuperAdmin && (user.role === 'admin' || isTargetSuperAdmin) && (
+                        <button
+                            onClick={() => { setOpen(false); onToggleSuperAdmin(user); }}
+                            disabled={disabled}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                        >
+                            {isTargetSuperAdmin ? 'Demote to Admin' : 'Promote to Superadmin'}
                         </button>
                     )}
                     {isSuperAdmin && !isTargetSuperAdmin && (
@@ -300,6 +310,13 @@ export default function Users({ users, stats, filters }) {
         router.patch(route('admin.users.toggle-role', user.id), {}, { preserveScroll: true });
     };
 
+    const toggleSuperAdmin = async (user) => {
+        const isTargetSuperAdmin = user.role === 'superadmin';
+        const action = isTargetSuperAdmin ? 'demote to a regular admin' : 'promote to superadmin';
+        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: isTargetSuperAdmin ? 'Demote to Admin?' : 'Promote to Superadmin?' }))) return;
+        router.patch(route('admin.users.toggle-superadmin', user.id), {}, { preserveScroll: true });
+    };
+
     const liftSuspension = (user) => setLiftTarget(user);
 
     const resetPassword = async (user) => {
@@ -340,6 +357,7 @@ export default function Users({ users, stats, filters }) {
                         <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} pct={stats.suspendedTrend} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
                         <StatCard label="Deleted" value={stats.deleted} sub={`${stats.deletedRatio}% of all users`} accentColor="text-rose-600 dark:text-rose-400" icon={statIcons.deleted} />
                         <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} pct={stats.adminsTrend} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
+                        <StatCard label="Superadmins" value={stats.superadmins} sub={`${stats.superadminsRatio}% of all users`} pct={stats.superadminsTrend} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.superadmins} />
                         <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} pct={stats.verifiedTrend} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
                         <StatCard label="Unverified" value={stats.unverified} sub={`${stats.unverifiedRatio}% of all users`} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.unverified} />
                         <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New signups this month" icon={statIcons.newThisMonth} />
@@ -508,6 +526,7 @@ export default function Users({ users, stats, filters }) {
                                                     isSelf={isSelf}
                                                     isSuperAdmin={isSuperAdmin}
                                                     onToggleRole={toggleRole}
+                                                    onToggleSuperAdmin={toggleSuperAdmin}
                                                     onResetPassword={resetPassword}
                                                     onSuspend={setSuspendTarget}
                                                     onLiftSuspension={liftSuspension}

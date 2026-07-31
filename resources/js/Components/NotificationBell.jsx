@@ -137,8 +137,10 @@ export default function NotificationBell() {
             } else if (payload.type === 'admin_status_changed') {
                 message = payload.new_role === 'admin'
                     ? 'Promoted to admin\nYou were granted administrator access on Synkro.'
-                    : 'Removed from admin\nYour administrator access on Synkro was removed.';
-                url = payload.new_role === 'admin' ? '/admin' : '/dashboard';
+                    : payload.new_role === 'superadmin'
+                        ? 'Promoted to superadmin\nYou were granted superadmin access on Synkro.'
+                        : 'Removed from admin\nYour administrator access on Synkro was removed.';
+                url = payload.new_role === 'admin' || payload.new_role === 'superadmin' ? '/admin' : '/dashboard';
             } else if (payload.type === 'ticket_created') {
                 message = `New ticket submitted\n**${payload.submitter_name}** submitted a new ticket "**${payload.subject}**"`;
                 url = '/admin/feedbacks';
@@ -288,7 +290,7 @@ export default function NotificationBell() {
                                 { value: 'membership', label: 'Membership' },
                                 { value: 'replies', label: 'Replies' },
                                 { value: 'reminders', label: 'Reminders' },
-                                ...(auth.user.role === 'admin' ? [{ value: 'administration', label: 'Administration' }] : []),
+                                ...(auth.user.role === 'admin' || auth.user.role === 'superadmin' ? [{ value: 'administration', label: 'Administration' }] : []),
                             ]}
                         />
                     </div>

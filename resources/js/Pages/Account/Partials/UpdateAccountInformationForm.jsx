@@ -3,6 +3,8 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import SavedIndicator from '@/Components/SavedIndicator';
+import EmailValidityHint from '@/Components/EmailValidityHint';
+import { isValidEmail } from '@/utils/email';
 import { Link, useForm, usePage } from '@inertiajs/react';
 
 export default function UpdateAccountInformation({
@@ -12,7 +14,7 @@ export default function UpdateAccountInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } =
+    const { data, setData, patch, errors, setError, processing, recentlySuccessful } =
         useForm({
             name: user.name,
             email: user.email,
@@ -20,6 +22,11 @@ export default function UpdateAccountInformation({
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!isValidEmail(data.email)) {
+            setError('email', 'Please enter a valid email address.');
+            return;
+        }
 
         patch(route('account.update'));
     };
@@ -66,6 +73,7 @@ export default function UpdateAccountInformation({
                         autoComplete="username"
                     />
 
+                    <EmailValidityHint value={data.email} onChange={(value) => setData('email', value)} />
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 

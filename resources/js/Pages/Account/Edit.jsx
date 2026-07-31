@@ -124,9 +124,9 @@ function ProfileHeader({ user }) {
                 </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                {user.role === 'admin' && (
+                {(user.role === 'admin' || user.role === 'superadmin') && (
                     <span className="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                        Admin
+                        {user.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                     </span>
                 )}
                 {user.email_verified_at ? (
