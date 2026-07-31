@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import Modal from '@/Components/Modal';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import {
     primeTrustedHosts,
@@ -124,6 +125,29 @@ const THEME_OPTIONS = [
         ),
     },
 ];
+
+// Title + description shown in the modal's header bar for whichever section is active.
+const SECTION_META = {
+    appearance: { title: 'Appearance', description: 'Choose how Synkro looks on this device' },
+    'trusted-sites': { title: 'Trusted Sites', description: 'Manage links you\'ve told Synkro to trust' },
+    notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
+};
+
+function CloseIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    );
+}
+
+function LogOutIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+    );
+}
 
 function Toggle({ enabled, onClick }) {
     return (
@@ -265,42 +289,23 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
     const [trustedHosts, setTrustedHosts] = useState(trustedLinkHosts ?? []);
     const [activeSection, setActiveSection] = useState(settingsNavItems[0].id);
 
-    // Highlights whichever section is currently in view in the nav (both the sticky desktop
-    // sidebar and the horizontal mobile pill bar), so it's clear where you are on a page this
-    // long instead of the nav just being a set of static jump links. Picks the entry closest to
-    // the top of the viewport among those currently intersecting, which reads better than a
-    // single fixed rootMargin band when sections vary a lot in height (Email Notifications is
-    // much taller than Appearance).
-    useEffect(() => {
-        const sections = settingsNavItems
-            .map((s) => document.getElementById(s.id))
-            .filter(Boolean);
-        if (sections.length === 0) return;
-
-        const visible = new Map();
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        visible.set(entry.target.id, entry.boundingClientRect.top);
-                    } else {
-                        visible.delete(entry.target.id);
-                    }
-                });
-                if (visible.size > 0) {
-                    const topMost = [...visible.entries()].sort((a, b) => a[1] - b[1])[0][0];
-                    setActiveSection(topMost);
-                }
-            },
-            { rootMargin: '-100px 0px -70% 0px', threshold: 0 }
-        );
-        sections.forEach((el) => observer.observe(el));
-        return () => observer.disconnect();
-    }, []);
+    // activeSection now drives which single settings panel is shown (tab switching),
+    // not a scroll position — set directly by clicking a sidebar/pill item below.
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);
         setThemeState(value);
+    };
+
+    // Settings opens as a modal over whatever page it was launched from (the
+    // account dropdown works everywhere), so closing it should return there —
+    // falling back to the dashboard only if there's nowhere to go back to.
+    const closeSettings = () => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            router.visit(route('dashboard'));
+        }
     };
 
     // Trusted sites are stored on the account (server-side), not the browser,
@@ -374,74 +379,105 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
     const notificationSettingsRecentlySuccessful = (emailForm.recentlySuccessful || notificationForm.recentlySuccessful) && !notificationSettingsHasChanges;
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Settings</h2>}>
+        <AuthenticatedLayout>
             <Head title="Settings" />
             {ConfirmDialog}
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <p className="mb-6 px-4 text-sm text-gray-500 dark:text-gray-400 sm:px-0">
-                        Manage your appearance, notifications, and trusted sites.
-                    </p>
 
-                    {/* Mobile section nav - the sticky sidebar below is desktop-only (lg:), so this
-                        horizontal pill bar is the only way to jump between sections on small screens. */}
-                    <nav className="-mx-4 mb-6 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:hidden">
-                        <div className="flex w-max gap-2">
-                            {settingsNavItems.map((s) => (
-                                <a
-                                    key={s.id}
-                                    href={`#${s.id}`}
-                                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
-                                        activeSection === s.id
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-white text-gray-600 shadow-sm hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                                >
-                                    <span className="h-4 w-4 shrink-0">{s.icon}</span>
-                                    {s.label}
-                                </a>
-                            ))}
-                        </div>
+            {/* Settings opens as a modal (like every other dialog in the app),
+                not a page you scroll through. */}
+            <Modal show onClose={closeSettings} maxWidth="4xl" overlayClassName="bg-gray-900/60 backdrop-blur-sm" panelClassName="bg-white dark:bg-gray-900">
+                <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
+
+                    {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
+                        horizontal pill bar is the only way to switch sections on small screens. */}
+                    <nav className="flex shrink-0 gap-2 overflow-x-auto border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                        {settingsNavItems.map((s) => (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => setActiveSection(s.id)}
+                                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
+                                    activeSection === s.id
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                                <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                {s.label}
+                            </button>
+                        ))}
                     </nav>
 
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+                    <div className="flex min-h-0 flex-1">
 
                         {/* Section nav */}
-                        <nav className="hidden lg:block">
-                            <div className="sticky top-24 space-y-1">
+                        <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                            <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                Settings
+                            </p>
+                            <div className="space-y-0.5">
                                 {settingsNavItems.map((s) => (
-                                    <a
+                                    <button
                                         key={s.id}
-                                        href={`#${s.id}`}
-                                        className={`flex items-center gap-2 rounded-md border-l-2 px-3 py-2 text-sm transition ${
+                                        type="button"
+                                        onClick={() => setActiveSection(s.id)}
+                                        className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm transition ${
                                             activeSection === s.id
-                                                ? 'border-indigo-600 bg-indigo-50 font-medium text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300'
-                                                : 'border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                                                ? 'bg-white font-medium text-indigo-700 shadow-sm dark:bg-gray-800 dark:text-indigo-300'
+                                                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60'
                                         }`}
                                     >
                                         <span className="h-4 w-4 shrink-0">{s.icon}</span>
                                         {s.label}
-                                    </a>
+                                    </button>
                                 ))}
+                            </div>
+
+                            <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                                <Link
+                                    href={route('account.edit')}
+                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                                >
+                                    <span className="h-4 w-4 shrink-0">{categoryIcons.account}</span>
+                                    Account
+                                </Link>
+                                <Link
+                                    href={route('logout')}
+                                    method="post"
+                                    as="button"
+                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                >
+                                    <LogOutIcon className="h-4 w-4 shrink-0" />
+                                    Log Out
+                                </Link>
                             </div>
                         </nav>
 
-                        {/* Sections */}
-                        <div className="space-y-6">
+                        {/* Active section */}
+                        <div className="flex min-h-0 flex-1 flex-col">
+                            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                        {SECTION_META[activeSection]?.title}
+                                    </h2>
+                                    <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+                                        {SECTION_META[activeSection]?.description}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={closeSettings}
+                                    className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                                >
+                                    <CloseIcon className="h-5 w-5" />
+                                    <span className="sr-only">Close settings</span>
+                                </button>
+                            </div>
 
-                    {/* Appearance */}
-                    <div id="appearance" className="scroll-mt-24 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-                        <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h3>
-                                <p className="text-xs text-gray-400 dark:text-gray-500">Choose how Synkro looks on this device</p>
-                            </div>
-                        </div>
+                            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+
+                    {activeSection === 'appearance' && (
+                    <div>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             {THEME_OPTIONS.map(({ id, label, icon, swatch }) => (
                                 <button
@@ -472,23 +508,16 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             ))}
                         </div>
                     </div>
+                    )}
 
-                    {/* Trusted Sites */}
-                    <div id="trusted-sites" className="scroll-mt-24 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                    {activeSection === 'trusted-sites' && (
+                    <div>
                         <div className="mb-4 flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                    <LinkIcon className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Trusted Sites</h3>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                                        {trustedHosts.length === 0
-                                            ? 'Sites you\'ve told Synkro to trust skip the "Leaving Synkro" confirmation on external links.'
-                                            : `${trustedHosts.length} site${trustedHosts.length === 1 ? '' : 's'} skip the "Leaving Synkro" confirmation`}
-                                    </p>
-                                </div>
-                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {trustedHosts.length === 0
+                                    ? 'Sites you\'ve told Synkro to trust skip the "Leaving Synkro" confirmation on external links.'
+                                    : `${trustedHosts.length} site${trustedHosts.length === 1 ? '' : 's'} skip the "Leaving Synkro" confirmation.`}
+                            </p>
                             {trustedHosts.length > 0 && (
                                 <button
                                     type="button"
@@ -516,23 +545,18 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             </div>
                         )}
                     </div>
+                    )}
 
-                    {/* Notifications (email + in-app side by side, one row per event) */}
-                    <form id="notifications" onSubmit={submitNotificationSettings} className="scroll-mt-24 space-y-6">
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-                            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                Choose how you want to hear about activity on Synkro, by email and in your notification bell.
+                    {activeSection === 'notifications' && (
+                    <form onSubmit={submitNotificationSettings} className="space-y-6">
+                        <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+                            <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                                Not seeing our emails? Check your spam or junk folder; marking one as "Not spam" usually fixes it for future emails too.
+                                A dash under "In App" means that event only ever sends an email, with nothing to show in the bell.
                             </p>
-                            <div className="mt-3 flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
-                                <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-xs text-blue-700 dark:text-blue-300">
-                                    Not seeing our emails? Check your spam or junk folder; marking one as "Not spam" usually fixes it for future emails too.
-                                    A dash under "In App" means that event only ever sends an email, with nothing to show in the bell.
-                                </p>
-                            </div>
                         </div>
 
                         {Object.entries(emailCatalog).map(([groupKey, group]) => (
@@ -551,7 +575,7 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             />
                         ))}
 
-                        <div className="sticky bottom-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                        <div className="sticky bottom-0 -mx-6 -mb-6 flex items-center justify-between border-t border-gray-100 bg-white/95 px-6 py-4 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                 {notificationSettingsHasChanges ? 'You have unsaved changes' : notificationSettingsRecentlySuccessful ? 'All changes saved' : 'No changes yet'}
                             </span>
@@ -579,10 +603,13 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             </div>
                         </div>
                     </form>
+                    )}
+
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

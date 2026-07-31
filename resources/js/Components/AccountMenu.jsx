@@ -1,10 +1,11 @@
 import { Link } from '@inertiajs/react';
+import { useContext } from 'react';
 import Avatar from '@/Components/Avatar';
+import { DropDownContext } from '@/Components/Dropdown';
 
-// Quick-toggle theme options shown inline in the account menu. Mirrors the
-// first three choices on the full Settings > Appearance page (system, light,
-// dark); "black" is a step further and stays a Settings-only choice so this
-// row doesn't get crowded.
+// Quick-toggle theme options shown inline in the account menu. Mirrors all
+// four choices on the full Settings > Appearance page (system, light, dark,
+// black).
 const QUICK_THEME_OPTIONS = [
     {
         id: 'system',
@@ -30,6 +31,15 @@ const QUICK_THEME_OPTIONS = [
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'black',
+        label: 'Black',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m0-18a9 9 0 000 18 9 9 0 000-18z" />
             </svg>
         ),
     },
@@ -86,11 +96,23 @@ function MenuLink({ href, icon, children, onNavigate }) {
 }
 
 /**
- * Profile card used both in the desktop avatar dropdown and the mobile
- * hamburger panel: avatar + name + email up top, an inline quick-theme
- * toggle, then Account/Settings links and Log Out at the bottom.
+ * Profile card used inside the avatar dropdown on both desktop and mobile
+ * (same floating panel on both): avatar + name + email up top, an inline
+ * quick-theme toggle, then Account/Settings links and Log Out at the bottom.
  */
 export default function AccountMenu({ user, theme, onThemeChange, onNavigate }) {
+    // DropDownContext is only present when AccountMenu is rendered inside the
+    // shared Dropdown (desktop + mobile floating menu). The Content panel no
+    // longer closes on any click inside it (that used to swallow clicks on
+    // the theme buttons below), so real navigation/logout links close it
+    // explicitly here instead. onNavigate stays for any caller that isn't
+    // wrapped in a Dropdown and just wants a callback.
+    const dropdown = useContext(DropDownContext);
+    const closeMenu = () => {
+        dropdown?.setOpen(false);
+        onNavigate?.();
+    };
+
     return (
         <div className="w-full">
             <div className="flex items-center gap-3 px-4 py-4">
@@ -107,10 +129,10 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate }) 
             <div className="border-t border-gray-100 dark:border-gray-700" />
 
             <div className="py-1">
-                <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={onNavigate}>
+                <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
                     Account
                 </MenuLink>
-                <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={onNavigate}>
+                <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
                     Settings
                 </MenuLink>
             </div>
@@ -146,7 +168,7 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate }) 
                     href={route('logout')}
                     method="post"
                     as="button"
-                    onClick={onNavigate}
+                    onClick={closeMenu}
                     className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-start text-sm text-red-600 transition duration-150 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none dark:text-red-400 dark:hover:bg-red-950/40 dark:focus:bg-red-950/40"
                 >
                     <LogOutIcon className="h-5 w-5" />
