@@ -626,11 +626,10 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();
-    const [bulkTouched, setBulkTouched] = useState({ status: false, priority: false, assigned_to: false });
+    const [bulkAction, setBulkAction] = useState({status: '',priority: '',assigned_to: '',});
+    const [bulkTouched, setBulkTouched] = useState({status: false,priority: false,assigned_to: false,});
     const [bulkProcessing, setBulkProcessing] = useState(false);
-
-    const toggleTaskSelect = (taskId) => {
-        setSelectedTaskIds((prev) => (prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]));
+    const toggleTaskSelect = (taskId) => {setSelectedTaskIds((prev) => (prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]));
     };
 
     const clearSelection = () => setSelectedTaskIds([]);
