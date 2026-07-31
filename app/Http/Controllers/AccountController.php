@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AccountUpdateRequest;
 use App\Models\AccountActivityLog;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Events\AccountDeleted;
+use App\Events\EmailChanged;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,6 +89,21 @@ class AccountController extends Controller
                 'Your email address was updated',
                 ["Your Synkro account email is now **{$newEmail}**."]
             );
+
+            if (NotificationPreferences::wantsType($user, 'email_changed')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'email_changed',
+                    'message' => "Email address changed\nYour account email is now **{$newEmail}**.",
+                    'url' => route('account.edit', [], false),
+                ]);
+
+                try {
+                    broadcast(new EmailChanged($user->id, $newEmail, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
         }
 
         return Redirect::route('account.edit');
@@ -167,7 +184,7 @@ class AccountController extends Controller
                         $notification = \App\Models\UserNotification::create([
                             'user_id' => $recipient->id,
                             'type' => 'owner_account_deleted',
-                            'message' => "Owner account deleted\n**{$user->name}**, the owner of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by " . $graceEndsAt->format('M j, Y') . ', it and everything in it will be gone for good.',
+                            'message' => "Owner account deleted\n**{$user->name}**, the owner of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ', it and everything in it will be gone for good.',
                             'url' => route('projects.show', $project->id, false),
                         ]);
 
@@ -184,8 +201,8 @@ class AccountController extends Controller
                         "{$project->name}'s owner deleted their account",
                         [
                             "**{$user->name}**, the owner of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
-                            "The project stays exactly as it is for now. If they don't restore their account by " . $graceEndsAt->format('M j, Y') . ", the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
-                            'If they log back in and restore their account before that date, nothing changes and this notice can be ignored.',
+                            "The project stays exactly as it is for now. If they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ", the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
+                            'If they log back in and restore their account before then, nothing changes and this notice can be ignored.',
                         ],
                         route('projects.show', $project->id),
                         'View Project'
@@ -267,7 +284,7 @@ class AccountController extends Controller
             'Your account has been deleted',
             [
                 "Your Synkro account has been deleted and is no longer accessible.",
-                "It will be kept for {$graceDays} more day(s) (until " . $graceEndsAt->format('M j, Y') . ') in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
+                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
                 "After that, it will be permanently deleted and can't be recovered.",
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
@@ -400,6 +417,20 @@ class AccountController extends Controller
         AccountActivityLog::log('account_restored', [], $user->id);
 
         $user->sendAccountRestoredNotification();
+
+        // No broadcast here (unlike password/email changes above): the user
+        // isn't authenticated yet at this point - restore() runs entirely
+        // logged out, and they're about to be redirected to the login page.
+        // Nothing's listening on their private channel to receive it live;
+        // the row is enough for it to show up in the bell once they log in.
+        if (NotificationPreferences::wantsType($user, 'account_restored')) {
+            UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'account_restored',
+                'message' => 'Account restored\nYour Synkro account has been restored. Welcome back!',
+                'url' => route('dashboard', [], false),
+            ]);
+        }
 
         return Redirect::route('login')->with('status', 'Your account has been restored. You can log back in now.');
     }

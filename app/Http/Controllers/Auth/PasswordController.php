@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccountActivityLog;
+use App\Models\UserNotification;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPreferences;
+use App\Events\PasswordChanged;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -38,6 +41,21 @@ class PasswordController extends Controller
             'Your password was changed',
             ["Your Synkro account password was changed. If you didn't make this change, please contact support immediately."]
         );
+
+        if (NotificationPreferences::wantsType($user, 'password_changed')) {
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'password_changed',
+                'message' => "Password changed\nYour account password was changed. If this wasn't you, contact support immediately.",
+                'url' => route('account.edit', [], false),
+            ]);
+
+            try {
+                broadcast(new PasswordChanged($user->id, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return back();
     }

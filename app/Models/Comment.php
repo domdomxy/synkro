@@ -38,9 +38,15 @@ class Comment extends Model
         return $this->belongsTo(Task::class);
     }
 
+    // withTrashed() so a comment from a user who's mid-deletion (still
+    // soft-deleted, grace period not yet expired) keeps resolving to their
+    // real name/avatar instead of coming back null - the account isn't
+    // actually gone yet. Once the grace period ends and the account is
+    // force-deleted, user_id itself goes null (see the 2026_07_31 comments
+    // migration) and the frontend falls back to "Deleted user".
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function parent(): BelongsTo

@@ -8,6 +8,11 @@ use App\Models\AdminLog;
 use App\Models\Feedback;
 use App\Models\FeedbackCategory;
 use App\Models\FeedbackResponse;
+use App\Models\User;
+use App\Models\UserNotification;
+use App\Support\NotificationPreferences;
+use App\Events\TicketResponded;
+use App\Events\TicketStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -98,7 +103,51 @@ class FeedbackAdminController extends Controller
             ],
         );
 
+        $this->notifySubmitterInApp($feedback, $statusChanged, $validated['status'] ?? null);
+
         return back()->with('success', 'Ticket updated.');
+    }
+
+    /**
+     * Feedback submitters are guests by default (just an email address on the
+     * ticket), so most tickets have no account to notify in-app - only email
+     * above applies. But if that email happens to belong to a registered
+     * user, they can also get a bell notification like any other event,
+     * gated by their own notification preferences (unlike the email above,
+     * which always sends since there's no preference to check for a guest).
+     */
+    private function notifySubmitterInApp(Feedback $feedback, bool $statusChanged, ?string $status): void
+    {
+        $user = User::where('email', $feedback->email)->first();
+
+        if (! $user) {
+            return;
+        }
+
+        $type = $statusChanged ? 'ticket_status_changed' : 'ticket_responded';
+
+        if (! NotificationPreferences::wantsType($user, $type)) {
+            return;
+        }
+
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => $type,
+            'message' => $statusChanged
+                ? "Ticket updated\nYour ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id}) status changed to **".ucfirst($status).'**'
+                : "Support replied\nSupport responded to your ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id})",
+            'url' => route('feedback.page', [], false),
+        ]);
+
+        try {
+            broadcast(
+                $statusChanged
+                    ? new TicketStatusChanged($user->id, $feedback->tracking_id, $feedback->subject, $status, $notification->id)
+                    : new TicketResponded($user->id, $feedback->tracking_id, $feedback->subject, $notification->id)
+            )->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

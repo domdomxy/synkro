@@ -181,6 +181,31 @@ export const typeStyles = {
         text: 'text-amber-600 dark:text-amber-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />,
     },
+    password_changed: {
+        bg: 'bg-slate-100 dark:bg-slate-700',
+        text: 'text-slate-600 dark:text-slate-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />,
+    },
+    email_changed: {
+        bg: 'bg-slate-100 dark:bg-slate-700',
+        text: 'text-slate-600 dark:text-slate-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />,
+    },
+    account_restored: {
+        bg: 'bg-green-100 dark:bg-green-900',
+        text: 'text-green-600 dark:text-green-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />,
+    },
+    ticket_status_changed: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />,
+    },
+    ticket_responded: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900',
+        text: 'text-indigo-600 dark:text-indigo-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
+    },
 };
 
 export function relativeTime(dateString) {

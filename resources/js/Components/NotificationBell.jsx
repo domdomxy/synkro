@@ -52,6 +52,10 @@ export default function NotificationBell() {
             '.admin.status-changed',
             '.ticket.created',
             '.appeal.created',
+            '.password.changed',
+            '.email.changed',
+            '.ticket.status-changed',
+            '.ticket.responded',
         ],
         (payload) => {
             let message;
@@ -63,7 +67,7 @@ export default function NotificationBell() {
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'owner_account_deleted') {
                 const restoreBy = new Date(payload.restore_by).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                message = `Owner account deleted\n**${payload.owner_name}**, the owner of "**${payload.project_name}**", deleted their account. Restorable until ${restoreBy}.`;
+                message = `Owner account deleted\n**${payload.owner_name}**, the owner of "**${payload.project_name}**", deleted their account. Restorable until the end of ${restoreBy}.`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_invitation') {
                 message = `Project invitation\n**${payload.inviter_name}** invited you to join "**${payload.project_name}**" as ${payload.role}`;
@@ -141,6 +145,18 @@ export default function NotificationBell() {
             } else if (payload.type === 'appeal_created') {
                 message = `New appeal submitted\n**${payload.user_name}** submitted a suspension appeal`;
                 url = '/admin/appeals';
+            } else if (payload.type === 'password_changed') {
+                message = "Password changed\nYour account password was changed. If this wasn't you, contact support immediately.";
+                url = '/account';
+            } else if (payload.type === 'email_changed') {
+                message = `Email address changed\nYour account email is now **${payload.new_email}**.`;
+                url = '/account';
+            } else if (payload.type === 'ticket_status_changed') {
+                message = `Ticket updated\nYour ticket "**${payload.subject}**" (${payload.tracking_id}) status changed to **${payload.status.charAt(0).toUpperCase() + payload.status.slice(1)}**`;
+                url = '/feedback';
+            } else if (payload.type === 'ticket_responded') {
+                message = `Support replied\nSupport responded to your ticket "**${payload.subject}**" (${payload.tracking_id})`;
+                url = '/feedback';
             } else if (payload.decision) {
                 const decisionTitle = payload.decision === 'approve' ? 'Task approved' : 'Changes requested';
                 message = `${decisionTitle}\n"**${payload.title}**" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;

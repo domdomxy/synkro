@@ -518,7 +518,7 @@ function CommentEntry({
                                     // whole row (and the page, on a narrow viewport) wider than
                                     // intended instead of actually clipping.
                                     <span className="min-w-0 truncate">
-                                        Replying to <span className="font-medium">{quoteParent.user.name}</span>: {truncate(quoteParent.body, 60)}
+                                        Replying to <span className="font-medium">{quoteParent.user?.name ?? 'Deleted user'}</span>: {truncate(quoteParent.body, 60)}
                                     </span>
                                 ) : (
                                     <span className="min-w-0 truncate italic">Replying to a deleted comment</span>
@@ -546,7 +546,7 @@ function CommentEntry({
                         }`}>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                    {comment.user.name}
+                                    {comment.user?.name ?? 'Deleted user'}
                                 </span>
                                 {authorRole && (
                                     <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize ${roleStyles[authorRole] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
@@ -576,7 +576,7 @@ function CommentEntry({
                                 {timeAgo(comment.created_at)}
                                 {comment.edited_at && ' · edited'}
                             </span>
-                            {comment.user.id === currentUserId && (
+                            {comment.user?.id === currentUserId && (
                                 <>
                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                     <button
@@ -587,7 +587,7 @@ function CommentEntry({
                                     </button>
                                 </>
                             )}
-                            {(comment.user.id === currentUserId || canManage) && (
+                            {(comment.user?.id === currentUserId || canManage) && (
                                 <>
                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                     <button
@@ -650,7 +650,7 @@ function CommentThread({
     // deleted (it lost its actual reply target); this only ever applies to
     // the root here, since a root promoted this way is still its own root.
     const quoteParent = comment.parent_id ? (byId.get(comment.parent_id) ?? null) : undefined;
-    const authorRole = members.find((m) => m.id === comment.user.id)?.pivot?.role ?? null;
+    const authorRole = members.find((m) => m.id === comment.user?.id)?.pivot?.role ?? null;
     const toggle = () => onToggleCollapse(comment.id);
 
     return (
@@ -718,7 +718,7 @@ function CommentThread({
                                             currentUserId={currentUserId}
                                             canManage={canManage}
                                             members={members}
-                                            authorRole={members.find((m) => m.id === reply.user.id)?.pivot?.role ?? null}
+                                            authorRole={members.find((m) => m.id === reply.user?.id)?.pivot?.role ?? null}
                                             onSaveEdit={onSaveEdit}
                                             onStartEdit={onStartEdit}
                                             onCancelEdit={onCancelEdit}
@@ -1078,7 +1078,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 {replyingTo && (
                     <div className="mb-1.5 flex items-center gap-2 text-xs">
                         <span className="min-w-0 flex-1 truncate text-gray-400 dark:text-gray-500">
-                            Replying to <span className="font-medium text-gray-600 dark:text-gray-300">{replyingTo.user.name}</span>
+                            Replying to <span className="font-medium text-gray-600 dark:text-gray-300">{replyingTo.user?.name ?? 'Deleted user'}</span>
                         </span>
                         <button
                             type="button"
@@ -1102,7 +1102,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         }
                         if (e.key === 'Escape' && replyingTo) cancelReply();
                     }}
-                    placeholder={replyingTo ? `Reply to ${replyingTo.user.name}...` : 'Write a comment... (@ to mention someone)'}
+                    placeholder={replyingTo ? `Reply to ${replyingTo.user?.name ?? 'Deleted user'}...` : 'Write a comment... (@ to mention someone)'}
                     title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
                     className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 />

@@ -44,6 +44,10 @@ class NotificationPreferences
             'project.deletion_requested' => 'A project you belong to has a pending deletion request',
             'project.deleted' => 'A project you belonged to was deleted',
             'reminders.due' => 'A reminder you set is due',
+            'account.password_changed' => 'Your password was changed',
+            'account.email_changed' => 'Your email address was changed',
+            'tickets.responded' => 'Support responded to your ticket',
+            'tickets.status_changed' => 'Your ticket status changed (e.g. closed)',
         ];
 
         if ($user?->role === 'admin') {
@@ -99,6 +103,15 @@ class NotificationPreferences
             'feedback_replied' => 'admin.ticket_reply',
             'ticket_created' => 'admin.ticket_created',
             'appeal_created' => 'admin.appeal_created',
+            'password_changed' => 'account.password_changed',
+            'email_changed' => 'account.email_changed',
+            'ticket_responded' => 'tickets.responded',
+            'ticket_status_changed' => 'tickets.status_changed',
+            // 'account_restored' has no toggle of its own, same reasoning as
+            // 'admin_status_changed' above: its email counterpart
+            // (account.restored) is in EmailPreferences::alwaysSend() since
+            // it's security-relevant, so this is deliberately left unmapped
+            // and falls through to wantsType()'s "always true" branch.
             // 'admin_status_changed' has no toggle of its own (there's no
             // EmailPreferences equivalent either - the accompanying emails,
             // account.admin_granted/admin_revoked, always send regardless of
