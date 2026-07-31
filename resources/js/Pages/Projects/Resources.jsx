@@ -5,7 +5,7 @@ import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
 import useConfirm from '@/hooks/useConfirm';
 import { Head, useForm, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // Matches every other dialog's overlay in the app exactly (see ConfirmDialog,
 // Show.jsx, Index.jsx, etc.) - intentionally no backdrop-blur, so this dialog
@@ -535,7 +535,9 @@ function EditResourceModal({ resource, onClose }) {
 /** Owner/manager-only actions (edit, delete) tucked behind a kebab menu; download/open stays visible to everyone. */
 function ResourceMenu({ onEdit, onDelete }) {
     const [open, setOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
     const ref = useRef(null);
+    const menuRef = useRef(null);
 
     useEffect(() => {
         const handler = (e) => {
@@ -544,6 +546,18 @@ function ResourceMenu({ onEdit, onDelete }) {
         document.addEventListener('click', handler);
         return () => document.removeEventListener('click', handler);
     }, []);
+
+    // Flip the menu to open upward instead of downward when there isn't
+    // enough room below the button (e.g. the last resource in a long list,
+    // near the bottom of the viewport).
+    useLayoutEffect(() => {
+        if (!open || !ref.current || !menuRef.current) return;
+        const buttonRect = ref.current.getBoundingClientRect();
+        const menuHeight = menuRef.current.offsetHeight;
+        const spaceBelow = window.innerHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        setOpenUpward(spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow);
+    }, [open]);
 
     return (
         <div className="relative" ref={ref}>
@@ -556,7 +570,10 @@ function ResourceMenu({ onEdit, onDelete }) {
                 <KebabIcon className="h-4 w-4" />
             </button>
             {open && (
-                <div className="absolute right-0 z-20 mt-1 w-36 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                <div
+                    ref={menuRef}
+                    className={`absolute right-0 z-20 w-36 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+                >
                     <button
                         type="button"
                         onClick={() => { setOpen(false); onEdit(); }}

@@ -13,6 +13,7 @@ class FeedbackPageController extends Controller
             'flash' => session()->only(['feedback_tracking_id']),
             'categories' => FeedbackCategory::orderBy('sort_order')->get(['key', 'label', 'icon']),
             'trackingId' => request()->query('tracking'),
+            'from' => request()->query('from'),
         ]);
     }
 }

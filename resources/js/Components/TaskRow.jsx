@@ -19,7 +19,7 @@ import LogEntryRow from '@/Components/LogEntryRow';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
 import { router, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const statusStyles = {
     todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -292,7 +292,9 @@ function DeliverableItem({ d, canRemove, onRemove }) {
 
 function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted, isDone, onEdit, onDelete, onPin, onToggleMute, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
     const ref = useRef(null);
+    const menuRef = useRef(null);
 
     useEffect(() => {
         const handler = (e) => {
@@ -302,6 +304,19 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
         return () => document.removeEventListener('click', handler);
     }, []);
 
+    // Flip the menu to open upward instead of downward when there isn't
+    // enough room below the button (e.g. the last few tasks in a long list,
+    // near the bottom of the viewport) - otherwise it'd render partly
+    // offscreen or get clipped by a scroll container.
+    useLayoutEffect(() => {
+        if (!open || !ref.current || !menuRef.current) return;
+        const buttonRect = ref.current.getBoundingClientRect();
+        const menuHeight = menuRef.current.offsetHeight;
+        const spaceBelow = window.innerHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        setOpenUpward(spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow);
+    }, [open]);
+
     return (
         <div className="relative" ref={ref}>
             <button onClick={() => setOpen((v) => !v)} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
@@ -310,7 +325,10 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
                 </svg>
             </button>
             {open && (
-                <div className="absolute right-0 z-20 mt-1 w-44 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                <div
+                    ref={menuRef}
+                    className={`absolute right-0 z-20 w-44 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+                >
                     <button onClick={() => { setOpen(false); onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
                         {isPinned ? 'Unpin task' : 'Pin task'}

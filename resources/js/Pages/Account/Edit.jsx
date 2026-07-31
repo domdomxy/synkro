@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/Modal';
+import SectionSelect from '@/Components/SectionSelect';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Avatar from '@/Components/Avatar';
@@ -135,22 +136,14 @@ export default function Edit({ mustVerifyEmail, status, deletionRequestedAt, del
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. */}
                     <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
-                        <select
+                        <SectionSelect
+                            groups={[
+                                { label: 'Account', items: accountNavItems },
+                                { label: 'Danger Zone', items: dangerNavItems, danger: true },
+                            ]}
                             value={activeSection}
-                            onChange={(e) => setActiveSection(e.target.value)}
-                            className="block w-full rounded-md border-gray-300 text-sm font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        >
-                            <optgroup label="Account">
-                                {accountNavItems.map((s) => (
-                                    <option key={s.id} value={s.id}>{s.label}</option>
-                                ))}
-                            </optgroup>
-                            <optgroup label="Danger Zone">
-                                {dangerNavItems.map((s) => (
-                                    <option key={s.id} value={s.id}>{s.label}</option>
-                                ))}
-                            </optgroup>
-                        </select>
+                            onChange={setActiveSection}
+                        />
                     </div>
 
                     <div className="flex min-h-0 flex-1">
