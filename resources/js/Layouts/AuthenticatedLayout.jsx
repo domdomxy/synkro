@@ -1,10 +1,12 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
+import AccountMenu from '@/Components/AccountMenu';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import NotificationBell from '@/Components/NotificationBell';
 import FlashMessages from '@/Components/FlashMessages';
+import { getStoredTheme, setStoredTheme } from '@/theme';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
@@ -24,6 +26,12 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     const { adminAlerts, testing } = usePage().props;
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
     const [pendingTestCount, setPendingTestCount] = useState(testing?.pendingCount ?? 0);
+    const [theme, setThemeState] = useState(getStoredTheme());
+
+    const handleThemeChange = (value) => {
+        setStoredTheme(value);
+        setThemeState(value);
+    };
 
     useEffect(() => {
         setHasPendingAlert(adminAlerts?.hasPending ?? false);
@@ -135,18 +143,8 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                             </span>
                                         </Dropdown.Trigger>
 
-                                        <Dropdown.Content>
-                                            <Dropdown.Link href={route('account.edit')}>Account</Dropdown.Link>
-                                            <Dropdown.Link href={route('settings.edit')}>Settings</Dropdown.Link>
-
-                                            <Dropdown.Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
-                                                className="!text-red-600 hover:!bg-red-50 hover:!text-red-700 focus:!bg-red-50 focus:!text-red-700 dark:!text-red-400 dark:hover:!bg-red-950/40 dark:hover:!text-red-300 dark:focus:!bg-red-950/40 dark:focus:!text-red-300"
-                                            >
-                                                Log Out
-                                            </Dropdown.Link>
+                                        <Dropdown.Content width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
+                                            <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} />
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
@@ -220,28 +218,13 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                         )}
                     </div>
 
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="flex items-center gap-3 px-4">
-                            <Avatar user={user} size="h-9 w-9" />
-                            <div>
-                                <div className="text-base font-medium text-gray-800 dark:text-gray-200">{user.name}</div>
-                                <div className="text-sm font-medium text-gray-500">{user.email}</div>
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('account.edit')}>Account</ResponsiveNavLink>
-                            <ResponsiveNavLink href={route('settings.edit')}>Settings</ResponsiveNavLink>
-
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                                className="!border-transparent !text-red-600 hover:!border-red-300 hover:!bg-red-50 hover:!text-red-700 focus:!border-red-300 focus:!bg-red-50 focus:!text-red-700 dark:!text-red-400 dark:hover:!border-red-800 dark:hover:!bg-red-950/40 dark:hover:!text-red-300 dark:focus:!border-red-800 dark:focus:!bg-red-950/40 dark:focus:!text-red-300"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
+                    <div className="border-t border-gray-200 pt-2 dark:border-gray-600">
+                        <AccountMenu
+                            user={user}
+                            theme={theme}
+                            onThemeChange={handleThemeChange}
+                            onNavigate={() => setShowingNavigationDropdown(false)}
+                        />
                     </div>
                 </div>
             </nav>
