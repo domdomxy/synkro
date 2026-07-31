@@ -3,7 +3,6 @@ import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
 import AccountMenu from '@/Components/AccountMenu';
 import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import NotificationBell from '@/Components/NotificationBell';
 import FlashMessages from '@/Components/FlashMessages';
 import { getStoredTheme, setStoredTheme } from '@/theme';
@@ -22,7 +21,6 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     // superadmin loses access to admin-only nav/UI just because their role
     // string is 'superadmin' rather than literally 'admin'.
     const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { adminAlerts, testing } = usePage().props;
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
     const [pendingTestCount, setPendingTestCount] = useState(testing?.pendingCount ?? 0);
@@ -69,6 +67,16 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
         [],
         isAdminRole ? 'private' : 'public'
     );
+
+    // Previously shown behind a separate hamburger button on mobile; now rendered
+    // inside the account dropdown, which opens from tapping the avatar instead.
+    const mobileNavLinks = [
+        { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard') },
+        { href: route('projects.index'), label: 'Projects', active: route().current('projects.*') },
+        { href: route('tasks.index'), label: 'Tasks', active: route().current('tasks.index') },
+        ...(testing ? [{ href: route('testing.index'), label: 'Testing', active: route().current('testing.index'), badge: pendingTestCount > 0 ? pendingTestCount : undefined }] : []),
+        ...(isAdminRole ? [{ href: route('admin.dashboard'), label: 'Admin', active: route().current('admin.*'), badge: hasPendingAlert ? 'dot' : undefined }] : []),
+    ];
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -150,84 +158,31 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                 </div>
                             </div>
 
-                            <div className="relative flex items-center gap-1 sm:hidden">
+                            <div className="relative -me-2 flex items-center sm:hidden">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button type="button" className="flex items-center rounded-full">
+                                        <button type="button" className="flex items-center rounded-full p-2">
                                             <Avatar user={user} size="h-8 w-8" />
                                         </button>
                                     </Dropdown.Trigger>
 
-                                    <Dropdown.Content width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
-                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} />
+                                    {/* align="right" anchors the panel's right edge to the trigger's
+                                        right edge (end-0); the negative margin on the wrapper above
+                                        pulls the trigger itself flush with the screen edge, so the
+                                        panel opens right at the edge instead of leaving a gap where
+                                        the hamburger used to sit. */}
+                                    <Dropdown.Content align="right" width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
+                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} navLinks={mobileNavLinks} />
                                     </Dropdown.Content>
                                 </Dropdown>
-
-                                <button
-                                    onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
-                                    className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
-                                >
-                                    <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                        <path
-                                            className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'}
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M4 6h16M4 12h16M4 18h16"
-                                        />
-                                        <path
-                                            className={showingNavigationDropdown ? 'inline-flex' : 'hidden'}
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
-                                </button>
-                                {/* Testing/Admin badges live inside the collapsed menu, so surface a
-                                    plain dot on the trigger itself while it's closed - otherwise
-                                    there'd be no hint anything needs attention until it's opened. */}
-                                {!showingNavigationDropdown && (hasPendingAlert || pendingTestCount > 0) && (
+                                {/* Testing/Admin badges live inside the menu, so surface a plain dot
+                                    on the trigger itself - otherwise there'd be no hint anything
+                                    needs attention until it's opened. */}
+                                {(hasPendingAlert || pendingTestCount > 0) && (
                                     <span className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
-                            Dashboard
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('projects.index')} active={route().current('projects.*')}>
-                            Projects
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('tasks.index')} active={route().current('tasks.index')}>
-                            Tasks
-                        </ResponsiveNavLink>
-                        {testing && (
-                            <div className="relative">
-                                <ResponsiveNavLink href={route('testing.index')} active={route().current('testing.index')}>
-                                    Testing
-                                </ResponsiveNavLink>
-                                {pendingTestCount > 0 && (
-                                    <span className="pointer-events-none absolute right-4 top-1/2 flex h-4 min-w-4 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
-                                        {pendingTestCount > 99 ? '99+' : pendingTestCount}
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                        {isAdminRole && (
-                            <div className="relative">
-                                <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.*')}>
-                                    Admin
-                                </ResponsiveNavLink>
-                                {hasPendingAlert && (
-                                    <span className="pointer-events-none absolute right-4 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-500" />
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             </nav>

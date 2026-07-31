@@ -77,6 +77,15 @@ const settingsNavItems = [
             </svg>
         ),
     },
+    {
+        id: 'support',
+        label: 'Support',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+    },
 ];
 
 // Appearance picker options. `swatch` gives each card a small preview of that theme's background
@@ -131,6 +140,7 @@ const SECTION_META = {
     appearance: { title: 'Appearance', description: 'Choose how Synkro looks on this device' },
     'trusted-sites': { title: 'Trusted Sites', description: 'Manage links you\'ve told Synkro to trust' },
     notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
+    support: { title: 'Support', description: 'Get help, report a bug, or send us feedback' },
 };
 
 function CloseIcon({ className }) {
@@ -385,28 +395,24 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
 
             {/* Settings opens as a modal (like every other dialog in the app),
                 not a page you scroll through. */}
-            <Modal show onClose={closeSettings} maxWidth="4xl" overlayClassName="bg-gray-900/60 backdrop-blur-sm" panelClassName="bg-white dark:bg-gray-900">
+            <Modal show onClose={closeSettings} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="bg-white dark:bg-gray-900">
                 <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
 
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
-                        horizontal pill bar is the only way to switch sections on small screens. */}
-                    <nav className="flex shrink-0 gap-2 overflow-x-auto border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
-                        {settingsNavItems.map((s) => (
-                            <button
-                                key={s.id}
-                                type="button"
-                                onClick={() => setActiveSection(s.id)}
-                                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
-                                    activeSection === s.id
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                                <span className="h-4 w-4 shrink-0">{s.icon}</span>
-                                {s.label}
-                            </button>
-                        ))}
-                    </nav>
+                        dropdown is the only way to switch sections on small screens. A <select>
+                        keeps every label fully readable instead of a horizontal pill bar that
+                        can clip the first item. */}
+                    <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                        <select
+                            value={activeSection}
+                            onChange={(e) => setActiveSection(e.target.value)}
+                            className="block w-full rounded-md border-gray-300 text-sm font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                        >
+                            {settingsNavItems.map((s) => (
+                                <option key={s.id} value={s.id}>{s.label}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <div className="flex min-h-0 flex-1">
 
@@ -603,6 +609,39 @@ export default function Settings({ emailCatalog, emailPreferences, emailDefaults
                             </div>
                         </div>
                     </form>
+                    )}
+
+                    {activeSection === 'support' && (
+                    <div className="space-y-3">
+                        <Link
+                            href={route('feedback.page')}
+                            className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                        >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </span>
+                            <span>
+                                <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Submit Feedback</span>
+                                <span className="block text-xs text-gray-400 dark:text-gray-500">Report a bug, ask a question, or share a suggestion</span>
+                            </span>
+                        </Link>
+                        <Link
+                            href={route('feedback.page')}
+                            className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                        >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <span>
+                                <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Track a Ticket</span>
+                                <span className="block text-xs text-gray-400 dark:text-gray-500">Check the status of feedback you already submitted</span>
+                            </span>
+                        </Link>
+                    </div>
                     )}
 
                             </div>

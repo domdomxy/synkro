@@ -100,7 +100,7 @@ function MenuLink({ href, icon, children, onNavigate }) {
  * (same floating panel on both): avatar + name + email up top, an inline
  * quick-theme toggle, then Account/Settings links and Log Out at the bottom.
  */
-export default function AccountMenu({ user, theme, onThemeChange, onNavigate }) {
+export default function AccountMenu({ user, theme, onThemeChange, onNavigate, navLinks }) {
     // DropDownContext is only present when AccountMenu is rendered inside the
     // shared Dropdown (desktop + mobile floating menu). The Content panel no
     // longer closes on any click inside it (that used to swallow clicks on
@@ -127,6 +127,34 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate }) 
             </div>
 
             <div className="border-t border-gray-100 dark:border-gray-700" />
+
+            {navLinks && navLinks.length > 0 && (
+                <>
+                    <div className="py-1">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                onClick={closeMenu}
+                                className={`flex items-center justify-between gap-2 rounded-md px-4 py-2.5 text-sm transition duration-150 ease-in-out focus:outline-none ${
+                                    link.active
+                                        ? 'bg-indigo-50 font-medium text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
+                                        : 'text-gray-700 hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700'
+                                }`}
+                            >
+                                {link.label}
+                                {link.badge === 'dot' && <span className="h-2 w-2 rounded-full bg-red-500" />}
+                                {typeof link.badge === 'number' && link.badge > 0 && (
+                                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold text-white">
+                                        {link.badge > 99 ? '99+' : link.badge}
+                                    </span>
+                                )}
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="border-t border-gray-100 dark:border-gray-700" />
+                </>
+            )}
 
             <div className="py-1">
                 <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>

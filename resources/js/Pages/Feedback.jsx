@@ -1,9 +1,47 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Linkify from '@/Components/Linkify';
 import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ImageLightbox from '@/Components/ImageLightbox';
+import Modal from '@/Components/Modal';
 import { useEffect, useRef, useState } from 'react';
+
+// Section nav (left sidebar on desktop, dropdown on mobile) - same pattern as
+// the in-app Settings dialog, so Help & Feedback reads as the same kind of
+// panel instead of a one-off page.
+const feedbackNavItems = [
+    {
+        id: 'submit',
+        label: 'Submit Feedback',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'track',
+        label: 'Track Status',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        ),
+    },
+];
+
+const SECTION_META = {
+    submit: { title: 'Submit Feedback', description: 'Report a bug, ask a question, or share a suggestion' },
+    track: { title: 'Track Status', description: 'Check the status of feedback you already submitted' },
+};
+
+function CloseIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    );
+}
 
 const statusConfig = {
     pending: {
@@ -242,6 +280,16 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
 
     const MAX_ATTACHMENTS = 5;
 
+    // Same "go back to wherever this was opened from, falling back to home"
+    // behavior as the in-app Settings dialog's close button.
+    const closeFeedback = () => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            router.visit('/');
+        }
+    };
+
     // navigator.clipboard requires a secure context (HTTPS or localhost) and isn't
     // available in every mobile browser/webview, so fall back to the old
     // execCommand approach via a temporary textarea when it's missing.
@@ -426,49 +474,85 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                     </Link>
                 </header>
 
-                <main className="mx-auto max-w-2xl px-6 py-10">
-                    <div className="mb-8 text-center">
-                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 dark:shadow-none">
-                            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                        </div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Help & Feedback</h1>
-                        <p className="mt-2 text-gray-500 dark:text-gray-400">
-                            Report a bug, ask a question, or share a suggestion. We read and respond to everything.
-                        </p>
-                    </div>
+                <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+                    {/* Help & Feedback opens as the same kind of dialog as the in-app
+                        Settings page: mobile dropdown / desktop sidebar nav, a header
+                        bar with title + description, a close button. */}
+                    <Modal show onClose={closeFeedback} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="bg-white dark:bg-gray-900">
+                        <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
 
-                    <div className="mb-6 flex gap-1 rounded-xl border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
-                        <button
-                            onClick={() => setActiveTab('submit')}
-                            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
-                                activeTab === 'submit'
-                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                            }`}
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Submit Feedback
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('track')}
-                            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition ${
-                                activeTab === 'track'
-                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                            }`}
-                        >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            Track Status
-                        </button>
-                    </div>
+                            {/* Mobile section nav - a dropdown instead of horizontal pills,
+                                so both section labels stay fully readable on small screens. */}
+                            <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                                <select
+                                    value={activeTab}
+                                    onChange={(e) => setActiveTab(e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 text-sm font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                >
+                                    {feedbackNavItems.map((s) => (
+                                        <option key={s.id} value={s.id}>{s.label}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                    <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-lg shadow-gray-200/50 dark:border-gray-700 dark:bg-gray-800 dark:shadow-none">
+                            <div className="flex min-h-0 flex-1">
+
+                                {/* Section nav */}
+                                <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                                    <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                        Support
+                                    </p>
+                                    <div className="space-y-0.5">
+                                        {feedbackNavItems.map((s) => (
+                                            <button
+                                                key={s.id}
+                                                type="button"
+                                                onClick={() => setActiveTab(s.id)}
+                                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm transition ${
+                                                    activeTab === s.id
+                                                        ? 'bg-white font-medium text-indigo-700 shadow-sm dark:bg-gray-800 dark:text-indigo-300'
+                                                        : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60'
+                                                }`}
+                                            >
+                                                <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                                {s.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                                        <Link
+                                            href="/"
+                                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                                        >
+                                            <ApplicationLogo className="h-4 w-4 shrink-0 fill-current" />
+                                            Back to Home
+                                        </Link>
+                                    </div>
+                                </nav>
+
+                                {/* Active section */}
+                                <div className="flex min-h-0 flex-1 flex-col">
+                                    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                {SECTION_META[activeTab]?.title}
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+                                                {SECTION_META[activeTab]?.description}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={closeFeedback}
+                                            className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                                        >
+                                            <CloseIcon className="h-5 w-5" />
+                                            <span className="sr-only">Close</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="min-h-0 flex-1 overflow-y-auto p-6">
                         {activeTab === 'submit' ? (
                             submitted ? (
                                 <div className="py-8 text-center">
@@ -860,7 +944,11 @@ export default function Feedback({ flash, categories, trackingId: trackingIdFrom
                                 )}
                             </div>
                         )}
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Modal>
                 </main>
             </div>
         </>
