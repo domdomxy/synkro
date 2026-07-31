@@ -6,6 +6,7 @@ import RangeButtons from '@/Components/RangeButtons';
 import ChartTypeToggle from '@/Components/ChartTypeToggle';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
+import QuickActionsMenu from '@/Components/QuickActionsMenu';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
@@ -116,6 +117,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
         { key: 'submitted', name: 'Tasks Submitted', color: '#10b981', dash: '3 3' },
         { key: 'newUsers', name: 'New Users', color: '#6366f1', dash: '4 2' },
         { key: 'newProjects', name: 'New Projects', color: '#ec4899', dash: '2 2' },
+        { key: 'completedProjects', name: 'Completed Projects', color: '#a855f7', dash: '5 3' },
     ];
 
     const [liveCounts, setLiveCounts] = useState({
@@ -159,24 +161,14 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-                    <div className="flex flex-wrap gap-3">
-                        <Link href={route('admin.users')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            {statIcons.users}
-                            Manage Users
-                        </Link>
-                        <Link href={route('admin.projects')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            {statIcons.projects}
-                            View Projects
-                        </Link>
-                        <Link href={route('admin.feedbacks')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            {statIcons.feedback}
-                            Feedback
-                        </Link>
-                        <Link href={route('admin.appeals')} className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            {statIcons.appeal}
-                            Appeals
-                        </Link>
-                    </div>
+                    <QuickActionsMenu
+                        items={[
+                            { href: route('admin.users'), icon: statIcons.users, label: 'Manage Users' },
+                            { href: route('admin.projects'), icon: statIcons.projects, label: 'View Projects' },
+                            { href: route('admin.feedbacks'), icon: statIcons.feedback, label: 'Feedback', badge: liveCounts.pendingFeedbacks },
+                            { href: route('admin.appeals'), icon: statIcons.appeal, label: 'Appeals', badge: liveCounts.pendingAppeals },
+                        ]}
+                    />
 
                     <AttentionPanel items={attentionItems} />
 

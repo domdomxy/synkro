@@ -141,7 +141,20 @@ class AdminController extends Controller
         $range = request('range', 'week');
         $tasksByStatus = Task::query()->selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status');
 
-        $chartData = array_map(function ($bucket) {
+        // Completion-time proxy for a fully-done project: projects have no
+        // dedicated "completed_at" column, so - same reasoning as the "done"
+        // tasks trend elsewhere - the latest updated_at among a project's own
+        // tasks stands in for the moment it became fully complete. Computed
+        // once up front (one query) rather than per bucket.
+        $completedProjectTimes = Project::whereHas('tasks')
+            ->whereDoesntHave('tasks', fn ($q) => $q->where('status', '!=', 'done'))
+            ->withMax('tasks', 'updated_at')
+            ->get()
+            ->pluck('tasks_max_updated_at')
+            ->filter()
+            ->map(fn ($t) => \Carbon\Carbon::parse($t));
+
+        $chartData = array_map(function ($bucket) use ($completedProjectTimes) {
             return [
                 'label' => $bucket['label'],
                 'completed' => Task::where('status', 'done')->whereBetween('updated_at', [$bucket['start'], $bucket['end']])->count(),
@@ -149,6 +162,7 @@ class AdminController extends Controller
                 'submitted' => Task::whereNotNull('submitted_at')->whereBetween('submitted_at', [$bucket['start'], $bucket['end']])->count(),
                 'newUsers' => User::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
                 'newProjects' => Project::whereBetween('created_at', [$bucket['start'], $bucket['end']])->count(),
+                'completedProjects' => $completedProjectTimes->filter(fn ($t) => $t->between($bucket['start'], $bucket['end']))->count(),
             ];
         }, $this->buckets($range, request('from'), request('to')));
 

@@ -133,7 +133,23 @@ class DashboardController extends Controller
             ->where('status', 'submitted')
             ->count();
 
-        $chartData = array_map(function ($bucket) use ($user) {
+        // Completion-time proxy for one of this user's projects that's now
+        // fully done: projects have no dedicated "completed_at" column, so -
+        // same reasoning as the "done" tasks trend below - the latest
+        // updated_at among the project's own tasks stands in for the moment
+        // it became fully complete. Computed once up front, scoped to just
+        // this user's own projects (unlike AdminController's platform-wide
+        // version), and reused per bucket below.
+        $completedProjectTimes = $user->projects()
+            ->whereHas('tasks')
+            ->whereDoesntHave('tasks', fn ($q) => $q->where('status', '!=', 'done'))
+            ->withMax('tasks', 'updated_at')
+            ->get()
+            ->pluck('tasks_max_updated_at')
+            ->filter()
+            ->map(fn ($t) => \Carbon\Carbon::parse($t));
+
+        $chartData = array_map(function ($bucket) use ($user, $completedProjectTimes) {
             return [
                 'label' => $bucket['label'],
                 'completed' => Task::where('assigned_to', $user->id)
@@ -150,6 +166,7 @@ class DashboardController extends Controller
                 'projects' => $user->projects()
                     ->whereBetween('project_user.created_at', [$bucket['start'], $bucket['end']])
                     ->count(),
+                'completedProjects' => $completedProjectTimes->filter(fn ($t) => $t->between($bucket['start'], $bucket['end']))->count(),
             ];
         }, $this->buckets($range, request('from'), request('to')));
 

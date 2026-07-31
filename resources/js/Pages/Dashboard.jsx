@@ -541,6 +541,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
         { key: 'created', name: 'Tasks Created', color: '#f59e0b' },
         { key: 'submitted', name: 'Tasks Submitted', color: '#10b981', dash: '4 2' },
         { key: 'projects', name: 'Projects Joined', color: '#ec4899', dash: '2 2' },
+        { key: 'completedProjects', name: 'Completed Projects', color: '#a855f7', dash: '5 3' },
     ];
 
     useEffect(() => {
