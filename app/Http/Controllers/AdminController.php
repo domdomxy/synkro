@@ -219,7 +219,11 @@ class AdminController extends Controller
 
     public function users(Request $request)
     {
-        $query = User::query();
+        // Soft-deleted users are excluded by the model's default scope, same as any
+        // other query — so deleted accounts now stay visible in the table (and every
+        // other status filter has to explicitly exclude them, since e.g. a deleted
+        // user's is_active flag doesn't change when they're soft-deleted).
+        $query = User::withTrashed();
 
         if ($request->role && $request->role !== 'all') {
             $query->where('role', $request->role);
@@ -227,9 +231,10 @@ class AdminController extends Controller
 
         if ($request->status && $request->status !== 'all') {
             match ($request->status) {
-                'active' => $query->where('is_active', true)->where('is_suspended', false),
-                'inactive' => $query->where('is_active', false),
-                'suspended' => $query->where('is_suspended', true),
+                'active' => $query->whereNull('deleted_at')->where('is_active', true)->where('is_suspended', false),
+                'inactive' => $query->whereNull('deleted_at')->where('is_active', false),
+                'suspended' => $query->whereNull('deleted_at')->where('is_suspended', true),
+                'deleted' => $query->whereNotNull('deleted_at'),
                 default => null,
             };
         }
@@ -288,6 +293,7 @@ class AdminController extends Controller
         $adminUsers = User::where('role', 'admin')->count();
         $verifiedUsers = User::whereNotNull('email_verified_at')->count();
         $unverifiedUsers = User::whereNull('email_verified_at')->count();
+        $deletedUsers = User::onlyTrashed()->count();
         $ratio = fn (int $part) => $totalUsers > 0 ? round($part / $totalUsers * 100, 1) : 0;
 
         $stats = [
@@ -309,6 +315,8 @@ class AdminController extends Controller
             'verifiedTrend' => $verifiedTrend['change'],
             'unverified' => $unverifiedUsers,
             'unverifiedRatio' => $ratio($unverifiedUsers),
+            'deleted' => $deletedUsers,
+            'deletedRatio' => $ratio($deletedUsers),
             'newUsersThisMonth' => $newUsersThisMonth,
             'userGrowthRate' => $userGrowthRate,
         ];
@@ -504,7 +512,10 @@ class AdminController extends Controller
 
     public function projects(Request $request)
     {
-        $query = Project::with('owner')->withCount(['members', 'tasks']);
+        // 'members' count needs withTrashed() too, same reasoning as
+        // Project::owner() — an owner mid-deletion is still a member of
+        // their own project for the length of the grace period.
+        $query = Project::with('owner')->withCount(['members' => fn ($q) => $q->withTrashed(), 'tasks']);
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {

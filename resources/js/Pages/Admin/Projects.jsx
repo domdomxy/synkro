@@ -112,6 +112,11 @@ export default function Projects({ projects, filters }) {
                                                     <div className="flex items-center gap-2">
                                                         <Avatar user={project.owner} size="h-6 w-6" />
                                                         <span className="truncate text-gray-500 dark:text-gray-400">{project.owner.name}</span>
+                                                        {project.owner.deleted_at && (
+                                                            <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                                                deleted
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <span className="text-gray-400 dark:text-gray-500">No owner</span>
@@ -170,6 +175,11 @@ export default function Projects({ projects, filters }) {
                                             <>
                                                 <Avatar user={project.owner} size="h-5 w-5" />
                                                 <span className="truncate text-sm text-gray-500 dark:text-gray-400">{project.owner.name}</span>
+                                                {project.owner.deleted_at && (
+                                                    <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                                        deleted
+                                                    </span>
+                                                )}
                                             </>
                                         ) : (
                                             <span className="text-sm text-gray-400 dark:text-gray-500">No owner</span>

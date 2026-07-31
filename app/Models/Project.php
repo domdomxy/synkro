@@ -19,7 +19,12 @@ class Project extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        // withTrashed(): an owner who deleted their account is still the owner
+        // for the length of the grace period (confirmDeletion() deliberately
+        // leaves owned projects untouched) — without this, the relation would
+        // silently resolve to null the moment their account is soft-deleted,
+        // even though owner_id and everything else is still intact.
+        return $this->belongsTo(User::class, 'owner_id')->withTrashed();
     }
 
     public function members()

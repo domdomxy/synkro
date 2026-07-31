@@ -145,10 +145,54 @@ class AccountController extends Controller
             Auth::logout();
         }
 
+        // Needed by both branches below (and again after delete() further down,
+        // once $user->deletionGraceEndsAt() itself becomes queryable) — computed
+        // once here so both notifications quote the same restore deadline.
+        $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
+        $graceEndsAt = now()->addDays($graceDays);
+
         // For every project the user belongs to, handle their tasks
         foreach ($user->projects as $project) {
             if ($project->owner_id === $user->id) {
-                continue; // owner deleting account, project stays, no cascade needed here
+                // Project itself is untouched — nothing to reassign or freeze,
+                // since none of its tasks change ownership just because the
+                // owner's account is (for now) only pending deletion. Other
+                // members still need to know, though: they may want to export
+                // data while they can, and the deadline isn't final if the
+                // owner changes their mind.
+                $recipients = $project->members()->where('users.id', '!=', $user->id)->get();
+
+                foreach ($recipients as $recipient) {
+                    if (NotificationPreferences::wantsType($recipient, 'owner_account_deleted')) {
+                        $notification = \App\Models\UserNotification::create([
+                            'user_id' => $recipient->id,
+                            'type' => 'owner_account_deleted',
+                            'message' => "Owner account deleted\n**{$user->name}**, the owner of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by " . $graceEndsAt->format('M j, Y') . ', it and everything in it will be gone for good.',
+                            'url' => route('projects.show', $project->id, false),
+                        ]);
+
+                        try {
+                            broadcast(new \App\Events\OwnerAccountDeleted($recipient->id, $user->name, $project, $graceEndsAt->toIso8601String(), $notification->id))->toOthers();
+                        } catch (\Throwable $e) {
+                            report($e);
+                        }
+                    }
+
+                    NotificationMailer::send(
+                        $recipient,
+                        'project.owner_account_deleted',
+                        "{$project->name}'s owner deleted their account",
+                        [
+                            "**{$user->name}**, the owner of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
+                            "The project stays exactly as it is for now. If they don't restore their account by " . $graceEndsAt->format('M j, Y') . ", the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
+                            'If they log back in and restore their account before that date, nothing changes and this notice can be ignored.',
+                        ],
+                        route('projects.show', $project->id),
+                        'View Project'
+                    );
+                }
+
+                continue;
             }
 
             $role = $project->roleFor($user);
@@ -177,18 +221,28 @@ class AccountController extends Controller
 
             $project->members()->detach($user->id);
 
-            // Notify owners and managers
+            // Notify owners and managers. Called out separately whenever there
+            // are frozen (pending_resolution) tasks, since those need an actual
+            // decision — Resolve Pending on each one, from the project page —
+            // rather than just being a heads-up like the rest of this message.
             $recipients = $project->members()
                 ->wherePivotIn('role', ['owner', 'manager'])
                 ->where('users.id', '!=', $user->id)
                 ->get();
+
+            $frozenCount = $frozen->count();
+            $frozenNote = $frozenCount > 0
+                ? ($frozenCount === 1
+                    ? ' 1 of their tasks is frozen pending your decision — resolve it from the project page before it can move again.'
+                    : " {$frozenCount} of their tasks are frozen pending your decision — resolve them from the project page before they can move again.")
+                : '';
 
             foreach ($recipients as $recipient) {
                 if (NotificationPreferences::wantsType($recipient, 'member_left')) {
                     $notification = \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
-                        'message' => "Member left\n**{$user->name}** ({$role}) deleted their account; their tasks in \"**{$project->name}**\" may need attention",
+                        'message' => "Member left\n**{$user->name}** ({$role}) deleted their account.{$frozenNote}",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -256,34 +310,48 @@ class AccountController extends Controller
     }
 
     /**
-     * Self-service restore for an account still inside its post-deletion
-     * grace period. Deliberately unauthenticated (a soft-deleted account
-     * can't hold a session), so re-checks the password itself rather than
-     * trusting anything carried over from the login attempt that got
-     * redirected here.
+     * Step 1 of self-service restore: email a fresh 6-digit code to an
+     * account still inside its post-deletion grace period. Deliberately
+     * unauthenticated (a soft-deleted account can't hold a session).
+     * Called both to seed the code the moment the pending-deletion screen
+     * is first shown, and again by its "Resend code" button.
+     */
+    public function sendRestoreCode(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        $user = User::withTrashed()->where('email', $request->string('email'))->first();
+
+        if (! $user || ! $user->trashed() || ! $user->isRestorable()) {
+            return Redirect::route('login')->withErrors(['email' => trans('auth.failed')]);
+        }
+
+        $user->sendAccountRestoreCodeNotification();
+
+        return Redirect::route('login')->with('pendingDeletion', [
+            'email' => $user->email,
+            'restoreBy' => $user->deletionGraceEndsAt()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Step 2: verify the emailed code and restore the account. Deliberately
+     * unauthenticated, same reasoning as sendRestoreCode() above — the code
+     * itself (proving inbox access) is what authorizes the restore, not
+     * anything carried over from the login attempt that got redirected here.
      */
     public function restore(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'code' => ['required', 'string', 'digits:6'],
         ]);
 
         $user = User::withTrashed()->where('email', $request->string('email'))->first();
 
-        if (! $user || ! $user->trashed() || ! Hash::check($request->string('password'), $user->password)) {
-            // Only re-show the restore prompt if this email is actually still
-            // restorable — otherwise fall through to the generic login error,
-            // same as any other unrecognized email/password combination.
-            if ($user && $user->trashed() && $user->isRestorable()) {
-                return Redirect::route('login')
-                    ->withErrors(['email' => 'Incorrect password.'])
-                    ->with('pendingDeletion', [
-                        'email' => $user->email,
-                        'restoreBy' => $user->deletionGraceEndsAt()->toIso8601String(),
-                    ]);
-            }
-
+        if (! $user || ! $user->trashed()) {
             return Redirect::route('login')->withErrors(['email' => trans('auth.failed')]);
         }
 
@@ -293,8 +361,41 @@ class AccountController extends Controller
             ]);
         }
 
+        // Any failure below re-shows the same pending-deletion screen (rather
+        // than falling through to the generic login error) so the person can
+        // simply retry the code or hit resend, instead of restarting login.
+        $pendingDeletion = [
+            'email' => $user->email,
+            'restoreBy' => $user->deletionGraceEndsAt()->toIso8601String(),
+        ];
+
+        if (! $user->restore_code || ! $user->restore_code_expires_at || now()->greaterThan($user->restore_code_expires_at)) {
+            return Redirect::route('login')
+                ->withErrors(['code' => 'This code has expired. Request a new one.'])
+                ->with('pendingDeletion', $pendingDeletion);
+        }
+
+        if ($user->restore_code_attempts >= 5) {
+            return Redirect::route('login')
+                ->withErrors(['code' => 'Too many incorrect attempts. Request a new code.'])
+                ->with('pendingDeletion', $pendingDeletion);
+        }
+
+        if (! Hash::check($request->string('code'), $user->restore_code)) {
+            $user->increment('restore_code_attempts');
+
+            return Redirect::route('login')
+                ->withErrors(['code' => 'The code you entered is incorrect.'])
+                ->with('pendingDeletion', $pendingDeletion);
+        }
+
         $user->restore();
-        $user->forceFill(['deletion_requested_at' => null])->save();
+        $user->forceFill([
+            'deletion_requested_at' => null,
+            'restore_code' => null,
+            'restore_code_expires_at' => null,
+            'restore_code_attempts' => 0,
+        ])->save();
 
         AccountActivityLog::log('account_restored', [], $user->id);
 

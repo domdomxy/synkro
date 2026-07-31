@@ -6,11 +6,18 @@ import TextInput from '@/Components/TextInput';
 import Spinner from '@/Components/Spinner';
 import Linkify from '@/Components/Linkify';
 import AuthField from '@/Components/Auth/AuthField';
+import OtpInput from '@/Components/Auth/OtpInput';
+import ResendCodeButton from '@/Components/Auth/ResendCodeButton';
 import { MailIcon, LockIcon, ClockIcon, BanIcon, RestoreIcon } from '@/Components/Auth/icons';
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+
+// Client-side courtesy cooldown so the resend button can't be mashed. The
+// backend's own throttle:6,1 on the account.restore.send-code route is what
+// actually enforces a hard limit.
+const RESTORE_RESEND_COOLDOWN_SECONDS = 20;
 
 function timeRemaining(dateString) {
     const ms = new Date(dateString) - new Date();
@@ -202,11 +209,14 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
 }
 
 function PendingDeletionNotice({ pendingDeletion }) {
+    // A code is already sent the moment this screen is reached (seeded
+    // server-side as soon as the login attempt proves the account is
+    // restorable), so the resend cooldown starts counting down immediately.
     const restoreForm = useForm({
         email: pendingDeletion.email,
-        password: '',
+        code: '',
     });
-    const passwordInput = useRef();
+    const [justResent, setJustResent] = useState(false);
 
     const remaining = timeRemaining(pendingDeletion.restoreBy);
 
@@ -214,10 +224,26 @@ function PendingDeletionNotice({ pendingDeletion }) {
         e.preventDefault();
         restoreForm.post(route('account.restore'), {
             preserveScroll: true,
-            onError: () => passwordInput.current?.focus(),
-            onFinish: () => restoreForm.reset('password'),
+            onError: () => restoreForm.reset('code'),
         });
     };
+
+    const resend = () =>
+        new Promise((resolve, reject) => {
+            router.post(
+                route('account.restore.send-code'),
+                { email: pendingDeletion.email },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setJustResent(true);
+                        restoreForm.reset('code');
+                        resolve();
+                    },
+                    onError: () => reject(),
+                },
+            );
+        });
 
     return (
         <div className="space-y-4">
@@ -240,32 +266,32 @@ function PendingDeletionNotice({ pendingDeletion }) {
             {remaining ? (
                 <form onSubmit={submitRestore} className="space-y-3">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Enter your password again to restore <span className="font-medium">{pendingDeletion.email}</span> and
-                        everything in it, exactly as it was.
+                        {justResent ? "We've sent a new 6-digit code to " : "We've sent a 6-digit code to "}
+                        <span className="font-medium">{pendingDeletion.email}</span>. Enter it below to restore your
+                        account and everything in it, exactly as it was.
                     </p>
 
-                    <div>
-                        <InputLabel htmlFor="restore-password" value="Password" className="sr-only" />
-                        <input
-                            id="restore-password"
-                            ref={passwordInput}
-                            type="password"
-                            autoFocus
-                            value={restoreForm.data.password}
-                            onChange={(e) => restoreForm.setData('password', e.target.value)}
-                            placeholder="Password"
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                        />
-                        <InputError message={restoreForm.errors.email} className="mt-2" />
-                    </div>
+                    <OtpInput
+                        length={6}
+                        value={restoreForm.data.code}
+                        onChange={(code) => restoreForm.setData('code', code)}
+                        error={restoreForm.errors.code}
+                        autoFocus
+                        disabled={restoreForm.processing}
+                    />
+                    <InputError message={restoreForm.errors.email} className="-mt-2" />
 
                     <PrimaryButton
                         className="w-full justify-center py-2.5"
-                        disabled={restoreForm.processing || !restoreForm.data.password}
+                        disabled={restoreForm.processing || restoreForm.data.code.length !== 6}
                     >
                         {restoreForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                         {restoreForm.processing ? 'Restoring...' : 'Restore My Account'}
                     </PrimaryButton>
+
+                    <div className="flex justify-center pt-1">
+                        <ResendCodeButton onResend={resend} cooldownSeconds={RESTORE_RESEND_COOLDOWN_SECONDS} label="Resend Code" />
+                    </div>
                 </form>
             ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">

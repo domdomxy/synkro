@@ -31,6 +31,7 @@ export default function NotificationBell() {
             '.comment.replied',
             '.task.reopened',
             '.member.left',
+            '.owner.account-deleted',
             '.project.invitation',
             '.invitation.accepted',
             '.invitation.denied',
@@ -59,6 +60,10 @@ export default function NotificationBell() {
 
             if (payload.type === 'member_left') {
                 message = `Member left\n**${payload.member_name}** (${payload.role}) left "**${payload.project_name}**"`;
+                url = `/projects/${payload.project_id}`;
+            } else if (payload.type === 'owner_account_deleted') {
+                const restoreBy = new Date(payload.restore_by).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                message = `Owner account deleted\n**${payload.owner_name}**, the owner of "**${payload.project_name}**", deleted their account. Restorable until ${restoreBy}.`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_invitation') {
                 message = `Project invitation\n**${payload.inviter_name}** invited you to join "**${payload.project_name}**" as ${payload.role}`;

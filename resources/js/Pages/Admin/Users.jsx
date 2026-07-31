@@ -4,7 +4,7 @@ import TextInput from '@/Components/TextInput';
 import StatCard from '@/Components/StatCard';
 import SortableHeader from '@/Components/SortableHeader';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import SuspendModal from '@/Components/SuspendModal';
 import LiftSuspensionModal from '@/Components/LiftSuspensionModal';
@@ -28,6 +28,7 @@ const statIcons = {
     active: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM17 9l2 2 4-4" /></svg>,
     inactive: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM18 8l4 4m0-4l-4 4" /></svg>,
     suspended: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728" /></svg>,
+    deleted: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
     admins: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     verified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" /></svg>,
     unverified: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -44,6 +45,7 @@ function timeRemaining(dateString) {
 }
 
 function getUserStatus(user) {
+    if (user.deleted_at) return 'deleted';
     if (user.is_suspended) return 'suspended';
     if (!user.is_active) return 'inactive';
     return 'active';
@@ -51,6 +53,18 @@ function getUserStatus(user) {
 
 function StatusBadge({ user }) {
     const status = getUserStatus(user);
+
+    if (status === 'deleted') {
+        return (
+            <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2 py-1 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                title="Account deleted by the user; may still be within its restore window"
+            >
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                deleted
+            </span>
+        );
+    }
 
     if (status === 'suspended') {
         const permanent = !user.suspended_until;
@@ -85,6 +99,11 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
     const btnRef = useRef(null);
     const menuRef = useRef(null);
     const MENU_WIDTH = 200;
+    const isDeleted = !!user.deleted_at;
+    // Deleted accounts are gone from the app's own perspective — role, password,
+    // and suspension no longer mean anything for them, so those actions are
+    // disabled rather than hidden (keeps the menu's shape consistent).
+    const disabled = isSelf || isDeleted;
 
     const toggle = () => {
         if (!open && btnRef.current) {
@@ -93,6 +112,21 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
         }
         setOpen((v) => !v);
     };
+
+    // Once the menu has actually rendered we know its real height, so flip it to
+    // open upward from the button instead of downward whenever there isn't
+    // enough room below — this is what keeps it from spilling past the last
+    // row in the table (or off the bottom of the viewport).
+    useLayoutEffect(() => {
+        if (!open || !menuRef.current || !btnRef.current) return;
+        const menuHeight = menuRef.current.getBoundingClientRect().height;
+        const btnRect = btnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        const spaceAbove = btnRect.top;
+        if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+            setCoords((c) => ({ ...c, top: btnRect.top - menuHeight - 4 }));
+        }
+    }, [open]);
 
     useEffect(() => {
         if (!open) return;
@@ -137,14 +171,14 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
                     <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                     <button
                         onClick={() => { setOpen(false); onToggleRole(user); }}
-                        disabled={isSelf}
+                        disabled={disabled}
                         className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                         {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
                     </button>
                     <button
                         onClick={() => { setOpen(false); onResetPassword(user); }}
-                        disabled={isSelf}
+                        disabled={disabled}
                         className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                         Reset Password
@@ -153,14 +187,15 @@ function UserActionsMenu({ user, isSelf, onToggleRole, onResetPassword, onSuspen
                     {user.is_suspended ? (
                         <button
                             onClick={() => { setOpen(false); onLiftSuspension(user); }}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+                            disabled={isDeleted}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-green-400 dark:hover:bg-green-950/30"
                         >
                             Lift Suspension
                         </button>
                     ) : (
                         <button
                             onClick={() => { setOpen(false); onSuspend(user); }}
-                            disabled={isSelf}
+                            disabled={disabled}
                             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/30"
                         >
                             Suspend User
@@ -240,6 +275,7 @@ export default function Users({ users, stats, filters }) {
                         <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} pct={stats.activeTrend} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
                         <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} pct={stats.inactiveTrend} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />
                         <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} pct={stats.suspendedTrend} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
+                        <StatCard label="Deleted" value={stats.deleted} sub={`${stats.deletedRatio}% of all users`} accentColor="text-rose-600 dark:text-rose-400" icon={statIcons.deleted} />
                         <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} pct={stats.adminsTrend} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
                         <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} pct={stats.verifiedTrend} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
                         <StatCard label="Unverified" value={stats.unverified} sub={`${stats.unverifiedRatio}% of all users`} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.unverified} />
@@ -279,6 +315,7 @@ export default function Users({ users, stats, filters }) {
                                     { value: 'active', label: 'Active' },
                                     { value: 'inactive', label: 'Inactive' },
                                     { value: 'suspended', label: 'Suspended' },
+                                    { value: 'deleted', label: 'Deleted' },
                                 ]}
                             />
                             <FilterSelect

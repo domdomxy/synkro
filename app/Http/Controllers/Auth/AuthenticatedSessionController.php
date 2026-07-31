@@ -67,6 +67,10 @@ class AuthenticatedSessionController extends Controller
                 : null;
 
             if ($trashedUser && Hash::check($request->string('password'), $trashedUser->password) && $trashedUser->isRestorable()) {
+                // Seed a restore code right away so one is already waiting in
+                // their inbox by the time the pending-deletion screen renders.
+                $trashedUser->sendAccountRestoreCodeNotification();
+
                 return redirect()->route('login')->with('pendingDeletion', [
                     'email' => $trashedUser->email,
                     'restoreBy' => $trashedUser->deletionGraceEndsAt()->toIso8601String(),

@@ -81,7 +81,10 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
 
         $project->load([
-            'members',
+            // withTrashed() so an owner who's mid-deletion (still inside the
+            // grace period) doesn't just vanish from the member list — see
+            // Project::owner() for the same reasoning.
+            'members' => fn ($q) => $q->withTrashed(),
             'tasks.assignee',
             'tasks.comments.user',
             'tasks.deliverables',
@@ -466,7 +469,7 @@ class ProjectController extends Controller
             abort(403);
         }
 
-        $project->load('members');
+        $project->load(['members' => fn ($q) => $q->withTrashed()]);
 
         return Inertia::render('Projects/Settings', [
             'project' => $project,

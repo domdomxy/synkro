@@ -18,6 +18,7 @@ export const categoryMap = {
     task_done: 'reviews',
     task_review_needed: 'reviews',
     member_left: 'membership',
+    owner_account_deleted: 'membership',
     project_member_added: 'membership',
     project_role_changed: 'membership',
     project_updated: 'membership',
@@ -104,6 +105,11 @@ export const typeStyles = {
         bg: 'bg-gray-100 dark:bg-gray-700',
         text: 'text-gray-600 dark:text-gray-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    },
+    owner_account_deleted: {
+        bg: 'bg-amber-100 dark:bg-amber-900',
+        text: 'text-amber-600 dark:text-amber-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
     project_member_added: {
         bg: 'bg-indigo-100 dark:bg-indigo-900',

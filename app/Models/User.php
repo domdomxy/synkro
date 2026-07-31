@@ -68,6 +68,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'active_status_changed_at' => 'datetime',
             'role_changed_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
+            'restore_code_expires_at' => 'datetime',
         ];
     }
     public function pinnedTasks()
@@ -179,6 +180,44 @@ class User extends Authenticatable implements MustVerifyEmail
             ],
             $confirmUrl,
             'Permanently Delete My Account'
+        );
+    }
+
+    /**
+     * Generate a fresh 6-digit restore code for the self-service "your
+     * account is scheduled for deletion" screen, store it (hashed, like a
+     * password) with a 10-minute expiry, and email it. Replaces re-entering
+     * the account password there, since the login attempt that landed the
+     * person on that screen already proved password knowledge — this step
+     * instead proves they still control the inbox.
+     */
+    public function sendAccountRestoreCodeNotification(): void
+    {
+        $code = (string) random_int(100000, 999999);
+        $expireMinutes = 10;
+
+        $this->forceFill([
+            'restore_code' => Hash::make($code),
+            'restore_code_expires_at' => now()->addMinutes($expireMinutes),
+            'restore_code_attempts' => 0,
+        ])->save();
+
+        NotificationMailer::send(
+            $this,
+            'account.restore_code',
+            'Your account restore code',
+            [
+                'Enter the code below to restore your Synkro account and everything in it, exactly as it was.',
+                "This code expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email — your account will stay scheduled for deletion.",
+            ],
+            null,
+            null,
+            [
+                'label' => 'Restore code',
+                'content' => $code,
+                'mono' => true,
+                'hint' => 'Tap and hold the code above to copy it, or select it manually.',
+            ]
         );
     }
 
