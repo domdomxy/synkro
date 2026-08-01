@@ -1,3 +1,4 @@
+import Avatar from '@/Components/Avatar';
 import Linkify from '@/Components/Linkify';
 import RichTextContent from '@/Components/RichTextContent';
 import { describeLog, getLogDetails, ICON_PATHS, actionIconConfig } from '@/utils/activityLog';
@@ -24,10 +25,11 @@ function timeAgo(dateString) {
 }
 
 /**
- * A single activity-log entry: icon, description, timestamp, and (when the
- * log carries structured details) a click-to-expand diff panel. Used as-is
- * on the project Logs page, and in `dense` mode inside TaskRow's History
- * panel so the two look and behave the same way.
+ * A single activity-log entry: actor avatar (with a small action-type icon
+ * badge), description, timestamp, and (when the log carries structured
+ * details) a click-to-expand diff panel. Used as-is on the project Logs
+ * page, and in `dense` mode inside TaskRow's History panel so the two look
+ * and behave the same way.
  */
 export default function LogEntryRow({ log, dense = false }) {
     const [open, setOpen] = useState(false);
@@ -46,8 +48,15 @@ export default function LogEntryRow({ log, dense = false }) {
                 onClick={() => hasDetails && setOpen((v) => !v)}
                 className={`flex w-full items-start text-left transition ${rowPad} ${hasDetails ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
-                <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
-                    <Icon path={iconConfig.path} className={dense ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+                <span className={`relative mt-0.5 shrink-0 ${dense ? 'h-6 w-6' : 'h-8 w-8'}`}>
+                    <Avatar user={log.user} size={dense ? 'h-6 w-6' : 'h-8 w-8'} rounded="rounded-full" />
+                    <span
+                        className={`absolute -bottom-1 -right-1 flex items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color} ${
+                            dense ? 'h-3.5 w-3.5' : 'h-4 w-4'
+                        }`}
+                    >
+                        <Icon path={iconConfig.path} className={dense ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+                    </span>
                 </span>
                 <div className="min-w-0 flex-1">
                     <p className={dense ? 'text-sm text-gray-700 dark:text-gray-300' : 'text-sm text-gray-800 dark:text-gray-200'}>{describeLog(log)}</p>

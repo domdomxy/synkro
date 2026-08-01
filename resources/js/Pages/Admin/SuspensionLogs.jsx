@@ -4,12 +4,13 @@ import BackButton from '@/Components/BackButton';
 import TextInput from '@/Components/TextInput';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import FilterSelect from '@/Components/FilterSelect';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 function SearchIcon() {
     return (
@@ -124,6 +125,7 @@ export default function SuspensionLogs({ logs, filters }) {
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
+    const paginationRef = useRef(null);
     const [sort, setSort] = useState(filters?.sort ?? 'created_at');
     const [direction, setDirection] = useState(filters?.direction ?? 'desc');
 
@@ -216,12 +218,12 @@ export default function SuspensionLogs({ logs, filters }) {
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                    <div className="overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                         {logs.data.length === 0 ? (
                             <div className="px-6 py-10 text-center">
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -243,6 +245,8 @@ export default function SuspensionLogs({ logs, filters }) {
                     </div>
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

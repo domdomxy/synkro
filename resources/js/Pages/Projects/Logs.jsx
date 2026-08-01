@@ -3,8 +3,11 @@ import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import LogEntryRow from '@/Components/LogEntryRow';
+import PerPageSelect from '@/Components/PerPageSelect';
+import LocalPagination from '@/Components/LocalPagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { formatActionLabel } from '@/utils/activityLog';
 
 const actionLabels = {
@@ -39,7 +42,13 @@ export default function Logs({ project, logs, backHref, backLabel }) {
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [page, setPage] = useState(1);
-    const PER_PAGE = 15;
+    const [perPage, setPerPage] = useState(15);
+    const paginationRef = useRef(null);
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        setPage(1);
+    };
 
     const users = useMemo(() => {
         const map = new Map();
@@ -72,9 +81,9 @@ export default function Logs({ project, logs, backHref, backLabel }) {
         return true;
     });
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
     const currentPage = Math.min(page, totalPages);
-    const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+    const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
 
     const hasActiveFilters = userFilter !== 'all' || actionFilter !== 'all' || from !== '' || to !== '';
 
@@ -115,12 +124,25 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                     </div>
 
                     {logs.length > 0 && (
-                        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
+                        <p className="mb-2 text-sm text-gray-400 dark:text-gray-500">
                             {filtered.length} of {logs.length} event{logs.length > 1 ? 's' : ''}
                         </p>
                     )}
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                    {filtered.length > 0 && (
+                        <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <LocalPagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                total={filtered.length}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                            />
+                        </div>
+                    )}
+
+                    <div className="overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                         {filtered.length === 0 ? (
                             <div className="px-6 py-10 text-center">
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -141,31 +163,10 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                         )}
                     </div>
 
-                    {filtered.length > PER_PAGE && (
-                        <div className="mt-4 flex items-center justify-between">
-                            <p className="text-sm text-gray-400 dark:text-gray-500">
-                                Page {currentPage} of {totalPages}
-                            </p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

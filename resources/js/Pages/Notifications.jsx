@@ -3,11 +3,12 @@ import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { NoteList } from '@/utils/noteFormat';
 import { typeStyles, relativeTime, splitMessage } from '@/utils/notificationDisplay';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
 
 const DEFAULT_PER_PAGE = 10;
@@ -18,6 +19,7 @@ export default function Notifications({ notificationsList, filters }) {
     const [filter, setFilter] = useState(filters?.filter ?? 'all');
     const [category, setCategory] = useState(filters?.category ?? 'all');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
+    const paginationRef = useRef(null);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const applyFilters = (overrides = {}) => {
@@ -121,12 +123,12 @@ export default function Notifications({ notificationsList, filters }) {
                         {notificationsList.total} notification{notificationsList.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ''}
                     </p>
 
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={notificationsList} />
                     </div>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                    <div className="overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                         {notificationsList.data.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
                                 <svg className="h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,6 +194,8 @@ export default function Notifications({ notificationsList, filters }) {
                     </div>
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

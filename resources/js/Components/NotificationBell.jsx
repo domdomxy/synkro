@@ -217,7 +217,7 @@ export default function NotificationBell() {
 
     const deleteNotification = (id) => {
         const note = items.find((n) => n.id === id);
-        router.delete(route('notifications.destroy', id), { preserveScroll: true, preserveState: true });
+        router.delete(route('notifications.destroy', id), { preserveScroll: true, preserveState: true, only: ['notifications'] });
         setItems((prev) => prev.filter((n) => n.id !== id));
         if (note && !note.read_at) {
             setUnreadCount((c) => Math.max(0, c - 1));
@@ -345,7 +345,11 @@ export default function NotificationBell() {
                                         {!note.read_at && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />}
                                     </button>
                                     <button
-                                        onClick={() => deleteNotification(note.id)}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            deleteNotification(note.id);
+                                        }}
                                         title="Delete notification"
                                         className="mt-1 shrink-0 rounded p-1 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700"
                                     >

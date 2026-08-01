@@ -11,6 +11,7 @@ import LiftSuspensionModal from '@/Components/LiftSuspensionModal';
 import EditUserModal from '@/Components/EditUserModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import FilterSelect from '@/Components/FilterSelect';
 import { cleanParams } from '@/utils/queryParams';
 import useConfirm from '@/hooks/useConfirm';
@@ -255,6 +256,7 @@ export default function Users({ users, stats, filters }) {
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     const [verifiedFilter, setVerifiedFilter] = useState(filters.verified ?? 'all');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
+    const paginationRef = useRef(null);
     const [sort, setSort] = useState(filters.sort ?? 'name');
     const [direction, setDirection] = useState(filters.direction ?? 'asc');
     const [suspendTarget, setSuspendTarget] = useState(null);
@@ -420,7 +422,7 @@ export default function Users({ users, stats, filters }) {
                         </p>
                     </div>
 
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={users} />
                     </div>
@@ -566,6 +568,7 @@ export default function Users({ users, stats, filters }) {
                 onClose={() => setEditTarget(null)}
             />
             {ConfirmDialog}
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

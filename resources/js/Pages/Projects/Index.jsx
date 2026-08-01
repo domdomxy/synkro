@@ -306,7 +306,7 @@ export default function Index({ projects, showingArchived }) {
                     )}
 
                     {view === 'list' && filtered.length > 0 && (
-                        <div className="mb-4 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                        <div className="mb-4 overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                             <div className="hidden border-b border-gray-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500 sm:grid sm:grid-cols-[1fr_10rem_6rem_8rem_2.5rem] sm:items-center sm:gap-3">
                                 <span>Project</span>
                                 <span>Owner</span>

@@ -3,12 +3,13 @@ import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import Linkify from '@/Components/Linkify';
 import RichTextContent from '@/Components/RichTextContent';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const actionLabels = {
     // Project activity
@@ -474,6 +475,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
+    const paginationRef = useRef(null);
 
     // Same page component serves two routes: a user's own Activity Logs, and (when viewingUser
     // is present) an admin's read-only look at someone else's. Everything below just needs to
@@ -562,12 +564,12 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
                     </p>
 
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                    <div className="overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                         {logs.data.length === 0 ? (
                             <div className="px-6 py-10 text-center">
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -589,6 +591,8 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                     </div>
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

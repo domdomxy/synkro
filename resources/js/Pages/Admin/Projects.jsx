@@ -3,10 +3,11 @@ import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
 import SortableHeader from '@/Components/SortableHeader';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { cleanParams } from '@/utils/queryParams';
 
 function SearchIcon() {
@@ -23,6 +24,7 @@ const FILTER_DEFAULTS = { per_page: DEFAULT_PER_PAGE, sort: 'name', direction: '
 export default function Projects({ projects, filters }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [perPage, setPerPage] = useState(Number(filters.per_page) || DEFAULT_PER_PAGE);
+    const paginationRef = useRef(null);
     const [sort, setSort] = useState(filters.sort ?? 'name');
     const [direction, setDirection] = useState(filters.direction ?? 'asc');
 
@@ -82,7 +84,7 @@ export default function Projects({ projects, filters }) {
                         {projects.total} project{projects.total !== 1 ? 's' : ''} match{projects.total === 1 ? 'es' : ''} your search
                     </p>
 
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={projects} />
                     </div>
@@ -150,6 +152,8 @@ export default function Projects({ projects, filters }) {
                     </div>
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }
