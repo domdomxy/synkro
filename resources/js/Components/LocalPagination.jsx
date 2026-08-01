@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { buildPageList } from '@/utils/paginationRange';
+
 function ChevronLeftIcon() {
     return (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -14,40 +17,20 @@ function ChevronRightIcon() {
     );
 }
 
-// Mirrors Laravel's default paginator window: shows every page while there
-// aren't too many, then falls back to first/last page(s) plus a few pages
-// around the current one, collapsing the gaps into '...' - e.g.
-// [1, 2, 3, '...', 17] or [1, '...', 7, 8, 9, 10, 11, '...', 17].
-function buildPageList(current, total) {
-    if (total <= 5) {
-        return Array.from({ length: total }, (_, i) => i + 1);
-    }
+function ChevronDoubleLeftIcon() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 19l-7-7 7-7M11 19l-7-7 7-7" />
+        </svg>
+    );
+}
 
-    const boundaryCount = 1;
-    const siblingCount = 2;
-    const pages = new Set();
-
-    for (let i = 1; i <= boundaryCount; i++) pages.add(i);
-    for (let i = total - boundaryCount + 1; i <= total; i++) pages.add(i);
-    for (let i = current - siblingCount; i <= current + siblingCount; i++) {
-        if (i >= 1 && i <= total) pages.add(i);
-    }
-
-    const sorted = [...pages].sort((a, b) => a - b);
-    const withDots = [];
-    let prev = null;
-    for (const page of sorted) {
-        if (prev !== null) {
-            if (page - prev === 2) {
-                withDots.push(prev + 1);
-            } else if (page - prev > 1) {
-                withDots.push('...');
-            }
-        }
-        withDots.push(page);
-        prev = page;
-    }
-    return withDots;
+function ChevronDoubleRightIcon() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 5l7 7-7 7M13 5l7 7-7 7" />
+        </svg>
+    );
 }
 
 /**
@@ -62,11 +45,21 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
 
     const from = total === 0 ? 0 : (page - 1) * perPage + 1;
     const to = Math.min(page * perPage, total);
-    const pageLinks = buildPageList(page, totalPages);
+    const pageLinks = buildPageList(page, totalPages, { siblingCount: 1, trailingCount: 3 });
+    const showJumpButtons = pageLinks.includes('...');
 
     const go = (p) => {
         if (p < 1 || p > totalPages || p === page) return;
         onPageChange(p);
+    };
+
+    const [goToValue, setGoToValue] = useState('');
+
+    const submitGoTo = () => {
+        const parsed = parseInt(goToValue, 10);
+        if (!parsed || parsed < 1 || parsed > totalPages) return;
+        go(parsed);
+        setGoToValue('');
     };
 
     return (
@@ -82,6 +75,18 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
 
             {totalPages > 1 && (
                 <nav className="flex items-center gap-1" aria-label="Pagination">
+                    {showJumpButtons && (
+                        <button
+                            type="button"
+                            disabled={page === 1}
+                            onClick={() => go(1)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                            aria-label="First page"
+                        >
+                            <ChevronDoubleLeftIcon />
+                        </button>
+                    )}
+
                     <button
                         type="button"
                         disabled={page === 1}
@@ -129,6 +134,42 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
                     >
                         <ChevronRightIcon />
                     </button>
+
+                    {showJumpButtons && (
+                        <button
+                            type="button"
+                            disabled={page === totalPages}
+                            onClick={() => go(totalPages)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                            aria-label="Last page"
+                        >
+                            <ChevronDoubleRightIcon />
+                        </button>
+                    )}
+
+                    {showJumpButtons && (
+                        <div className="ml-1 flex items-center gap-1 border-l border-gray-200 pl-2 dark:border-gray-700">
+                            <span className="hidden text-sm text-gray-400 dark:text-gray-500 sm:inline">Page</span>
+                            <input
+                                type="number"
+                                min="1"
+                                max={totalPages}
+                                value={goToValue}
+                                onChange={(e) => setGoToValue(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && submitGoTo()}
+                                placeholder="#"
+                                title={`Go to page (1-${totalPages})`}
+                                className="w-14 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                            <button
+                                type="button"
+                                onClick={submitGoTo}
+                                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Go
+                            </button>
+                        </div>
+                    )}
                 </nav>
             )}
         </div>
