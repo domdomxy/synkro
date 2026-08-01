@@ -95,12 +95,27 @@ function MenuLink({ href, icon, children, onNavigate }) {
     );
 }
 
+// Same look as MenuLink, but for entries that open an in-place overlay
+// (see useRouteOverlay) instead of doing a real navigation.
+function MenuButton({ onClick, icon, children }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-start text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+        >
+            {icon}
+            {children}
+        </button>
+    );
+}
+
 /**
  * Profile card used inside the avatar dropdown on both desktop and mobile
  * (same floating panel on both): avatar + name + email up top, an inline
  * quick-theme toggle, then Account/Settings links and Log Out at the bottom.
  */
-export default function AccountMenu({ user, theme, onThemeChange, onNavigate, navLinks }) {
+export default function AccountMenu({ user, theme, onThemeChange, onNavigate, navLinks, onOpenSettings, onOpenAccount }) {
     // DropDownContext is only present when AccountMenu is rendered inside the
     // shared Dropdown (desktop + mobile floating menu). The Content panel no
     // longer closes on any click inside it (that used to swallow clicks on
@@ -157,12 +172,24 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
             )}
 
             <div className="py-1">
-                <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
-                    Account
-                </MenuLink>
-                <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
-                    Settings
-                </MenuLink>
+                {onOpenAccount ? (
+                    <MenuButton onClick={() => { closeMenu(); onOpenAccount(); }} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />}>
+                        Account
+                    </MenuButton>
+                ) : (
+                    <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                        Account
+                    </MenuLink>
+                )}
+                {onOpenSettings ? (
+                    <MenuButton onClick={() => { closeMenu(); onOpenSettings(); }} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />}>
+                        Settings
+                    </MenuButton>
+                ) : (
+                    <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                        Settings
+                    </MenuLink>
+                )}
             </div>
 
             <div className="border-t border-gray-100 dark:border-gray-700" />

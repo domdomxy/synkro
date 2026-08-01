@@ -12,6 +12,18 @@ import { useEcho } from '@laravel/echo-react';
 import SuspensionListener from '@/Components/SuspensionListener';
 import AccountDeletedListener from '@/Components/AccountDeletedListener';
 import PasswordResetListener from '@/Components/PasswordResetListener';
+import useRouteOverlay, { RouteOverlayActionsContext } from '@/hooks/useRouteOverlay';
+import SettingsPanel from '@/Components/SettingsPanel';
+import AccountPanel from '@/Components/AccountPanel';
+import FeedbackPanel from '@/Components/FeedbackPanel';
+
+// Route overlay panels reached from the account menu / Settings sidebar.
+// Keyed the same way useRouteOverlay's `open(key, url)` is called below.
+const OVERLAY_PANELS = {
+    settings: SettingsPanel,
+    account: AccountPanel,
+    feedback: FeedbackPanel,
+};
 
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
     const user = usePage().props.auth.user;
@@ -22,9 +34,27 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     // string is 'superadmin' rather than literally 'admin'.
     const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
     const { adminAlerts, testing } = usePage().props;
+    const { version } = usePage();
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
     const [pendingTestCount, setPendingTestCount] = useState(testing?.pendingCount ?? 0);
     const [theme, setThemeState] = useState(getStoredTheme());
+    const { overlay, open: openOverlay, close: closeOverlay } = useRouteOverlay();
+    const openSettings = () => openOverlay('settings', route('settings.edit'), version);
+    const openAccount = () => openOverlay('account', route('account.edit'), version);
+    // Used when a panel links to the other panel (Settings <-> Account)
+    // instead of opening fresh from the account menu - reuses the current
+    // back-stack entry (see useRouteOverlay) instead of pushing a new one.
+    const switchToSettings = () => openOverlay('settings', route('settings.edit'), version, { replace: true });
+    const switchToAccount = () => openOverlay('account', route('account.edit'), version, { replace: true });
+    // Support's two entry points both go to the same route; `tab` just
+    // seeds which one FeedbackPanel opens on (see its initialTab prop).
+    const switchToFeedback = (tab) => openOverlay(
+        'feedback',
+        route('feedback.page', { from: 'settings' }),
+        version,
+        { replace: true, extraProps: { initialTab: tab } },
+    );
+    const OverlayPanel = overlay ? OVERLAY_PANELS[overlay.key] : null;
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);
@@ -79,6 +109,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     ];
 
     return (
+        <RouteOverlayActionsContext.Provider value={{ openSettings, openAccount, switchToSettings, switchToAccount, switchToFeedback }}>
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             <FlashMessages />
             <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/50 backdrop-blur dark:border-gray-700 dark:bg-gray-800/50">
@@ -152,7 +183,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         </Dropdown.Trigger>
 
                                         <Dropdown.Content width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
-                                            <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} />
+                                            <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} onOpenSettings={openSettings} onOpenAccount={openAccount} />
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
@@ -172,7 +203,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         panel opens right at the edge instead of leaving a gap where
                                         the hamburger used to sit. */}
                                     <Dropdown.Content align="right" width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
-                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} navLinks={mobileNavLinks} />
+                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} navLinks={mobileNavLinks} onOpenSettings={openSettings} onOpenAccount={openAccount} />
                                     </Dropdown.Content>
                                 </Dropdown>
                                 {/* Testing/Admin badges live inside the menu, so surface a plain dot
@@ -196,7 +227,10 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
             )}
 
             <main>{children}</main>
+
+            {OverlayPanel && <OverlayPanel {...overlay.props} onClose={closeOverlay} />}
         </div>
+        </RouteOverlayActionsContext.Provider>
     );
 
 }

@@ -1,0 +1,941 @@
+import { Link, useForm } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import Linkify from '@/Components/Linkify';
+import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
+import ImageLightbox from '@/Components/ImageLightbox';
+import Modal from '@/Components/Modal';
+import SectionSelect from '@/Components/SectionSelect';
+import { useEffect, useRef, useState } from 'react';
+import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
+
+// Section nav (left sidebar on desktop, dropdown on mobile) - same pattern as
+// the in-app Settings dialog, so Help & Feedback reads as the same kind of
+// panel instead of a one-off page.
+const feedbackNavItems = [
+    {
+        id: 'submit',
+        label: 'Submit Feedback',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'track',
+        label: 'Track Status',
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        ),
+    },
+];
+
+const SECTION_META = {
+    submit: { title: 'Submit Feedback', description: 'Report a bug, ask a question, or share a suggestion' },
+    track: { title: 'Track Status', description: 'Check the status of feedback you already submitted' },
+};
+
+function CloseIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    );
+}
+
+const statusConfig = {
+    pending: {
+        label: 'Pending',
+        style: 'bg-gray-100 text-gray-700',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        ),
+    },
+    reviewing: {
+        label: 'Under Review',
+        style: 'bg-blue-100 text-blue-700',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+        ),
+    },
+    accepted: {
+        label: 'Accepted',
+        style: 'bg-green-100 text-green-700',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+        ),
+    },
+    rejected: {
+        label: 'Rejected',
+        style: 'bg-red-100 text-red-700',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        ),
+    },
+    closed: {
+        label: 'Closed',
+        style: 'bg-gray-200 text-gray-500',
+        icon: (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+        ),
+    },
+};
+
+function getCsrfToken() {
+    return decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');
+}
+
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return null;
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+function LinkTip() {
+    return (
+        <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>
+                <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">[label](https://example.com)</code> turns into a clickable link
+            </span>
+        </p>
+    );
+}
+
+function ReplyBox({ feedback, trackingId, email, onReplySent }) {
+    const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
+    const [error, setError] = useState(null);
+
+    const hasAdminResponse = feedback.responses?.some((r) => r.sender_type === 'admin');
+    const isClosed = ['closed', 'rejected'].includes(feedback.status);
+
+    if (isClosed) {
+        return (
+            <p className="rounded-md bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-900/50 dark:text-gray-400">
+                This ticket is {feedback.status} and no longer accepts replies.
+            </p>
+        );
+    }
+
+    if (!hasAdminResponse) {
+        return (
+            <p className="rounded-md bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-900/50 dark:text-gray-400">
+                You'll be able to reply once our team responds to this ticket.
+            </p>
+        );
+    }
+
+    const submit = async (e) => {
+        e.preventDefault();
+        if (!message.trim()) return;
+        setSending(true);
+        setError(null);
+        try {
+            const res = await fetch(route('feedback.reply'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ tracking_id: trackingId, email, message }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                setError(json.error ?? 'Something went wrong.');
+            } else {
+                onReplySent(json.response);
+                setMessage('');
+            }
+        } catch {
+            setError('Something went wrong. Please try again.');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-2">
+            <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
+                placeholder="Write a reply..."
+                className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            />
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <LinkTip />
+            <button
+                type="submit"
+                disabled={sending || !message.trim()}
+                className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+                {sending ? 'Sending...' : 'Send Reply'}
+            </button>
+        </form>
+    );
+}
+
+function TicketActions({ feedback, trackingId, email, onStatusChanged }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const isClosed = feedback.status === 'closed';
+    const isRejected = feedback.status === 'rejected';
+
+    if (isRejected) return null; // rejected tickets stay rejected, no reopen path
+
+    const callEndpoint = async (routeName) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(route(routeName), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ tracking_id: trackingId, email }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                setError(json.error ?? 'Something went wrong.');
+            } else {
+                onStatusChanged(json.status);
+            }
+        } catch {
+            setError('Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+            <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isClosed ? 'This ticket is closed.' : 'Resolved your issue?'}
+                </p>
+                {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+            </div>
+            {isClosed ? (
+                <button
+                    onClick={() => callEndpoint('feedback.reopen')}
+                    disabled={loading}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+                    </svg>
+                    {loading ? 'Reopening...' : 'Reopen Ticket'}
+                </button>
+            ) : (
+                <button
+                    onClick={() => callEndpoint('feedback.close')}
+                    disabled={loading}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {loading ? 'Closing...' : 'Close Ticket'}
+                </button>
+            )}
+        </div>
+    );
+}
+
+export default function FeedbackPanel({ flash, categories, trackingId: trackingIdFromUrl, from, initialTab, onClose }) {
+    const overlayActions = useRouteOverlayActions();
+    // When opened via Settings > Support, the sidebar's bottom link should
+    // return there directly (preserving whatever real page was behind
+    // Settings) instead of doing a real navigation - falls back to a plain
+    // Link for a standalone guest visit, where there's no overlay context.
+    const isFromSettings = from === 'settings';
+    const backLabel = isFromSettings ? 'Back to Settings' : 'Back to Home';
+    const backHref = isFromSettings ? route('settings.edit', { section: 'support' }) : '/';
+
+    const [activeTab, setActiveTab] = useState(initialTab ?? (trackingIdFromUrl ? 'track' : 'submit'));
+    const [trackingId, setTrackingId] = useState(trackingIdFromUrl ?? '');
+    const [trackResult, setTrackResult] = useState(null);
+    const [trackLoading, setTrackLoading] = useState(false);
+    const [submitted, setSubmitted] = useState(null);
+    const [copied, setCopied] = useState(false);
+    const [previews, setPreviews] = useState([]); // [{ file, url }]
+    const [lightboxIndex, setLightboxIndex] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef(null);
+    const dragCounter = useRef(0);
+
+    const MAX_ATTACHMENTS = 5;
+
+    const closeFeedback = onClose;
+
+    // navigator.clipboard requires a secure context (HTTPS or localhost) and isn't
+    // available in every mobile browser/webview, so fall back to the old
+    // execCommand approach via a temporary textarea when it's missing.
+    const copyTrackingId = async (id) => {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(id);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = id;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (e) {
+            // Clipboard write can be denied by browser permissions; fail silently,
+            // the ID is still visible on screen for the user to select manually.
+        }
+    };
+
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        email: '',
+        category: '',
+        subject: '',
+        message: '',
+        attachments: [],
+    });
+
+    useEffect(() => {
+        if (flash?.feedback_tracking_id) {
+            setSubmitted(flash.feedback_tracking_id);
+            reset();
+            previews.forEach((p) => URL.revokeObjectURL(p.url));
+            setPreviews([]);
+            setLightboxIndex(null);
+        }
+    }, [flash]);
+
+    const submitFeedback = (e) => {
+        e.preventDefault();
+        post(route('feedback.store'), { forceFormData: true });
+    };
+
+    const addFiles = (fileList) => {
+        const incoming = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+        const room = MAX_ATTACHMENTS - data.attachments.length;
+        const accepted = incoming.slice(0, room);
+        if (accepted.length === 0) return;
+
+        setData('attachments', [...data.attachments, ...accepted]);
+        setPreviews((prev) => [
+            ...prev,
+            ...accepted.map((file) => ({ file, url: URL.createObjectURL(file) })),
+        ]);
+    };
+
+    const onFilesChange = (e) => {
+        addFiles(e.target.files);
+        e.target.value = '';
+    };
+
+    const onDragEnter = (e) => {
+        e.preventDefault();
+        dragCounter.current += 1;
+        if (e.dataTransfer.types.includes('Files')) {
+            setIsDragging(true);
+        }
+    };
+
+    const onDragOver = (e) => {
+        // Required so the browser allows a drop here instead of opening the file.
+        e.preventDefault();
+    };
+
+    const onDragLeave = (e) => {
+        e.preventDefault();
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+            dragCounter.current = 0;
+            setIsDragging(false);
+        }
+    };
+
+    const onDrop = (e) => {
+        e.preventDefault();
+        dragCounter.current = 0;
+        setIsDragging(false);
+        if (e.dataTransfer.files?.length) {
+            addFiles(e.dataTransfer.files);
+        }
+    };
+
+    const removeAttachment = (index) => {
+        URL.revokeObjectURL(previews[index].url);
+        setData('attachments', data.attachments.filter((_, i) => i !== index));
+        setPreviews((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const trackFeedback = async (e, idOverride) => {
+        e?.preventDefault();
+        const id = idOverride ?? trackingId;
+        if (!id.trim()) return;
+        setTrackLoading(true);
+        setTrackResult(null);
+        try {
+            const res = await fetch(route('feedback.track'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ tracking_id: id }),
+            });
+            const json = await res.json();
+            setTrackResult(json);
+        } catch {
+            setTrackResult({ found: false });
+        } finally {
+            setTrackLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (trackingIdFromUrl) {
+            trackFeedback(null, trackingIdFromUrl);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const appendReply = (response) => {
+        setTrackResult((prev) => ({
+            ...prev,
+            feedback: {
+                ...prev.feedback,
+                responses: [...(prev.feedback.responses ?? []), response],
+            },
+        }));
+    };
+
+    const updateStatus = (newStatus) => {
+        setTrackResult((prev) => ({
+            ...prev,
+            feedback: { ...prev.feedback, status: newStatus },
+        }));
+    };
+
+    const selectedCategory = categories.find((c) => c.key === data.category);
+
+    // Same { src, alt } shape as trackAttachmentImages below so both reuse the
+    // one ImageLightbox/lightboxIndex pair.
+    const previewImages = previews.map((p) => ({ src: p.url, alt: p.file.name }));
+
+    // Flattened so the lightbox can page through every attachment on this
+    // ticket (legacy single attachment_path + the newer attachments array).
+    const trackAttachmentImages = trackResult ? [
+        ...(trackResult.feedback.attachment_path ? [{ src: `/storage/${trackResult.feedback.attachment_path}`, alt: 'Attachment' }] : []),
+        ...(trackResult.feedback.attachments ?? []).map((att) => ({ src: `/storage/${att.path}`, alt: att.original_name })),
+    ] : [];
+
+    return (
+        <>
+            <Modal show onClose={closeFeedback} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
+
+                            {/* Mobile section nav - a dropdown instead of horizontal pills,
+                                so both section labels stay fully readable on small screens. */}
+                            <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                                <SectionSelect items={feedbackNavItems} value={activeTab} onChange={setActiveTab} />
+                            </div>
+
+                            <div className="flex min-h-0 flex-1">
+
+                                {/* Section nav */}
+                                <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                                    <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                        Support
+                                    </p>
+                                    <div className="space-y-0.5">
+                                        {feedbackNavItems.map((s) => (
+                                            <button
+                                                key={s.id}
+                                                type="button"
+                                                onClick={() => setActiveTab(s.id)}
+                                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm transition ${
+                                                    activeTab === s.id
+                                                        ? 'bg-white font-medium text-indigo-700 shadow-sm dark:bg-gray-800 dark:text-indigo-300'
+                                                        : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60'
+                                                }`}
+                                            >
+                                                <span className="h-4 w-4 shrink-0">{s.icon}</span>
+                                                {s.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                                        {isFromSettings && overlayActions?.switchToSettings ? (
+                                            <button
+                                                type="button"
+                                                onClick={overlayActions.switchToSettings}
+                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                                            >
+                                                <ApplicationLogo className="h-4 w-4 shrink-0 fill-current" />
+                                                {backLabel}
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                href={backHref}
+                                                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                                            >
+                                                <ApplicationLogo className="h-4 w-4 shrink-0 fill-current" />
+                                                {backLabel}
+                                            </Link>
+                                        )}
+                                    </div>
+                                </nav>
+
+                                {/* Active section */}
+                                <div className="flex min-h-0 flex-1 flex-col">
+                                    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                {SECTION_META[activeTab]?.title}
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+                                                {SECTION_META[activeTab]?.description}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={closeFeedback}
+                                            className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                                        >
+                                            <CloseIcon className="h-5 w-5" />
+                                            <span className="sr-only">Close</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                        {activeTab === 'submit' ? (
+                            submitted ? (
+                                <div className="py-8 text-center">
+                                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                                        <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Feedback received!</h3>
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Your tracking ID is:</p>
+                                    <div className="mx-auto mt-3 flex w-fit items-center gap-2 rounded-lg bg-indigo-50 py-3 pl-6 pr-3 dark:bg-indigo-950">
+                                        <span className="font-mono text-xl font-bold tracking-widest text-indigo-700 dark:text-indigo-300">
+                                            {submitted}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => copyTrackingId(submitted)}
+                                            className="flex shrink-0 items-center rounded-md p-2 text-indigo-600 transition hover:bg-indigo-100 active:bg-indigo-200 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                                            aria-label={copied ? 'Copied' : 'Copy tracking ID'}
+                                            title={copied ? 'Copied' : 'Copy tracking ID'}
+                                        >
+                                            {copied ? (
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                                        Save this ID so you can use it to track your feedback status anytime.
+                                    </p>
+                                    <button
+                                        onClick={() => setSubmitted(null)}
+                                        className="mt-5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                                    >
+                                        Submit Another
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={submitFeedback} className="space-y-5">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Name <span className="text-red-400">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={data.name}
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                placeholder="Your name"
+                                            />
+                                            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Email <span className="text-red-400">*</span>
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={data.email}
+                                                onChange={(e) => setData('email', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                placeholder="you@example.com"
+                                            />
+                                            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Category <span className="text-red-400">*</span>{selectedCategory && <span className="font-normal text-gray-400"> · {selectedCategory.label}</span>}
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                            {categories.map((c) => {
+                                                const isSelected = data.category === c.key;
+                                                return (
+                                                    <button
+                                                        key={c.key}
+                                                        type="button"
+                                                        onClick={() => setData('category', c.key)}
+                                                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition ${
+                                                            isSelected
+                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                                                                : 'border-gray-200 text-gray-600 hover:border-indigo-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-800 dark:hover:bg-gray-700'
+                                                        }`}
+                                                    >
+                                                        <CategoryIcon
+                                                            icon={c.icon}
+                                                            className={`h-4 w-4 shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 dark:text-gray-500'}`}
+                                                        />
+                                                        <span className="truncate">{c.label}</span>
+                                                        {isSelected && (
+                                                            <svg className="ml-auto h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-baseline justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Subject <span className="text-red-400">*</span>
+                                            </label>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">{data.subject.length}/255</span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={data.subject}
+                                            onChange={(e) => setData('subject', e.target.value)}
+                                            maxLength={255}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            placeholder="Brief summary of your feedback"
+                                        />
+                                        {errors.subject && <p className="mt-1 text-xs text-red-500">{errors.subject}</p>}
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-baseline justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Message <span className="text-red-400">*</span>
+                                            </label>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">{data.message.length}/5000</span>
+                                        </div>
+                                        <textarea
+                                            value={data.message}
+                                            onChange={(e) => setData('message', e.target.value)}
+                                            rows={5}
+                                            maxLength={5000}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            placeholder="Describe your feedback in detail..."
+                                        />
+                                        {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
+                                        <LinkTip />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Screenshots <span className="text-gray-400 font-normal">(optional, up to {MAX_ATTACHMENTS})</span>
+                                        </label>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={onFilesChange}
+                                            className="hidden"
+                                        />
+                                        {previews.length < MAX_ATTACHMENTS && (
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current.click()}
+                                                onDragEnter={onDragEnter}
+                                                onDragOver={onDragOver}
+                                                onDragLeave={onDragLeave}
+                                                onDrop={onDrop}
+                                                className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-dashed py-3 text-sm transition ${
+                                                    isDragging
+                                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400'
+                                                        : 'border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400'
+                                                }`}
+                                            >
+                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {isDragging
+                                                    ? 'Drop screenshots here'
+                                                    : previews.length > 0
+                                                        ? `Add more (${previews.length}/${MAX_ATTACHMENTS})`
+                                                        : 'Click or drag & drop to attach screenshots'}
+                                            </button>
+                                        )}
+                                        {previews.length > 0 && (
+                                            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                {previews.map((p, i) => (
+                                                    <div key={i} className="group relative">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setLightboxIndex(i)}
+                                                            title={p.file.name}
+                                                            className="block w-full overflow-hidden rounded-md shadow"
+                                                        >
+                                                            <img src={p.url} alt={p.file.name} className="h-20 w-full object-cover transition group-hover:brightness-90" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeAttachment(i)}
+                                                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                                                        >
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                        <p className="mt-0.5 truncate text-[10px] text-gray-400 dark:text-gray-500">{formatBytes(p.file.size)}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <ImageLightbox
+                                            images={previewImages}
+                                            index={lightboxIndex}
+                                            onClose={() => setLightboxIndex(null)}
+                                            onIndexChange={setLightboxIndex}
+                                        />
+                                        {errors.attachments && <p className="mt-1 text-xs text-red-500">{errors.attachments}</p>}
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                                Sending...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                </svg>
+                                                Send Feedback
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            )
+                        ) : (
+                            <div className="space-y-4">
+                                <form onSubmit={trackFeedback} className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            value={trackingId}
+                                            onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
+                                            placeholder="e.g. ABC-1234-XYZ"
+                                            className="block w-full rounded-md border-gray-300 pl-9 font-mono text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={trackLoading}
+                                        className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                    >
+                                        {trackLoading ? '...' : 'Track'}
+                                    </button>
+                                </form>
+
+                                {!trackResult && (
+                                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-200 py-10 text-center dark:border-gray-700">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </span>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Enter the tracking ID from your submission to check its status.</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">It looks like <span className="font-mono">ABC-1234-XYZ</span> and was shown after you submitted feedback.</p>
+                                    </div>
+                                )}
+
+                                {trackResult && (
+                                    trackResult.found === false ? (
+                                        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
+                                            <svg className="h-5 w-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="text-sm text-red-700 dark:text-red-400">No feedback found with that ID. Please check and try again.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 dark:text-gray-100">{trackResult.feedback.subject}</p>
+                                                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                                                            {trackResult.feedback.tracking_id} ·{' '}
+                                                            {resolveCategory(trackResult.feedback.category, categories).label}
+                                                        </p>
+                                                    </div>
+                                                    {(() => {
+                                                        const s = statusConfig[trackResult.feedback.status];
+                                                        return s ? (
+                                                            <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize ${s.style}`}>
+                                                                {s.icon}
+                                                                {s.label}
+                                                            </span>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Conversation</p>
+                                                <div className="space-y-2">
+                                                    {/* Original submission, styled like the reply bubbles below so the whole ticket reads as one continuous thread instead of the first message looking like unstyled leftover text */}
+                                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+                                                        <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={trackResult.feedback.message} /></p>
+
+                                                        {trackAttachmentImages.length > 0 && (
+                                                            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                                                {trackAttachmentImages.map((img, i) => (
+                                                                    <button
+                                                                        key={img.src}
+                                                                        type="button"
+                                                                        onClick={() => setLightboxIndex(i)}
+                                                                        title={img.alt}
+                                                                        className="group relative overflow-hidden rounded-md shadow"
+                                                                    >
+                                                                        <img src={img.src} alt={img.alt} className="h-20 w-full object-cover transition group-hover:brightness-90" />
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        <ImageLightbox
+                                                            images={trackAttachmentImages}
+                                                            index={lightboxIndex}
+                                                            onClose={() => setLightboxIndex(null)}
+                                                            onIndexChange={setLightboxIndex}
+                                                        />
+
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            {trackResult.feedback.name || 'You'} ·{' '}
+                                                            {new Date(trackResult.feedback.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                        </p>
+                                                    </div>
+
+                                                    {trackResult.feedback.responses?.map((r) => (
+                                                        <div
+                                                            key={r.id}
+                                                            className={`rounded-lg border p-3 ${
+                                                                r.sender_type === 'admin'
+                                                                    ? 'border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30'
+                                                                    : r.sender_type === 'system'
+                                                                        ? 'border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/40'
+                                                                        : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
+                                                            }`}
+                                                        >
+                                                            <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"><Linkify text={r.message} /></p>
+                                                            <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                </svg>
+                                                                {r.sender_type === 'admin' ? 'Support Team' : r.sender_type === 'system' ? 'Synkro (automated)' : 'You'} ·{' '}
+                                                                {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <TicketActions
+                                                feedback={trackResult.feedback}
+                                                trackingId={trackingId}
+                                                email={trackResult.feedback.email}
+                                                onStatusChanged={updateStatus}
+                                            />
+
+                                            <div>
+                                                <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Reply</p>
+                                                <ReplyBox
+                                                    feedback={trackResult.feedback}
+                                                    trackingId={trackingId}
+                                                    email={trackResult.feedback.email}
+                                                    onReplySent={appendReply}
+                                                />
+                                            </div>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Modal>
+        </>
+    );
+}
