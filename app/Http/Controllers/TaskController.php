@@ -11,6 +11,7 @@ use App\Events\TaskReviewNeeded;
 use App\Events\TaskUnassigned;
 use App\Events\TaskUpdated;
 use App\Events\TaskDeleted;
+use App\Events\TaskChanged;
 use App\Support\TestingQueueBroadcaster;
 use App\Models\Project;
 use App\Models\ProjectActivityLog;
@@ -28,6 +29,22 @@ use Illuminate\Support\Str;
  
 class TaskController extends Controller
 {
+    /**
+     * Broadcasts a project-wide "this task changed" signal so every other
+     * member currently viewing the project (board, list, or focus modal)
+     * re-fetches live instead of needing a manual refresh. Swallows
+     * broadcast failures the same way every other event in this controller
+     * does - a dead broadcast connection shouldn't fail the request.
+     */
+    private function broadcastTaskChanged(Task $task): void
+    {
+        try {
+            broadcast(TaskChanged::for($task))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     public function index()
     {
         $pinnedIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
@@ -81,6 +98,8 @@ class TaskController extends Controller
         }
  
         ProjectActivityLog::log($project, 'task_created', ['task_title' => $task->title], $task);
+
+        $this->broadcastTaskChanged($task);
  
         if ($task->assigned_to) {
             $assignee = $task->assignee;
@@ -187,6 +206,10 @@ class TaskController extends Controller
         $task->save();
 
         $skippedDependencyNames = $dependencyIds !== null ? $this->syncDependencies($task, $dependencyIds) : [];
+
+        if ($assigneeChanged || $contentChanged || $dependencyIds !== null) {
+            $this->broadcastTaskChanged($task);
+        }
  
         if ($contentChanged) {
             ProjectActivityLog::log($task->project, 'task_updated', [
@@ -433,6 +456,8 @@ class TaskController extends Controller
 
         $task->delete();
 
+        $this->broadcastTaskChanged($task);
+
         if ($wasInQueue) {
             TestingQueueBroadcaster::notify($project);
         }
@@ -509,6 +534,8 @@ class TaskController extends Controller
 
             $this->notifyBulkFieldChange($project, $affected, 'status', $validated['status']);
 
+            $this->broadcastTaskChanged($tasks->first());
+
             return back()->with('success', 'Status updated for ' . count($tasks) . ' task(s).');
         }
 
@@ -538,6 +565,8 @@ class TaskController extends Controller
             }
 
             $this->notifyBulkFieldChange($project, $affected, 'priority', $validated['priority']);
+
+            $this->broadcastTaskChanged($tasks->first());
 
             return back()->with('success', 'Priority updated for ' . count($tasks) . ' task(s).');
         }
@@ -656,6 +685,10 @@ class TaskController extends Controller
                         ['label' => $changedCount > 1 ? 'Tasks' : 'Task', 'html' => true, 'content' => NoteFormatter::toHtml($taskList)]
                     );
                 }
+            }
+
+            if ($changedCount > 0) {
+                $this->broadcastTaskChanged($tasks->first());
             }
 
             return back()->with('success', 'Assignee updated for ' . $changedCount . ' task(s).');
@@ -777,6 +810,8 @@ class TaskController extends Controller
  
         ProjectActivityLog::log($task->project, 'task_started', ['task_title' => $task->title], $task);
 
+        $this->broadcastTaskChanged($task);
+
         if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
@@ -846,6 +881,8 @@ class TaskController extends Controller
             'status' => 'submitted',
             'submitted_at' => $task->submitted_at ?? now(),
         ]);
+
+        $this->broadcastTaskChanged($task);
  
         if (! $wasAlreadySubmitted) {
             TestingQueueBroadcaster::notify($task->project);
@@ -922,6 +959,8 @@ class TaskController extends Controller
  
         ProjectActivityLog::log($task->project, 'task_review_started', ['task_title' => $task->title], $task);
 
+        $this->broadcastTaskChanged($task);
+
         if ($task->assigned_to && $task->assigned_to !== Auth::id() && $task->project->isMember($task->assignee)) {
             $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id;
 
@@ -988,6 +1027,8 @@ class TaskController extends Controller
         ]);
 
         TestingQueueBroadcaster::notify($task->project);
+
+        $this->broadcastTaskChanged($task);
  
         ProjectActivityLog::log(
             $task->project,
@@ -1115,6 +1156,9 @@ class TaskController extends Controller
             $task->update(['pending_resolution' => false]);
             ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title], $task);
         }
+
+        $this->broadcastTaskChanged($task);
+
         return redirect()->route('projects.show', [
             'project' => $task->project_id,
             '_r' => now()->timestamp,
@@ -1188,6 +1232,8 @@ class TaskController extends Controller
         ]);
  
         ProjectActivityLog::log($task->project, 'task_reopened', ['task_title' => $task->title], $task);
+
+        $this->broadcastTaskChanged($task);
  
         // Same reasoning as review(): a frozen task stays assigned to a removed/left member for
         // history's sake, but they shouldn't hear about it being reopened on a project they've left.

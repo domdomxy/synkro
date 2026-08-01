@@ -2,12 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskChanged;
 use App\Models\Task;
 use App\Models\TaskChecklistItem;
 use Illuminate\Http\Request;
 
 class TaskChecklistItemController extends Controller
 {
+    /**
+     * Same project-wide "this task changed" signal TaskController uses for
+     * every other task edit - a checklist item being added, checked/unchecked,
+     * or removed is just as much a shared, everyone-sees-it change as a title
+     * or status edit, so it needs to reach other viewers live too.
+     */
+    private function broadcastTaskChanged(Task $task): void
+    {
+        try {
+            broadcast(TaskChanged::for($task))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     public function store(Request $request, Task $task)
     {
         $this->authorize('update', $task);
@@ -23,6 +39,8 @@ class TaskChecklistItemController extends Controller
             'position' => $position,
         ]);
 
+        $this->broadcastTaskChanged($task);
+
         return back()->with('success', 'Checklist item added.');
     }
 
@@ -37,6 +55,8 @@ class TaskChecklistItemController extends Controller
 
         $checklistItem->update($validated);
 
+        $this->broadcastTaskChanged($checklistItem->task);
+
         return back()->with('success', 'Checklist item updated.');
     }
 
@@ -44,7 +64,11 @@ class TaskChecklistItemController extends Controller
     {
         $this->authorize('update', $checklistItem->task);
 
+        $task = $checklistItem->task;
+
         $checklistItem->delete();
+
+        $this->broadcastTaskChanged($task);
 
         return back()->with('success', 'Checklist item removed.');
     }

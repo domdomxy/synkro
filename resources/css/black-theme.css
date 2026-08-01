@@ -30,6 +30,12 @@ html.theme-black .dark\:hover\:bg-gray-600:hover { background-color: #222222 !im
 /* Borders */
 html.theme-black .dark\:border-gray-700 { border-color: #202020 !important; }
 html.theme-black .dark\:border-gray-600 { border-color: #2a2a2a !important; }
+/* Task cards color their non-left sides via border-y-*/border-r-* (instead of
+   the blanket border-gray-700) so the left side stays free for the task's
+   status color - those need the same black-mode value or the task cards'
+   outer border ends up a shade lighter than every other card's. */
+html.theme-black .dark\:border-y-gray-700 { border-top-color: #202020 !important; border-bottom-color: #202020 !important; }
+html.theme-black .dark\:border-r-gray-700 { border-right-color: #202020 !important; }
 html.theme-black .dark\:divide-gray-700 > :not([hidden]) ~ :not([hidden]) { border-color: #202020 !important; }
 html.theme-black .dark\:divide-gray-700\/50 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(32, 32, 32, 0.5) !important; }
 

@@ -427,7 +427,7 @@ function NotesPanel({ project, myNotes }) {
     };
 
     return (
-        <div className="min-w-0 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+        <div className="min-w-0 rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className={`flex flex-wrap items-center justify-between gap-2 ${collapsed ? '' : 'mb-4'}`}>
                 <button
                     onClick={() => setCollapsed((v) => !v)}
@@ -751,6 +751,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         router.reload({ only: ['project'] });
     });
 
+    // Fires whenever any task's shared state changes - created, edited, deleted,
+    // moved through the status lifecycle, reassigned, or touched by a bulk action -
+    // from anyone else viewing this project, so the board, task list, and an open
+    // task focus modal all stay live without a manual refresh.
+    useEcho(`project.${project.id}`, ['.task.changed'], () => {
+        router.reload({ only: ['project'] });
+    });
+
     useEcho(`project.${project.id}`, ['.project.deletion_requested', '.project.deletion_cancelled'], () => {
         router.reload({ only: ['project'] });
     });
@@ -1063,7 +1071,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         {/* LEFT: Team — Invite, Members, and Pending Invitations grouped together */}
                         <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && (
-                                <div className="rounded-lg bg-white shadow dark:bg-gray-800">
+                                <div className="rounded-lg bg-white shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                     <button
                                         onClick={() => setShowInviteForm((v) => !v)}
                                         className="flex w-full items-center justify-between p-4"
@@ -1098,7 +1106,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 </div>
                             )}
 
-                            <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                            <div className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                 <div className="mb-3 flex items-center gap-2">
                                     <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
                                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
@@ -1176,7 +1184,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         <div ref={tasksPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
                             {canManage && (
                                 <>
-                                    <button onClick={() => setShowNewTaskForm((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                                    <button onClick={() => setShowNewTaskForm((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                         <span className="flex items-center gap-2 text-sm font-semibold dark:text-gray-100">
                                             <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -1189,7 +1197,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </button>
 
                                     {showNewTaskForm && (
-                                        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                                        <div className="rounded-lg bg-white p-6 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                             <form onSubmit={submitTask} className="space-y-4">
                                                 <div>
                                                     <InputLabel htmlFor="title" value="Title" />
@@ -1263,7 +1271,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 </>
                             )}
 
-                            <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                            <div className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>

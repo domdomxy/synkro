@@ -20,6 +20,7 @@ import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const statusStyles = {
     todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -37,6 +38,10 @@ const priorityStyles = {
 
 const priorityLabels = { low: 'Low', medium: 'Medium', high: 'High' };
 const PRIORITY_OPTIONS = Object.entries(priorityLabels).map(([value, label]) => ({ value, label }));
+
+// Mirrors TaskChecklistItemController's `title` validation rule (max:255) -
+// keep both in sync if that rule ever changes.
+const CHECKLIST_ITEM_MAX_LENGTH = 255;
 
 /**
  * Mirrors TaskDependencyController::wouldCreateCycle on the backend: would making
@@ -290,31 +295,63 @@ function DeliverableItem({ d, canRemove, onRemove }) {
     );
 }
 
+const KEBAB_MENU_WIDTH = 176; // matches w-44
+
 function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted, isDone, onEdit, onDelete, onPin, onToggleMute, onRequestChanges, onShowHistory }) {
     const [open, setOpen] = useState(false);
-    const [openUpward, setOpenUpward] = useState(false);
+    // Rendered via a portal into document.body and positioned with
+    // fixed coordinates (rather than being absolutely positioned inside
+    // the task card), so it isn't clipped by any ancestor's rounded
+    // corners, borders, or overflow:auto/hidden - e.g. the task focus
+    // modal's scroll container or a kanban column.
+    const [position, setPosition] = useState({ top: 0, left: 0, openUpward: false });
     const ref = useRef(null);
     const menuRef = useRef(null);
 
     useEffect(() => {
         const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+            if (
+                ref.current && !ref.current.contains(e.target) &&
+                menuRef.current && !menuRef.current.contains(e.target)
+            ) {
+                setOpen(false);
+            }
         };
         document.addEventListener('click', handler);
         return () => document.removeEventListener('click', handler);
     }, []);
 
+    // Close on scroll/resize anywhere (capture phase so it also catches
+    // scrolling inside a nested container) instead of trying to keep the
+    // menu glued to a moving anchor.
+    useEffect(() => {
+        if (!open) return;
+        const close = () => setOpen(false);
+        window.addEventListener('scroll', close, true);
+        window.addEventListener('resize', close);
+        return () => {
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+    }, [open]);
+
     // Flip the menu to open upward instead of downward when there isn't
     // enough room below the button (e.g. the last few tasks in a long list,
-    // near the bottom of the viewport) - otherwise it'd render partly
-    // offscreen or get clipped by a scroll container.
+    // near the bottom of the viewport), and clamp it horizontally so it
+    // never runs past the edge of the screen.
     useLayoutEffect(() => {
-        if (!open || !ref.current || !menuRef.current) return;
+        if (!open || !ref.current) return;
         const buttonRect = ref.current.getBoundingClientRect();
-        const menuHeight = menuRef.current.offsetHeight;
+        const menuHeight = menuRef.current?.offsetHeight ?? 0;
         const spaceBelow = window.innerHeight - buttonRect.bottom;
         const spaceAbove = buttonRect.top;
-        setOpenUpward(spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow);
+        const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+        const left = Math.min(
+            Math.max(buttonRect.right - KEBAB_MENU_WIDTH, 8),
+            window.innerWidth - KEBAB_MENU_WIDTH - 8
+        );
+        const top = openUpward ? buttonRect.top - menuHeight - 4 : buttonRect.bottom + 4;
+        setPosition({ top, left, openUpward });
     }, [open]);
 
     return (
@@ -324,10 +361,11 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                 </svg>
             </button>
-            {open && (
+            {open && createPortal(
                 <div
                     ref={menuRef}
-                    className={`absolute right-0 z-20 w-44 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+                    style={{ position: 'fixed', top: position.top, left: position.left, width: KEBAB_MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
                     <button onClick={() => { setOpen(false); onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
@@ -373,7 +411,8 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
                             <button onClick={() => { setOpen(false); onDelete(); }} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">Delete</button>
                         </>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -1151,7 +1190,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     return (
         <div
             id={`task-${task.id}`}
-            className={`relative rounded-lg border-l-4 bg-white shadow-sm transition dark:bg-gray-800 ${
+            className={`relative rounded-lg border border-l-4 border-y-gray-200 border-r-gray-200 bg-white shadow-sm transition dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800 ${
                 isHighlighted
                     ? 'border-l-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500'
                     : task.status === 'todo' ? 'border-l-gray-400 dark:border-l-gray-600'
@@ -1761,42 +1800,55 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 />
                             </div>
                         )}
-                        {task.checklist_items?.map((item) => (
-                            <div key={item.id} className="flex items-center gap-2 group">
-                                <input
-                                    type="checkbox"
-                                    checked={item.done}
-                                    onChange={() => toggleChecklistItem(item)}
-                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
-                                />
-                                <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    {item.title}
-                                </span>
-                                <button
-                                    onClick={() => deleteChecklistItem(item)}
-                                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
-                                    title="Remove item"
-                                >
-                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+                        {task.checklist_items?.length > 0 && (
+                            <div className="space-y-1.5">
+                                {task.checklist_items.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="group flex items-start gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 shadow-sm transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={item.done}
+                                            onChange={() => toggleChecklistItem(item)}
+                                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                                        />
+                                        <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {item.title}
+                                        </span>
+                                        <button
+                                            onClick={() => deleteChecklistItem(item)}
+                                            className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
+                                            title="Remove item"
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                        <form onSubmit={addChecklistItem} className="flex items-center gap-2 pt-1">
-                            <AutoGrowTextarea
-                                value={checklistForm.data.title}
-                                onChange={(e) => checklistForm.setData('title', e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        if (checklistForm.data.title.trim()) addChecklistItem(e);
-                                    }
-                                }}
-                                placeholder="Add a checklist item…"
-                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            />
-                            <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
+                        )}
+                        <form onSubmit={addChecklistItem} className="space-y-1 pt-1">
+                            <div className="flex items-center gap-2">
+                                <AutoGrowTextarea
+                                    value={checklistForm.data.title}
+                                    onChange={(e) => checklistForm.setData('title', e.target.value.slice(0, CHECKLIST_ITEM_MAX_LENGTH))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (checklistForm.data.title.trim()) addChecklistItem(e);
+                                        }
+                                    }}
+                                    maxLength={CHECKLIST_ITEM_MAX_LENGTH}
+                                    placeholder="Add a checklist item…"
+                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                />
+                                <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
+                            </div>
+                            <p className={`text-right text-xs ${checklistForm.data.title.length >= CHECKLIST_ITEM_MAX_LENGTH ? 'text-red-500' : checklistForm.data.title.length >= CHECKLIST_ITEM_MAX_LENGTH - 20 ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                {checklistForm.data.title.length}/{CHECKLIST_ITEM_MAX_LENGTH}
+                            </p>
                         </form>
                     </div>
                 )}
