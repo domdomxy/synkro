@@ -425,7 +425,7 @@ export default function Index({ projects, showingArchived }) {
                             return (
                                 <div
                                     key={project.id}
-                                    className="group relative rounded-lg border border-transparent bg-white p-6 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900"
+                                    className="group relative rounded-lg border border-transparent bg-white p-4 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900 sm:p-6"
                                 >
                                     <ProjectActionsMenu
                                         project={project}

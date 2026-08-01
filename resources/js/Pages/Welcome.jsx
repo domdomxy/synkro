@@ -286,7 +286,7 @@ function FeatureCard({ feature, index }) {
         <div
             ref={ref}
             style={{ transitionDelay: `${index * 60}ms` }}
-            className={`group relative overflow-hidden rounded-lg bg-white p-6 pt-7 ring-1 ring-gray-100 transition-all duration-500 hover:-translate-y-1 hover:ring-gray-200 dark:bg-gray-800 dark:ring-gray-700 dark:hover:ring-gray-600 ${
+            className={`group relative overflow-hidden rounded-lg bg-white p-4 pt-5 ring-1 ring-gray-100 transition-all duration-500 hover:-translate-y-1 hover:ring-gray-200 dark:bg-gray-800 dark:ring-gray-700 dark:hover:ring-gray-600 sm:p-6 sm:pt-7 ${
                 visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             }`}
         >

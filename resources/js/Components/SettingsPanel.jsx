@@ -242,7 +242,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
     };
 
     return (
-        <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+        <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-6">
             <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">

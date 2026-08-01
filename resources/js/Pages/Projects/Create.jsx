@@ -19,7 +19,7 @@ export default function Create() {
             <Head title="New Project" />
             <div className="py-12">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                    <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-6">
                         <div>
                             <InputLabel htmlFor="name" value="Project Name" />
                             <TextInput id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} className="mt-1 block w-full" autoFocus />

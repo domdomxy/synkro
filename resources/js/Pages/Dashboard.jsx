@@ -94,7 +94,7 @@ function CalendarView({ tasks }) {
         : baseDate.getFullYear().toString();
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
             <SectionHeader
                 title="Deadline Calendar"
                 icon={
@@ -384,7 +384,7 @@ function DueSoonPanel({ dueSoon }) {
     );
 
     return (
-        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
             <SectionHeader
                 title="Due Soon"
                 badge={sorted.length > 0 ? sorted.length : undefined}
@@ -471,7 +471,7 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
     const nextUp = sorted.find((r) => new Date(r.remind_at) >= now);
 
     return (
-        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
             <SectionHeader
                 title="Reminders"
                 icon={
@@ -587,7 +587,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Awaiting Your Review" value={stats.pendingReview} sub="Submitted tasks to check" pct={stats.pendingReviewTrend} icon={statIcons.review} accentColor="text-purple-600 dark:text-purple-400" />
                     </div>
 
-                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
                         <SectionHeader
                             title="Activity"
                             icon={
@@ -614,7 +614,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+                        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
                             <SectionHeader
                                 title="My Tasks by Status"
                                 icon={

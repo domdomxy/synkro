@@ -16,93 +16,93 @@ html.dark:not(.theme-black) {
    in dark mode only, since this file doesn't apply outside it. Same trap for
    anything else styled with a background-image. Keep this longhand. */
 
-html.dark:not(.theme-black) .dark\:bg-gray-900 { background-color:#101214 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-800 { background-color:#181B20 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-700 { background-color:#242A31 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-600 { background-color:#303943 !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-500 { background-color:#3E4956 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-900 { background-color:#0B0D14 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-800 { background-color:#13151F !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-700 { background-color:#1D2030 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-600 { background-color:#2A2E42 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-500 { background-color:#3C4159 !important; }
 
-html.dark:not(.theme-black) .dark\:bg-gray-300 { background-color:#CCD3DB !important; }
-html.dark:not(.theme-black) .dark\:bg-gray-200 { background-color:#E6EBF1 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-300 { background-color:#CDD1E5 !important; }
+html.dark:not(.theme-black) .dark\:bg-gray-200 { background-color:#E7E9F5 !important; }
 
 /* Hover */
 
 html.dark:not(.theme-black) .dark\:hover\:bg-gray-700:hover {
-    background-color:#2C343E !important;
+    background-color:#23273A !important;
 }
 
 html.dark:not(.theme-black) .dark\:hover\:bg-gray-600:hover {
-    background-color:#38424E !important;
+    background-color:#343850 !important;
 }
 
 @media (min-width:640px){
 
 html.dark:not(.theme-black) .sm\:dark\:bg-gray-700{
-    background-color:#242A31 !important;
+    background-color:#1D2030 !important;
 }
 
 html.dark:not(.theme-black) .sm\:dark\:hover\:bg-gray-600:hover{
-    background-color:#38424E !important;
+    background-color:#343850 !important;
 }
 
 }
 
 /* Transparent */
 
-html.dark:not(.theme-black) .dark\:bg-gray-900\/40{background-color:rgba(16,18,20,.50)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/50{background-color:rgba(16,18,20,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/60{background-color:rgba(16,18,20,.70)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/70{background-color:rgba(16,18,20,.80)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/75{background-color:rgba(16,18,20,.85)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-900\/80{background-color:rgba(16,18,20,.90)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/40{background-color:rgba(11,13,20,.50)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/50{background-color:rgba(11,13,20,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/60{background-color:rgba(11,13,20,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/70{background-color:rgba(11,13,20,.80)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/75{background-color:rgba(11,13,20,.85)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-900\/80{background-color:rgba(11,13,20,.90)!important;}
 
-html.dark:not(.theme-black) .dark\:bg-gray-800\/30{background-color:rgba(24,27,32,.40)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/50{background-color:rgba(24,27,32,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/60{background-color:rgba(24,27,32,.70)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/90{background-color:rgba(24,27,32,.95)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-800\/95{background-color:rgba(24,27,32,.97)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/30{background-color:rgba(19,21,31,.40)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/50{background-color:rgba(19,21,31,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/60{background-color:rgba(19,21,31,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/90{background-color:rgba(19,21,31,.95)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-800\/95{background-color:rgba(19,21,31,.97)!important;}
 
-html.dark:not(.theme-black) .dark\:bg-gray-700\/40{background-color:rgba(36,42,49,.50)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-700\/50{background-color:rgba(36,42,49,.60)!important;}
-html.dark:not(.theme-black) .dark\:bg-gray-700\/60{background-color:rgba(36,42,49,.70)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/40{background-color:rgba(29,32,48,.50)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/50{background-color:rgba(29,32,48,.60)!important;}
+html.dark:not(.theme-black) .dark\:bg-gray-700\/60{background-color:rgba(29,32,48,.70)!important;}
 
 /* Borders */
 
-html.dark:not(.theme-black) .dark\:border-gray-800{border-color:#2A313A!important;}
-html.dark:not(.theme-black) .dark\:border-gray-800\/80{border-color:rgba(42,49,58,.85)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-800{border-color:#262A3D!important;}
+html.dark:not(.theme-black) .dark\:border-gray-800\/80{border-color:rgba(38,42,61,.85)!important;}
 
-html.dark:not(.theme-black) .dark\:border-gray-700{border-color:#39424D!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/50{border-color:rgba(57,66,77,.60)!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/60{border-color:rgba(57,66,77,.70)!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/70{border-color:rgba(57,66,77,.80)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700{border-color:#333750!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/50{border-color:rgba(51,55,80,.60)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/60{border-color:rgba(51,55,80,.70)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/70{border-color:rgba(51,55,80,.80)!important;}
 
-html.dark:not(.theme-black) .dark\:border-gray-600{border-color:#495565!important;}
-html.dark:not(.theme-black) .dark\:border-gray-500{border-color:#5C6B7D!important;}
+html.dark:not(.theme-black) .dark\:border-gray-600{border-color:#454B69!important;}
+html.dark:not(.theme-black) .dark\:border-gray-500{border-color:#5B6284!important;}
 
 html.dark:not(.theme-black) .dark\:divide-gray-700>:not([hidden])~:not([hidden]){
-    border-color:#39424D!important;
+    border-color:#333750!important;
 }
 
 html.dark:not(.theme-black) .dark\:divide-gray-700\/50>:not([hidden])~:not([hidden]){
-    border-color:rgba(57,66,77,.60)!important;
+    border-color:rgba(51,55,80,.60)!important;
 }
 
 html.dark:not(.theme-black) .dark\:ring-gray-700{
-    --tw-ring-color:#39424D!important;
+    --tw-ring-color:#333750!important;
 }
 
 html.dark:not(.theme-black) .dark\:ring-gray-800{
-    --tw-ring-color:#2A313A!important;
+    --tw-ring-color:#262A3D!important;
 }
 
 /* Text */
 
 html.dark:not(.theme-black) .dark\:text-gray-50{color:#FFFFFF!important;}
-html.dark:not(.theme-black) .dark\:text-gray-100{color:#F7F9FC!important;}
-html.dark:not(.theme-black) .dark\:text-gray-200{color:#E7EDF5!important;}
-html.dark:not(.theme-black) .dark\:text-gray-300{color:#D1D9E4!important;}
-html.dark:not(.theme-black) .dark\:text-gray-400{color:#B2BCC9!important;}
-html.dark:not(.theme-black) .dark\:text-gray-500{color:#919CAA!important;}
-html.dark:not(.theme-black) .dark\:text-gray-600{color:#6F7B89!important;}
-html.dark:not(.theme-black) .dark\:text-gray-700{color:#55606D!important;}
-html.dark:not(.theme-black) .dark\:text-gray-800{color:#39424D!important;}
+html.dark:not(.theme-black) .dark\:text-gray-100{color:#F5F6FA!important;}
+html.dark:not(.theme-black) .dark\:text-gray-200{color:#E4E6F0!important;}
+html.dark:not(.theme-black) .dark\:text-gray-300{color:#C7CADA!important;}
+html.dark:not(.theme-black) .dark\:text-gray-400{color:#9DA1BD!important;}
+html.dark:not(.theme-black) .dark\:text-gray-500{color:#7A7F9E!important;}
+html.dark:not(.theme-black) .dark\:text-gray-600{color:#5C6080!important;}
+html.dark:not(.theme-black) .dark\:text-gray-700{color:#454863!important;}
+html.dark:not(.theme-black) .dark\:text-gray-800{color:#20232F!important;}

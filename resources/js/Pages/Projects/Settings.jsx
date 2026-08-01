@@ -26,7 +26,7 @@ function secondsUntilResendAvailable(sentAt) {
 
 function SectionCard({ icon, title, description, children, danger }) {
     return (
-        <div className={`rounded-lg bg-white p-6 shadow dark:bg-gray-800 ${danger ? 'border border-red-200 dark:border-red-900/50' : ''}`}>
+        <div className={`rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-6 ${danger ? 'border border-red-200 dark:border-red-900/50' : ''}`}>
             <div className="mb-4 flex items-start gap-3">
                 <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
                     danger

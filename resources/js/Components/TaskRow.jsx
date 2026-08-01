@@ -1349,11 +1349,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
                             />
                         )}
-                        <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
                                     {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
-                                    <p className="break-words font-semibold text-gray-900 dark:text-gray-100">
+                                    <p className="min-w-0 break-words font-semibold text-gray-900 dark:text-gray-100">
                                         {task.title}
                                         {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
                                     </p>

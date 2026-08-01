@@ -32,12 +32,12 @@
 
 /* Recharts doesn't use Tailwind dark: classes, so override its hardcoded colors explicitly */
 .dark .recharts-default-tooltip {
-    background-color: #1f2937 !important;
-    border-color: #374151 !important;
+    background-color: #13151F !important;
+    border-color: #333750 !important;
 }
 .dark .recharts-default-tooltip .recharts-tooltip-label,
 .dark .recharts-default-tooltip .recharts-tooltip-item {
-    color: #e5e7eb !important;
+    color: #E4E6F0 !important;
 }
 html.theme-black .recharts-default-tooltip {
     background-color: #0d0d0d !important;
@@ -55,6 +55,20 @@ html.theme-black .recharts-default-tooltip {
    of these controls itself. */
 html.dark {
     color-scheme: dark;
+}
+
+/* Most inputs/textareas across the app use text-sm (14px) for visual
+   density, which is fine on desktop but is below the 16px threshold that
+   makes mobile Safari zoom the whole page in when the field is focused.
+   Force form fields back up to 16px below the sm breakpoint so tapping into
+   a field doesn't yank the viewport around; layout at that width is already
+   full-bleed enough that the slightly larger text doesn't cause wrapping
+   issues. Textareas that manage their own height (AutoGrowTextarea) still
+   recalculate correctly since this only changes font-size, not padding. */
+@media (max-width: 639px) {
+    input, select, textarea {
+        font-size: 16px;
+    }
 }
 
 /* Dashboard "Due Soon" and "Reminders" cards scroll internally (max-h-80

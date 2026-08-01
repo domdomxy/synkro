@@ -1197,7 +1197,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </button>
 
                                     {showNewTaskForm && (
-                                        <div className="rounded-lg bg-white p-6 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                        <div className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700 sm:p-6">
                                             <form onSubmit={submitTask} className="space-y-4">
                                                 <div>
                                                     <InputLabel htmlFor="title" value="Title" />
