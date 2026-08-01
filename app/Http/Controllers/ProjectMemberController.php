@@ -129,7 +129,7 @@ class ProjectMemberController extends Controller
             'role' => 'required|in:manager,member,tester',
         ]);
 
-        $member = $project->members()->where('user_id', $user->id)->first();
+        $member = $project->members()->withTrashed()->where('user_id', $user->id)->first();
         $oldRole = $member?->pivot->role;
 
         $project->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
@@ -187,7 +187,7 @@ class ProjectMemberController extends Controller
         ]);
         $reason = $validated['reason'];
 
-        $member = $project->members()->where('user_id', $user->id)->first();
+        $member = $project->members()->withTrashed()->where('user_id', $user->id)->first();
         $role = $member?->pivot->role;
 
         $this->freezeOrReset($project, $user->id);

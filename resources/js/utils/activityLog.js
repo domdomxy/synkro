@@ -183,8 +183,8 @@ export function describeLog(log) {
         case 'project_deletion_cancelled': return `${actor} cancelled the project deletion`;
         case 'project_updated': return `${actor} updated the project`;
         case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
-        case 'member_removed': return d.reason ? `${actor} removed ${d.target_name} (${d.role}) — "${d.reason}"` : `${actor} removed ${d.target_name} (${d.role})`;
-        case 'member_left': return d.reason ? `${d.target_name ?? actor} (${d.role}) left the project — "${d.reason}"` : `${d.target_name ?? actor} (${d.role}) left the project`;
+        case 'member_removed': return `${actor} removed ${d.target_name} (${d.role})`;
+        case 'member_left': return `${d.target_name ?? actor} (${d.role}) left the project`;
         case 'role_changed': return `${actor} changed ${d.target_name}'s role from ${d.old_role} to ${d.new_role}`;
         case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;

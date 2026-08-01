@@ -172,7 +172,7 @@ function describeLog(log, actorName = null) {
         case 'project_updated': return `${actor} updated the project`;
         case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
         case 'member_removed': return `${actor} removed ${d.target_name} (${d.role})`;
-        case 'member_left': return d.reason ? `${actor} left the project — "${d.reason}"` : `${actor} left the project`;
+        case 'member_left': return `${actor} left the project`;
         case 'role_changed': return `${actor} changed ${d.target_name}'s role from ${d.old_role} to ${d.new_role}`;
         case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;
@@ -436,11 +436,23 @@ function LogRow({ log, actorName }) {
                                             </div>
                                         </div>
                                     )
+                                ) : item.label === 'Reason' ? (
+                                    <div>
+                                        <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M6.5 6C4 6 2 8 2 10.5c0 2.2 1.6 4 3.7 4.4-.3 1-1 1.9-2.2 2.6-.3.2-.2.7.2.7 2.9-.2 5.3-2.4 5.3-6.2C9 8 7.8 6 6.5 6zm11 0c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4 3.7 4.4-.3 1-1 1.9-2.2 2.6-.3.2-.2.7.2.7 2.9-.2 5.3-2.4 5.3-6.2 0-3-1.2-6-2.5-6z" />
+                                            </svg>
+                                            {item.label}
+                                        </dt>
+                                        <dd className="mt-1.5 whitespace-pre-wrap break-words rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+                                            <Linkify text={item.value} />
+                                        </dd>
+                                    </div>
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <dd className="break-words text-sm text-gray-700 dark:text-gray-300">
-                                            {item.label === 'Reason' ? <Linkify text={item.value} /> : item.value}
+                                            {item.value}
                                         </dd>
                                     </div>
                                 )}

@@ -117,7 +117,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
     // user, so this stays correct whether AccountPanel is the live page
     // (standalone visit) or an overlay on top of a different live page.
     const user = usePage().props.auth.user;
-    const [activeSection, setActiveSection] = useState(allNavItems[0].id);
+    const [activeSection, setActiveSection] = useState(() => (deletionRequestedAt ? 'delete-account' : allNavItems[0].id));
     const SECTION_META = buildSectionMeta(deletionGraceDays);
 
     return (

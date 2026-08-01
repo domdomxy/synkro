@@ -97,8 +97,8 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/account/deactivate', [AccountController::class, 'deactivate'])->name('account.deactivate');
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
-    Route::patch('/projects/{project}/members/{user}', [ProjectMemberController::class, 'update'])->name('projects.members.update');
-    Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy');
+    Route::patch('/projects/{project}/members/{user}', [ProjectMemberController::class, 'update'])->name('projects.members.update')->withTrashed();
+    Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy')->withTrashed();
     Route::delete('/projects/{project}/leave', [ProjectMemberController::class, 'leave'])->name('projects.leave');
     Route::patch('/projects/{project}/transfer-ownership', [ProjectController::class, 'transferOwnership'])->name('projects.transfer-ownership');
     Route::get('/projects/{project}/confirm-deletion', [ProjectController::class, 'confirmDeletion'])

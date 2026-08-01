@@ -17,6 +17,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
+import Dropdown from '@/Components/Dropdown';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -893,11 +894,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     )}
                 </h2>
                 <div className="flex shrink-0 items-center gap-1">
-                    <HeaderIconButton onClick={() => setShowInfoModal(true)} title="Project Info">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </HeaderIconButton>
                     <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
                         {project.is_muted ? (
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -909,31 +905,80 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             </svg>
                         )}
                     </HeaderIconButton>
-                    <HeaderIconButton href={route('projects.deliverables', project.id)} title="Deliverables">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                        </svg>
-                    </HeaderIconButton>
-                    <HeaderIconButton href={route('projects.resources', project.id)} title="Resources">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v13" />
-                        </svg>
-                    </HeaderIconButton>
-                    {canManage && (
-                        <HeaderIconButton href={route('projects.settings', project.id)} title={isOwner ? 'Owner Settings' : 'Manager Settings'}>
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </HeaderIconButton>
-                    )}
-                    {canLeave && (
-                        <HeaderIconButton onClick={leaveProject} title="Leave Project">
-                            <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                        </HeaderIconButton>
-                    )}
+
+                    <Dropdown>
+                        <Dropdown.Trigger>
+                            <button
+                                type="button"
+                                title="More options"
+                                className="flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6h.01M12 12h.01M12 18h.01" />
+                                </svg>
+                            </button>
+                        </Dropdown.Trigger>
+                        <Dropdown.Content align="right" width="56" contentClasses="py-1 bg-white dark:bg-gray-800">
+                            <button
+                                type="button"
+                                onClick={() => setShowInfoModal(true)}
+                                className="flex w-full items-center gap-2.5 px-4 py-2 text-start text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Project Info
+                            </button>
+                            <Link
+                                href={route('projects.deliverables', project.id)}
+                                className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                </svg>
+                                Deliverables
+                            </Link>
+                            <Link
+                                href={route('projects.resources', project.id)}
+                                className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v13" />
+                                </svg>
+                                Resources
+                            </Link>
+                            {canManage && (
+                                <>
+                                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                                    <Link
+                                        href={route('projects.settings', project.id)}
+                                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                                    >
+                                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        {isOwner ? 'Owner Settings' : 'Manager Settings'}
+                                    </Link>
+                                </>
+                            )}
+                            {canLeave && (
+                                <>
+                                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                                    <button
+                                        type="button"
+                                        onClick={leaveProject}
+                                        className="flex w-full items-center gap-2.5 px-4 py-2 text-start text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                    >
+                                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        Leave Project
+                                    </button>
+                                </>
+                            )}
+                        </Dropdown.Content>
+                    </Dropdown>
                 </div>
             </div>
         }>
