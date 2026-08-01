@@ -578,7 +578,7 @@ function TaskFocusModal({ show, onClose, task, currentUserId, canManage, canRevi
     return (
         <Modal show={show} onClose={onClose} maxWidth="2xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="bg-transparent dark:bg-transparent">
             <div className="max-h-[85vh] overflow-y-auto p-1.5 sm:p-2">
-                <div className="rounded-lg ring-1 ring-black/10 dark:ring-white/10">
+                <div className="rounded-lg ring-1 ring-gray-200 dark:ring-gray-700">
                     <TaskRow
                         key={task.id}
                         task={task}

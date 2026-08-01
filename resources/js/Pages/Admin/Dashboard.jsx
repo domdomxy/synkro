@@ -73,7 +73,7 @@ function AttentionPanel({ items }) {
 
 function TasksByStatusCard({ tasksByStatus, total }) {
     return (
-        <div className="rounded-lg bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
             <SectionHeader title="Tasks by Status" icon={statIcons.donut} />
             <div className="mt-1 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
                 <StatusDonut tasksByStatus={tasksByStatus} total={total} />
@@ -98,7 +98,7 @@ function TasksByStatusCard({ tasksByStatus, total }) {
 
 function RecentPanel({ title, icon, viewAllHref, viewAllLabel, children }) {
     return (
-        <div className="rounded-lg bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
             <SectionHeader title={title} icon={icon} />
             {children}
             <Link href={viewAllHref} className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
@@ -183,7 +183,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <StatCard label="Completed Projects" value={stats.completedProjects} sub="Every task in the project is done" accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.completed} />
                     </div>
 
-                    <div className="rounded-lg bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
+                    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800">
                         <SectionHeader title="Platform Activity" icon={statIcons.chart}>
                             <div className="flex flex-wrap items-center gap-2">
                                 <ChartTypeToggle value={chartType} onChange={setChartType} />
