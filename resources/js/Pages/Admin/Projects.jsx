@@ -87,7 +87,7 @@ export default function Projects({ projects, filters }) {
                         <Pagination meta={projects} />
                     </div>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">

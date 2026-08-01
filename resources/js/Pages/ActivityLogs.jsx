@@ -33,12 +33,17 @@ const actionLabels = {
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
     task_reopened: 'Task Reopened',
+    dependency_added: 'Dependency Added',
+    dependency_removed: 'Dependency Removed',
     invitation_sent: 'Invitation Sent',
     invitation_accepted: 'Invitation Accepted',
     invitation_denied: 'Invitation Denied',
     comment_added: 'Comment Added',
     comment_edited: 'Comment Edited',
     comment_deleted: 'Comment Deleted',
+    resource_added: 'Resource Added',
+    resource_updated: 'Resource Updated',
+    resource_removed: 'Resource Removed',
     // Account activity (logged_in/logged_out live in the separate Login History view instead)
     account_created: 'Account Created',
     password_changed: 'Password Changed',
@@ -49,6 +54,8 @@ const actionLabels = {
     account_deactivated: 'Account Deactivated',
     account_deletion_requested: 'Account Deletion Requested',
     account_deletion_cancelled: 'Account Deletion Cancelled',
+    account_deleted: 'Account Deleted',
+    account_restored: 'Account Restored',
 };
 
 /** Fallback for any action not explicitly mapped above: "some_action" -> "Some Action". */
@@ -123,12 +130,17 @@ const actionIconConfig = {
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
+    dependency_added: { path: ICON_PATHS.plus, color: 'text-amber-500' },
+    dependency_removed: { path: ICON_PATHS.minus, color: 'text-gray-400' },
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
     invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
     invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
     comment_added: { path: ICON_PATHS.chat, color: 'text-green-500' },
     comment_edited: { path: ICON_PATHS.chat, color: 'text-blue-500' },
     comment_deleted: { path: ICON_PATHS.chat, color: 'text-red-500' },
+    resource_added: { path: ICON_PATHS.plus, color: 'text-green-500' },
+    resource_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
+    resource_removed: { path: ICON_PATHS.trash, color: 'text-red-500' },
     account_created: { path: ICON_PATHS.build, color: 'text-green-500' },
     password_changed: { path: ICON_PATHS.lock, color: 'text-amber-500' },
     password_reset: { path: ICON_PATHS.lock, color: 'text-amber-500' },
@@ -138,6 +150,8 @@ const actionIconConfig = {
     account_deactivated: { path: ICON_PATHS.minus, color: 'text-red-500' },
     account_deletion_requested: { path: ICON_PATHS.trash, color: 'text-amber-500' },
     account_deletion_cancelled: { path: ICON_PATHS.undo, color: 'text-green-500' },
+    account_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    account_restored: { path: ICON_PATHS.undo, color: 'text-green-500' },
 };
 
 /**
@@ -174,12 +188,17 @@ function describeLog(log, actorName = null) {
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
+        case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
+        case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
         case 'invitation_denied': return `${actor} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
         case 'invitation_accepted': return `${actor} accepted the invitation and joined as ${d.role}`;
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
+        case 'resource_added': return `${actor} added the file "${d.name}"`;
+        case 'resource_updated': return `${actor} updated the file "${d.old_name}"`;
+        case 'resource_removed': return `${actor} removed the file "${d.name}"`;
         case 'account_created': return `${actor} created ${possessive} account`;
         case 'password_changed': return `${actor} changed ${possessive} password`;
         case 'password_reset': return `${actor} reset ${possessive} password`;
@@ -191,6 +210,8 @@ function describeLog(log, actorName = null) {
             ? `${actor} requested account deletion`
             : `${actor} requested account deletion — check your email to confirm`;
         case 'account_deletion_cancelled': return `${actor} cancelled the pending account deletion`;
+        case 'account_deleted': return `${actor} deleted ${possessive} account`;
+        case 'account_restored': return `${actor} restored ${possessive} account`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
@@ -247,6 +268,30 @@ function getDetails(log) {
                 label: 'Comment',
                 oldValue: d.old_preview || '-',
                 newValue: d.new_preview || '-',
+                isChange: true,
+            },
+        ].filter(Boolean);
+    }
+
+    if (log.action === 'dependency_added' || log.action === 'dependency_removed') {
+        return [
+            { label: 'Task', value: d.task_title },
+            { label: 'Depends On', value: d.depends_on_title },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'resource_added' || log.action === 'resource_removed') {
+        return [
+            { label: 'File', value: d.name },
+        ].filter((r) => r.value);
+    }
+
+    if (log.action === 'resource_updated') {
+        return [
+            d.old_name !== undefined && d.name !== undefined && {
+                label: 'File',
+                oldValue: d.old_name || '-',
+                newValue: d.name || '-',
                 isChange: true,
             },
         ].filter(Boolean);
