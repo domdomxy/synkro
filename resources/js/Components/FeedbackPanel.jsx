@@ -267,7 +267,7 @@ function TicketActions({ feedback, trackingId, email, onStatusChanged }) {
     );
 }
 
-export default function FeedbackPanel({ flash, categories, trackingId: trackingIdFromUrl, from, initialTab, onClose }) {
+export default function FeedbackPanel({ flash, categories, trackingId: trackingIdFromUrl, from, initialTab, onClose, standalone = false }) {
     const overlayActions = useRouteOverlayActions();
     // When opened via Settings > Support, the sidebar's bottom link should
     // return there directly (preserving whatever real page was behind
@@ -276,6 +276,14 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
     const isFromSettings = from === 'settings';
     const backLabel = isFromSettings ? 'Back to Settings' : 'Back to Home';
     const backHref = isFromSettings ? route('settings.edit', { section: 'support' }) : '/';
+    // Same idea for the "Back to Home" case: when this panel is an overlay on
+    // top of the Welcome page (standalone=false), the home page is already
+    // mounted and visible behind it, so the back link should just close the
+    // overlay in place rather than firing a real Inertia visit to '/'. Only
+    // the genuine standalone /feedback page (Feedback.jsx, standalone=true -
+    // reached by typed URL, refresh, or bookmark, where there's nothing
+    // behind it) needs a real navigation home.
+    const closeToHome = !isFromSettings && !standalone && typeof onClose === 'function';
 
     const [activeTab, setActiveTab] = useState(initialTab ?? (trackingIdFromUrl ? 'track' : 'submit'));
     const [trackingId, setTrackingId] = useState(trackingIdFromUrl ?? '');
@@ -501,6 +509,15 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
                                             <button
                                                 type="button"
                                                 onClick={overlayActions.switchToSettings}
+                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                                            >
+                                                <ApplicationLogo className="h-4 w-4 shrink-0 fill-current" />
+                                                {backLabel}
+                                            </button>
+                                        ) : closeToHome ? (
+                                            <button
+                                                type="button"
+                                                onClick={onClose}
                                                 className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
                                             >
                                                 <ApplicationLogo className="h-4 w-4 shrink-0 fill-current" />

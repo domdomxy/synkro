@@ -85,13 +85,14 @@ class PurgeDeletedAccounts extends Command
     }
 
     /**
-     * Projects this user *didn't* own already detached them as a member back
-     * when the deletion was first confirmed — but any of their tasks that
-     * were frozen (pending_resolution) rather than reset are still sitting
-     * assigned to them. The forceDelete() FK (`assigned_to` => set null)
-     * would silently blank the assignee and leave pending_resolution stuck
-     * true forever, so release those back to the backlog properly here and
-     * let the project's owner/manager know it happened.
+     * Projects this user didn't own kept their membership row intact through the
+     * grace period (see AccountDeletion::unwindProjectsAndDelete()) — forceDelete()
+     * below cascades that away for real via project_user's onDelete('cascade') FK, so
+     * nothing needs to happen to it here. But any of their tasks that were frozen
+     * (pending_resolution) rather than reset are still sitting assigned to them. The
+     * forceDelete() FK (`assigned_to` => set null) would silently blank the assignee
+     * and leave pending_resolution stuck true forever, so release those back to the
+     * backlog properly here and let the project's owner/manager know it happened.
      */
     private function releaseLeftoverPendingTasks(User $user): void
     {

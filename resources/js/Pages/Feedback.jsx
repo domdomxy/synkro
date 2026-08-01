@@ -5,13 +5,15 @@ import FeedbackPanel from '@/Components/FeedbackPanel';
 /**
  * Guest-accessible (no auth required), so this keeps its own minimal header
  * instead of AuthenticatedLayout's nav - there may be no logged-in page
- * behind it at all. Only renders for a real visit to /feedback (typed URL,
- * refresh, bookmark, or a logged-out visitor from the home page).
+ * behind it at all. Only renders for a genuine standalone visit to /feedback
+ * (typed URL, refresh, or bookmark) where there's no other page mounted to
+ * show behind a modal.
  *
- * Reached from Settings > Support instead, AuthenticatedLayout opens
- * FeedbackPanel directly as an overlay on the page that was already showing
- * (see useRouteOverlay), so that page - and Settings itself - stay visible
- * behind the dialog instead of being replaced.
+ * Reached from the Welcome page's "Help / Feedback" button, or from
+ * Settings > Support, FeedbackPanel is instead opened directly as an
+ * overlay on the page that was already showing (see useRouteOverlay), so
+ * that page - Welcome, Settings, or whatever else - stays visible behind
+ * the dialog instead of being replaced.
  */
 export default function Feedback({ flash, categories, trackingId, from }) {
     const isFromSettings = from === 'settings';
@@ -46,7 +48,7 @@ export default function Feedback({ flash, categories, trackingId, from }) {
                 </header>
 
                 <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-                    <FeedbackPanel flash={flash} categories={categories} trackingId={trackingId} from={from} onClose={closeStandalone} />
+                    <FeedbackPanel flash={flash} categories={categories} trackingId={trackingId} from={from} onClose={closeStandalone} standalone />
                 </main>
             </div>
         </>

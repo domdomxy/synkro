@@ -1,8 +1,10 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEchoPublic } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
+import useRouteOverlay from '@/hooks/useRouteOverlay';
+import FeedbackPanel from '@/Components/FeedbackPanel';
 
 const MONO = { fontFamily: "'JetBrains Mono', ui-monospace, monospace" };
 
@@ -330,6 +332,17 @@ export default function Welcome({ auth, stats }) {
     const [scrolled, setScrolled] = useState(false);
     const [scrollProgress, setScrollProgress] = useState(0);
     const [showBackToTop, setShowBackToTop] = useState(false);
+    const { version } = usePage();
+    // Opens Support as an overlay on top of Welcome itself - same
+    // fetch-then-render-in-place approach AuthenticatedLayout uses for
+    // Settings/Account/Support (see useRouteOverlay) - instead of a plain
+    // Link doing a full Inertia visit to /feedback, which replaced the
+    // entire page and left nothing showing behind the dialog.
+    const { overlay: feedbackOverlay, open: openFeedback, close: closeFeedback } = useRouteOverlay();
+    const openHelpFeedback = (e) => {
+        e.preventDefault();
+        openFeedback('feedback', route('feedback.page'), version);
+    };
 
     useEffect(() => {
         const t = setTimeout(() => setHeroVisible(true), 50);
@@ -476,9 +489,9 @@ export default function Welcome({ auth, stats }) {
                                     <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
                                         Go to Projects
                                     </Link>
-                                    <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                                         Help / Feedback
-                                    </Link>
+                                    </button>
                                 </>
                             ) : (
                                 <>
@@ -488,9 +501,9 @@ export default function Welcome({ auth, stats }) {
                                     <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                                         Log in
                                     </Link>
-                                    <Link href={route('feedback.page')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                                         Help / Feedback
-                                    </Link>
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -624,6 +637,8 @@ export default function Welcome({ auth, stats }) {
                     </svg>
                 </button>
             </div>
+
+            {feedbackOverlay && <FeedbackPanel {...feedbackOverlay.props} onClose={closeFeedback} />}
         </>
     );
 }

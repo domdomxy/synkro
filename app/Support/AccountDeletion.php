@@ -12,10 +12,20 @@ use Carbon\Carbon;
 class AccountDeletion
 {
     /**
-     * Unwinds a user's project memberships (freezing in-review/done tasks pending
+     * Unwinds a user's project involvement (freezing in-review/done tasks pending
      * resolution, resetting the rest, notifying owners/managers) and soft-deletes the
-     * account. Shared by the self-service deletion flow (AccountController::confirmDeletion,
-     * reached via a signed email link) and admin-forced deletion (AdminController::destroy/
+     * account. Deliberately does NOT remove the user's project memberships yet, whether
+     * they own a project or are just a member of one — membership only actually goes
+     * away once the post-deletion grace period ends without a restore (owned projects
+     * are deleted outright by PurgeDeletedAccounts; memberships in other projects are
+     * cascade-detached automatically when forceDelete() removes the users row for real,
+     * via project_user's onDelete('cascade') FK). Until then, the account being
+     * soft-deleted already hides it from every ordinary member query (User uses
+     * SoftDeletes, which applies its own "not trashed" global scope), so nothing shows
+     * a ghost member in the meantime — and a restore within the grace period puts
+     * everything back exactly as it was, with no membership to re-add. Shared by the
+     * self-service deletion flow (AccountController::confirmDeletion, reached via a
+     * signed email link) and admin-forced deletion (AdminController::destroy/
      * destroyBulk), so both paths leave projects and other members in exactly the same
      * state. Callers are responsible for anything specific to how the deletion was
      * triggered (activity logs, notifying the deleted user themselves, etc).
@@ -85,8 +95,6 @@ class AccountDeletion
                 ->whereIn('task_id', $resettable->pluck('id'))
                 ->delete();
 
-            $project->members()->detach($user->id);
-
             $recipients = $project->members()
                 ->wherePivotIn('role', ['owner', 'manager'])
                 ->where('users.id', '!=', $user->id)
@@ -104,7 +112,7 @@ class AccountDeletion
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
-                        'message' => "Member left\n**{$user->name}** ({$role}) deleted their account.{$frozenNote}",
+                        'message' => "Account deletion requested\n**{$user->name}** ({$role}) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ", they'll be removed from the project automatically.",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
