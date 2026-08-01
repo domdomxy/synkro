@@ -3,8 +3,11 @@ import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
 import ViewToggle from '@/Components/ViewToggle';
 import RichTextContent from '@/Components/RichTextContent';
+import PerPageSelect from '@/Components/PerPageSelect';
+import LocalPagination from '@/Components/LocalPagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head, Link, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 const statusStyles = {
     todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -136,16 +139,25 @@ export default function Index({ tasks }) {
         if (typeof window === 'undefined') return 'grid';
         return localStorage.getItem('synkro:tasks-view') ?? 'grid';
     });
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(15);
+    const paginationRef = useRef(null);
 
     const changeView = (next) => {
         setView(next);
         try { localStorage.setItem('synkro:tasks-view', next); } catch { /* private browsing, etc. */ }
     };
 
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        setPage(1);
+    };
+
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('all');
         setPriorityFilter('all');
+        setPage(1);
     };
 
     const togglePin = (task) => {
@@ -179,6 +191,10 @@ export default function Index({ tasks }) {
     const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
     const overdueCount = useMemo(() => tasks.filter(isOverdue).length, [tasks]);
 
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    const currentPage = Math.min(page, totalPages);
+    const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Tasks</h2>}>
             <Head title="My Tasks" />
@@ -191,20 +207,20 @@ export default function Index({ tasks }) {
                             </div>
                             <TextInput
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                                 placeholder="Search by task or project name..."
                                 className="w-full pl-9 sm:w-72"
                             />
                         </div>
                         <FilterSelect
                             value={statusFilter}
-                            onChange={setStatusFilter}
+                            onChange={(v) => { setStatusFilter(v); setPage(1); }}
                             className="w-44"
                             options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
                         />
                         <FilterSelect
                             value={priorityFilter}
-                            onChange={setPriorityFilter}
+                            onChange={(v) => { setPriorityFilter(v); setPage(1); }}
                             className="w-44"
                             options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
                         />
@@ -231,6 +247,19 @@ export default function Index({ tasks }) {
                     )}
 
                     {view === 'list' && filtered.length > 0 && (
+                        <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <LocalPagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                total={filtered.length}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                            />
+                        </div>
+                    )}
+
+                    {view === 'list' && filtered.length > 0 && (
                         <div className="mb-4 overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                             <div className="hidden border-b border-gray-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500 sm:grid sm:grid-cols-[14rem_minmax(0,1fr)_14rem_7rem_10rem_2.5rem] sm:items-center sm:gap-4">
                                 <span>Task</span>
@@ -241,7 +270,7 @@ export default function Index({ tasks }) {
                                 <span></span>
                             </div>
                             <ul>
-                                {filtered.map((task) => {
+                                {paginated.map((task) => {
                                     const overdue = isOverdue(task);
                                     return (
                                         <li key={task.id} className="group relative border-b border-gray-100 last:border-0 dark:border-gray-700">
@@ -383,6 +412,7 @@ export default function Index({ tasks }) {
                     )}
                 </div>
             </div>
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

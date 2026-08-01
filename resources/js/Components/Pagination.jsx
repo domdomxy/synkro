@@ -45,6 +45,12 @@ function ChevronDoubleRightIcon() {
  * current-page windows together once they're close (page 6 of 15 comes back
  * as "1 2 3 4 5 6 7 8 9 10 ... 14 15" instead of a fixed 6-number window),
  * and doesn't include a url for every page number anyway.
+ *
+ * Layout: stacks (summary text over full-width nav) below `sm`, and sits
+ * inline side-by-side above it. Numbered page pills only render at `sm`+;
+ * phones get a compact "Page X of Y" readout plus large tap targets instead,
+ * and the go-to-page jump box (redundant with that readout, fiddly to type
+ * into on a phone) is reserved for `sm`+ too.
  */
 export default function Pagination({ meta }) {
     if (!meta || !meta.total) return null;
@@ -77,9 +83,12 @@ export default function Pagination({ meta }) {
         setGoToValue('');
     };
 
+    const navButtonClass =
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 active:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-30 sm:h-8 sm:w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:active:bg-gray-600';
+
     return (
-        <div className="flex flex-wrap items-center gap-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <p className="text-center text-sm text-gray-500 sm:text-left dark:text-gray-400">
                 Showing{' '}
                 <span className="font-medium text-gray-700 dark:text-gray-300">{from ?? 0}</span>
                 {'-'}
@@ -89,13 +98,16 @@ export default function Pagination({ meta }) {
             </p>
 
             {last_page > 1 && (
-                <nav className="flex items-center gap-1" aria-label="Pagination">
+                <nav
+                    className="flex items-center justify-center gap-1 sm:justify-start sm:border-l sm:border-gray-100 sm:pl-4 dark:sm:border-gray-700"
+                    aria-label="Pagination"
+                >
                     {showJumpButtons && (
                         <button
                             type="button"
                             disabled={current_page === 1}
                             onClick={() => go(1)}
-                            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                            className={navButtonClass}
                             aria-label="First page"
                         >
                             <ChevronDoubleLeftIcon />
@@ -106,7 +118,7 @@ export default function Pagination({ meta }) {
                         type="button"
                         disabled={current_page === 1}
                         onClick={() => go(current_page - 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                        className={navButtonClass}
                         aria-label="Previous page"
                     >
                         <ChevronLeftIcon />
@@ -124,9 +136,9 @@ export default function Pagination({ meta }) {
                                     type="button"
                                     onClick={() => go(link)}
                                     aria-current={link === current_page ? 'page' : undefined}
-                                    className={`flex h-8 min-w-[2rem] items-center justify-center rounded-md px-2 text-sm transition ${
+                                    className={`flex h-8 min-w-[2rem] items-center justify-center rounded-md px-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                                         link === current_page
-                                            ? 'bg-indigo-600 font-medium text-white'
+                                            ? 'bg-indigo-600 font-medium text-white shadow-sm'
                                             : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                                     }`}
                                 >
@@ -136,7 +148,7 @@ export default function Pagination({ meta }) {
                         )}
                     </div>
 
-                    <span className="px-2 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
+                    <span className="min-w-[5.5rem] text-center text-sm font-medium text-gray-600 sm:hidden dark:text-gray-300">
                         Page {current_page} of {last_page}
                     </span>
 
@@ -144,7 +156,7 @@ export default function Pagination({ meta }) {
                         type="button"
                         disabled={current_page === last_page}
                         onClick={() => go(current_page + 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                        className={navButtonClass}
                         aria-label="Next page"
                     >
                         <ChevronRightIcon />
@@ -155,7 +167,7 @@ export default function Pagination({ meta }) {
                             type="button"
                             disabled={current_page === last_page}
                             onClick={() => go(last_page)}
-                            className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
+                            className={navButtonClass}
                             aria-label="Last page"
                         >
                             <ChevronDoubleRightIcon />
@@ -163,8 +175,8 @@ export default function Pagination({ meta }) {
                     )}
 
                     {showJumpButtons && (
-                        <div className="ml-1 flex items-center gap-1 border-l border-gray-200 pl-2 dark:border-gray-700">
-                            <span className="hidden text-sm text-gray-400 dark:text-gray-500 sm:inline">Page</span>
+                        <div className="ml-1 hidden items-center gap-1 border-l border-gray-200 pl-2 sm:flex dark:border-gray-700">
+                            <span className="hidden text-sm text-gray-400 lg:inline dark:text-gray-500">Page</span>
                             <input
                                 type="number"
                                 min="1"
@@ -174,12 +186,12 @@ export default function Pagination({ meta }) {
                                 onKeyDown={(e) => e.key === 'Enter' && submitGoTo()}
                                 placeholder="#"
                                 title={`Go to page (1-${last_page})`}
-                                className="w-14 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="w-14 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                             <button
                                 type="button"
                                 onClick={submitGoTo}
-                                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                             >
                                 Go
                             </button>

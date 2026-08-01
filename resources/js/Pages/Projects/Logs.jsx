@@ -98,7 +98,7 @@ export default function Logs({ project, logs, backHref, backLabel }) {
         }>
             <Head title={`Logs - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FilterSelect
                             value={userFilter}
@@ -130,7 +130,7 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                     )}
 
                     {filtered.length > 0 && (
-                        <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                        <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
                             <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                             <LocalPagination
                                 page={currentPage}

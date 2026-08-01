@@ -8,6 +8,9 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
 import ViewToggle from '@/Components/ViewToggle';
+import PerPageSelect from '@/Components/PerPageSelect';
+import LocalPagination from '@/Components/LocalPagination';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -151,12 +154,20 @@ export default function Index({ projects, showingArchived }) {
         if (typeof window === 'undefined') return 'grid';
         return localStorage.getItem('synkro:projects-view') ?? 'grid';
     });
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(15);
+    const paginationRef = useRef(null);
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();
 
     const changeView = (next) => {
         setView(next);
         try { localStorage.setItem('synkro:projects-view', next); } catch { /* private browsing, etc. */ }
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        setPage(1);
     };
 
     const createForm = useForm({ name: '', description: '' });
@@ -180,6 +191,7 @@ export default function Index({ projects, showingArchived }) {
     const clearFilters = () => {
         setSearch('');
         setRoleFilter('all');
+        setPage(1);
     };
 
     const switchTab = (archived) => {
@@ -228,6 +240,10 @@ export default function Index({ projects, showingArchived }) {
 
     const hasActiveFilters = search.trim() !== '' || roleFilter !== 'all';
 
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    const currentPage = Math.min(page, totalPages);
+    const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Projects</h2>}>
             <Head title="Projects" />
@@ -266,14 +282,14 @@ export default function Index({ projects, showingArchived }) {
                                 </div>
                                 <TextInput
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                                     placeholder="Search by project name or owner..."
                                     className="w-full pl-9 sm:w-72"
                                 />
                             </div>
                             <FilterSelect
                                 value={roleFilter}
-                                onChange={setRoleFilter}
+                                onChange={(v) => { setRoleFilter(v); setPage(1); }}
                                 className="w-36"
                                 options={[
                                     { value: 'all', label: 'All Roles' },
@@ -306,6 +322,19 @@ export default function Index({ projects, showingArchived }) {
                     )}
 
                     {view === 'list' && filtered.length > 0 && (
+                        <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
+                            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
+                            <LocalPagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                total={filtered.length}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                            />
+                        </div>
+                    )}
+
+                    {view === 'list' && filtered.length > 0 && (
                         <div className="mb-4 overflow-hidden rounded-lg border border-gray-100 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                             <div className="hidden border-b border-gray-100 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:text-gray-500 sm:grid sm:grid-cols-[1fr_10rem_6rem_8rem_2.5rem] sm:items-center sm:gap-3">
                                 <span>Project</span>
@@ -315,7 +344,7 @@ export default function Index({ projects, showingArchived }) {
                                 <span></span>
                             </div>
                             <ul>
-                                {filtered.map((project) => {
+                                {paginated.map((project) => {
                                     const progress = project.tasks_count > 0
                                         ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
                                         : 0;
@@ -509,6 +538,7 @@ export default function Index({ projects, showingArchived }) {
             </Modal>
             {ConfirmDialog}
             {MuteScopeDialog}
+            <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );
 }

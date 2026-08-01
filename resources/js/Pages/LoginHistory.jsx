@@ -6,8 +6,9 @@ import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import Modal from '@/Components/Modal';
+import Avatar from '@/Components/Avatar';
 import { cleanParams } from '@/utils/queryParams';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 const actionLabels = {
@@ -59,7 +60,7 @@ function formatDuration(seconds) {
     return remMinutes > 0 ? `${hours}h ${remMinutes}m` : `${hours}h`;
 }
 
-function LoginHistoryRow({ log, onSelect }) {
+function LoginHistoryRow({ log, onSelect, actor }) {
     const iconConfig = actionIconConfig[log.action] ?? { path: ICON_PATHS.check, color: 'text-gray-400' };
     const relative = timeAgo(log.created_at);
     const d = log.details ?? {};
@@ -74,8 +75,13 @@ function LoginHistoryRow({ log, onSelect }) {
                 onKeyDown={hasDeviceInfo ? (e) => (e.key === 'Enter' || e.key === ' ') && onSelect(log) : undefined}
                 className={`flex items-start gap-3 px-6 py-3 ${hasDeviceInfo ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40' : ''}`}
             >
-                <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
-                    <Icon path={iconConfig.path} className="h-4 w-4" />
+                <span className="relative mt-0.5 h-8 w-8 shrink-0">
+                    <Avatar user={actor} size="h-8 w-8" rounded="rounded-full" />
+                    <span
+                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
+                    >
+                        <Icon path={iconConfig.path} className="h-3 w-3" />
+                    </span>
                 </span>
                 <div className="flex-1">
                     <p className="text-sm text-gray-800 dark:text-gray-200">
@@ -161,6 +167,8 @@ const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function LoginHistory({ logs, filters, backHref, backLabel, viewingUser }) {
+    const { auth } = usePage().props;
+    const actorUser = viewingUser ?? auth.user;
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
@@ -200,7 +208,7 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
         }>
             <Head title={viewingUser ? `${viewingUser.name}'s Login History` : 'Login History'} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     {viewingUser && (
                         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
                             <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -233,7 +241,7 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
                         {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>
@@ -253,7 +261,7 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
                         ) : (
                             <ul>
                                 {logs.data.map((log) => (
-                                    <LoginHistoryRow key={log.id} log={log} onSelect={setSelectedLog} />
+                                    <LoginHistoryRow key={log.id} log={log} onSelect={setSelectedLog} actor={actorUser} />
                                 ))}
                             </ul>
                         )}

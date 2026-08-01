@@ -115,12 +115,16 @@ function AdminLogRow({ log, actionCatalog }) {
                 onClick={() => hasReason && setOpen((v) => !v)}
                 className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasReason ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
-                <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
-                    <Icon path={iconConfig.path} className="h-4 w-4" />
+                <span className="relative mt-0.5 h-8 w-8 shrink-0">
+                    <Avatar user={log.admin} size="h-8 w-8" rounded="rounded-full" />
+                    <span
+                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
+                    >
+                        <Icon path={iconConfig.path} className="h-3 w-3" />
+                    </span>
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Avatar user={log.admin} size="h-5 w-5" />
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                             {log.admin?.name ?? (AUTOMATED_ACTIONS.has(log.action) ? 'Synkro (automated)' : 'Deleted admin')}
                         </span>
@@ -209,7 +213,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
         }>
             <Head title="Administration Logs" />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-end gap-3">
                         <div className="relative">
@@ -244,7 +248,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>

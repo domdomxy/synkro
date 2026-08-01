@@ -7,8 +7,9 @@ import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import Linkify from '@/Components/Linkify';
 import RichTextContent from '@/Components/RichTextContent';
 import DateRangeFilter from '@/Components/DateRangeFilter';
+import Avatar from '@/Components/Avatar';
 import { cleanParams } from '@/utils/queryParams';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 const actionLabels = {
@@ -351,7 +352,7 @@ function timeAgo(dateString) {
     return null;
 }
 
-function LogRow({ log, actorName }) {
+function LogRow({ log, actorName, actor }) {
     const [open, setOpen] = useState(false);
     const details = getDetails(log);
     const hasDetails = details.length > 0;
@@ -364,8 +365,13 @@ function LogRow({ log, actorName }) {
                 onClick={() => hasDetails && setOpen((v) => !v)}
                 className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasDetails ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
-                <span className={`mt-0.5 shrink-0 ${iconConfig.color}`}>
-                    <Icon path={iconConfig.path} className="h-4 w-4" />
+                <span className="relative mt-0.5 h-8 w-8 shrink-0">
+                    <Avatar user={actor} size="h-8 w-8" rounded="rounded-full" />
+                    <span
+                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
+                    >
+                        <Icon path={iconConfig.path} className="h-3 w-3" />
+                    </span>
                 </span>
                 <div className="flex-1">
                     <p className="text-sm text-gray-800 dark:text-gray-200">{describeLog(log, actorName)}</p>
@@ -470,6 +476,7 @@ const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', project: 'all', per_page: DEFAULT_PER_PAGE };
 
 export default function ActivityLogs({ logs, userProjects, filters, backHref, backLabel, viewingUser }) {
+    const { auth } = usePage().props;
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [project, setProject] = useState(filters?.project ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
@@ -484,6 +491,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
     const indexRoute = viewingUser ? route('admin.users.logs', viewingUser.id) : route('activity.index');
     const loginHistoryRoute = viewingUser ? route('admin.users.login-history', viewingUser.id) : route('activity.login-history');
     const actorName = viewingUser ? viewingUser.name.split(' ')[0] : null;
+    const actorUser = viewingUser ?? auth.user;
 
     const applyFilters = (overrides = {}) => {
         const next = { action, project, from, to, per_page: perPage, ...overrides };
@@ -525,7 +533,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
         }>
             <Head title={viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     {viewingUser && (
                         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
                             <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -564,7 +572,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>
@@ -584,7 +592,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         ) : (
                             <ul>
                                 {logs.data.map((log) => (
-                                    <LogRow key={`${log.source}-${log.id}`} log={log} actorName={actorName} />
+                                    <LogRow key={`${log.source}-${log.id}`} log={log} actorName={actorName} actor={actorUser} />
                                 ))}
                             </ul>
                         )}

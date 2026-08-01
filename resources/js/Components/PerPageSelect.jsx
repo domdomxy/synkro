@@ -30,14 +30,14 @@ export default function PerPageSelect({ value, onChange }) {
     };
 
     const pillClass = (active) =>
-        `rounded-md px-3 py-1 text-sm ${
+        `rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
             active
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:active:bg-gray-500'
         }`;
 
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
             <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
             {PRESETS.map((preset) => (
                 <button
@@ -66,12 +66,12 @@ export default function PerPageSelect({ value, onChange }) {
                         onChange={(e) => setCustomValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && submitCustom()}
                         placeholder="e.g. 50"
-                        className="w-20 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     />
                     <button
                         type="button"
                         onClick={submitCustom}
-                        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                         Go
                     </button>

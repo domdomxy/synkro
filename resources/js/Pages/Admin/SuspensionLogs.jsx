@@ -53,12 +53,16 @@ function SuspensionLogRow({ log }) {
                 onClick={() => setOpen((v) => !v)}
                 className="flex w-full items-start gap-3 px-6 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/50"
             >
-                <span className={`mt-0.5 shrink-0 ${lifted ? 'text-green-500' : 'text-red-500'}`}>
-                    <StatusIcon lifted={lifted} className="h-4 w-4" />
+                <span className="relative mt-0.5 h-8 w-8 shrink-0">
+                    <Avatar user={log.user} size="h-8 w-8" rounded="rounded-full" />
+                    <span
+                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${lifted ? 'text-green-500' : 'text-red-500'}`}
+                    >
+                        <StatusIcon lifted={lifted} className="h-2.5 w-2.5" />
+                    </span>
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Avatar user={log.user} size="h-5 w-5" />
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.user?.name ?? 'Deleted user'}</span>
                         <span className={`rounded-full px-2 py-0.5 text-xs ${
                             lifted
@@ -166,7 +170,7 @@ export default function SuspensionLogs({ logs, filters }) {
         }>
             <Head title="Suspension Logs" />
             <div className="py-12">
-                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <div className="relative">
@@ -218,7 +222,7 @@ export default function SuspensionLogs({ logs, filters }) {
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>
