@@ -61,7 +61,7 @@ class ProjectController extends Controller
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
         // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
-        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
 
         $project = Project::create([
@@ -168,7 +168,7 @@ class ProjectController extends Controller
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
         // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
-        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
 
         $changes = [];

@@ -11,12 +11,12 @@ import { adjustRichTextColors } from '@/utils/richTextColor';
  * onClick, etc.) is passed straight through to the wrapping element. Forwards its ref to that
  * element too, since some callers (e.g. TaskRow's truncation check) measure it directly.
  */
-const RichTextContent = forwardRef(function RichTextContent({ html, fallback = null, as: Tag = 'div', ...props }, ref) {
+const RichTextContent = forwardRef(function RichTextContent({ html, fallback = null, as: Tag = 'div', className = '', ...props }, ref) {
     const isDark = useIsDarkMode();
     const content = html || fallback;
     const adjusted = useMemo(() => adjustRichTextColors(content, isDark), [content, isDark]);
 
-    return <Tag ref={ref} {...props} dangerouslySetInnerHTML={{ __html: adjusted }} />;
+    return <Tag ref={ref} className={`rt-content ${className}`.trim()} {...props} dangerouslySetInnerHTML={{ __html: adjusted }} />;
 });
 
 export default RichTextContent;

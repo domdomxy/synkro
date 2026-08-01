@@ -68,7 +68,7 @@ class TaskController extends Controller
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
         // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
-        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
 
         $task = $project->tasks()->create($validated);
@@ -143,7 +143,7 @@ class TaskController extends Controller
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
         // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
-        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div>');
+        $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
  
         $assignedToChanging = array_key_exists('assigned_to', $validated)

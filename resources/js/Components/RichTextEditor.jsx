@@ -139,7 +139,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const isFirstRender = useRef(true);
     const [savedRange, setSavedRange] = useState(null);
     const [openPopover, setOpenPopover] = useState(null); // 'color' | 'highlight' | 'size' | 'tip' | null
-    const [activeStates, setActiveStates] = useState({ bold: false, italic: false, underline: false, highlight: false });
+    const [activeStates, setActiveStates] = useState({ bold: false, italic: false, underline: false, highlight: false, list: null });
     const [customColor, setCustomColor] = useState('#111827');
     const [customHighlight, setCustomHighlight] = useState('#fef08a');
     const [lastHighlightColor, setLastHighlightColor] = useState(HIGHLIGHT_COLORS[0]);
@@ -179,6 +179,13 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                 italic: document.queryCommandState('italic'),
                 underline: document.queryCommandState('underline'),
                 highlight: !!hiliteValue && !['transparent', 'rgba(0, 0, 0, 0)', ''].includes(hiliteValue),
+                // Only one of the two list commands can be active at once (a cursor is either inside
+                // a <ul> or an <ol>, never both), so this collapses to a single 'ul' | 'ol' | null.
+                list: document.queryCommandState('insertUnorderedList')
+                    ? 'ul'
+                    : document.queryCommandState('insertOrderedList')
+                        ? 'ol'
+                        : null,
             });
         } catch {
             // queryCommandState/queryCommandValue can throw outside a focused editable context; ignore
@@ -295,6 +302,18 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
             exec('hiliteColor', lastHighlightColor);
         }
     };
+
+    // Toggling the *same* list type off falls back to insertUnorderedList/insertOrderedList's native
+    // toggle behavior (browsers un-wrap the <li>s back to plain lines when the command matching the
+    // current list type is re-run). Switching from one type to the other (e.g. bulleted -> numbered)
+    // just re-runs the new command, which browsers natively convert in place rather than nesting.
+    const applyList = (type) => {
+        exec(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
+        setOpenPopover(null);
+    };
+
+    const indentList = () => { exec('indent'); setOpenPopover(null); };
+    const outdentList = () => { exec('outdent'); setOpenPopover(null); };
 
     const applyTextColor = (color) => { exec('foreColor', color); setOpenPopover(null); };
 
@@ -432,7 +451,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                 onFocus={updateActiveStates}
                 onBlur={handleBlur}
                 data-placeholder={placeholder}
-                className="w-full overflow-y-auto whitespace-pre-wrap px-3.5 py-3 text-base leading-relaxed text-gray-900 outline-none empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:bg-gray-900 dark:text-gray-100 dark:empty:before:text-gray-500 sm:text-sm"
+                className="rt-content w-full overflow-y-auto whitespace-pre-wrap px-3.5 py-3 text-base leading-relaxed text-gray-900 outline-none empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:bg-gray-900 dark:text-gray-100 dark:empty:before:text-gray-500 sm:text-sm"
                 style={{ minHeight: `${rows * 1.5}rem`, maxHeight, tabSize: 4 }}
             />
 
@@ -452,6 +471,86 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                         <path d="M6 4v7a6 6 0 0012 0V4h-2v7a4 4 0 01-8 0V4H6zM5 19h14v2H5v-2z" />
                     </svg>
                 </ToolbarButton>
+
+                <Divider />
+
+                <Popover
+                    open={openPopover === 'list'}
+                    onToggle={() => togglePopover('list')}
+                    onClose={() => setOpenPopover(null)}
+                    width="10.5rem"
+                    trigger={
+                        <>
+                            <svg className={`h-4 w-4 ${activeStates.list ? 'text-indigo-600 dark:text-indigo-400' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                            </svg>
+                            <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </>
+                    }
+                >
+                    <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyList('ul')}
+                        className={`flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs sm:py-1.5 ${
+                            activeStates.list === 'ul'
+                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                        </svg>
+                        Bulleted list
+                    </button>
+                    <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyList('ol')}
+                        className={`flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs sm:py-1.5 ${
+                            activeStates.list === 'ol'
+                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6h12M9 12h12M9 18h12" />
+                            <text x="1.5" y="7.5" fontSize="6" fill="currentColor" stroke="none" fontFamily="sans-serif">1</text>
+                            <text x="1.5" y="13.5" fontSize="6" fill="currentColor" stroke="none" fontFamily="sans-serif">2</text>
+                            <text x="1.5" y="19.5" fontSize="6" fill="currentColor" stroke="none" fontFamily="sans-serif">3</text>
+                        </svg>
+                        Numbered list
+                    </button>
+
+                    <div className="my-1.5 h-px bg-gray-100 dark:bg-gray-700" />
+
+                    <button
+                        type="button"
+                        disabled={!activeStates.list}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={indentList}
+                        className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-600 sm:py-1.5"
+                    >
+                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M3 18h18M11 12h10M3 12l4-3v6z" />
+                        </svg>
+                        Increase indent
+                    </button>
+                    <button
+                        type="button"
+                        disabled={!activeStates.list}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={outdentList}
+                        className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-600 sm:py-1.5"
+                    >
+                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M3 18h18M11 12h10M7 9l-4 3 4 3z" />
+                        </svg>
+                        Decrease indent
+                    </button>
+                </Popover>
 
                 <Divider />
 

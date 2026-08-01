@@ -572,6 +572,33 @@ function ProjectInfoModal({ show, onClose, project }) {
     );
 }
 
+function TaskFocusModal({ show, onClose, task, currentUserId, canManage, canReview, members, allTasks, autoOpenCommentId, autoOpenHistory, onJumpToTask, projectMuted }) {
+    if (!task) return null;
+
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="2xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="bg-transparent dark:bg-transparent">
+            <div className="max-h-[85vh] overflow-y-auto p-1.5 sm:p-2">
+                <div className="rounded-lg ring-1 ring-black/10 dark:ring-white/10">
+                    <TaskRow
+                        key={task.id}
+                        task={task}
+                        currentUserId={currentUserId}
+                        canManage={canManage}
+                        canReview={canReview}
+                        members={members}
+                        allTasks={allTasks}
+                        autoOpenCommentId={autoOpenCommentId}
+                        autoOpenComments
+                        autoOpenHistory={autoOpenHistory}
+                        onJumpToTask={onJumpToTask}
+                        projectMuted={projectMuted}
+                    />
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     return (
         <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
@@ -671,8 +698,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         setSelectedTaskIds([]);
     };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
-    const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
-    const [autoOpenCommentId, setAutoOpenCommentId] = useState(null);
+
+    // Drives TaskFocusModal (Facebook-post-style single-task dialog) - opened either by clicking
+    // a task's "Comments" button, or by landing here from a task/comment notification link.
+    const [focusedTaskId, setFocusedTaskId] = useState(null);
+    const [focusedCommentId, setFocusedCommentId] = useState(null);
+    const [focusedHistory, setFocusedHistory] = useState(false);
+    const openTaskFocus = (taskId, { commentId = null, history = false } = {}) => {
+        setFocusedTaskId(taskId);
+        setFocusedCommentId(commentId);
+        setFocusedHistory(history);
+    };
+    const closeTaskFocus = () => {
+        setFocusedTaskId(null);
+        setFocusedCommentId(null);
+        setFocusedHistory(false);
+    };
+    const focusedTask = focusedTaskId ? project.tasks.find((t) => t.id === focusedTaskId) : null;
 
     const jumpToTaskInList = (taskId) => {
         setViewMode('list');
@@ -752,23 +794,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         const params = new URLSearchParams(window.location.search);
         const taskId = params.get('task');
         if (!taskId) return;
-        if (params.get('history') === '1') {
-            setAutoOpenHistoryTaskId(Number(taskId));
-        }
         const commentId = params.get('comment');
-        if (commentId) {
-            // A comment link should land on and highlight the comment itself
-            // (handled by TaskRow's own autoOpenCommentId effect below), not the
-            // task row - so skip the task-level highlight/scroll entirely here.
-            setAutoOpenCommentId(Number(commentId));
-            return;
-        }
-        setHighlightedTaskId(Number(taskId));
-        const scrollTimer = setTimeout(() => {
-            document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-        const clearTimer = setTimeout(() => setHighlightedTaskId(null), 3000);
-        return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+        openTaskFocus(Number(taskId), {
+            commentId: commentId ? Number(commentId) : null,
+            history: params.get('history') === '1',
+        });
     }, [url]);
 
     const submitMember = (e) => {
@@ -1317,8 +1347,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         canManage={canManage}
                                         canReview={canReview}
                                         isHighlighted={task.id === highlightedTaskId}
-                                        autoOpenHistory={task.id === autoOpenHistoryTaskId}
-                                        autoOpenCommentId={autoOpenCommentId}
                                         members={project.members}
                                         selectable={canManage}
                                         selected={selectedTaskIds.includes(task.id)}
@@ -1326,6 +1354,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         allTasks={project.tasks}
                                         onJumpToTask={jumpToTaskInList}
                                         projectMuted={!!project.is_muted}
+                                        onFocusComments={openTaskFocus}
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
@@ -1381,6 +1410,20 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             />
 
             <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
+            <TaskFocusModal
+                show={!!focusedTask}
+                onClose={closeTaskFocus}
+                task={focusedTask}
+                currentUserId={auth.user.id}
+                canManage={canManage}
+                canReview={canReview}
+                members={project.members}
+                allTasks={project.tasks}
+                autoOpenCommentId={focusedCommentId}
+                autoOpenHistory={focusedHistory}
+                onJumpToTask={(id) => { closeTaskFocus(); jumpToTaskInList(id); }}
+                projectMuted={!!project.is_muted}
+            />
             <LeaveProjectModal
                 show={showLeaveModal}
                 onClose={() => setShowLeaveModal(false)}
