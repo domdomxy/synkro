@@ -1854,7 +1854,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 )}
 
                 {showComments && (
-                    <div className="mt-2 space-y-4 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
+                    <div className="mt-2 space-y-4 rounded-md bg-white p-3 dark:bg-gray-800">
                         {commentTree.roots.map((comment) => (
                             <CommentThread
                                 key={comment.id}

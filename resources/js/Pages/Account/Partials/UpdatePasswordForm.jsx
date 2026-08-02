@@ -28,6 +28,7 @@ export default function UpdatePasswordForm({ className = '' }) {
     const [processing, setProcessing] = useState(false);
     const [recentlySuccessful, setRecentlySuccessful] = useState(false);
     const successTimeout = useRef(null);
+    const hasChanges = !!(data.current_password || data.password || data.password_confirmation);
 
     const updatePassword = async (e) => {
         e.preventDefault();
@@ -134,7 +135,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>{processing ? 'Saving…' : 'Save'}</PrimaryButton>
+                    <PrimaryButton disabled={processing || !hasChanges}>{processing ? 'Saving…' : 'Save'}</PrimaryButton>
 
                     <SavedIndicator show={recentlySuccessful} />
                 </div>

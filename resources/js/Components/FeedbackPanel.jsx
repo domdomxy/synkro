@@ -5,6 +5,8 @@ import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ImageLightbox from '@/Components/ImageLightbox';
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
+import EmailValidityHint from '@/Components/EmailValidityHint';
+import { isValidEmail } from '@/utils/email';
 import { useEffect, useRef, useState } from 'react';
 import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
 
@@ -327,7 +329,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
         }
     };
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors, reset } = useForm({
         name: '',
         email: '',
         category: '',
@@ -348,6 +350,13 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
     const submitFeedback = (e) => {
         e.preventDefault();
+
+        if (!isValidEmail(data.email)) {
+            setError('email', 'Please enter a valid email address.');
+            return;
+        }
+        clearErrors('email');
+
         post(route('feedback.store'), { forceFormData: true });
     };
 
@@ -475,8 +484,8 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
     return (
         <>
-            <Modal show onClose={closeFeedback} maxWidth="4xl" overlayClassName="" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                        <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
+            <Modal show onClose={closeFeedback} maxWidth="6xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <div className="flex h-[88vh] max-h-[860px] w-full flex-col">
 
                             {/* Mobile section nav - a dropdown instead of horizontal pills,
                                 so both section labels stay fully readable on small screens. */}
@@ -631,6 +640,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                                 placeholder="you@example.com"
                                             />
+                                            <EmailValidityHint value={data.email} onChange={(value) => setData('email', value)} />
                                             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
                                         </div>
                                     </div>
