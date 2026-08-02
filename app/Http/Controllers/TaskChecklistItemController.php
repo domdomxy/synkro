@@ -151,7 +151,7 @@ class TaskChecklistItemController extends Controller
     }
 
     /**
-     * Tells the assignee a checklist item on their task was renamed by
+     * Tells the assignee a checklist item on their task was edited by
      * someone else - same per-recipient mute/preference/email pattern as
      * notifyAssigneeOfNewItem above. Skipped when the assignee is the one
      * who made the edit, or when there's no assignee to tell.
@@ -179,7 +179,7 @@ class TaskChecklistItemController extends Controller
                 'user_id' => $recipient->id,
                 'type' => 'task_checklist_item_updated',
                 'causer_id' => Auth::id(),
-                'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
+                'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " edited \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
                 'url' => $url,
             ]);
 
@@ -194,8 +194,8 @@ class TaskChecklistItemController extends Controller
             NotificationMailer::send(
                 $recipient,
                 'task.checklist_item_updated',
-                Auth::user()->name . " renamed a checklist item on \"{$task->title}\"",
-                ['**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\""],
+                Auth::user()->name . " edited a checklist item on \"{$task->title}\"",
+                ['**' . Auth::user()->name . '**' . " edited \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\""],
                 url($url),
                 'View Checklist'
             );

@@ -230,7 +230,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
             <AccountDeletedListener />
             <PasswordResetListener />
             {header && (
-                <header className="bg-white shadow dark:bg-gray-800">
+                <header className=" top-16 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md dark:border-gray-700/20 dark:bg-gray-800/20">
                     <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>
                 </header>
             )}

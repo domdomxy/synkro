@@ -130,7 +130,7 @@ export default function NotificationBell() {
                 message = `New checklist item\n**${payload.added_by_name ?? 'Someone'}** added "${payload.item_title}" to the checklist on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}&checklist=1`;
             } else if (payload.type === 'task_checklist_item_updated') {
-                message = `Checklist item edited\n**${payload.editor_name ?? 'Someone'}** renamed "${payload.old_item_title}" to "${payload.new_item_title}" on "**${payload.title}**"`;
+                message = `Checklist item edited\n**${payload.editor_name ?? 'Someone'}** edited "${payload.old_item_title}" to "${payload.new_item_title}" on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}&checklist=1`;
             } else if (payload.type === 'task_checklist_item_deleted') {
                 message = `Checklist item removed\n**${payload.deleted_by_name ?? 'Someone'}** removed "${payload.item_title}" from the checklist on "**${payload.title}**"`;

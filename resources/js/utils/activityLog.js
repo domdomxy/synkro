@@ -221,7 +221,7 @@ export function describeLog(log) {
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
-        case 'checklist_item_updated': return `${actor} renamed a checklist item on "${d.task_title}" from "${d.old_item_title}" to "${d.new_item_title}"`;
+        case 'checklist_item_updated': return `${actor} edited a checklist item on "${d.task_title}" from "${d.old_item_title}" to "${d.new_item_title}"`;
         case 'checklist_item_deleted': return `${actor} removed the checklist item "${d.item_title}" from "${d.task_title}"`;
         case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
         case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;

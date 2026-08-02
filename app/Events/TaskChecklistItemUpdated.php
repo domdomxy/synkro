@@ -9,10 +9,10 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
- * Personal "a checklist item on your task was renamed" push, mirroring
+ * Personal "a checklist item on your task was edited" push, mirroring
  * TaskChecklistItemAdded - delivered to the assignee's own user.{id} channel
  * only, since (like the "added" case) everyone viewing the checklist already
- * sees the rename live via TaskChanged; this is just the notification.
+ * sees the edit live via TaskChanged; this is just the notification.
  */
 class TaskChecklistItemUpdated implements ShouldBroadcastNow
 {

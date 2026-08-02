@@ -912,7 +912,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
-            <div className="sticky top-16 z-30 -mx-4 -my-6 flex items-center justify-between gap-3 bg-white/95 px-4 py-4 backdrop-blur dark:bg-gray-800/95 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="flex items-center justify-between gap-3">
                 <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
                     <span className="min-w-0 truncate">{project.name}</span>
                     {project.is_muted && (
