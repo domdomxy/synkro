@@ -388,8 +388,8 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
             {/* Settings opens as a modal (like every other dialog in the app),
                 not a page you scroll through. */}
-            <Modal show onClose={onClose} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
+            <Modal show onClose={onClose} maxWidth="6xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex h-[88vh] max-h-[860px] w-full flex-col">
 
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. A <select>
@@ -457,15 +457,10 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
                         {/* Active section */}
                         <div className="flex min-h-0 flex-1 flex-col">
-                            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
-                                <div>
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                        {SECTION_META[activeSection]?.title}
-                                    </h2>
-                                    <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
-                                        {SECTION_META[activeSection]?.description}
-                                    </p>
-                                </div>
+                            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-6 py-3.5 dark:border-gray-800">
+                                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                    {SECTION_META[activeSection]?.title}
+                                </h2>
                                 <button
                                     type="button"
                                     onClick={onClose}

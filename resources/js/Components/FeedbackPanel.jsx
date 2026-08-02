@@ -457,6 +457,11 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
     const selectedCategory = categories.find((c) => c.key === data.category);
 
+    // Mirrors the server-side required fields (name, email, category, subject,
+    // message) so the submit button stays disabled until they're all filled,
+    // instead of only finding out after a round trip to the server.
+    const isFormIncomplete = !data.name.trim() || !data.email.trim() || !data.category || !data.subject.trim() || !data.message.trim();
+
     // Same { src, alt } shape as trackAttachmentImages below so both reuse the
     // one ImageLightbox/lightboxIndex pair.
     const previewImages = previews.map((p) => ({ src: p.url, alt: p.file.name }));
@@ -470,7 +475,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
     return (
         <>
-            <Modal show onClose={closeFeedback} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+            <Modal show onClose={closeFeedback} maxWidth="4xl" overlayClassName="" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                         <div className="flex h-[80vh] max-h-[700px] w-full flex-col">
 
                             {/* Mobile section nav - a dropdown instead of horizontal pills,
@@ -775,8 +780,8 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
                                     <button
                                         type="submit"
-                                        disabled={processing}
-                                        className="flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                                        disabled={processing || isFormIncomplete}
+                                        className="flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         {processing ? (
                                             <>
