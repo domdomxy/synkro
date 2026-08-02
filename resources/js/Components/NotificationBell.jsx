@@ -29,6 +29,7 @@ export default function NotificationBell() {
             '.task.commented',
             '.task.mentioned',
             '.comment.replied',
+            '.task.checklist-item-added',
             '.task.reopened',
             '.member.left',
             '.owner.account-deleted',
@@ -122,6 +123,9 @@ export default function NotificationBell() {
             } else if (payload.type === 'comment_replied') {
                 message = `New reply\n**${payload.commenter_name}** replied to your comment on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
+            } else if (payload.type === 'task_checklist_item_added') {
+                message = `New checklist item\n**${payload.added_by_name ?? 'Someone'}** added "${payload.item_title}" to the checklist on "**${payload.title}**"`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}&checklist=1`;
             } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
                 // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }
                 type = 'task_deleted';

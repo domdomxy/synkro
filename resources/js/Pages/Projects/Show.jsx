@@ -255,6 +255,18 @@ function NoteItemRow({ item, onToggle, onRemove }) {
             <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
                 {item.text}
             </span>
+            {item.checklist_item_id != null && (
+                <svg
+                    className="mt-0.5 h-3 w-3 shrink-0 text-indigo-400 dark:text-indigo-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    title="Synced with the task checklist"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+            )}
             <button
                 type="button"
                 onClick={onRemove}
@@ -572,7 +584,7 @@ function ProjectInfoModal({ show, onClose, project }) {
     );
 }
 
-function TaskFocusModal({ show, onClose, task, currentUserId, canManage, canReview, members, allTasks, autoOpenCommentId, autoOpenHistory, onJumpToTask, projectMuted }) {
+function TaskFocusModal({ show, onClose, task, currentUserId, canManage, canReview, members, allTasks, autoOpenCommentId, autoOpenHistory, autoOpenChecklist, onJumpToTask, projectMuted }) {
     if (!task) return null;
 
     return (
@@ -590,6 +602,7 @@ function TaskFocusModal({ show, onClose, task, currentUserId, canManage, canRevi
                         autoOpenCommentId={autoOpenCommentId}
                         autoOpenComments
                         autoOpenHistory={autoOpenHistory}
+                        autoOpenChecklist={autoOpenChecklist}
                         onJumpToTask={onJumpToTask}
                         projectMuted={projectMuted}
                     />
@@ -704,15 +717,18 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [focusedTaskId, setFocusedTaskId] = useState(null);
     const [focusedCommentId, setFocusedCommentId] = useState(null);
     const [focusedHistory, setFocusedHistory] = useState(false);
-    const openTaskFocus = (taskId, { commentId = null, history = false } = {}) => {
+    const [focusedChecklist, setFocusedChecklist] = useState(false);
+    const openTaskFocus = (taskId, { commentId = null, history = false, checklist = false } = {}) => {
         setFocusedTaskId(taskId);
         setFocusedCommentId(commentId);
         setFocusedHistory(history);
+        setFocusedChecklist(checklist);
     };
     const closeTaskFocus = () => {
         setFocusedTaskId(null);
         setFocusedCommentId(null);
         setFocusedHistory(false);
+        setFocusedChecklist(false);
     };
     const focusedTask = focusedTaskId ? project.tasks.find((t) => t.id === focusedTaskId) : null;
 
@@ -754,9 +770,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // Fires whenever any task's shared state changes - created, edited, deleted,
     // moved through the status lifecycle, reassigned, or touched by a bulk action -
     // from anyone else viewing this project, so the board, task list, and an open
-    // task focus modal all stay live without a manual refresh.
+    // task focus modal all stay live without a manual refresh. Also covers a
+    // checklist item being checked/unchecked, which can mirror into a linked
+    // "My Notes" item (see TaskChecklistItemController::syncNoteItems) - so
+    // myNotes is refreshed alongside project to pick that up too, e.g. when the
+    // same person has this project open in a second tab.
     useEcho(`project.${project.id}`, ['.task.changed'], () => {
-        router.reload({ only: ['project'] });
+        router.reload({ only: ['project', 'myNotes'] });
     });
 
     useEcho(`project.${project.id}`, ['.project.deletion_requested', '.project.deletion_cancelled'], () => {
@@ -806,6 +826,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         openTaskFocus(Number(taskId), {
             commentId: commentId ? Number(commentId) : null,
             history: params.get('history') === '1',
+            checklist: params.get('checklist') === '1',
         });
     }, [url]);
 
@@ -1429,6 +1450,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 allTasks={project.tasks}
                 autoOpenCommentId={focusedCommentId}
                 autoOpenHistory={focusedHistory}
+                autoOpenChecklist={focusedChecklist}
                 onJumpToTask={(id) => { closeTaskFocus(); jumpToTaskInList(id); }}
                 projectMuted={!!project.is_muted}
             />

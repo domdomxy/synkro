@@ -152,6 +152,7 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/tasks/{task}/checklist', [TaskChecklistItemController::class, 'store'])->name('checklist.store');
     Route::patch('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'update'])->name('checklist.update');
     Route::delete('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'destroy'])->name('checklist.destroy');
+    Route::post('/checklist/{checklistItem}/add-to-notes', [TaskChecklistItemController::class, 'addToNotes'])->name('checklist.add-to-notes');
     Route::post('/tasks/{task}/dependencies', [TaskDependencyController::class, 'store'])->name('dependencies.store');
     Route::delete('/tasks/{task}/dependencies/{dependsOnTask}', [TaskDependencyController::class, 'destroy'])->name('dependencies.destroy');
     

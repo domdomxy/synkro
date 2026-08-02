@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskChanged;
 use App\Models\Project;
 use App\Models\ProjectNote;
+use App\Models\TaskChecklistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -17,7 +19,7 @@ class ProjectNoteController extends Controller
             ->map(fn ($text) => trim($text))
             ->filter(fn ($text) => $text !== '')
             ->values()
-            ->map(fn ($text) => ['id' => (string) Str::random(8), 'text' => $text, 'done' => false])
+            ->map(fn ($text) => ['id' => (string) Str::random(8), 'text' => $text, 'done' => false, 'checklist_item_id' => null])
             ->all();
     }
 
@@ -64,6 +66,7 @@ class ProjectNoteController extends Controller
                     'id' => $existing['id'] ?? (string) Str::random(8),
                     'text' => $text,
                     'done' => $existing['done'] ?? false,
+                    'checklist_item_id' => $existing['checklist_item_id'] ?? null,
                 ];
             })
             ->filter(fn ($item) => $item['text'] !== '')
@@ -92,14 +95,42 @@ class ProjectNoteController extends Controller
     {
         abort_unless($note->user_id === Auth::id(), 403);
 
-        $items = collect($note->content)->map(function ($item) use ($itemId) {
+        $linkedChecklistItemId = null;
+        $newDone = null;
+
+        $items = collect($note->content)->map(function ($item) use ($itemId, &$linkedChecklistItemId, &$newDone) {
             if ($item['id'] === $itemId) {
                 $item['done'] = !$item['done'];
+                $newDone = $item['done'];
+                $linkedChecklistItemId = $item['checklist_item_id'] ?? null;
             }
             return $item;
         })->all();
 
         $note->update(['content' => $items]);
+
+        // This item started life as a copy of a task checklist item (see
+        // TaskChecklistItemController::addToNotes) - keep the two checkboxes
+        // mirrored instead of letting them drift apart, and let other project
+        // viewers see the checklist update live the same way a direct toggle
+        // on the task itself would (TaskChecklistItemController::update).
+        if ($linkedChecklistItemId) {
+            $checklistItem = TaskChecklistItem::find($linkedChecklistItemId);
+
+            // Re-check assignee-ship rather than trusting the stored link: the
+            // task could have been reassigned since this note item was added,
+            // and checking a checklist item done/undone is the current
+            // assignee's call alone (see TaskChecklistItemController::update).
+            if ($checklistItem && $checklistItem->task && $checklistItem->task->assigned_to === Auth::id()) {
+                $checklistItem->update(['done' => $newDone]);
+
+                try {
+                    broadcast(TaskChanged::for($checklistItem->task))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
 
         return back()->with('success', null);
     }
@@ -111,7 +142,7 @@ class ProjectNoteController extends Controller
         $validated = $request->validate(['text' => 'required|string|max:300']);
 
         $items = $note->content;
-        $items[] = ['id' => (string) Str::random(8), 'text' => trim($validated['text']), 'done' => false];
+        $items[] = ['id' => (string) Str::random(8), 'text' => trim($validated['text']), 'done' => false, 'checklist_item_id' => null];
         $note->update(['content' => $items]);
 
         return back();

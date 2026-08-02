@@ -105,12 +105,25 @@ class ProjectController extends Controller
         $role = $project->roleFor(Auth::user());
         $canViewAllHistory = in_array($role, ['owner', 'manager', 'tester']);
 
+        $notes = $project->notes()->where('user_id', Auth::id())->latest()->get();
+
+        // Which checklist items this person has already copied into My Notes -
+        // lets the checklist UI show "In Notes" instead of "Add to Notes" for
+        // ones already there, without a separate query per item. Only ever
+        // relevant to a task's own assignee (the only role that can add an
+        // item to notes - see TaskChecklistItemController::addToNotes), but
+        // harmless to compute for everyone.
+        $notedChecklistItemIds = $notes
+            ->flatMap(fn ($note) => collect($note->content)->pluck('checklist_item_id'))
+            ->filter()
+            ->flip();
+
         // Pinned tasks always float to the top; within that, order by priority so the
         // most urgent work is visible first without the person having to sort manually.
         $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
 
         $sortedTasks = $project->tasks
-            ->map(function ($task) use ($pinnedTaskIds, $mutedTasks, $canViewAllHistory) {
+            ->map(function ($task) use ($pinnedTaskIds, $mutedTasks, $canViewAllHistory, $notedChecklistItemIds) {
                 $task->is_pinned = in_array($task->id, $pinnedTaskIds);
                 $taskMute = $mutedTasks->get($task->id);
                 $task->is_muted = (bool) $taskMute;
@@ -137,6 +150,10 @@ class ProjectController extends Controller
 
                 if (! $canViewChecklist) {
                     $task->setRelation('checklistItems', collect());
+                } else {
+                    $task->checklistItems->each(function ($item) use ($notedChecklistItemIds) {
+                        $item->in_my_notes = $notedChecklistItemIds->has($item->id);
+                    });
                 }
 
                 return $task;
@@ -148,8 +165,6 @@ class ProjectController extends Controller
             ->values();
 
         $project->setRelation('tasks', $sortedTasks);
-
-        $notes = $project->notes()->where('user_id', Auth::id())->latest()->get();
 
         $pendingInvitations = $project->invitations()->where('status', 'pending')->with('invitedUser')->get();
 

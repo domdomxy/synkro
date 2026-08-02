@@ -796,7 +796,7 @@ function CommentThread({
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenComments = false, onJumpToTask, projectMuted = false, onFocusComments = null }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenComments = false, autoOpenChecklist = false, onJumpToTask, projectMuted = false, onFocusComments = null }) {
     const isAssignee = task.assigned_to === currentUserId;
     // Roles are mutually exclusive per project, so "can review but can't manage"
     // means the role is exactly tester - no separate prop needs threading down
@@ -874,6 +874,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     useEffect(() => {
         if (autoOpenComments) setActiveSection('comments');
     }, [autoOpenComments]);
+
+    // Runs after the comments effect above so a checklist notification link
+    // (?task=X&checklist=1) wins over TaskFocusModal's default of opening
+    // straight to comments.
+    useEffect(() => {
+        if (autoOpenChecklist) setActiveSection('checklist');
+    }, [autoOpenChecklist]);
 
     const [highlightedCommentId, setHighlightedCommentId] = useState(null);
 
@@ -1019,6 +1026,18 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const deleteChecklistItem = (item) => {
         router.delete(route('checklist.destroy', item.id), { preserveScroll: true });
+    };
+
+    // Copies a checklist item into a "My Notes" checklist for this task (found
+    // or created server-side - see TaskChecklistItemController::addToNotes).
+    // Once copied, checking it done in either place keeps the other in sync.
+    const [addingToNotesId, setAddingToNotesId] = useState(null);
+    const addChecklistItemToNotes = (item) => {
+        setAddingToNotesId(item.id);
+        router.post(route('checklist.add-to-notes', item.id), {}, {
+            preserveScroll: true,
+            onFinish: () => setAddingToNotesId(null),
+        });
     };
 
     // Add/remove within the edit form only stage the change locally in
@@ -1848,6 +1867,28 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                                 </span>
                                             )}
                                         </span>
+                                        {isAssignee && (
+                                            item.in_my_notes ? (
+                                                <span
+                                                    title="This item is in your My Notes checklist, kept in sync"
+                                                    className="mt-0.5 flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-indigo-500 dark:text-indigo-400"
+                                                >
+                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    In Notes
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => addChecklistItemToNotes(item)}
+                                                    disabled={addingToNotesId === item.id}
+                                                    title="Add to My Notes"
+                                                    className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
+                                                >
+                                                    + My Notes
+                                                </button>
+                                            )
+                                        )}
                                         {canDeleteChecklistItem(item) && (
                                             <button
                                                 onClick={() => deleteChecklistItem(item)}

@@ -11,6 +11,7 @@ export const categoryMap = {
     task_commented: 'assignments',
     task_mentioned: 'mentions',
     comment_replied: 'replies',
+    task_checklist_item_added: 'assignments',
     task_overdue: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
@@ -55,6 +56,11 @@ export const typeStyles = {
         bg: 'bg-sky-100 dark:bg-sky-900',
         text: 'text-sky-600 dark:text-sky-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 17L4 12m0 0l5-5m-5 5h11a4 4 0 004-4V7" />,
+    },
+    task_checklist_item_added: {
+        bg: 'bg-teal-100 dark:bg-teal-900',
+        text: 'text-teal-600 dark:text-teal-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />,
     },
     task_approved: {
         bg: 'bg-green-100 dark:bg-green-900',

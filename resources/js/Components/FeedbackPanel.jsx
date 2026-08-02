@@ -50,7 +50,7 @@ function CloseIcon({ className }) {
 const statusConfig = {
     pending: {
         label: 'Pending',
-        style: 'bg-gray-100 text-gray-700',
+        style: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -59,7 +59,7 @@ const statusConfig = {
     },
     reviewing: {
         label: 'Under Review',
-        style: 'bg-blue-100 text-blue-700',
+        style: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -69,7 +69,7 @@ const statusConfig = {
     },
     accepted: {
         label: 'Accepted',
-        style: 'bg-green-100 text-green-700',
+        style: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -78,7 +78,7 @@ const statusConfig = {
     },
     rejected: {
         label: 'Rejected',
-        style: 'bg-red-100 text-red-700',
+        style: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300',
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -87,7 +87,7 @@ const statusConfig = {
     },
     closed: {
         label: 'Closed',
-        style: 'bg-gray-200 text-gray-500',
+        style: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
         icon: (
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
