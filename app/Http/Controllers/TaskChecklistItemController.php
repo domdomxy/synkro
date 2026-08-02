@@ -152,11 +152,9 @@ class TaskChecklistItemController extends Controller
 
     /**
      * Tells the assignee a checklist item on their task was renamed by
-     * someone else - in-app notification only, deliberately no email (unlike
-     * notifyAssigneeOfNewItem above): a title tweak to an item they didn't
-     * author is worth a bell ping, not an inbox message. Skipped when the
-     * assignee is the one who made the edit, or when there's no assignee to
-     * tell, same guards as the "added" notification.
+     * someone else - same per-recipient mute/preference/email pattern as
+     * notifyAssigneeOfNewItem above. Skipped when the assignee is the one
+     * who made the edit, or when there's no assignee to tell.
      */
     private function notifyAssigneeOfItemUpdate(Task $task, TaskChecklistItem $item, string $oldTitle): void
     {
@@ -171,32 +169,43 @@ class TaskChecklistItemController extends Controller
 
         $inAppMuted = $task->mutedBy()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists()
             || $task->project->members()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists();
-
-        if ($inAppMuted || ! NotificationPreferences::wantsType($recipient, 'task_checklist_item_updated')) {
-            return;
-        }
+        $emailMuted = $task->mutedBy()->wherePivot('mute_email', true)->where('users.id', $recipient->id)->exists()
+            || $task->project->members()->wherePivot('mute_email', true)->where('users.id', $recipient->id)->exists();
 
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&checklist=1';
 
-        $notification = UserNotification::create([
-            'user_id' => $recipient->id,
-            'type' => 'task_checklist_item_updated',
-            'causer_id' => Auth::id(),
-            'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
-            'url' => $url,
-        ]);
+        if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_checklist_item_updated')) {
+            $notification = UserNotification::create([
+                'user_id' => $recipient->id,
+                'type' => 'task_checklist_item_updated',
+                'causer_id' => Auth::id(),
+                'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
+                'url' => $url,
+            ]);
 
-        try {
-            broadcast(new TaskChecklistItemUpdated($item, $oldTitle, $recipient->id, $notification->id))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+            try {
+                broadcast(new TaskChecklistItemUpdated($item, $oldTitle, $recipient->id, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        if (! $emailMuted) {
+            NotificationMailer::send(
+                $recipient,
+                'task.checklist_item_updated',
+                Auth::user()->name . " renamed a checklist item on \"{$task->title}\"",
+                ['**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\""],
+                url($url),
+                'View Checklist'
+            );
         }
     }
 
     /**
      * Tells the assignee a checklist item on their task was removed by
-     * someone else - in-app notification only, same reasoning as
-     * notifyAssigneeOfItemUpdate above. Takes the item's title as a plain
+     * someone else - same per-recipient mute/preference/email pattern as
+     * notifyAssigneeOfNewItem above. Takes the item's title as a plain
      * string since it's called just before the row itself is deleted.
      */
     private function notifyAssigneeOfItemDelete(Task $task, string $itemTitle): void
@@ -212,25 +221,36 @@ class TaskChecklistItemController extends Controller
 
         $inAppMuted = $task->mutedBy()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists()
             || $task->project->members()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists();
-
-        if ($inAppMuted || ! NotificationPreferences::wantsType($recipient, 'task_checklist_item_deleted')) {
-            return;
-        }
+        $emailMuted = $task->mutedBy()->wherePivot('mute_email', true)->where('users.id', $recipient->id)->exists()
+            || $task->project->members()->wherePivot('mute_email', true)->where('users.id', $recipient->id)->exists();
 
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&checklist=1';
 
-        $notification = UserNotification::create([
-            'user_id' => $recipient->id,
-            'type' => 'task_checklist_item_deleted',
-            'causer_id' => Auth::id(),
-            'message' => "Checklist item removed\n" . '**' . Auth::user()->name . '**' . " removed \"{$itemTitle}\" from the checklist on \"**{$task->title}**\"",
-            'url' => $url,
-        ]);
+        if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_checklist_item_deleted')) {
+            $notification = UserNotification::create([
+                'user_id' => $recipient->id,
+                'type' => 'task_checklist_item_deleted',
+                'causer_id' => Auth::id(),
+                'message' => "Checklist item removed\n" . '**' . Auth::user()->name . '**' . " removed \"{$itemTitle}\" from the checklist on \"**{$task->title}**\"",
+                'url' => $url,
+            ]);
 
-        try {
-            broadcast(new TaskChecklistItemDeleted($task, $itemTitle, $recipient->id, $notification->id))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+            try {
+                broadcast(new TaskChecklistItemDeleted($task, $itemTitle, $recipient->id, $notification->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        if (! $emailMuted) {
+            NotificationMailer::send(
+                $recipient,
+                'task.checklist_item_deleted',
+                Auth::user()->name . " removed a checklist item from \"{$task->title}\"",
+                ['**' . Auth::user()->name . '**' . " removed \"{$itemTitle}\" from the checklist on \"**{$task->title}**\""],
+                url($url),
+                'View Checklist'
+            );
         }
     }
 

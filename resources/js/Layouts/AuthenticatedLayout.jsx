@@ -44,8 +44,17 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     // Used when a panel links to the other panel (Settings <-> Account)
     // instead of opening fresh from the account menu - reuses the current
     // back-stack entry (see useRouteOverlay) instead of pushing a new one.
-    const switchToSettings = () => openOverlay('settings', route('settings.edit'), version, { replace: true });
-    const switchToAccount = () => openOverlay('account', route('account.edit'), version, { replace: true });
+    // An optional `section` (e.g. from a cross-panel search result) is
+    // forwarded as `initialSection` so the target panel opens directly on
+    // that section instead of always landing on its first tab.
+    const switchToSettings = (section) => openOverlay('settings', route('settings.edit'), version, {
+        replace: true,
+        extraProps: section ? { initialSection: section } : undefined,
+    });
+    const switchToAccount = (section) => openOverlay('account', route('account.edit'), version, {
+        replace: true,
+        extraProps: section ? { initialSection: section } : undefined,
+    });
     // Support's two entry points both go to the same route; `tab` just
     // seeds which one FeedbackPanel opens on (see its initialTab prop).
     const switchToFeedback = (tab) => openOverlay(

@@ -1,7 +1,7 @@
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { silentSubmit } from '@/utils/silentSubmit';
 import {
@@ -10,7 +10,7 @@ import {
     revokeTrustedHost as revokeTrustedHostRequest,
     revokeAllTrustedHosts as revokeAllTrustedHostsRequest,
 } from '@/utils/trustedHosts';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
 import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
 
@@ -97,6 +97,22 @@ const settingsNavItems = [
         ),
     },
 ];
+
+// Lightweight mirror of AccountPanel's section list (id/label/terms only),
+// used solely so this panel's NavSearchInput can also surface Account
+// sections and jump there via switchToAccount. Kept as plain duplicated
+// metadata rather than importing it from AccountPanel.jsx, which would
+// create a circular module dependency between the two panels (each would
+// need the other's items at load time). Every entry is tagged `panel:
+// 'account'` so handleNavSelect below knows to switch panels instead of
+// just changing the active section.
+const accountSectionsForSearch = [
+    { id: 'avatar', label: 'Avatar', terms: ['Avatar', 'Profile picture', 'Upload photo'] },
+    { id: 'account-information', label: 'Account Information', terms: ['Account Information', 'Name', 'Email'] },
+    { id: 'update-password', label: 'Password', terms: ['Password', 'Current Password', 'New Password', 'Confirm Password'] },
+    { id: 'deactivate-account', label: 'Deactivate Account', terms: ['Deactivate Account', 'Freeze submissions', 'Log out'] },
+    { id: 'delete-account', label: 'Delete Account', terms: ['Delete Account', 'Permanently delete', 'Grace period'] },
+].map((s) => ({ ...s, panel: 'account', icon: categoryIcons.account }));
 
 // Appearance picker options. `swatch` gives each card a small preview of that theme's background
 // so the choice is recognizable at a glance instead of relying on the label alone; `icon` is drawn
@@ -228,13 +244,19 @@ function TrustedSiteRow({ host, onRevoke }) {
     );
 }
 
-function NotificationCategoryCard({ groupKey, title, items, emailPreferences, notificationCatalog, notificationPreferences, onToggleEmail, onToggleEmailMany, onToggleNotification, onToggleNotificationMany }) {
+function NotificationCategoryCard({ groupKey, title, items, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, onToggleEmail, onToggleEmailMany, onToggleNotification, onToggleNotificationMany }) {
     const keys = Object.keys(items);
+    // Most rows have both an email and an in-app toggle, but a few events
+    // (e.g. checklist item edited/removed) are in-app only - they show up
+    // here (folded in from notificationCatalog by the caller) with no
+    // EmailPreferences entry at all, so they're excluded from the email
+    // column/count entirely rather than defaulting to an always-off toggle.
+    const emailKeys = keys.filter((key) => emailDefaults[key] !== undefined);
     const notifKeys = keys.filter((key) => notificationCatalog[key] !== undefined);
 
     let totalChannels = 0;
     let enabledChannels = 0;
-    keys.forEach((key) => {
+    emailKeys.forEach((key) => {
         totalChannels += 1;
         if (emailPreferences[key]) enabledChannels += 1;
     });
@@ -242,11 +264,11 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
         totalChannels += 1;
         if (notificationPreferences[key]) enabledChannels += 1;
     });
-    const allOn = enabledChannels === totalChannels;
+    const allOn = totalChannels > 0 && enabledChannels === totalChannels;
 
     const toggleAll = () => {
         const next = !allOn;
-        onToggleEmailMany(keys, next);
+        if (emailKeys.length > 0) onToggleEmailMany(emailKeys, next);
         if (notifKeys.length > 0) onToggleNotificationMany(notifKeys, next);
     };
 
@@ -277,12 +299,17 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
             </div>
             <div className="divide-y divide-gray-200 dark:divide-gray-600/50">
                 {Object.entries(items).map(([key, label]) => {
+                    const hasEmail = emailDefaults[key] !== undefined;
                     const hasNotification = notificationCatalog[key] !== undefined;
                     return (
                         <div key={key} className="grid grid-cols-[1fr_56px_56px] items-center gap-2 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[1fr_72px_72px] sm:gap-3">
                             <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
                             <div className="flex justify-center">
-                                <Toggle enabled={!!emailPreferences[key]} onClick={() => onToggleEmail(key, !emailPreferences[key])} />
+                                {hasEmail ? (
+                                    <Toggle enabled={!!emailPreferences[key]} onClick={() => onToggleEmail(key, !emailPreferences[key])} />
+                                ) : (
+                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="This event doesn't send an email, only an in-app notification">—</span>
+                                )}
                             </div>
                             <div className="flex justify-center">
                                 {hasNotification ? (
@@ -301,7 +328,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
         </div>
     );
 }
-export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, onClose }) {
+export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
@@ -317,18 +344,41 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     const [theme, setThemeState] = useState(getStoredTheme());
     const [trustedHosts, setTrustedHosts] = useState(trustedLinkHosts ?? []);
     const [activeSection, setActiveSection] = useState(() => {
+        if (initialSection && settingsNavItems.some((s) => s.id === initialSection)) return initialSection;
         const requested = new URLSearchParams(window.location.search).get('section');
         return settingsNavItems.some((s) => s.id === requested) ? requested : settingsNavItems[0].id;
     });
+    const [notificationSearchQuery, setNotificationSearchQuery] = useState('');
     // Feeds NavSearchInput - same section list, but with the notifications
     // entry's terms extended by the actual category labels from the catalog
     // (e.g. "Task assigned", "Project deleted") so those are searchable too,
-    // not just the word "Notifications" itself.
-    const searchableNavItems = settingsNavItems.map((s) =>
-        s.id === 'notifications'
-            ? { ...s, terms: [...s.terms, ...Object.values(emailCatalog).map((g) => g.label)] }
-            : s
-    );
+    // not just the word "Notifications" itself. Each item is tagged `panel:
+    // 'settings'` and combined with the Account sections above so searching
+    // from here can also jump straight into the Account panel.
+    const searchableNavItems = [
+        ...settingsNavItems.map((s) =>
+            s.id === 'notifications'
+                ? { ...s, panel: 'settings', terms: [...s.terms, ...Object.values(emailCatalog).map((g) => g.label), ...Object.values(notificationCatalog)] }
+                : { ...s, panel: 'settings' }
+        ),
+        ...accountSectionsForSearch,
+    ];
+    // Handles a NavSearchInput pick that may belong to either this panel or
+    // Account's - same-panel results just switch the active section, cross-
+    // panel ones hand off to switchToAccount so the whole panel swaps and
+    // opens directly on that section. Falls back to a real navigation if
+    // this instance somehow isn't rendered under AuthenticatedLayout.
+    const handleNavSelect = (item) => {
+        if (item.panel === 'account') {
+            if (overlayActions?.switchToAccount) {
+                overlayActions.switchToAccount(item.id);
+            } else {
+                router.visit(route('account.edit', { section: item.id }));
+            }
+        } else {
+            setActiveSection(item.id);
+        }
+    };
 
     // activeSection now drives which single settings panel is shown (tab switching),
     // not a scroll position — set directly by clicking a sidebar/pill item below.
@@ -430,6 +480,49 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     const notificationSettingsHasChanges = emailHasChanges || notificationHasChanges;
     const notificationSettingsAtDefaults = emailAtDefaults && notificationAtDefaults;
 
+    // Some events (checklist item edited/removed) only ever produce an
+    // in-app notification, with no EmailPreferences entry at all - so they
+    // don't exist anywhere in emailCatalog. Fold any such notificationCatalog
+    // entries into the matching group here (matched by the "task."/"project."
+    // prefix shared by both catalogs) so they get a row - with a dash under
+    // Email and a real toggle under In App, handled by NotificationCategoryCard
+    // - instead of silently having no UI control at all.
+    const mergedNotificationCatalog = useMemo(() => {
+        const result = {};
+        Object.entries(emailCatalog).forEach(([groupKey, group]) => {
+            const items = { ...group.items };
+            Object.entries(notificationCatalog).forEach(([key, label]) => {
+                if (key.startsWith(`${groupKey}.`) && items[key] === undefined) {
+                    items[key] = label;
+                }
+            });
+            result[groupKey] = { ...group, items };
+        });
+        return result;
+    }, [emailCatalog, notificationCatalog]);
+
+    // Powers the search box at the top of the Notifications section itself
+    // (separate from NavSearchInput, which only jumps between sections). A
+    // group stays whole if its own label matches; otherwise only its
+    // matching events are kept, so searching "task" surfaces just the
+    // task-related rows inside every relevant category instead of hiding
+    // groups wholesale.
+    const filteredEmailCatalog = useMemo(() => {
+        const q = notificationSearchQuery.trim().toLowerCase();
+        if (!q) return mergedNotificationCatalog;
+        const result = {};
+        Object.entries(mergedNotificationCatalog).forEach(([groupKey, group]) => {
+            const groupMatches = group.label.toLowerCase().includes(q);
+            const items = groupMatches
+                ? group.items
+                : Object.fromEntries(Object.entries(group.items).filter(([, label]) => label.toLowerCase().includes(q)));
+            if (Object.keys(items).length > 0) {
+                result[groupKey] = { ...group, items };
+            }
+        });
+        return result;
+    }, [emailCatalog, notificationSearchQuery]);
+
     return (
         <>
             {/* Settings opens as a modal (like every other dialog in the app),
@@ -448,7 +541,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                         keeps every label fully readable instead of a horizontal pill bar that
                         can clip the first item. */}
                     <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
-                        <NavSearchInput items={searchableNavItems} onSelect={setActiveSection} />
+                        <NavSearchInput items={searchableNavItems} onSelect={handleNavSelect} />
                         <SectionSelect items={settingsNavItems} value={activeSection} onChange={setActiveSection} />
                     </div>
 
@@ -456,7 +549,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
                         {/* Section nav */}
                         <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50/60 p-3 dark:border-gray-600 dark:bg-black/20 sm:flex">
-                            <NavSearchInput items={searchableNavItems} onSelect={setActiveSection} />
+                            <NavSearchInput items={searchableNavItems} onSelect={handleNavSelect} />
                             <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Settings
                             </p>
@@ -482,7 +575,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                                 {overlayActions?.switchToAccount ? (
                                     <button
                                         type="button"
-                                        onClick={overlayActions.switchToAccount}
+                                        onClick={() => overlayActions.switchToAccount()}
                                         className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
                                     >
                                         <span className="h-4 w-4 shrink-0">{categoryIcons.account}</span>
@@ -607,6 +700,31 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                     // below still keeps it pinned there once content is tall enough to scroll.
                     <form onSubmit={submitNotificationSettings} className="flex min-h-full flex-col">
                         <div className="flex-1 space-y-6">
+                        <div className="relative">
+                            <svg className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                            <input
+                                type="text"
+                                value={notificationSearchQuery}
+                                onChange={(e) => setNotificationSearchQuery(e.target.value)}
+                                placeholder="Search notification settings"
+                                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-8 pr-7 text-sm text-gray-700 placeholder-gray-400 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500"
+                            />
+                            {notificationSearchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setNotificationSearchQuery('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 transition hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                >
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    <span className="sr-only">Clear search</span>
+                                </button>
+                            )}
+                        </div>
+
                         <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
                             <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -617,21 +735,31 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                             </p>
                         </div>
 
-                        {Object.entries(emailCatalog).map(([groupKey, group]) => (
-                            <NotificationCategoryCard
-                                key={groupKey}
-                                groupKey={groupKey}
-                                title={group.label}
-                                items={group.items}
-                                emailPreferences={emailForm.data.preferences}
-                                notificationCatalog={notificationCatalog}
-                                notificationPreferences={notificationForm.data.preferences}
-                                onToggleEmail={toggleEmail}
-                                onToggleEmailMany={toggleEmailMany}
-                                onToggleNotification={toggleNotification}
-                                onToggleNotificationMany={toggleNotificationMany}
-                            />
-                        ))}
+                        {Object.keys(filteredEmailCatalog).length === 0 ? (
+                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-200 px-4 py-8 text-center dark:border-gray-700">
+                                <svg className="h-6 w-6 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                </svg>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No notification settings match "{notificationSearchQuery}".</p>
+                            </div>
+                        ) : (
+                            Object.entries(filteredEmailCatalog).map(([groupKey, group]) => (
+                                <NotificationCategoryCard
+                                    key={groupKey}
+                                    groupKey={groupKey}
+                                    title={group.label}
+                                    items={group.items}
+                                    emailPreferences={emailForm.data.preferences}
+                                    emailDefaults={emailDefaults}
+                                    notificationCatalog={notificationCatalog}
+                                    notificationPreferences={notificationForm.data.preferences}
+                                    onToggleEmail={toggleEmail}
+                                    onToggleEmailMany={toggleEmailMany}
+                                    onToggleNotification={toggleNotification}
+                                    onToggleNotificationMany={toggleNotificationMany}
+                                />
+                            ))
+                        )}
                         </div>
 
                         <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 flex flex-col gap-2 border-t border-gray-200 bg-white/95 px-4 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/95 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6 sm:py-4">

@@ -51,6 +51,8 @@ class EmailPreferences
                     'task.mentioned' => 'Someone @mentioned you or your role in a comment',
                     'task.replied' => 'Someone replied to your comment',
                     'task.checklist_item_added' => 'A checklist item was added to a task assigned to you',
+                    'task.checklist_item_updated' => 'A checklist item on a task assigned to you was edited',
+                    'task.checklist_item_deleted' => 'A checklist item on a task assigned to you was removed',
                     'task.review_needed' => 'A task is waiting for your review (testers)',
                     'task.approved' => 'Your submission was approved',
                     'task.rejected' => 'Your submission was sent back for changes',

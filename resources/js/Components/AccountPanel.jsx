@@ -1,7 +1,7 @@
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Avatar from '@/Components/Avatar';
 import DeleteUserForm from '@/Pages/Account/Partials/DeleteUserForm';
@@ -108,6 +108,27 @@ const dangerNavItems = [
 
 const allNavItems = [...accountNavItems, ...dangerNavItems];
 
+// Lightweight mirror of SettingsPanel's section list (id/label/terms only),
+// used solely so this panel's NavSearchInput can also surface Settings
+// sections and jump there via switchToSettings. Kept as plain duplicated
+// metadata rather than importing it from SettingsPanel.jsx, which would
+// create a circular module dependency between the two panels. Every entry
+// is tagged `panel: 'settings'` so handleNavSelect below knows to switch
+// panels instead of just changing the active section.
+const settingsSectionsForSearch = [
+    { id: 'appearance', label: 'Appearance', terms: ['Appearance', 'Theme', 'System', 'Light', 'Dark', 'Black'] },
+    { id: 'trusted-sites', label: 'Trusted Sites', terms: ['Trusted Sites', 'Revoke all', 'External links'] },
+    { id: 'notifications', label: 'Notifications', terms: ['Notifications', 'Email', 'In App'] },
+    { id: 'support', label: 'Support', terms: ['Support', 'Submit Feedback', 'Track a ticket', 'Report a bug'] },
+].map((s) => ({ ...s, panel: 'settings', icon: <SettingsIcon className="h-5 w-5" /> }));
+
+// Combined with `allNavItems` (each tagged `panel: 'account'`) to feed the
+// NavSearchInput boxes below.
+const searchableAccountItems = [
+    ...allNavItems.map((s) => ({ ...s, panel: 'account' })),
+    ...settingsSectionsForSearch,
+];
+
 // Title + description shown in the modal's header bar for whichever section is active,
 // same SECTION_META pattern as Settings.jsx.
 function buildSectionMeta(deletionGraceDays) {
@@ -120,14 +141,35 @@ function buildSectionMeta(deletionGraceDays) {
     };
 }
 
-export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, onClose }) {
+export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     // auth.user is a shared prop attached to every page for the logged-in
     // user, so this stays correct whether AccountPanel is the live page
     // (standalone visit) or an overlay on top of a different live page.
     const user = usePage().props.auth.user;
-    const [activeSection, setActiveSection] = useState(() => (deletionRequestedAt ? 'delete-account' : allNavItems[0].id));
+    const [activeSection, setActiveSection] = useState(() => {
+        if (initialSection && allNavItems.some((s) => s.id === initialSection)) return initialSection;
+        const requested = new URLSearchParams(window.location.search).get('section');
+        if (allNavItems.some((s) => s.id === requested)) return requested;
+        return deletionRequestedAt ? 'delete-account' : allNavItems[0].id;
+    });
     const SECTION_META = buildSectionMeta(deletionGraceDays);
+    // Handles a NavSearchInput pick that may belong to either this panel or
+    // Settings' - same-panel results just switch the active section, cross-
+    // panel ones hand off to switchToSettings so the whole panel swaps and
+    // opens directly on that section. Falls back to a real navigation if
+    // this instance somehow isn't rendered under AuthenticatedLayout.
+    const handleNavSelect = (item) => {
+        if (item.panel === 'settings') {
+            if (overlayActions?.switchToSettings) {
+                overlayActions.switchToSettings(item.id);
+            } else {
+                router.visit(route('settings.edit', { section: item.id }));
+            }
+        } else {
+            setActiveSection(item.id);
+        }
+    };
 
     return (
         <>
@@ -137,7 +179,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. */}
                     <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
-                        <NavSearchInput items={allNavItems} onSelect={setActiveSection} />
+                        <NavSearchInput items={searchableAccountItems} onSelect={handleNavSelect} />
                         <SectionSelect
                             groups={[
                                 { label: 'Account', items: accountNavItems },
@@ -159,7 +201,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                     <p className="truncate text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
                                 </div>
                             </div>
-                            <NavSearchInput items={allNavItems} onSelect={setActiveSection} />
+                            <NavSearchInput items={searchableAccountItems} onSelect={handleNavSelect} />
                             <div className="space-y-0.5">
                                 {accountNavItems.map((s) => (
                                     <button
@@ -203,7 +245,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                 {overlayActions?.switchToSettings ? (
                                     <button
                                         type="button"
-                                        onClick={overlayActions.switchToSettings}
+                                        onClick={() => overlayActions.switchToSettings()}
                                         className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800/60"
                                     >
                                         <SettingsIcon className="h-4 w-4 shrink-0" />

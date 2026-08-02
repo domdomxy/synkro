@@ -45,6 +45,10 @@ function Highlighted({ text, query }) {
  *
  * `items` is [{ id, label, icon, terms: [string, ...] }, ...]. `terms`
  * should include the section's own label so searching for it still works.
+ * An item may also carry an arbitrary `panel` tag (unused by this
+ * component itself) - `onSelect` is called with the whole matched item,
+ * not just its id, so a caller mixing items from more than one panel can
+ * tell them apart and jump to the right one.
  */
 export default function NavSearchInput({ items, onSelect, placeholder = 'Search' }) {
     const [query, setQuery] = useState('');
@@ -67,8 +71,8 @@ export default function NavSearchInput({ items, onSelect, placeholder = 'Search'
               .filter((r) => r.term)
         : [];
 
-    const select = (id) => {
-        onSelect(id);
+    const select = (item) => {
+        onSelect(item);
         setQuery('');
         setOpen(false);
     };
@@ -111,7 +115,7 @@ export default function NavSearchInput({ items, onSelect, placeholder = 'Search'
                             <button
                                 key={item.id}
                                 type="button"
-                                onClick={() => select(item.id)}
+                                onClick={() => select(item)}
                                 className="flex w-full items-start gap-2.5 px-3 py-2 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/60"
                             >
                                 <span className="mt-0.5 h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500">{item.icon}</span>
