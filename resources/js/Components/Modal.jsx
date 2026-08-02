@@ -49,7 +49,7 @@ export default function Modal({
                     leaveFrom="translate-y-0 opacity-100 sm:scale-100"
                     leaveTo="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
                 >
-                    <DialogPanel className={`mb-6 transform overflow-hidden rounded-lg shadow-xl transition-all sm:mx-auto sm:w-full ${panelClassName} ${maxWidthClass}`}>
+                    <DialogPanel className={`mb-6 w-full transform overflow-hidden rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
                         {children}
                     </DialogPanel>
                 </TransitionChild>

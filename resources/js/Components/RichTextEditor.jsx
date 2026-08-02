@@ -451,7 +451,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                 onFocus={updateActiveStates}
                 onBlur={handleBlur}
                 data-placeholder={placeholder}
-                className="rt-content w-full overflow-y-auto whitespace-pre-wrap px-3.5 py-3 text-base leading-relaxed text-gray-900 outline-none empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:bg-gray-900 dark:text-gray-100 dark:empty:before:text-gray-500 sm:text-sm"
+                className="rt-content w-full overflow-y-auto whitespace-pre-wrap px-3.5 py-3 text-base leading-relaxed text-gray-900 outline-none empty:before:block empty:before:truncate empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] dark:bg-gray-900 dark:text-gray-100 dark:empty:before:text-gray-500 sm:text-sm"
                 style={{ minHeight: `${rows * 1.5}rem`, maxHeight, tabSize: 4 }}
             />
 

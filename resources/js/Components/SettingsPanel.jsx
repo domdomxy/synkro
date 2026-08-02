@@ -415,12 +415,16 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
     return (
         <>
-            {ConfirmDialog}
-
             {/* Settings opens as a modal (like every other dialog in the app),
                 not a page you scroll through. */}
             <Modal show onClose={onClose} maxWidth="6xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                <div className="flex h-[88vh] max-h-[860px] w-full flex-col">
+                {/* Rendered inside the outer Modal (not as a sibling) so Headless UI sees the
+                    true parent/child nesting - it only tracks dialog stacking depth correctly
+                    when dialogs are nested in the React tree, otherwise confirming or dismissing
+                    this one can also close the settings panel behind it. */}
+                {ConfirmDialog}
+
+                <div className="flex h-[92vh] max-h-[900px] w-full flex-col">
 
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. A <select>

@@ -312,7 +312,7 @@ export default function MentionTextarea({ value, onChange, members = [], onKeyDo
                     'w-full border px-3 py-2 whitespace-pre-wrap break-words focus:outline-none focus:ring-1 ' +
                     'focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-600 dark:focus:ring-indigo-600 ' +
                     (empty
-                        ? 'before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none dark:before:text-gray-500 '
+                        ? 'before:content-[attr(data-placeholder)] before:block before:truncate before:text-gray-400 before:pointer-events-none dark:before:text-gray-500 '
                         : '') +
                     className
                 }
