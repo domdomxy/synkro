@@ -639,7 +639,7 @@ function MyNotesPanel({ notesByProject }) {
                             <div key={group.project.id}>
                                 <button
                                     onClick={() => toggleProjectCollapse(group.project.id)}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/40"
                                 >
                                     <span className="flex min-w-0 items-center gap-1.5">
                                         <svg className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

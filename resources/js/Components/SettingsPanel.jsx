@@ -1,5 +1,6 @@
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
+import NavSearchInput from '@/Components/NavSearchInput';
 import { Link, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { silentSubmit } from '@/utils/silentSubmit';
@@ -55,10 +56,14 @@ const categoryIcons = {
 };
 
 // Section nav (left sidebar), same pattern as Account/Edit.jsx's section nav.
+// `terms` feeds NavSearchInput - the actual field/control names living
+// inside each section, so searching "dark" surfaces Appearance even though
+// the section itself is titled "Appearance", not "Dark".
 const settingsNavItems = [
     {
         id: 'appearance',
         label: 'Appearance',
+        terms: ['Appearance', 'Theme', 'System', 'Light', 'Dark', 'Black'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -68,11 +73,13 @@ const settingsNavItems = [
     {
         id: 'trusted-sites',
         label: 'Trusted Sites',
+        terms: ['Trusted Sites', 'Revoke all', 'External links'],
         icon: <LinkIcon className="h-5 w-5" />,
     },
     {
         id: 'notifications',
         label: 'Notifications',
+        terms: ['Notifications', 'Email', 'In App'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -82,6 +89,7 @@ const settingsNavItems = [
     {
         id: 'support',
         label: 'Support',
+        terms: ['Support', 'Submit Feedback', 'Track a ticket', 'Report a bug'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -312,6 +320,15 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
         const requested = new URLSearchParams(window.location.search).get('section');
         return settingsNavItems.some((s) => s.id === requested) ? requested : settingsNavItems[0].id;
     });
+    // Feeds NavSearchInput - same section list, but with the notifications
+    // entry's terms extended by the actual category labels from the catalog
+    // (e.g. "Task assigned", "Project deleted") so those are searchable too,
+    // not just the word "Notifications" itself.
+    const searchableNavItems = settingsNavItems.map((s) =>
+        s.id === 'notifications'
+            ? { ...s, terms: [...s.terms, ...Object.values(emailCatalog).map((g) => g.label)] }
+            : s
+    );
 
     // activeSection now drives which single settings panel is shown (tab switching),
     // not a scroll position — set directly by clicking a sidebar/pill item below.
@@ -431,6 +448,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                         keeps every label fully readable instead of a horizontal pill bar that
                         can clip the first item. */}
                     <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
+                        <NavSearchInput items={searchableNavItems} onSelect={setActiveSection} />
                         <SectionSelect items={settingsNavItems} value={activeSection} onChange={setActiveSection} />
                     </div>
 
@@ -438,6 +456,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
                         {/* Section nav */}
                         <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50/60 p-3 dark:border-gray-600 dark:bg-black/20 sm:flex">
+                            <NavSearchInput items={searchableNavItems} onSelect={setActiveSection} />
                             <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Settings
                             </p>

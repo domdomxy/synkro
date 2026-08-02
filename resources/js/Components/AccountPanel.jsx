@@ -1,5 +1,6 @@
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
+import NavSearchInput from '@/Components/NavSearchInput';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Avatar from '@/Components/Avatar';
@@ -46,10 +47,14 @@ function WarningIcon({ className }) {
 // Section nav (left sidebar on desktop, dropdown on mobile) - same pattern as
 // the Settings and Help & Feedback dialogs, so all three read as the same
 // kind of panel instead of three different page shapes.
+// `terms` feeds NavSearchInput - the actual field/control names living
+// inside each section, so e.g. searching "email" surfaces Account
+// Information even though the section itself isn't titled "Email".
 const accountNavItems = [
     {
         id: 'avatar',
         label: 'Avatar',
+        terms: ['Avatar', 'Profile picture', 'Upload photo'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -59,6 +64,7 @@ const accountNavItems = [
     {
         id: 'account-information',
         label: 'Account Information',
+        terms: ['Account Information', 'Name', 'Email'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -68,6 +74,7 @@ const accountNavItems = [
     {
         id: 'update-password',
         label: 'Password',
+        terms: ['Password', 'Current Password', 'New Password', 'Confirm Password'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -80,6 +87,7 @@ const dangerNavItems = [
     {
         id: 'deactivate-account',
         label: 'Deactivate Account',
+        terms: ['Deactivate Account', 'Freeze submissions', 'Log out'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -89,6 +97,7 @@ const dangerNavItems = [
     {
         id: 'delete-account',
         label: 'Delete Account',
+        terms: ['Delete Account', 'Permanently delete', 'Grace period'],
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -128,6 +137,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. */}
                     <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
+                        <NavSearchInput items={allNavItems} onSelect={setActiveSection} />
                         <SectionSelect
                             groups={[
                                 { label: 'Account', items: accountNavItems },
@@ -149,6 +159,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                     <p className="truncate text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
                                 </div>
                             </div>
+                            <NavSearchInput items={allNavItems} onSelect={setActiveSection} />
                             <div className="space-y-0.5">
                                 {accountNavItems.map((s) => (
                                     <button
