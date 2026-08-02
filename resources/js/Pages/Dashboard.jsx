@@ -533,7 +533,7 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
 
 function NoteItemMini({ item, onToggle }) {
     return (
-        <li className="group/item flex items-start gap-2 py-1">
+        <li className="group/item flex items-start gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800/60 dark:ring-gray-700/60">
             <button
                 type="button"
                 onClick={onToggle}
@@ -579,7 +579,7 @@ function MiniNoteCard({ note, onToggleItem }) {
                 <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length}</span>
             </div>
             {items.length > 0 && (
-                <ul className="mt-1.5 divide-y divide-gray-100 dark:divide-gray-800">
+                <ul className="mt-1.5 space-y-1.5">
                     {items.map((item) => (
                         <NoteItemMini key={item.id} item={item} onToggle={() => onToggleItem(item.id)} />
                     ))}

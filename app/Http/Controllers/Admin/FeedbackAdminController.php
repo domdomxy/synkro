@@ -137,7 +137,7 @@ class FeedbackAdminController extends Controller
             'message' => $statusChanged
                 ? "Ticket updated\nYour ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id}) status changed to **".ucfirst($status).'**'
                 : "Support replied\nSupport responded to your ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id})",
-            'url' => route('feedback.page', [], false),
+            'url' => route('feedback.page', ['tracking' => $feedback->tracking_id], false),
         ]);
 
         try {
@@ -163,7 +163,7 @@ class FeedbackAdminController extends Controller
                     $feedback->name,
                     $subject,
                     $lines,
-                    url(route('feedback.page', [], false)),
+                    url(route('feedback.page', ['tracking' => $feedback->tracking_id], false)),
                     'Track Your Ticket',
                     $highlight,
                     footerNote: 'This email was generated automatically. Please do not reply directly; use the button above to continue the conversation on your ticket.',

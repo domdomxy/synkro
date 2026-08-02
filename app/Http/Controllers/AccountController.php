@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Events\AccountDeleted;
 use App\Events\EmailChanged;
+use App\Events\MemberLeftProject;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -399,13 +400,19 @@ class AccountController extends Controller
 
             foreach ($recipients as $recipient) {
                 if (NotificationPreferences::wantsType($recipient, 'member_left')) {
-                    \App\Models\UserNotification::create([
+                    $notification = \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
                         'message' => "Member left\n**{$user->name}** ({$role}) deactivated their account; their tasks in \"**{$project->name}**\" may need attention",
                         'url' => route('projects.show', $project->id, false),
                     ]);
+
+                    try {
+                        broadcast(new MemberLeftProject($recipient->id, $user->name, $role, $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
             }
         }

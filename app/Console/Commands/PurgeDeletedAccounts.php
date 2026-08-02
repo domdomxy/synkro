@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\MemberLeftProject;
 use App\Events\ProjectDeleted;
 use App\Models\Project;
 use App\Models\Task;
@@ -122,12 +123,18 @@ class PurgeDeletedAccounts extends Command
 
             foreach ($recipients as $recipient) {
                 if (NotificationPreferences::wantsType($recipient, 'member_left')) {
-                    UserNotification::create([
+                    $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good — {$count} pending {$taskWord} in \"**{$project->name}**\" that were awaiting your decision have been released back to Todo, unassigned",
                         'url' => route('projects.show', $project->id, false),
                     ]);
+
+                    try {
+                        broadcast(new MemberLeftProject($recipient->id, $user->name, $project->roleFor($user) ?? 'member', $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 }
 
                 NotificationMailer::send(

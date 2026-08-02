@@ -489,14 +489,14 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
                             {/* Mobile section nav - a dropdown instead of horizontal pills,
                                 so both section labels stay fully readable on small screens. */}
-                            <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                            <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
                                 <SectionSelect items={feedbackNavItems} value={activeTab} onChange={setActiveTab} />
                             </div>
 
                             <div className="flex min-h-0 flex-1">
 
                                 {/* Section nav */}
-                                <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                                <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50/60 p-3 dark:border-gray-600 dark:bg-black/20 sm:flex">
                                     <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                         Support
                                     </p>
@@ -518,7 +518,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
                                         ))}
                                     </div>
 
-                                    <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                                    <div className="mt-auto space-y-0.5 border-t border-gray-300 pt-2 dark:border-gray-600">
                                         {isFromSettings && overlayActions?.switchToSettings ? (
                                             <button
                                                 type="button"
@@ -551,7 +551,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
 
                                 {/* Active section */}
                                 <div className="flex min-h-0 flex-1 flex-col">
-                                    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                                    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-6 py-5 dark:border-gray-600">
                                         <div>
                                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                                 {SECTION_META[activeTab]?.title}

@@ -43,7 +43,29 @@ class HandleInertiaRequests extends Middleware
                 ],
             'notifications' => [
             'unreadCount' => fn () => $request->user()?->notifications()->whereNull('read_at')->count() ?? 0,
-            'recent' => fn () => $request->user()?->notifications()->with('causer')->limit(10)->get() ?? [],
+            // Was a flat "latest 10 total" (read + unread mixed), so the bell's
+            // Unread filter (client-side only, filters this same array) could come
+            // up empty even with a nonzero unreadCount badge, whenever the unread
+            // ones weren't among the 10 most recently created overall. Unread items
+            // are fetched first (up to 10) so they're always present in this
+            // preview list, then padded with the most recent read ones and
+            // re-sorted by recency for display.
+            'recent' => fn () => (function () use ($request) {
+                $user = $request->user();
+
+                if (! $user) {
+                    return [];
+                }
+
+                $unread = $user->notifications()->with('causer')->whereNull('read_at')->limit(10)->get();
+                $remaining = 10 - $unread->count();
+
+                $read = $remaining > 0
+                    ? $user->notifications()->with('causer')->whereNotNull('read_at')->limit($remaining)->get()
+                    : collect();
+
+                return $unread->concat($read)->sortByDesc('created_at')->values();
+            })(),
             ],
             'testing' => fn () => (function () use ($request) {
                 $user = $request->user();

@@ -127,7 +127,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
 
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. */}
-                    <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                    <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
                         <SectionSelect
                             groups={[
                                 { label: 'Account', items: accountNavItems },
@@ -141,7 +141,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                     <div className="flex min-h-0 flex-1">
 
                         {/* Section nav */}
-                        <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                        <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50/60 p-3 dark:border-gray-600 dark:bg-black/20 sm:flex">
                             <div className="mb-2 flex items-center gap-2.5 px-3 pb-2 pt-1">
                                 <Avatar user={user} size="h-8 w-8" rounded="rounded-lg" />
                                 <div className="min-w-0">
@@ -188,7 +188,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                 ))}
                             </div>
 
-                            <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                            <div className="mt-auto space-y-0.5 border-t border-gray-300 pt-2 dark:border-gray-600">
                                 {overlayActions?.switchToSettings ? (
                                     <button
                                         type="button"
@@ -221,7 +221,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
 
                         {/* Active section */}
                         <div className="flex min-h-0 flex-1 flex-col">
-                            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-6 py-3.5 dark:border-gray-800">
+                            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-3.5 dark:border-gray-600">
                                 <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                                     {SECTION_META[activeSection]?.title}
                                 </h2>

@@ -267,7 +267,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, no
                 <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Email</span>
                 <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">In App</span>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            <div className="divide-y divide-gray-200 dark:divide-gray-600/50">
                 {Object.entries(items).map(([key, label]) => {
                     const hasNotification = notificationCatalog[key] !== undefined;
                     return (
@@ -424,20 +424,20 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                     this one can also close the settings panel behind it. */}
                 {ConfirmDialog}
 
-                <div className="flex h-[92vh] max-h-[900px] w-full flex-col">
+                <div className="flex h-[88vh] max-h-[860px] w-full flex-col">
 
                     {/* Mobile section nav - the fixed sidebar below is desktop-only (sm:), so this
                         dropdown is the only way to switch sections on small screens. A <select>
                         keeps every label fully readable instead of a horizontal pill bar that
                         can clip the first item. */}
-                    <div className="shrink-0 border-b border-gray-100 px-4 py-3 dark:border-gray-800 sm:hidden">
+                    <div className="shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-600 sm:hidden">
                         <SectionSelect items={settingsNavItems} value={activeSection} onChange={setActiveSection} />
                     </div>
 
                     <div className="flex min-h-0 flex-1">
 
                         {/* Section nav */}
-                        <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-black/20 sm:flex">
+                        <nav className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50/60 p-3 dark:border-gray-600 dark:bg-black/20 sm:flex">
                             <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Settings
                             </p>
@@ -459,7 +459,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                                 ))}
                             </div>
 
-                            <div className="mt-auto space-y-0.5 border-t border-gray-200 pt-2 dark:border-gray-700">
+                            <div className="mt-auto space-y-0.5 border-t border-gray-300 pt-2 dark:border-gray-600">
                                 {overlayActions?.switchToAccount ? (
                                     <button
                                         type="button"
@@ -492,7 +492,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
                         {/* Active section */}
                         <div className="flex min-h-0 flex-1 flex-col">
-                            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-6 py-3.5 dark:border-gray-800">
+                            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-3.5 dark:border-gray-600">
                                 <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                                     {SECTION_META[activeSection]?.title}
                                 </h2>
@@ -615,7 +615,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                         ))}
                         </div>
 
-                        <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 flex flex-col gap-2 border-t border-gray-100 bg-white/95 px-4 py-2.5 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6 sm:py-4">
+                        <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 flex flex-col gap-2 border-t border-gray-200 bg-white/95 px-4 py-2.5 backdrop-blur dark:border-gray-600 dark:bg-gray-900/95 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6 sm:py-4">
                             <span className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
                                 {notificationSettingsHasChanges ? 'You have unsaved changes' : notificationSettingsRecentlySuccessful ? 'All changes saved' : 'No changes yet'}
                             </span>
