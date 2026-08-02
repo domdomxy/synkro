@@ -38,7 +38,13 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className={`absolute inset-0 ${overlayClassName}`} onClick={close} />
+                    {/* No onClick here: Headless UI v2's Dialog already treats a click on
+                        this backdrop as an outside click and calls the Dialog's own
+                        onClose (wired to `close` above) by itself. Adding a second
+                        onClick={close} here used to fire `close` twice per click, which
+                        for panels wired through useRouteOverlay's close() (window.history.back())
+                        meant one click silently consumed two history entries instead of one. */}
+                    <div className={`absolute inset-0 ${overlayClassName}`} />
                 </TransitionChild>
 
                 <TransitionChild

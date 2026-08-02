@@ -88,7 +88,7 @@ class ProjectController extends Controller
             'tasks.assignee',
             'tasks.comments.user',
             'tasks.deliverables',
-            'tasks.checklistItems',
+            'tasks.checklistItems.creator:id,name',
             'tasks.dependencies:id,title,status',
             'tasks.dependents:id,title,status',
             'tasks.activityLogs' => fn ($q) => $q->with('user')->limit(20),
@@ -125,6 +125,18 @@ class ProjectController extends Controller
 
                 if (! $canViewHistory) {
                     $task->setRelation('activityLogs', collect());
+                }
+
+                // Checklist visibility uses the same owner/manager/tester-or-assignee
+                // set as history above (a tester reviewing the project can look, a
+                // plain uninvolved member cannot); *acting* on it (adding/removing
+                // items, or checking one done) is narrower still and enforced
+                // separately in TaskChecklistItemController, not here.
+                $canViewChecklist = $canViewHistory;
+                $task->can_view_checklist = $canViewChecklist;
+
+                if (! $canViewChecklist) {
+                    $task->setRelation('checklistItems', collect());
                 }
 
                 return $task;

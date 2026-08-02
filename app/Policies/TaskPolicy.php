@@ -48,4 +48,18 @@ class TaskPolicy
     {
         return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
     }
+
+    /**
+     * Adding or removing a checklist item: owner, manager, or tester - not the
+     * assignee. The assignee's only checklist action is checking items done or
+     * undone (see TaskChecklistItemController::update()'s separate 'done' check);
+     * managing which items exist is left to whoever's running/reviewing the
+     * project. Removing one is gated by this same check in the controller, but a
+     * tester (unlike owner/manager) is further restricted there to items they
+     * added themselves - see TaskChecklistItemController::destroy().
+     */
+    public function manageChecklist(User $user, Task $task): bool
+    {
+        return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
+    }
 }

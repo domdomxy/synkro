@@ -798,6 +798,27 @@ function CommentThread({
 
 export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenComments = false, onJumpToTask, projectMuted = false, onFocusComments = null }) {
     const isAssignee = task.assigned_to === currentUserId;
+    // Roles are mutually exclusive per project, so "can review but can't manage"
+    // means the role is exactly tester - no separate prop needs threading down
+    // just to know that.
+    const isTesterRole = canReview && !canManage;
+    // Viewing the checklist: same owner/manager/tester-or-assignee rule as task
+    // history (ProjectController::show's can_view_checklist) - a plain member
+    // with no stake in this specific task still shouldn't see it, but a tester
+    // reviewing the project should.
+    const canViewChecklist = canReview || isAssignee;
+    // Adding an item: owner, manager, or a tester (TaskPolicy::manageChecklist) -
+    // not the assignee, whose only checklist action is checking items done/undone.
+    const canAddChecklistItems = canManage || isTesterRole;
+    // Removing one is narrower still: owner/manager can remove any item, but a
+    // tester is limited to items they personally added - mirrors
+    // TaskChecklistItemController::destroy()'s server-side check. The assignee
+    // has no delete rights here at all unless they separately hold owner/manager.
+    const canDeleteChecklistItem = (item) => canManage || (isTesterRole && item.created_by === currentUserId);
+    // Checking an item done/undone is narrower still and assignee-only, even for
+    // an owner or manager who can otherwise edit the task - see
+    // TaskChecklistItemController::update()'s separate check for the 'done' field.
+    const canToggleChecklistItems = isAssignee;
 
     const [isEditing, setIsEditing] = useState(false);
     const [showAddPanel, setShowAddPanel] = useState(false);
@@ -1755,19 +1776,21 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             }
                         />
                     )}
-                    <div className="ml-auto">
-                        <FooterToggle
-                            active={showChecklist}
-                            onClick={() => toggleSection('checklist')}
-                            label="Checklist"
-                            count={task.checklist_items?.length > 0 ? `${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length}` : null}
-                            icon={
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
-                                </svg>
-                            }
-                        />
-                    </div>
+                    {canViewChecklist && (
+                        <div className="ml-auto">
+                            <FooterToggle
+                                active={showChecklist}
+                                onClick={() => toggleSection('checklist')}
+                                label="Checklist"
+                                count={task.checklist_items?.length > 0 ? `${task.checklist_items.filter((i) => i.done).length}/${task.checklist_items.length}` : null}
+                                icon={
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
+                                    </svg>
+                                }
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {showDependencies && (
@@ -1788,7 +1811,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                     </div>
                 )}
 
-                {showChecklist && (
+                {showChecklist && canViewChecklist && (
                     <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-gray-900/40">
                         {task.checklist_items?.length > 0 && (
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
@@ -1810,25 +1833,37 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         <input
                                             type="checkbox"
                                             checked={item.done}
-                                            onChange={() => toggleChecklistItem(item)}
-                                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                                            onChange={() => canToggleChecklistItems && toggleChecklistItem(item)}
+                                            disabled={!canToggleChecklistItems}
+                                            title={canToggleChecklistItems ? undefined : 'Only the assignee can check items done'}
+                                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900"
                                         />
-                                        <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            {item.title}
+                                        <span className="min-w-0 flex-1">
+                                            <span className={`block whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                {item.title}
+                                            </span>
+                                            {item.creator?.name && (
+                                                <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
+                                                    Added by {item.creator.name}
+                                                </span>
+                                            )}
                                         </span>
-                                        <button
-                                            onClick={() => deleteChecklistItem(item)}
-                                            className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
-                                            title="Remove item"
-                                        >
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
+                                        {canDeleteChecklistItem(item) && (
+                                            <button
+                                                onClick={() => deleteChecklistItem(item)}
+                                                className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
+                                                title="Remove item"
+                                            >
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
+                        {canAddChecklistItems && (
                         <form onSubmit={addChecklistItem} className="space-y-1 pt-1">
                             <div className="flex items-center gap-2">
                                 <AutoGrowTextarea
@@ -1850,6 +1885,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 {checklistForm.data.title.length}/{CHECKLIST_ITEM_MAX_LENGTH}
                             </p>
                         </form>
+                        )}
                     </div>
                 )}
 
