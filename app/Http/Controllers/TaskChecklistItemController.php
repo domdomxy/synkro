@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Events\TaskChanged;
 use App\Events\TaskChecklistItemAdded;
+use App\Events\TaskChecklistItemDeleted;
+use App\Events\TaskChecklistItemUpdated;
+use App\Models\ProjectActivityLog;
 use App\Models\ProjectNote;
 use App\Models\Task;
 use App\Models\TaskChecklistItem;
@@ -146,6 +149,88 @@ class TaskChecklistItemController extends Controller
         }
     }
 
+    /**
+     * Tells the assignee a checklist item on their task was renamed by
+     * someone else - in-app notification only, deliberately no email (unlike
+     * notifyAssigneeOfNewItem above): a title tweak to an item they didn't
+     * author is worth a bell ping, not an inbox message. Skipped when the
+     * assignee is the one who made the edit, or when there's no assignee to
+     * tell, same guards as the "added" notification.
+     */
+    private function notifyAssigneeOfItemUpdate(Task $task, TaskChecklistItem $item, string $oldTitle): void
+    {
+        if (! $task->assigned_to || (int) $task->assigned_to === (int) Auth::id()) {
+            return;
+        }
+
+        $recipient = $task->assignee;
+        if (! $recipient || ! $task->project->isMember($recipient)) {
+            return;
+        }
+
+        $inAppMuted = $task->mutedBy()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists()
+            || $task->project->members()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists();
+
+        if ($inAppMuted || ! NotificationPreferences::wantsType($recipient, 'task_checklist_item_updated')) {
+            return;
+        }
+
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&checklist=1';
+
+        $notification = UserNotification::create([
+            'user_id' => $recipient->id,
+            'type' => 'task_checklist_item_updated',
+            'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
+            'url' => $url,
+        ]);
+
+        try {
+            broadcast(new TaskChecklistItemUpdated($item, $oldTitle, $recipient->id, $notification->id))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Tells the assignee a checklist item on their task was removed by
+     * someone else - in-app notification only, same reasoning as
+     * notifyAssigneeOfItemUpdate above. Takes the item's title as a plain
+     * string since it's called just before the row itself is deleted.
+     */
+    private function notifyAssigneeOfItemDelete(Task $task, string $itemTitle): void
+    {
+        if (! $task->assigned_to || (int) $task->assigned_to === (int) Auth::id()) {
+            return;
+        }
+
+        $recipient = $task->assignee;
+        if (! $recipient || ! $task->project->isMember($recipient)) {
+            return;
+        }
+
+        $inAppMuted = $task->mutedBy()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists()
+            || $task->project->members()->wherePivot('mute_in_app', true)->where('users.id', $recipient->id)->exists();
+
+        if ($inAppMuted || ! NotificationPreferences::wantsType($recipient, 'task_checklist_item_deleted')) {
+            return;
+        }
+
+        $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&checklist=1';
+
+        $notification = UserNotification::create([
+            'user_id' => $recipient->id,
+            'type' => 'task_checklist_item_deleted',
+            'message' => "Checklist item removed\n" . '**' . Auth::user()->name . '**' . " removed \"{$itemTitle}\" from the checklist on \"**{$task->title}**\"",
+            'url' => $url,
+        ]);
+
+        try {
+            broadcast(new TaskChecklistItemDeleted($task, $itemTitle, $recipient->id, $notification->id))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     public function store(Request $request, Task $task)
     {
         $this->authorize('manageChecklist', $task);
@@ -187,15 +272,33 @@ class TaskChecklistItemController extends Controller
         // Any other field (currently just a title rename) is a structural edit
         // to the checklist, gated the same as adding/removing items - not the
         // assignee-inclusive 'update' check, since the assignee's only checklist
-        // action is the 'done' toggle above.
+        // action is the 'done' toggle above. Same author carve-out as destroy()
+        // below: owner/manager may rename any item, a tester is limited to
+        // items they added themselves.
+        $oldTitle = $checklistItem->title;
         if (array_key_exists('title', $validated)) {
             $this->authorize('manageChecklist', $task);
+
+            $role = $task->project->roleFor(Auth::user());
+            if (! in_array($role, ['owner', 'manager']) && $checklistItem->created_by !== Auth::id()) {
+                abort(403, 'You can only edit checklist items you added yourself.');
+            }
         }
 
         $checklistItem->update($validated);
 
         if (array_key_exists('done', $validated) || array_key_exists('title', $validated)) {
             $this->syncNoteItems($checklistItem, $task);
+        }
+
+        if (array_key_exists('title', $validated) && $validated['title'] !== $oldTitle) {
+            ProjectActivityLog::log($task->project, 'checklist_item_updated', [
+                'task_title' => $task->title,
+                'old_item_title' => $oldTitle,
+                'new_item_title' => $checklistItem->title,
+            ], $task);
+
+            $this->notifyAssigneeOfItemUpdate($task, $checklistItem, $oldTitle);
         }
 
         $this->broadcastTaskChanged($task);
@@ -220,6 +323,15 @@ class TaskChecklistItemController extends Controller
         }
 
         $this->unlinkNoteItems($checklistItem, $task);
+
+        $itemTitle = $checklistItem->title;
+
+        ProjectActivityLog::log($task->project, 'checklist_item_deleted', [
+            'task_title' => $task->title,
+            'item_title' => $itemTitle,
+        ], $task);
+
+        $this->notifyAssigneeOfItemDelete($task, $itemTitle);
 
         $checklistItem->delete();
 

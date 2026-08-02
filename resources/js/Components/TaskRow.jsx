@@ -814,6 +814,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     // tester is limited to items they personally added - mirrors
     // TaskChecklistItemController::destroy()'s server-side check. The assignee
     // has no delete rights here at all unless they separately hold owner/manager.
+    // Renaming an item follows the same author rule the server enforces in
+    // TaskChecklistItemController::update()'s title branch: owner/manager may
+    // rename any item, a tester is limited to items they added themselves.
+    const canEditChecklistItem = (item) => canManage || (isTesterRole && item.created_by === currentUserId);
     const canDeleteChecklistItem = (item) => canManage || (isTesterRole && item.created_by === currentUserId);
     // Checking an item done/undone is narrower still and assignee-only, even for
     // an owner or manager who can otherwise edit the task - see
@@ -838,6 +842,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [isDescriptionTruncated, setIsDescriptionTruncated] = useState(false);
     const [pinning, setPinning] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editingChecklistItemId, setEditingChecklistItemId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null); // comment object being replied to, or null
     const [collapsedIds, setCollapsedIds] = useState(() => new Set()); // ids of comments whose thread is minimized
     const [showReopenPanel, setShowReopenPanel] = useState(false);
@@ -918,6 +923,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         dependencies: task.dependencies?.map((d) => d.id) ?? [],
     });
     const checklistForm = useForm({ title: '' });
+    const editChecklistItemForm = useForm({ title: '' });
     const submitForm = useForm({ files: [], links: [] });
     const reviewForm = useForm({ feedback: '' });
     const commentForm = useForm({ body: '', parent_id: null });
@@ -1022,6 +1028,25 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
     const toggleChecklistItem = (item) => {
         router.patch(route('checklist.update', item.id), { done: !item.done }, { preserveScroll: true });
+    };
+
+    const startEditChecklistItem = (item) => {
+        setEditingChecklistItemId(item.id);
+        editChecklistItemForm.setData('title', item.title);
+    };
+
+    const cancelEditChecklistItem = () => {
+        setEditingChecklistItemId(null);
+        editChecklistItemForm.reset('title');
+    };
+
+    const saveChecklistItemEdit = (e, itemId) => {
+        e.preventDefault();
+        if (!editChecklistItemForm.data.title.trim()) return;
+        editChecklistItemForm.patch(route('checklist.update', itemId), {
+            preserveScroll: true,
+            onSuccess: () => setEditingChecklistItemId(null),
+        });
     };
 
     const deleteChecklistItem = (item) => {
@@ -1849,56 +1874,119 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                         key={item.id}
                                         className="group flex items-start gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 shadow-sm transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={item.done}
-                                            onChange={() => canToggleChecklistItems && toggleChecklistItem(item)}
-                                            disabled={!canToggleChecklistItems}
-                                            title={canToggleChecklistItems ? undefined : 'Only the assignee can check items done'}
-                                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900"
-                                        />
-                                        <span className="min-w-0 flex-1">
-                                            <span className={`block whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                {item.title}
-                                            </span>
-                                            {item.creator?.name && (
-                                                <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
-                                                    Added by {item.creator.name}
-                                                </span>
-                                            )}
-                                        </span>
-                                        {isAssignee && (
-                                            item.in_my_notes ? (
-                                                <span
-                                                    title="This item is in your My Notes checklist, kept in sync"
-                                                    className="mt-0.5 flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-indigo-500 dark:text-indigo-400"
-                                                >
-                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    In Notes
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => addChecklistItemToNotes(item)}
-                                                    disabled={addingToNotesId === item.id}
-                                                    title="Add to My Notes"
-                                                    className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
-                                                >
-                                                    + My Notes
-                                                </button>
-                                            )
-                                        )}
-                                        {canDeleteChecklistItem(item) && (
-                                            <button
-                                                onClick={() => deleteChecklistItem(item)}
-                                                className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
-                                                title="Remove item"
+                                        {editingChecklistItemId === item.id ? (
+                                            <form
+                                                onSubmit={(e) => saveChecklistItemEdit(e, item.id)}
+                                                className="flex min-w-0 flex-1 flex-col gap-1"
                                             >
-                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
+                                                <div className="flex items-start gap-2">
+                                                    <AutoGrowTextarea
+                                                        value={editChecklistItemForm.data.title}
+                                                        onChange={(e) => editChecklistItemForm.setData('title', e.target.value.slice(0, CHECKLIST_ITEM_MAX_LENGTH))}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault();
+                                                                if (editChecklistItemForm.data.title.trim()) saveChecklistItemEdit(e, item.id);
+                                                            } else if (e.key === 'Escape') {
+                                                                cancelEditChecklistItem();
+                                                            }
+                                                        }}
+                                                        maxLength={CHECKLIST_ITEM_MAX_LENGTH}
+                                                        autoFocus
+                                                        className="block w-full flex-1 rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                    />
+                                                    <button
+                                                        type="submit"
+                                                        disabled={editChecklistItemForm.processing || !editChecklistItemForm.data.title.trim()}
+                                                        title="Save"
+                                                        className="mt-0.5 shrink-0 text-gray-400 hover:text-green-500 disabled:opacity-50 dark:text-gray-500"
+                                                    >
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={cancelEditChecklistItem}
+                                                        title="Cancel"
+                                                        className="mt-0.5 shrink-0 text-gray-400 hover:text-red-500 dark:text-gray-500"
+                                                    >
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                {item.creator?.name && (
+                                                    <span className="block text-xs text-gray-400 dark:text-gray-500">
+                                                        Added by {item.creator.name}
+                                                    </span>
+                                                )}
+                                            </form>
+                                        ) : (
+                                            <>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={item.done}
+                                                    onChange={() => canToggleChecklistItems && toggleChecklistItem(item)}
+                                                    disabled={!canToggleChecklistItems}
+                                                    title={canToggleChecklistItems ? undefined : 'Only the assignee can check items done'}
+                                                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className={`block whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                        {item.title}
+                                                    </span>
+                                                    {item.creator?.name && (
+                                                        <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
+                                                            Added by {item.creator.name}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                {isAssignee && (
+                                                    item.in_my_notes ? (
+                                                        <span
+                                                            title="This item is in your My Notes checklist, kept in sync"
+                                                            className="mt-0.5 flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-indigo-500 dark:text-indigo-400"
+                                                        >
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                            In Notes
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => addChecklistItemToNotes(item)}
+                                                            disabled={addingToNotesId === item.id}
+                                                            title="Add to My Notes"
+                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
+                                                        >
+                                                            + My Notes
+                                                        </button>
+                                                    )
+                                                )}
+                                                {canEditChecklistItem(item) && (
+                                                    <button
+                                                        onClick={() => startEditChecklistItem(item)}
+                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 dark:text-gray-600"
+                                                        title="Edit item"
+                                                    >
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                                {canDeleteChecklistItem(item) && (
+                                                    <button
+                                                        onClick={() => deleteChecklistItem(item)}
+                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
+                                                        title="Remove item"
+                                                    >
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 ))}

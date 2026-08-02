@@ -35,6 +35,8 @@ const actionLabels = {
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
     task_reopened: 'Task Reopened',
+    checklist_item_updated: 'Checklist Item Edited',
+    checklist_item_deleted: 'Checklist Item Removed',
     dependency_added: 'Dependency Added',
     dependency_removed: 'Dependency Removed',
     invitation_sent: 'Invitation Sent',
@@ -132,6 +134,8 @@ const actionIconConfig = {
     submission_reset: { path: ICON_PATHS.undo, color: 'text-amber-500' },
     submission_kept: { path: ICON_PATHS.check, color: 'text-green-500' },
     task_reopened: { path: ICON_PATHS.undo, color: 'text-amber-500' },
+    checklist_item_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
+    checklist_item_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
     dependency_added: { path: ICON_PATHS.plus, color: 'text-amber-500' },
     dependency_removed: { path: ICON_PATHS.minus, color: 'text-gray-400' },
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
@@ -190,6 +194,8 @@ function describeLog(log, actorName = null) {
         case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
         case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
         case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
+        case 'checklist_item_updated': return `${actor} renamed a checklist item on "${d.task_title}" from "${d.old_item_title}" to "${d.new_item_title}"`;
+        case 'checklist_item_deleted': return `${actor} removed the checklist item "${d.item_title}" from "${d.task_title}"`;
         case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
         case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
         case 'invitation_denied': return `${actor} declined the invitation to join`;

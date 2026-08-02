@@ -531,7 +531,149 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
     );
 }
 
-export default function Dashboard({ stats, range, customFrom, customTo }) {
+function NoteItemMini({ item, onToggle }) {
+    return (
+        <li className="group/item flex items-start gap-2 py-1">
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-pressed={item.done}
+                aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                    item.done
+                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        : 'border-gray-300 bg-white hover:border-indigo-400 dark:border-gray-600 dark:bg-gray-900'
+                }`}
+            >
+                {item.done && (
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                )}
+            </button>
+            <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
+                {item.text}
+            </span>
+        </li>
+    );
+}
+
+// Lighter-weight sibling of Projects/Show.jsx's NoteCard - a glance-and-tick
+// view for the dashboard rollup. Toggling still hits the real
+// projects.notes.items.toggle route (so it stays in sync everywhere,
+// including the source task checklist for linked items), but there's no
+// edit/delete/add-item chrome here - that lives on the project's own My
+// Notes panel, this is just "check things off without leaving the dashboard".
+function MiniNoteCard({ note, onToggleItem }) {
+    const items = note.content ?? [];
+    const doneCount = items.filter((i) => i.done).length;
+    const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+
+    return (
+        <li className="rounded-2xl bg-gray-50 px-3.5 py-3 dark:bg-gray-900/70">
+            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
+            <div className="mt-1 flex items-center gap-2">
+                <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                    <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length}</span>
+            </div>
+            {items.length > 0 && (
+                <ul className="mt-1.5 divide-y divide-gray-100 dark:divide-gray-800">
+                    {items.map((item) => (
+                        <NoteItemMini key={item.id} item={item} onToggle={() => onToggleItem(item.id)} />
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+}
+
+// Personal-dashboard rollup of every private checklist this user has, across
+// every project - grouped so each project only shows up here if it actually
+// has notes (see DashboardController::index's groupBy), rather than listing
+// every project the person belongs to whether or not they've jotted anything
+// down. Each project group is independently collapsible, same interaction
+// pattern as NotesPanel's own collapse toggle.
+function MyNotesPanel({ notesByProject }) {
+    const [collapsedProjectIds, setCollapsedProjectIds] = useState(() => new Set());
+
+    const toggleProjectCollapse = (projectId) => {
+        setCollapsedProjectIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(projectId)) next.delete(projectId);
+            else next.add(projectId);
+            return next;
+        });
+    };
+
+    const toggleItem = (noteId, itemId) => router.patch(route('projects.notes.items.toggle', [noteId, itemId]), {}, { preserveScroll: true });
+
+    const totalNotes = notesByProject.reduce((sum, group) => sum + group.notes.length, 0);
+
+    return (
+        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
+            <SectionHeader
+                title="My Notes"
+                badge={totalNotes > 0 ? totalNotes : undefined}
+                icon={
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
+                    </svg>
+                }
+            />
+
+            {notesByProject.length === 0 ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                    <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
+                    </svg>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">No checklists yet</p>
+                    <p className="text-xs text-gray-300 dark:text-gray-600">Open a project to jot down a private checklist</p>
+                </div>
+            ) : (
+                <div className="thin-scrollbar max-h-80 space-y-3 overflow-y-auto pr-1.5">
+                    {notesByProject.map((group) => {
+                        const isCollapsed = collapsedProjectIds.has(group.project.id);
+                        return (
+                            <div key={group.project.id}>
+                                <button
+                                    onClick={() => toggleProjectCollapse(group.project.id)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                                >
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                        <svg className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        <Link
+                                            href={route('projects.show', group.project.id)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="truncate text-sm font-semibold text-gray-800 hover:underline dark:text-gray-200"
+                                        >
+                                            {group.project.name}
+                                        </Link>
+                                    </span>
+                                    <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">
+                                        {group.notes.length} checklist{group.notes.length === 1 ? '' : 's'}
+                                    </span>
+                                </button>
+                                {!isCollapsed && (
+                                    <ul className="mt-1 space-y-1.5 pl-1">
+                                        {group.notes.map((note) => (
+                                            <MiniNoteCard key={note.id} note={note} onToggleItem={(itemId) => toggleItem(note.id, itemId)} />
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function Dashboard({ stats, range, customFrom, customTo, myNotes = [] }) {
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
     const [highlightedReminderId, setHighlightedReminderId] = useState(null);
@@ -651,10 +793,12 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
                         <DueSoonPanel dueSoon={stats.dueSoon} />
 
                         <RemindersPanel reminders={stats.reminders} highlightedReminderId={highlightedReminderId} />
+
+                        <MyNotesPanel notesByProject={myNotes} />
                     </div>
                 </div>
             </div>

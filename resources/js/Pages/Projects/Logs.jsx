@@ -28,6 +28,8 @@ const actionLabels = {
     submission_reset: 'Submission Reset',
     submission_kept: 'Submission Kept',
     task_reopened: 'Task Reopened',
+    checklist_item_updated: 'Checklist Item Edited',
+    checklist_item_deleted: 'Checklist Item Removed',
     invitation_sent: 'Invitation Sent',
     invitation_accepted: 'Invitation Accepted',
     invitation_denied: 'Invitation Denied',

@@ -209,6 +209,24 @@ class DashboardController extends Controller
             ->orderBy('remind_at')
             ->get();
 
+        // "My Notes" widget: every private checklist this user has across all
+        // their projects, grouped by project so the dashboard can show one
+        // section per project instead of a flat, unlabeled list - mirrors
+        // NotesPanel's per-project view (ProjectController::show), just
+        // rolled up across every project at once. groupBy naturally drops
+        // any project with zero notes, so only projects that actually have
+        // some show up here.
+        $myNotesByProject = \App\Models\ProjectNote::where('user_id', $user->id)
+            ->with('project:id,name')
+            ->latest('updated_at')
+            ->get()
+            ->groupBy('project_id')
+            ->map(fn ($notes) => [
+                'project' => ['id' => $notes->first()->project_id, 'name' => $notes->first()->project->name],
+                'notes' => $notes->values(),
+            ])
+            ->values();
+
         return Inertia::render('Dashboard', [
             'range' => $range,
             'customFrom' => request('from'),
@@ -228,6 +246,7 @@ class DashboardController extends Controller
                 'calendarTasks' => $calendarTasks,
                 'reminders' => $reminders,
             ],
+            'myNotes' => $myNotesByProject,
         ]);
     }
 
