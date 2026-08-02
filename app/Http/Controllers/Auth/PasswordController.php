@@ -46,6 +46,7 @@ class PasswordController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'password_changed',
+                'causer_id' => $user->id,
                 'message' => "Password changed\nYour account password was changed. If this wasn't you, contact support immediately.",
                 'url' => route('account.edit', [], false),
             ]);

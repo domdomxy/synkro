@@ -126,6 +126,7 @@ class TaskChecklistItemController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $recipient->id,
                 'type' => 'task_checklist_item_added',
+                'causer_id' => Auth::id(),
                 'message' => "New checklist item\n" . '**' . Auth::user()->name . '**' . " added \"{$item->title}\" to the checklist on \"**{$task->title}**\"",
                 'url' => $url,
             ]);
@@ -180,6 +181,7 @@ class TaskChecklistItemController extends Controller
         $notification = UserNotification::create([
             'user_id' => $recipient->id,
             'type' => 'task_checklist_item_updated',
+            'causer_id' => Auth::id(),
             'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " renamed \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
             'url' => $url,
         ]);
@@ -220,6 +222,7 @@ class TaskChecklistItemController extends Controller
         $notification = UserNotification::create([
             'user_id' => $recipient->id,
             'type' => 'task_checklist_item_deleted',
+            'causer_id' => Auth::id(),
             'message' => "Checklist item removed\n" . '**' . Auth::user()->name . '**' . " removed \"{$itemTitle}\" from the checklist on \"**{$task->title}**\"",
             'url' => $url,
         ]);

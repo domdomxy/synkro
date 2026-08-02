@@ -115,6 +115,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_assigned',
+                    'causer_id' => Auth::id(),
                     'message' => "Task assigned\nYou were assigned a new task: \"**{$task->title}**\"",
                     'url' => $url,
                 ]);
@@ -233,6 +234,7 @@ class TaskController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $task->assigned_to,
                         'type' => 'task_assigned',
+                        'causer_id' => Auth::id(),
                         'message' => "Task assigned\nYou were assigned a task: \"**{$task->title}**\"",
                         'url' => $url,
                     ]);
@@ -268,6 +270,7 @@ class TaskController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $previousAssignee,
                         'type' => 'task_unassigned',
+                        'causer_id' => Auth::id(),
                         'message' => "Removed from task\nYou were removed from task \"**{$task->title}**\"",
                         'url' => $projectUrl,
                     ]);
@@ -297,6 +300,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_updated',
+                    'causer_id' => Auth::id(),
                     'message' => "Task updated\n\"**{$task->title}**\" was updated",
                     'url' => $url,
                 ]);
@@ -425,6 +429,7 @@ class TaskController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $assigneeId,
                         'type' => 'task_deleted',
+                        'causer_id' => Auth::id(),
                         'message' => "Task deleted\n\"**{$taskTitle}**\" was deleted from **{$projectName}**.",
                         'url' => $projectUrl,
                     ]);
@@ -637,6 +642,7 @@ class TaskController extends Controller
                     UserNotification::create([
                         'user_id' => $previousUser->id,
                         'type' => 'task_unassigned',
+                        'causer_id' => Auth::id(),
                         'message' => "Tasks reassigned\n{$taskList}",
                         'url' => $url,
                     ]);
@@ -670,6 +676,7 @@ class TaskController extends Controller
                         UserNotification::create([
                             'user_id' => $assignee->id,
                             'type' => 'task_assigned',
+                            'causer_id' => Auth::id(),
                             'message' => "Tasks assigned\n{$taskList}",
                             'url' => $url,
                         ]);
@@ -775,6 +782,7 @@ class TaskController extends Controller
                 UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'task_updated',
+                    'causer_id' => Auth::id(),
                     'message' => "{$headline}\n{$taskList}",
                     'url' => $url,
                 ]);
@@ -819,6 +827,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_updated',
+                    'causer_id' => Auth::id(),
                     'message' => "Task started\n\"**{$task->title}**\" was moved to In Progress",
                     'url' => $url,
                 ]);
@@ -900,6 +909,7 @@ class TaskController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $reviewer->id,
                         'type' => 'task_review_needed',
+                        'causer_id' => Auth::id(),
                         'message' => "Review needed\n\"**{$task->title}**\" is waiting for your review",
                         'url' => $url,
                     ]);
@@ -968,6 +978,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_updated',
+                    'causer_id' => Auth::id(),
                     'message' => "Under review\n\"**{$task->title}**\" is now being reviewed",
                     'url' => $url,
                 ]);
@@ -1054,6 +1065,7 @@ class TaskController extends Controller
             $notification = UserNotification::create([
                 'user_id' => $task->assigned_to,
                 'type' => $decisionType,
+                'causer_id' => Auth::id(),
                 'message' => $message,
                 'url' => $url,
             ]);
@@ -1092,6 +1104,7 @@ class TaskController extends Controller
                     $doneNotification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'task_done',
+                        'causer_id' => Auth::id(),
                         'message' => "Task completed\n\"**{$task->title}**\" was marked done",
                         'url' => $url,
                     ]);
@@ -1244,6 +1257,7 @@ class TaskController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_reopened',
+                    'causer_id' => Auth::id(),
                     'message' => "Task reopened\n\"**{$task->title}**\" was reopened for changes: {$validated['feedback']}",
                     'url' => $url,
                 ]);

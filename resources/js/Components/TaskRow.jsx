@@ -796,7 +796,7 @@ function CommentThread({
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenComments = false, autoOpenChecklist = false, onJumpToTask, projectMuted = false, onFocusComments = null }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenChecklist = false, onJumpToTask, projectMuted = false }) {
     const isAssignee = task.assigned_to === currentUserId;
     // Roles are mutually exclusive per project, so "can review but can't manage"
     // means the role is exactly tester - no separate prop needs threading down
@@ -873,16 +873,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
         if (autoOpenHistory) setShowHistory(true);
     }, [autoOpenHistory]);
 
-    // Set by TaskFocusModal (Show.jsx) so the comments/thread panel is already open the moment
-    // the focused-task dialog appears, rather than making the person click "Comments" again on
-    // a task they just clicked "Comments" to get to.
-    useEffect(() => {
-        if (autoOpenComments) setActiveSection('comments');
-    }, [autoOpenComments]);
-
-    // Runs after the comments effect above so a checklist notification link
-    // (?task=X&checklist=1) wins over TaskFocusModal's default of opening
-    // straight to comments.
     useEffect(() => {
         if (autoOpenChecklist) setActiveSection('checklist');
     }, [autoOpenChecklist]);
@@ -1795,7 +1785,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 <div className="flex flex-wrap items-center gap-1">
                     <FooterToggle
                         active={showComments}
-                        onClick={() => (onFocusComments ? onFocusComments(task.id) : toggleSection('comments'))}
+                        onClick={() => toggleSection('comments')}
                         label="Comments"
                         count={commentCount > 0 ? commentCount : null}
                         icon={
@@ -1820,7 +1810,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                             }
                         />
                     )}
-                    {canViewChecklist && (
+                    {canViewChecklist && (canReview || task.checklist_items?.length > 0) && (
                         <div className="ml-auto">
                             <FooterToggle
                                 active={showChecklist}

@@ -216,6 +216,7 @@ class ProjectController extends Controller
                     $notification = \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'project_updated',
+                        'causer_id' => Auth::id(),
                         'message' => "Project updated\n\"**{$project->name}**\" was edited",
                         'url' => route('projects.show', $project->id, false),
                     ]);
@@ -271,6 +272,7 @@ class ProjectController extends Controller
                 \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_deletion_requested',
+                    'causer_id' => Auth::id(),
                     'message' => "Deletion requested\n**" . Auth::user()->name . "** requested to delete \"**{$project->name}**\"",
                     'url' => route('projects.settings', $project->id, false),
                 ]);
@@ -382,6 +384,7 @@ class ProjectController extends Controller
                 $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_deleted',
+                    'causer_id' => Auth::id(),
                     'message' => "Project deleted\n\"**{$projectName}**\" was deleted",
                     'url' => route('projects.index', [], false),
                 ]);
@@ -465,6 +468,7 @@ class ProjectController extends Controller
             $notification = \App\Models\UserNotification::create([
                 'user_id' => $newOwner->id,
                 'type' => 'project_ownership_transferred',
+                'causer_id' => Auth::id(),
                 'message' => "Ownership transferred\nYou now own \"**{$project->name}**\"",
                 'url' => route('projects.show', $project->id, false),
             ]);

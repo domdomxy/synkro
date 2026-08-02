@@ -32,7 +32,7 @@ class NotificationController extends Controller
         $filter = $request->input('filter', 'all');
         $category = $request->input('category', 'all');
 
-        $query = $request->user()->notifications();
+        $query = $request->user()->notifications()->with('causer');
 
         if ($filter === 'unread') {
             $query->whereNull('read_at');

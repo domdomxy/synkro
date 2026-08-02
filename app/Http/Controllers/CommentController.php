@@ -120,6 +120,7 @@ class CommentController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_commented',
+                    'causer_id' => Auth::id(),
                     'message' => "New comment\n" . '**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\"",
                     'url' => $url,
                 ]);
@@ -151,6 +152,7 @@ class CommentController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'task_mentioned',
+                    'causer_id' => Auth::id(),
                     'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
                     'url' => $url,
                 ]);
@@ -185,6 +187,7 @@ class CommentController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $replyRecipient->id,
                         'type' => 'comment_replied',
+                        'causer_id' => Auth::id(),
                         'message' => "New reply\n" . '**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\"",
                         'url' => $url,
                     ]);
@@ -362,6 +365,7 @@ class CommentController extends Controller
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'task_mentioned',
+                        'causer_id' => Auth::id(),
                         'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
                         'url' => $url,
                     ]);

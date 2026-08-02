@@ -43,7 +43,7 @@ class HandleInertiaRequests extends Middleware
                 ],
             'notifications' => [
             'unreadCount' => fn () => $request->user()?->notifications()->whereNull('read_at')->count() ?? 0,
-            'recent' => fn () => $request->user()?->notifications()->limit(10)->get() ?? [],
+            'recent' => fn () => $request->user()?->notifications()->with('causer')->limit(10)->get() ?? [],
             ],
             'testing' => fn () => (function () use ($request) {
                 $user = $request->user();

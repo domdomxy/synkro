@@ -5,6 +5,7 @@ import useConfirm from '@/hooks/useConfirm';
 import { NoteList } from '@/utils/noteFormat';
 import FilterSelect from '@/Components/FilterSelect';
 import { categoryMap, typeStyles, relativeTime, splitMessage } from '@/utils/notificationDisplay';
+import NotificationIcon from '@/Components/NotificationIcon';
 
 export default function NotificationBell() {
     const { auth, notifications } = usePage().props;
@@ -335,11 +336,7 @@ export default function NotificationBell() {
                                     }`}
                                 >
                                     <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-3 text-left">
-                                        <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.bg} ${style.text}`}>
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                {style.icon}
-                                            </svg>
-                                        </span>
+                                        <NotificationIcon causer={note.causer} style={style} size="h-8 w-8" />
                                         <span className="min-w-0 flex-1">
                                             <span className={`block truncate text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                                                 {title}

@@ -133,6 +133,7 @@ class FeedbackAdminController extends Controller
         $notification = UserNotification::create([
             'user_id' => $user->id,
             'type' => $type,
+            'causer_id' => Auth::id(),
             'message' => $statusChanged
                 ? "Ticket updated\nYour ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id}) status changed to **".ucfirst($status).'**'
                 : "Support replied\nSupport responded to your ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id})",

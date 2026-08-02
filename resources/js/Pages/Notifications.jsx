@@ -6,6 +6,7 @@ import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { NoteList } from '@/utils/noteFormat';
 import { typeStyles, relativeTime, splitMessage } from '@/utils/notificationDisplay';
+import NotificationIcon from '@/Components/NotificationIcon';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -156,11 +157,7 @@ export default function Notifications({ notificationsList, filters }) {
                                             }`}
                                         >
                                             <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-3 text-left">
-                                                <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${style.bg} ${style.text}`}>
-                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                        {style.icon}
-                                                    </svg>
-                                                </span>
+                                                <NotificationIcon causer={note.causer} style={style} size="h-9 w-9" />
                                                 <span className="min-w-0 flex-1">
                                                     <span className={`block text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                                                         {title}

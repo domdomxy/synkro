@@ -44,6 +44,7 @@ class AccountDeletion
                         $notification = UserNotification::create([
                             'user_id' => $recipient->id,
                             'type' => 'owner_account_deleted',
+                            'causer_id' => $user->id,
                             'message' => "Owner account deleted\n**{$user->name}**, the owner of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ', it and everything in it will be gone for good.',
                             'url' => route('projects.show', $project->id, false),
                         ]);
@@ -112,6 +113,7 @@ class AccountDeletion
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
+                        'causer_id' => $user->id,
                         'message' => "Account deletion requested\n**{$user->name}** ({$role}) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ", they'll be removed from the project automatically.",
                         'url' => route('projects.show', $project->id, false),
                     ]);

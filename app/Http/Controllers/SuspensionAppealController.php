@@ -90,6 +90,7 @@ class SuspensionAppealController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $admin->id,
                     'type' => 'appeal_created',
+                    'causer_id' => $user->id,
                     'message' => "New appeal submitted\n**{$user->name}** submitted a suspension appeal",
                     'url' => $url,
                 ]);

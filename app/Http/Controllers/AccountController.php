@@ -94,6 +94,7 @@ class AccountController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'email_changed',
+                    'causer_id' => $user->id,
                     'message' => "Email address changed\nYour account email is now **{$newEmail}**.",
                     'url' => route('account.edit', [], false),
                 ]);
@@ -320,6 +321,7 @@ class AccountController extends Controller
             UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'account_restored',
+                'causer_id' => $user->id,
                 'message' => "Account restored\nYour Synkro account has been restored. Welcome back!",
                 'url' => route('dashboard', [], false),
             ]);
@@ -400,6 +402,7 @@ class AccountController extends Controller
                     \App\Models\UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
+                        'causer_id' => $user->id,
                         'message' => "Member left\n**{$user->name}** ({$role}) deactivated their account; their tasks in \"**{$project->name}**\" may need attention",
                         'url' => route('projects.show', $project->id, false),
                     ]);

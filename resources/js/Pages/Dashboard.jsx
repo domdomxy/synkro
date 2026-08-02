@@ -342,12 +342,12 @@ function AlarmRow({ r, now, onDelete, isHighlighted }) {
 
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                        role="switch"
-                        aria-checked="true"
                         title="Delete reminder"
-                        className="relative h-6 w-10 shrink-0 rounded-full bg-indigo-600 transition-colors hover:bg-red-500"
+                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                     >
-                        <span className="absolute left-0.5 top-0.5 h-5 w-5 translate-x-4 rounded-full bg-white shadow transition-transform" />
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -793,12 +793,12 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                         <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                    <MyNotesPanel notesByProject={myNotes} />
+
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <DueSoonPanel dueSoon={stats.dueSoon} />
 
                         <RemindersPanel reminders={stats.reminders} highlightedReminderId={highlightedReminderId} />
-
-                        <MyNotesPanel notesByProject={myNotes} />
                     </div>
                 </div>
             </div>

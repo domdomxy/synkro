@@ -823,6 +823,7 @@ public function suspend(Request $request, User $user)
                 $notification = UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'admin_status_changed',
+                    'causer_id' => auth()->id(),
                     'message' => "Promoted to admin\nYou were granted administrator access on Synkro.",
                     'url' => route('admin.dashboard', [], false),
                 ]);
@@ -847,6 +848,7 @@ public function suspend(Request $request, User $user)
                 $notification = UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'admin_status_changed',
+                    'causer_id' => auth()->id(),
                     'message' => "Removed from admin\nYour administrator access on Synkro was removed.",
                     'url' => route('dashboard', [], false),
                 ]);
@@ -898,6 +900,7 @@ public function suspend(Request $request, User $user)
             $notification = UserNotification::create([
                 'user_id' => $user->id,
                 'type' => 'admin_status_changed',
+                'causer_id' => auth()->id(),
                 'message' => $message,
                 'url' => route('admin.dashboard', [], false),
             ]);
@@ -992,6 +995,7 @@ public function suspend(Request $request, User $user)
                 $notification = UserNotification::create([
                     'user_id' => $user->id,
                     'type' => 'email_changed',
+                    'causer_id' => auth()->id(),
                     'message' => "Email address changed\nYour account email is now **{$newEmail}**.",
                     'url' => route('account.edit', [], false),
                 ]);
@@ -1202,6 +1206,7 @@ public function suspend(Request $request, User $user)
             $notification = UserNotification::create([
                 'user_id' => $appeal->user->id,
                 'type' => 'appeal_responded',
+                'causer_id' => auth()->id(),
                 'message' => "Update on your appeal\nA member of our support team left a note on your suspension appeal.",
                 'url' => route('login', [], false),
             ]);

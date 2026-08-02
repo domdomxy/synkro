@@ -72,6 +72,7 @@ class InvitationController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $inviter->id,
                     'type' => 'invitation_accepted',
+                    'causer_id' => Auth::id(),
                     'message' => "Invitation accepted\n" . '**' . Auth::user()->name . '**' . " accepted your invitation to \"**{$invitation->project->name}**\"",
                     'url' => $projectUrl,
                 ]);
@@ -108,6 +109,7 @@ class InvitationController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_member_added',
+                    'causer_id' => Auth::id(),
                     'message' => "New member\n" . '**' . Auth::user()->name . '**' . " joined \"**{$invitation->project->name}**\" as {$invitation->role}",
                     'url' => $projectUrl,
                 ]);
@@ -167,6 +169,7 @@ class InvitationController extends Controller
                 $notification = UserNotification::create([
                     'user_id' => $inviter->id,
                     'type' => 'invitation_denied',
+                    'causer_id' => Auth::id(),
                     'message' => "Invitation declined\n" . '**' . Auth::user()->name . '**' . " declined your invitation to \"**{$invitation->project->name}**\"",
                     'url' => route('projects.show', $invitation->project_id, false),
                 ]);
