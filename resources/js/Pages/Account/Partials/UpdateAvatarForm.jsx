@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
 import InputError from '@/Components/InputError';
+import { silentSubmit } from '@/utils/silentSubmit';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
@@ -13,7 +14,8 @@ export default function UpdateAvatarForm({ className = '' }) {
     const fileInput = useRef(null);
     const [pendingFile, setPendingFile] = useState(null); // raw file, awaiting crop
     const [preview, setPreview] = useState(null); // object URL of the cropped result
-    const { setData, post, processing, errors, reset } = useForm({ avatar: null });
+    const { data, setData, errors, setError, reset } = useForm({ avatar: null });
+    const [processing, setProcessing] = useState(false);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const pickFile = () => fileInput.current.click();
@@ -43,18 +45,30 @@ export default function UpdateAvatarForm({ className = '' }) {
     const submit = async (e) => {
         e.preventDefault();
         if (!(await confirm('Save this as your new avatar?', { title: 'Save Avatar?' }))) return;
-        post(route('account.avatar.update'), {
-            forceFormData: true,
-            onSuccess: () => {
-                reset();
-                setPreview(null);
-            },
+
+        setProcessing(true);
+        const result = await silentSubmit(route('account.avatar.update'), {
+            method: 'POST',
+            data: { avatar: data.avatar },
+            isFormData: true,
         });
+
+        if (result.ok) {
+            router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
+            reset();
+            setPreview(null);
+        } else if (result.errors) {
+            Object.entries(result.errors).forEach(([key, message]) => setError(key, message));
+        }
+        setProcessing(false);
     };
 
     const removeAvatar = async () => {
         if (await confirm('This cannot be undone.', { title: 'Remove Avatar?', danger: true, confirmLabel: 'Remove' })) {
-            router.delete(route('account.avatar.destroy'));
+            const result = await silentSubmit(route('account.avatar.destroy'), { method: 'DELETE' });
+            if (result.ok) {
+                router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
+            }
         }
     };
 

@@ -2,13 +2,14 @@ import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
 import { Link, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
+import { silentSubmit } from '@/utils/silentSubmit';
 import {
     primeTrustedHosts,
     subscribeTrustedHosts,
     revokeTrustedHost as revokeTrustedHostRequest,
     revokeAllTrustedHosts as revokeAllTrustedHostsRequest,
 } from '@/utils/trustedHosts';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
 import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
 
@@ -296,6 +297,14 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
+    // Baseline to diff against for "has unsaved changes" - updated locally on
+    // a successful save instead of via the (unchanged, since we no longer
+    // navigate) emailPreferences/notificationPreferences props.
+    const [savedEmailPreferences, setSavedEmailPreferences] = useState(emailPreferences);
+    const [savedNotificationPreferences, setSavedNotificationPreferences] = useState(notificationPreferences);
+    const [notificationSettingsProcessing, setNotificationSettingsProcessing] = useState(false);
+    const [notificationSettingsRecentlySuccessful, setNotificationSettingsRecentlySuccessful] = useState(false);
+    const notificationSuccessTimeout = useRef(null);
     const { confirm, ConfirmDialog } = useConfirm();
     const [theme, setThemeState] = useState(getStoredTheme());
     const [trustedHosts, setTrustedHosts] = useState(trustedLinkHosts ?? []);
@@ -349,7 +358,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     const resetEmailToDefaults = () => {
         emailForm.setData('preferences', { ...emailDefaults });
     };
-    const emailHasChanges = JSON.stringify(emailForm.data.preferences) !== JSON.stringify(emailPreferences);
+    const emailHasChanges = JSON.stringify(emailForm.data.preferences) !== JSON.stringify(savedEmailPreferences);
     const emailAtDefaults = JSON.stringify(emailForm.data.preferences) === JSON.stringify(emailDefaults);
 
     // --- Notification preferences (in-app bell) ---
@@ -364,14 +373,38 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     const resetNotificationsToDefaults = () => {
         notificationForm.setData('preferences', { ...notificationDefaults });
     };
-    const notificationHasChanges = JSON.stringify(notificationForm.data.preferences) !== JSON.stringify(notificationPreferences);
+    const notificationHasChanges = JSON.stringify(notificationForm.data.preferences) !== JSON.stringify(savedNotificationPreferences);
     const notificationAtDefaults = JSON.stringify(notificationForm.data.preferences) === JSON.stringify(notificationDefaults);
 
     // --- Combined (unified Notifications section covers both underlying forms) ---
-    const submitNotificationSettings = (e) => {
+    const submitNotificationSettings = async (e) => {
         e.preventDefault();
-        if (emailHasChanges) emailForm.patch(route('settings.email'), { preserveScroll: true });
-        if (notificationHasChanges) notificationForm.patch(route('settings.notifications'), { preserveScroll: true });
+        setNotificationSettingsProcessing(true);
+        let allOk = true;
+
+        if (emailHasChanges) {
+            const result = await silentSubmit(route('settings.email'), { method: 'PATCH', data: emailForm.data });
+            if (result.ok) {
+                setSavedEmailPreferences(emailForm.data.preferences);
+            } else {
+                allOk = false;
+            }
+        }
+        if (notificationHasChanges) {
+            const result = await silentSubmit(route('settings.notifications'), { method: 'PATCH', data: notificationForm.data });
+            if (result.ok) {
+                setSavedNotificationPreferences(notificationForm.data.preferences);
+            } else {
+                allOk = false;
+            }
+        }
+
+        setNotificationSettingsProcessing(false);
+        if (allOk) {
+            setNotificationSettingsRecentlySuccessful(true);
+            clearTimeout(notificationSuccessTimeout.current);
+            notificationSuccessTimeout.current = setTimeout(() => setNotificationSettingsRecentlySuccessful(false), 2000);
+        }
     };
     const resetNotificationSettingsToDefaults = () => {
         resetEmailToDefaults();
@@ -379,8 +412,6 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     };
     const notificationSettingsHasChanges = emailHasChanges || notificationHasChanges;
     const notificationSettingsAtDefaults = emailAtDefaults && notificationAtDefaults;
-    const notificationSettingsProcessing = emailForm.processing || notificationForm.processing;
-    const notificationSettingsRecentlySuccessful = (emailForm.recentlySuccessful || notificationForm.recentlySuccessful) && !notificationSettingsHasChanges;
 
     return (
         <>

@@ -5,7 +5,9 @@ import TextInput from '@/Components/TextInput';
 import SavedIndicator from '@/Components/SavedIndicator';
 import EmailValidityHint from '@/Components/EmailValidityHint';
 import { isValidEmail } from '@/utils/email';
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { silentSubmit } from '@/utils/silentSubmit';
+import { Link, useForm, usePage, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 
 export default function UpdateAccountInformation({
     mustVerifyEmail,
@@ -14,13 +16,16 @@ export default function UpdateAccountInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const { data, setData, patch, errors, setError, processing, recentlySuccessful } =
+    const { data, setData, errors, setError, clearErrors } =
         useForm({
             name: user.name,
             email: user.email,
         });
+    const [processing, setProcessing] = useState(false);
+    const [recentlySuccessful, setRecentlySuccessful] = useState(false);
+    const successTimeout = useRef(null);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
 
         if (!isValidEmail(data.email)) {
@@ -28,7 +33,23 @@ export default function UpdateAccountInformation({
             return;
         }
 
-        patch(route('account.update'));
+        setProcessing(true);
+        clearErrors();
+
+        const result = await silentSubmit(route('account.update'), { method: 'PATCH', data });
+
+        if (result.ok) {
+            // Header/avatar name and email-verified badge read from the shared
+            // auth.user prop, so refresh just that instead of the whole page.
+            router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
+            setRecentlySuccessful(true);
+            clearTimeout(successTimeout.current);
+            successTimeout.current = setTimeout(() => setRecentlySuccessful(false), 2000);
+        } else if (result.errors) {
+            Object.entries(result.errors).forEach(([key, message]) => setError(key, message));
+        }
+
+        setProcessing(false);
     };
 
     return (

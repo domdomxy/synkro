@@ -5,8 +5,9 @@ import PasswordInput from '@/Components/PasswordInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import SavedIndicator from '@/Components/SavedIndicator';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
+import { silentSubmit } from '@/utils/silentSubmit';
 import { useForm } from '@inertiajs/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export default function UpdatePasswordForm({ className = '' }) {
     const passwordInput = useRef();
@@ -18,17 +19,17 @@ export default function UpdatePasswordForm({ className = '' }) {
         errors,
         setError,
         clearErrors,
-        put,
         reset,
-        processing,
-        recentlySuccessful,
     } = useForm({
         current_password: '',
         password: '',
         password_confirmation: '',
     });
+    const [processing, setProcessing] = useState(false);
+    const [recentlySuccessful, setRecentlySuccessful] = useState(false);
+    const successTimeout = useRef(null);
 
-    const updatePassword = (e) => {
+    const updatePassword = async (e) => {
         e.preventDefault();
 
         if (!meetsMinimumStrength(data.password)) {
@@ -38,21 +39,30 @@ export default function UpdatePasswordForm({ className = '' }) {
         }
         clearErrors('password');
 
-        put(route('password.update'), {
-            preserveScroll: true,
-            onSuccess: () => reset(),
-            onError: (errors) => {
-                if (errors.password) {
-                    reset('password', 'password_confirmation');
-                    passwordInput.current.focus();
-                }
+        setProcessing(true);
 
-                if (errors.current_password) {
-                    reset('current_password');
-                    currentPasswordInput.current.focus();
-                }
-            },
-        });
+        const result = await silentSubmit(route('password.update'), { method: 'PUT', data });
+
+        if (result.ok) {
+            reset();
+            setRecentlySuccessful(true);
+            clearTimeout(successTimeout.current);
+            successTimeout.current = setTimeout(() => setRecentlySuccessful(false), 2000);
+        } else if (result.errors) {
+            Object.entries(result.errors).forEach(([key, message]) => setError(key, message));
+
+            if (result.errors.password) {
+                reset('password', 'password_confirmation');
+                passwordInput.current.focus();
+            }
+
+            if (result.errors.current_password) {
+                reset('current_password');
+                currentPasswordInput.current.focus();
+            }
+        }
+
+        setProcessing(false);
     };
 
     return (
