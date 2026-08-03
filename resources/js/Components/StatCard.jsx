@@ -5,8 +5,14 @@
  *   optionally including a composition ratio like "18% of all users" as text.
  * - `pct` is an optional signed number representing a REAL period-over-period
  *   change (e.g. 12, -4.5) — pass it only when it's backed by real historical
- *   data (created_at timestamps etc). It renders as a colored +/-% badge at
- *   the end of the sub line: green for positive, red for negative, gray for 0.
+ *   data (created_at timestamps etc). It renders on its own line below `sub`
+ *   as "▲ +12% vs last month" (green/red/gray for up/down/flat), kept visually
+ *   separate from `sub` so a composition ratio like "8% of all users" is never
+ *   mistaken for the same number as the trend sitting right next to it. Below
+ *   the `sm` breakpoint the 2-column card grid is too narrow for the full
+ *   sentence, so it collapses to just "▲ +12%" (full text back from `sm` up;
+ *   a title tooltip keeps "vs last month" reachable on mobile via long-press
+ *   or hover) rather than wrapping onto a second line that crowds the card.
  *   Composition/ratio percentages (a share of a total, not a change over
  *   time) should go in `sub` as plain text instead of `pct`, since they have
  *   no real "up is good, down is bad" direction to color.
@@ -44,14 +50,15 @@ export default function StatCard({ label, value, sub, pct, accentColor, icon }) 
                 <div className="min-w-0">
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{label}</p>
                     <p className={`mt-1 text-2xl font-semibold sm:text-3xl ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
-                    {(sub || pct !== undefined) && (
-                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                            {sub}
-                            {pct !== undefined && pct !== null && (
-                                <span className={`ml-1.5 font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                    {pct > 0 ? '+' : ''}{pct}%
-                                </span>
-                            )}
+                    {sub && (
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>
+                    )}
+                    {pct !== undefined && pct !== null && (
+                        <p
+                            className={`mt-0.5 whitespace-nowrap text-xs font-medium ${pct > 0 ? 'text-green-600 dark:text-green-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}
+                            title="Compared to last month"
+                        >
+                            {pct > 0 ? '▲ +' : pct < 0 ? '▼ ' : '– '}{pct}%<span className="hidden sm:inline"> vs last month</span>
                         </p>
                     )}
                 </div>

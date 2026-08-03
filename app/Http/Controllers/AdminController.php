@@ -53,8 +53,14 @@ class AdminController extends Controller
         // where() calls without the second corrupting the first's conditions.
         $before = (clone $query)->where($column, '<', $startOfMonth)->count();
         $thisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count();
+        // Real percent CHANGE (delta over the prior baseline), not thisMonth expressed
+        // as a percent of before. The old formula (thisMonth / before * 100) reported
+        // e.g. "100%" whenever thisMonth == before, i.e. "no change" was shown as a
+        // doubling. With no baseline to compare against, there's nothing to compute a
+        // change from, so 0 new this month reads as "0%" and any new activity reads
+        // as "100%" (a fresh trend, not literally "grew by 100%").
         $change = $before > 0
-            ? round($thisMonth / $before * 100, 1)
+            ? round(($thisMonth - $before) / $before * 100, 1)
             : ($thisMonth > 0 ? 100.0 : 0.0);
 
         return ['change' => $change];
@@ -296,7 +302,7 @@ class AdminController extends Controller
         $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
         $usersBeforeThisMonth = User::where('created_at', '<', $startOfMonth)->count();
         $userGrowthRate = $usersBeforeThisMonth > 0
-            ? round($newUsersThisMonth / $usersBeforeThisMonth * 100, 1)
+            ? round(($newUsersThisMonth - $usersBeforeThisMonth) / $usersBeforeThisMonth * 100, 1)
             : ($newUsersThisMonth > 0 ? 100.0 : 0.0);
 
         $activeTrend = $this->monthOverMonthChange(User::where('is_active', true)->where('is_suspended', false), 'active_status_changed_at');

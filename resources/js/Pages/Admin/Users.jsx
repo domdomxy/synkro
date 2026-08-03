@@ -12,7 +12,7 @@ import EditUserModal from '@/Components/EditUserModal';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
-import FilterSelect from '@/Components/FilterSelect';
+import UserFiltersMenu from '@/Components/UserFiltersMenu';
 import { cleanParams } from '@/utils/queryParams';
 import useConfirm from '@/hooks/useConfirm';
 
@@ -284,12 +284,12 @@ export default function Users({ users, stats, filters }) {
     }, [users]);
 
     const applyFilters = () => {
-        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.users'), cleanParams({ search, role: roleFilter, status: statusFilter, verified: verifiedFilter, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const clearFilters = () => {
         setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setVerifiedFilter('all'); setPerPage(DEFAULT_PER_PAGE); setSort('name'); setDirection('asc');
-        router.get(route('admin.users'));
+        router.get(route('admin.users'), {}, { preserveScroll: true });
     };
 
     const handlePerPageChange = (value) => {
@@ -357,12 +357,12 @@ export default function Users({ users, stats, filters }) {
                         <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} pct={stats.activeTrend} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
                         <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} pct={stats.inactiveTrend} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />
                         <StatCard label="Suspended" value={stats.suspended} sub={`${stats.suspendedRatio}% of all users`} pct={stats.suspendedTrend} accentColor="text-red-600 dark:text-red-400" icon={statIcons.suspended} />
-                        <StatCard label="Deleted" value={stats.deleted} sub={`${stats.deletedRatio}% of all users`} accentColor="text-rose-600 dark:text-rose-400" icon={statIcons.deleted} />
+                        <StatCard label="Deleted" value={stats.deleted} sub={`${stats.deletedRatio}% of all users, in grace period`} accentColor="text-rose-600 dark:text-rose-400" icon={statIcons.deleted} />
                         <StatCard label="Admins" value={stats.admins} sub={`${stats.adminsRatio}% of all users`} pct={stats.adminsTrend} accentColor="text-purple-600 dark:text-purple-400" icon={statIcons.admins} />
                         <StatCard label="Superadmins" value={stats.superadmins} sub={`${stats.superadminsRatio}% of all users`} pct={stats.superadminsTrend} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.superadmins} />
                         <StatCard label="Verified" value={stats.verified} sub={`${stats.verifiedRatio}% of all users`} pct={stats.verifiedTrend} accentColor="text-teal-600 dark:text-teal-400" icon={statIcons.verified} />
                         <StatCard label="Unverified" value={stats.unverified} sub={`${stats.unverifiedRatio}% of all users`} accentColor="text-amber-600 dark:text-amber-400" icon={statIcons.unverified} />
-                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="New signups this month" icon={statIcons.newThisMonth} />
+                        <StatCard label="New This Month" value={stats.newUsersThisMonth} sub="Signups since the 1st" icon={statIcons.newThisMonth} />
                     </div>
 
                     <div>
@@ -379,43 +379,17 @@ export default function Users({ users, stats, filters }) {
                                     className="w-64 pl-9"
                                 />
                             </div>
-                            <FilterSelect
-                                value={roleFilter}
-                                onChange={setRoleFilter}
-                                className="w-36"
-                                options={[
-                                    { value: 'all', label: 'All Roles' },
-                                    { value: 'superadmin', label: 'Super Admin' },
-                                    { value: 'admin', label: 'Admin' },
-                                    { value: 'user', label: 'User' },
-                                ]}
+                            <UserFiltersMenu
+                                roleFilter={roleFilter}
+                                setRoleFilter={setRoleFilter}
+                                statusFilter={statusFilter}
+                                setStatusFilter={setStatusFilter}
+                                verifiedFilter={verifiedFilter}
+                                setVerifiedFilter={setVerifiedFilter}
+                                onApply={applyFilters}
+                                onClear={clearFilters}
+                                hasActiveFilters={hasActiveFilters}
                             />
-                            <FilterSelect
-                                value={statusFilter}
-                                onChange={setStatusFilter}
-                                className="w-44"
-                                options={[
-                                    { value: 'all', label: 'All Statuses' },
-                                    { value: 'active', label: 'Active' },
-                                    { value: 'inactive', label: 'Inactive' },
-                                    { value: 'suspended', label: 'Suspended' },
-                                    { value: 'deleted', label: 'Deleted' },
-                                ]}
-                            />
-                            <FilterSelect
-                                value={verifiedFilter}
-                                onChange={setVerifiedFilter}
-                                className="w-52"
-                                options={[
-                                    { value: 'all', label: 'Verified & Unverified' },
-                                    { value: 'verified', label: 'Verified Only' },
-                                    { value: 'unverified', label: 'Unverified Only' },
-                                ]}
-                            />
-                            <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
-                            {hasActiveFilters && (
-                                <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear filters</button>
-                            )}
                         </div>
                         <p className="text-sm text-gray-400 dark:text-gray-500">
                             {users.total} user{users.total !== 1 ? 's' : ''} match{users.total === 1 ? 'es' : ''} your filters

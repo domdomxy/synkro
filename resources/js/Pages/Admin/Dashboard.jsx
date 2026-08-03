@@ -2,8 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import StatCard from '@/Components/StatCard';
 import StatusDonut from '@/Components/StatusDonut';
-import RangeButtons from '@/Components/RangeButtons';
-import ChartTypeToggle from '@/Components/ChartTypeToggle';
+import ChartControlsMenu from '@/Components/ChartControlsMenu';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
 import QuickActionsMenu from '@/Components/QuickActionsMenu';
@@ -185,10 +184,14 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
 
                     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
                         <SectionHeader title="Platform Activity" icon={statIcons.chart}>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ChartTypeToggle value={chartType} onChange={setChartType} />
-                                <RangeButtons range={range} routeName="admin.dashboard" customFrom={customFrom} customTo={customTo} />
-                            </div>
+                            <ChartControlsMenu
+                                chartType={chartType}
+                                onChartTypeChange={setChartType}
+                                range={range}
+                                routeName="admin.dashboard"
+                                customFrom={customFrom}
+                                customTo={customTo}
+                            />
                         </SectionHeader>
                         <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
                         <ActivityChart

@@ -49,7 +49,7 @@ export default function Notifications({ notificationsList, filters }) {
         setCategory('all');
         setSearch('');
         setPerPage(DEFAULT_PER_PAGE);
-        router.get(route('notifications.index'));
+        router.get(route('notifications.index'), {}, { preserveScroll: true });
     };
 
     const hasActiveFilters = filter !== 'all' || category !== 'all' || search !== '';

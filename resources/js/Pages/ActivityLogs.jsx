@@ -515,7 +515,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
         setFrom('');
         setTo('');
         setPerPage(DEFAULT_PER_PAGE);
-        router.get(indexRoute);
+        router.get(indexRoute, {}, { preserveScroll: true });
     };
 
     const hasActiveFilters = action !== 'all' || project !== 'all' || from !== '' || to !== '';

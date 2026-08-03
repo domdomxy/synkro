@@ -235,7 +235,7 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
 
     const clearFilters = () => {
         setSearch(''); setCategory(''); setStatus('');
-        router.get(route('admin.feedbacks'));
+        router.get(route('admin.feedbacks'), {}, { preserveScroll: true });
     };
 
     return (

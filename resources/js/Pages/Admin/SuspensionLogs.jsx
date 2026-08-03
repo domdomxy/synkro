@@ -134,13 +134,13 @@ export default function SuspensionLogs({ logs, filters }) {
     const [direction, setDirection] = useState(filters?.direction ?? 'desc');
 
     const applyFilters = () => {
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const applyDateRange = (newFrom, newTo) => {
         setFrom(newFrom);
         setTo(newTo);
-        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from: newFrom, to: newTo, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from: newFrom, to: newTo, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const clearFilters = () => {
@@ -151,7 +151,7 @@ export default function SuspensionLogs({ logs, filters }) {
         setPerPage(DEFAULT_PER_PAGE);
         setSort('created_at');
         setDirection('desc');
-        router.get(route('admin.suspension-logs'));
+        router.get(route('admin.suspension-logs'), {}, { preserveScroll: true });
     };
 
     const handlePerPageChange = (value) => {

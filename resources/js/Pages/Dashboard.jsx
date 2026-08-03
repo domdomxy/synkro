@@ -7,8 +7,7 @@ import useConfirm from '@/hooks/useConfirm';
 import StatCard from '@/Components/StatCard';
 import FilterSelect from '@/Components/FilterSelect';
 import StatusDonut from '@/Components/StatusDonut';
-import RangeButtons from '@/Components/RangeButtons';
-import ChartTypeToggle from '@/Components/ChartTypeToggle';
+import ChartControlsMenu from '@/Components/ChartControlsMenu';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
 import { statusLabels, statusColors } from '@/utils/taskStatus';
@@ -738,10 +737,14 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                                 </svg>
                             }
                         >
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ChartTypeToggle value={chartType} onChange={setChartType} />
-                                <RangeButtons range={range} routeName="dashboard" customFrom={customFrom} customTo={customTo} />
-                            </div>
+                            <ChartControlsMenu
+                                chartType={chartType}
+                                onChartTypeChange={setChartType}
+                                range={range}
+                                routeName="dashboard"
+                                customFrom={customFrom}
+                                customTo={customTo}
+                            />
                         </SectionHeader>
 
                         <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dateRangeLabel}</p>
