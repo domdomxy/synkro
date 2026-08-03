@@ -524,8 +524,8 @@ function NotesPanel({ project, myNotes }) {
     );
 }
 
-function HeaderIconButton({ onClick, href, title, children }) {
-    const className = "flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200";
+function HeaderIconButton({ onClick, href, title, children, className: extraClassName = '' }) {
+    const className = `flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 ${extraClassName}`;
     if (href) {
         return <Link href={href} title={title} className={className}>{children}</Link>;
     }
@@ -911,10 +911,27 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
     const canLeave = !isOwner && role !== 'admin';
 
+    // Mobile-only back navigation: on small screens there's no persistent sidebar
+    // back to the project list, so give touch users a way back to wherever they
+    // came from (project list, dashboard, a task deep-link, etc). Desktop keeps
+    // its existing nav chrome, so this is hidden at sm and up.
+    const goBack = () => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            router.visit(route('dashboard'));
+        }
+    };
+
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
             <div className="flex items-center justify-between gap-3">
                 <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+                    <HeaderIconButton onClick={goBack} title="Go back" className="-ms-2 shrink-0 sm:hidden">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </HeaderIconButton>
                     <span className="min-w-0 truncate">{project.name}</span>
                     {project.is_muted && (
                         <svg title="Notifications muted for this project" className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

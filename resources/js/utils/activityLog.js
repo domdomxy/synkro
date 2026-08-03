@@ -76,9 +76,10 @@ export function getLogDetails(log) {
     const d = log.details ?? {};
 
     if (['task_created', 'task_started', 'task_review_started', 'task_approved', 'task_rejected'].includes(log.action)) {
-        return [
-            d.task_title && { label: 'Task Name', value: d.task_title },
-        ].filter(Boolean);
+        // No details panel here - the task name is already in the description
+        // above ("Administrator approved 'fff'"), so an expand arrow that just
+        // repeats it back would be dead weight.
+        return [];
     }
 
     if ((log.action === 'task_updated' || log.action === 'project_updated') && d.changes) {
@@ -146,17 +147,25 @@ export function getLogDetails(log) {
     if (log.action === 'task_reassigned') {
         return [
             { label: 'Task', value: d.task_title },
-            { label: 'From', value: d.old_assignee ?? 'Unassigned' },
-            { label: 'To', value: d.new_assignee },
-        ].filter((r) => r.value);
+            {
+                label: 'Assignee',
+                oldValue: d.old_assignee ?? 'Unassigned',
+                newValue: d.new_assignee,
+                isChange: true,
+            },
+        ].filter((r) => r.value || r.isChange);
     }
 
     if (log.action === 'role_changed') {
         return [
             { label: 'User', value: d.target_name },
-            { label: 'Previous Role', value: d.old_role },
-            { label: 'New Role', value: d.new_role },
-        ].filter((r) => r.value);
+            {
+                label: 'Role',
+                oldValue: d.old_role,
+                newValue: d.new_role,
+                isChange: true,
+            },
+        ].filter((r) => r.value || r.isChange);
     }
 
     if (log.action === 'resource_added' || log.action === 'resource_removed') {

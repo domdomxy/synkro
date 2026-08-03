@@ -316,17 +316,25 @@ function getDetails(log) {
     if (log.action === 'task_reassigned') {
         return [
             { label: 'Task', value: d.task_title },
-            { label: 'From', value: d.old_assignee ?? 'Unassigned' },
-            { label: 'To', value: d.new_assignee },
-        ].filter((r) => r.value);
+            {
+                label: 'Assignee',
+                oldValue: d.old_assignee ?? 'Unassigned',
+                newValue: d.new_assignee,
+                isChange: true,
+            },
+        ].filter((r) => r.value || r.isChange);
     }
 
     if (log.action === 'role_changed') {
         return [
             { label: 'User', value: d.target_name },
-            { label: 'Previous Role', value: d.old_role },
-            { label: 'New Role', value: d.new_role },
-        ].filter((r) => r.value);
+            {
+                label: 'Role',
+                oldValue: d.old_role,
+                newValue: d.new_role,
+                isChange: true,
+            },
+        ].filter((r) => r.value || r.isChange);
     }
 
     if (log.action === 'member_added') {

@@ -12,7 +12,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import LocalPagination from '@/Components/LocalPagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
@@ -82,6 +82,19 @@ function ProjectActionsMenu({ project, showingArchived, onPin, onUnpin, onArchiv
         }
         setOpen((v) => !v);
     };
+
+    // If there isn't enough room below the button (e.g. the last row in the
+    // list, near the bottom of the viewport), open the menu upward instead
+    // of letting it spill past the edge of the screen.
+    useLayoutEffect(() => {
+        if (!open || !menuRef.current || !btnRef.current) return;
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const btnRect = btnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        if (spaceBelow < menuRect.height + 12 && btnRect.top > menuRect.height + 12) {
+            setCoords((prev) => ({ ...prev, top: btnRect.top - menuRect.height - 4 }));
+        }
+    }, [open]);
 
     useEffect(() => {
         if (!open) return;
