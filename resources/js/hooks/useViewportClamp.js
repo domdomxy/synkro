@@ -12,6 +12,12 @@ import { useLayoutEffect, useRef, useState } from 'react';
  * measures the panel after it renders and nudges it back on screen with a
  * transform, the same corrective behavior a native <select> gets for free.
  *
+ * Re-measures on window resize AND whenever the panel's own size changes
+ * (via ResizeObserver) — a panel can grow after it's already open and
+ * already positioned, e.g. a "Custom" toggle inside it revealing date
+ * inputs, and that growth needs to re-trigger the same clamping, not just
+ * the initial open.
+ *
  * Usage: attach `ref` to the floating panel element and spread `style` onto
  * it. Pass the menu's open/visible boolean so it only measures while shown.
  */
@@ -44,7 +50,17 @@ export default function useViewportClamp(open) {
 
         recalc();
         window.addEventListener('resize', recalc);
-        return () => window.removeEventListener('resize', recalc);
+
+        let resizeObserver;
+        if (ref.current && typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(recalc);
+            resizeObserver.observe(ref.current);
+        }
+
+        return () => {
+            window.removeEventListener('resize', recalc);
+            resizeObserver?.disconnect();
+        };
     }, [open]);
 
     return {

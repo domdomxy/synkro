@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import useViewportClamp from '@/hooks/useViewportClamp';
 
 // Exported so nested content (e.g. AccountMenu) can close the dropdown itself
@@ -11,6 +11,9 @@ export const DropDownContext = createContext();
 const Dropdown = ({ children }) => {
     const [open, setOpen] = useState(false);
     const rootRef = useRef(null);
+    // Shared with Content so align="auto" can measure where the trigger
+    // actually sits before deciding which side to open toward.
+    const triggerRef = useRef(null);
 
     const toggleOpen = () => {
         setOpen((previousState) => !previousState);
@@ -35,16 +38,16 @@ const Dropdown = ({ children }) => {
     }, [open]);
 
     return (
-        <DropDownContext.Provider value={{ open, setOpen, toggleOpen }}>
+        <DropDownContext.Provider value={{ open, setOpen, toggleOpen, triggerRef }}>
             <div className="relative" ref={rootRef}>{children}</div>
         </DropDownContext.Provider>
     );
 };
 
 const Trigger = ({ children }) => {
-    const { toggleOpen } = useContext(DropDownContext);
+    const { toggleOpen, triggerRef } = useContext(DropDownContext);
 
-    return <div onClick={toggleOpen}>{children}</div>;
+    return <div ref={triggerRef} onClick={toggleOpen}>{children}</div>;
 };
 
 const Content = ({
@@ -53,7 +56,25 @@ const Content = ({
     contentClasses = 'py-1 bg-white dark:bg-gray-700',
     children,
 }) => {
-    const { open } = useContext(DropDownContext);
+    const { open, triggerRef } = useContext(DropDownContext);
+
+    // align="auto" picks the side with more room instead of a side that's
+    // fixed regardless of where the trigger happens to sit — a trigger
+    // living in the right half of a toolbar (e.g. a "Filters" button) opens
+    // toward the left, one in the left half opens toward the right. Falls
+    // back to "left" until the trigger's position has been measured.
+    const [autoAlign, setAutoAlign] = useState('left');
+    useLayoutEffect(() => {
+        if (align !== 'auto' || !open) return;
+        const trigger = triggerRef?.current;
+        if (!trigger) return;
+        const rect = trigger.getBoundingClientRect();
+        const triggerCenter = rect.left + rect.width / 2;
+        setAutoAlign(triggerCenter > window.innerWidth / 2 ? 'right' : 'left');
+    }, [open, align, triggerRef]);
+
+    const resolvedAlign = align === 'auto' ? autoAlign : align;
+
     // Anchor classes below set a sensible default side; this then nudges the
     // panel back on screen with a transform if that default still runs off
     // either edge for the trigger's actual position/viewport width (see
@@ -62,9 +83,9 @@ const Content = ({
 
     let alignmentClasses = 'origin-top';
 
-    if (align === 'left') {
+    if (resolvedAlign === 'left') {
         alignmentClasses = 'ltr:origin-top-left rtl:origin-top-right start-0';
-    } else if (align === 'right') {
+    } else if (resolvedAlign === 'right') {
         alignmentClasses = 'ltr:origin-top-right rtl:origin-top-left end-0';
     }
 

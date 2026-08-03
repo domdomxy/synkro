@@ -1,5 +1,5 @@
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+import { Fragment, forwardRef } from 'react';
 import useViewportClamp from '@/hooks/useViewportClamp';
 
 function ChevronIcon() {
@@ -86,16 +86,31 @@ export default function FilterSelect({ id, value, onChange, options, className =
 // screen the same way, kept in its own component so the hook has a proper
 // place to live (Listbox's children-as-function callback isn't a valid spot
 // to call a hook from directly).
-function ClampedOptions({ open, children }) {
-    const { ref, style } = useViewportClamp(open);
+//
+// Wrapped in forwardRef because it sits directly inside <Transition
+// as={Fragment}>, which attaches a ref straight to its child to track the
+// DOM node for the transition — a plain function component can't receive
+// that ref. The forwarded ref and the clamp hook's own ref both need the
+// same DOM node, so they're merged in setRefs below.
+const ClampedOptions = forwardRef(function ClampedOptions({ open, children }, forwardedRef) {
+    const { ref: clampRef, style } = useViewportClamp(open);
+
+    const setRefs = (node) => {
+        clampRef.current = node;
+        if (typeof forwardedRef === 'function') {
+            forwardedRef(node);
+        } else if (forwardedRef) {
+            forwardedRef.current = node;
+        }
+    };
 
     return (
         <ListboxOptions
-            ref={ref}
+            ref={setRefs}
             style={style}
-            className="absolute z-20 mt-1 max-h-60 w-full min-w-[11rem] overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
+            className="absolute right-0 z-20 mt-1 max-h-60 w-full min-w-[11rem] overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}
         </ListboxOptions>
     );
-}
+});

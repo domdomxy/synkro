@@ -74,7 +74,7 @@ export default function FiltersMenu({
     hasActiveFilters = activeCount > 0,
     onApply,
     onClear,
-    align = 'left',
+    align = 'auto',
     buttonClassName = '',
     children,
 }) {

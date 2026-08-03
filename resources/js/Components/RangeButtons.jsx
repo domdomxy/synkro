@@ -17,7 +17,7 @@ export default function RangeButtons({ range, routeName, customFrom, customTo })
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="space-y-2">
             <div className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
                 {Object.entries({ today: 'Today', week: 'This Week', month: 'This Month' }).map(([key, label]) => (
                     <Link
@@ -49,7 +49,7 @@ export default function RangeButtons({ range, routeName, customFrom, customTo })
                 </button>
             </div>
             {showCustom && (
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                     <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
                     <span className="text-xs text-gray-400">to</span>
                     <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />

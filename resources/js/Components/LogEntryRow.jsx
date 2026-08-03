@@ -138,6 +138,13 @@ export default function LogEntryRow({ log, dense = false }) {
                                             <Linkify text={item.value} />
                                         </dd>
                                     </div>
+                                ) : item.label === 'Checklist Item' && dense ? (
+                                    <div>
+                                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                        <dd className="mt-1 whitespace-pre-wrap break-words rounded-md border-l-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                                            {item.value}
+                                        </dd>
+                                    </div>
                                 ) : (
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>

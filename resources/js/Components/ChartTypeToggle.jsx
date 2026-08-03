@@ -53,7 +53,7 @@ export default function ChartTypeToggle({ value, onChange }) {
                     }`}
                 >
                     {icon}
-                    <span className="hidden sm:inline">{label}</span>
+                    <span>{label}</span>
                 </button>
             ))}
         </div>
