@@ -27,6 +27,7 @@ use App\Http\Controllers\TrustedHostController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\TaskChecklistItemController;
 use App\Http\Controllers\TaskDependencyController;
+use App\Http\Controllers\TrashController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -132,6 +133,10 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/projects/{project}/unpin', [ProjectController::class, 'unpin'])->name('projects.unpin');
     Route::post('/projects/{project}/mute', [ProjectController::class, 'mute'])->name('projects.mute');
     Route::post('/projects/{project}/unmute', [ProjectController::class, 'unmute'])->name('projects.unmute');
+    Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore')->withTrashed();
+    Route::delete('/projects/{project}/force-delete', [ProjectController::class, 'forceDeleteProject'])->name('projects.force-delete')->withTrashed();
+
+    Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
 
     Route::patch('/tasks/{task}/resolve', [TaskController::class, 'resolvePending'])->name('tasks.resolve');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
@@ -147,6 +152,8 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/tasks/{task}/mute', [TaskController::class, 'mute'])->name('tasks.mute');
     Route::post('/tasks/{task}/unmute', [TaskController::class, 'unmute'])->name('tasks.unmute');
     Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
+    Route::post('/tasks/{task}/restore', [TaskController::class, 'restore'])->name('tasks.restore')->withTrashed();
+    Route::delete('/tasks/{task}/force-delete', [TaskController::class, 'forceDelete'])->name('tasks.force-delete')->withTrashed();
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download');
     Route::post('/tasks/{task}/checklist', [TaskChecklistItemController::class, 'store'])->name('checklist.store');

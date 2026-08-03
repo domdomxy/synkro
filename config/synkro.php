@@ -17,4 +17,21 @@ return [
 
     'account_deletion_grace_days' => (int) env('ACCOUNT_DELETION_GRACE_DAYS', 7),
 
+    /*
+    |--------------------------------------------------------------------|
+    | Project & task trash grace period
+    |--------------------------------------------------------------------|
+    |
+    | Deleting a project (once its email-confirmed deletion request lands)
+    | or a task soft-deletes it into the trash rather than removing it
+    | outright. Owners/managers can restore it or permanently delete it
+    | from the Trash page during this window. Once it passes, the
+    | projects:purge-deleted / tasks:purge-deleted scheduled commands
+    | permanently delete it and everything is gone for good.
+    |
+    */
+
+    'project_deletion_grace_days' => (int) env('PROJECT_DELETION_GRACE_DAYS', 7),
+    'task_deletion_grace_days' => (int) env('TASK_DELETION_GRACE_DAYS', 7),
+
 ];

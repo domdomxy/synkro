@@ -361,7 +361,10 @@ class ProjectController extends Controller
     /**
      * Reached only via the signed link mailed out by destroy() above - the 'signed'
      * route middleware rejects the request outright if the URL has been tampered with
-     * or has expired, so no extra token comparison is needed here.
+     * or has expired, so no extra token comparison is needed here. $project->delete()
+     * below soft-deletes (Project uses SoftDeletes) rather than removing the row, so
+     * this moves the project into the trash - see Project::booted() for how its tasks
+     * are trashed alongside it, and projects:purge-deleted for when it's actually gone.
      */
     public function confirmDeletion(Project $project)
     {
@@ -373,11 +376,13 @@ class ProjectController extends Controller
 
         ProjectActivityLog::log($project, 'project_deleted');
 
-        // Capture recipients, name, and id before delete() removes the project and its
-        // project_user pivot rows - nothing here is queryable off $project afterwards.
+        // Capture recipients and name before delete() soft-deletes the project -
+        // members() still resolves fine afterwards (the pivot rows are untouched),
+        // but grabbing them up front keeps this in line with the rest of the method.
         $projectName = $project->name;
         $projectId = $project->id;
         $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+        $graceDays = (int) config('synkro.project_deletion_grace_days', 7);
 
         foreach ($recipients as $recipient) {
             if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deleted')) {
@@ -400,13 +405,80 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deleted',
                 "{$projectName} was deleted",
-                ["The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted."],
+                [
+                    "The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted.",
+                    "Its owner has {$graceDays} day(s) to restore it from the trash before it's gone for good.",
+                ],
             );
         }
 
         $project->delete();
 
-        return redirect()->route('projects.index')->with('success', 'Project deleted.');
+        return redirect()->route('projects.index')->with('success', "Project moved to trash. It'll be permanently deleted in {$graceDays} day(s) unless restored.");
+    }
+
+    /** Restores a trashed project (and, via Project::booted(), the tasks that were trashed alongside it). */
+    public function restore(Project $project)
+    {
+        $this->authorize('restore', $project);
+
+        if (! $project->trashed()) {
+            return back()->with('success', 'That project is not in the trash.');
+        }
+
+        $project->restore();
+
+        ProjectActivityLog::log($project, 'project_restored');
+
+        $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+        foreach ($recipients as $recipient) {
+            if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deleted')) {
+                \App\Models\UserNotification::create([
+                    'user_id' => $recipient->id,
+                    'type' => 'project_deleted',
+                    'causer_id' => Auth::id(),
+                    'message' => "Project restored\n\"**{$project->name}**\" was restored from the trash",
+                    'url' => route('projects.show', $project->id, false),
+                ]);
+            }
+
+            NotificationMailer::send(
+                $recipient,
+                'project.deletion_requested',
+                "{$project->name} was restored",
+                ["The project \"**{$project->name}**\" (#{$project->id}) you were a member of was restored from the trash by **" . Auth::user()->name . '**.'],
+                url(route('projects.show', $project->id, false)),
+                'View Project'
+            );
+        }
+
+        return redirect()->route('projects.show', $project)->with('success', 'Project restored.');
+    }
+
+    /** Permanently deletes a trashed project (and, via the tasks table's cascading FK, everything hanging off it) for good. Cannot be undone. */
+    public function forceDeleteProject(Project $project)
+    {
+        $this->authorize('forceDelete', $project);
+
+        if (! $project->trashed()) {
+            return back()->with('success', 'That project is not in the trash.');
+        }
+
+        $projectName = $project->name;
+        $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
+
+        foreach ($recipients as $recipient) {
+            NotificationMailer::send(
+                $recipient,
+                'project.deleted',
+                "{$projectName} was permanently deleted",
+                ["The project \"**{$projectName}**\" (#{$project->id}) you were a member of has been permanently deleted and can no longer be restored."],
+            );
+        }
+
+        $project->forceDelete();
+
+        return redirect()->route('trash.index')->with('success', "\"{$projectName}\" was permanently deleted.");
     }
 
     public function cancelDeletion(Project $project)

@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'project_id',
@@ -37,7 +38,12 @@ class Task extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        // withTrashed(): a task cascade-trashed alongside its project (see
+        // Project::booted()) still needs to resolve its project - for policy checks
+        // (TaskPolicy relies on $task->project->roleFor()), for the Trash page listing,
+        // and for restore()/forceDelete() - without this the relation would silently
+        // go null the moment the parent project is soft-deleted too.
+        return $this->belongsTo(Project::class)->withTrashed();
     }
 
     public function assignee(): BelongsTo
@@ -111,5 +117,19 @@ class Task extends Model
     public function blockingDependencyTitles()
     {
         return $this->dependencies()->where('status', '!=', 'done')->pluck('title');
+    }
+
+    /**
+     * The moment this task becomes eligible for permanent purging by the
+     * tasks:purge-deleted scheduled command. Null if it isn't currently
+     * sitting in the trash at all.
+     */
+    public function deletionGraceEndsAt(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->deleted_at) {
+            return null;
+        }
+
+        return $this->deleted_at->copy()->addDays((int) config('synkro.task_deletion_grace_days', 7));
     }
 }

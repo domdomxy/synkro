@@ -18,6 +18,7 @@ const actionLabels = {
     project_created: 'Project Created',
     project_updated: 'Project Updated',
     project_deleted: 'Project Deleted',
+    project_restored: 'Project Restored',
     member_added: 'Member Added',
     member_removed: 'Member Removed',
     member_left: 'Member Left',
@@ -29,6 +30,7 @@ const actionLabels = {
     task_reassigned: 'Task Reassigned',
     task_unassigned: 'Task Unassigned',
     task_deleted: 'Task Deleted',
+    task_restored: 'Task Restored',
     task_started: 'Task Started',
     task_review_started: 'Review Started',
     task_approved: 'Task Approved',
@@ -115,6 +117,7 @@ const actionIconConfig = {
     project_created: { path: ICON_PATHS.build, color: 'text-green-500' },
     project_updated: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
     project_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    project_restored: { path: ICON_PATHS.undo, color: 'text-green-500' },
     project_deletion_requested: { path: ICON_PATHS.trash, color: 'text-amber-500' },
     project_deletion_cancelled: { path: ICON_PATHS.undo, color: 'text-green-500' },
     member_added: { path: ICON_PATHS.plus, color: 'text-green-500' },
@@ -128,6 +131,7 @@ const actionIconConfig = {
     task_reassigned: { path: ICON_PATHS.swap, color: 'text-blue-500' },
     task_unassigned: { path: ICON_PATHS.person, color: 'text-amber-500' },
     task_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
+    task_restored: { path: ICON_PATHS.undo, color: 'text-green-500' },
     task_started: { path: ICON_PATHS.clipboard, color: 'text-blue-500' },
     task_review_started: { path: ICON_PATHS.clipboard, color: 'text-purple-500' },
     task_approved: { path: ICON_PATHS.check, color: 'text-green-500' },
@@ -174,6 +178,7 @@ function describeLog(log, actorName = null) {
     switch (log.action) {
         case 'project_created': return `${actor} created the project`;
         case 'project_deleted': return `${actor} deleted the project`;
+        case 'project_restored': return `${actor} restored the project from the trash`;
         case 'project_deletion_requested': return `${actor} requested project deletion`;
         case 'project_deletion_cancelled': return `${actor} cancelled the project deletion`;
         case 'project_updated': return `${actor} updated the project`;
@@ -184,6 +189,7 @@ function describeLog(log, actorName = null) {
         case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;
         case 'task_deleted': return `${actor} deleted task "${d.task_title}"`;
+        case 'task_restored': return `${actor} restored task "${d.task_title}" from the trash`;
         case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${d.target_name}`;
         case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee ?? 'unassigned'}`;
         case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee})`;

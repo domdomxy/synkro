@@ -408,6 +408,12 @@ class TaskController extends Controller
         return false;
     }
  
+    /**
+     * Moves a task to the trash. $task->delete() below soft-deletes (Task uses
+     * SoftDeletes) rather than removing the row, so owner/manager can restore it or
+     * permanently delete it from the Trash page during the grace period - see
+     * tasks:purge-deleted for when it's actually gone for good.
+     */
     public function destroy(Task $task)
     {
         $this->authorize('delete', $task);
@@ -467,7 +473,72 @@ class TaskController extends Controller
             TestingQueueBroadcaster::notify($project);
         }
 
-        return back()->with('success', 'Task deleted.');
+        return back()->with('success', 'Task moved to trash.');
+    }
+
+    /** Restores a trashed task. If its project was also trashed (cascade), the project must be restored first - see Project::booted(). */
+    public function restore(Task $task)
+    {
+        $this->authorize('restore', $task);
+
+        if (! $task->trashed()) {
+            return back()->with('success', 'That task is not in the trash.');
+        }
+
+        if ($task->project->trashed()) {
+            return back()->withErrors(['error' => 'Restore the project first before restoring this task.']);
+        }
+
+        $task->restore();
+
+        ProjectActivityLog::log($task->project, 'task_restored', ['task_title' => $task->title], $task);
+
+        if ($task->assigned_to && $task->assignee && $task->project->isMember($task->assignee)) {
+            if (NotificationPreferences::wantsType($task->assignee, 'task_deleted')) {
+                UserNotification::create([
+                    'user_id' => $task->assigned_to,
+                    'type' => 'task_deleted',
+                    'causer_id' => Auth::id(),
+                    'message' => "Task restored\n\"**{$task->title}**\" was restored from the trash in **{$task->project->name}**.",
+                    'url' => route('projects.show', $task->project_id, false),
+                ]);
+            }
+
+            NotificationMailer::send(
+                $task->assignee,
+                'task.deleted',
+                "Task restored: {$task->title}",
+                ["The task \"**{$task->title}**\" you were assigned to was restored from the trash in \"**{$task->project->name}**\" (#{$task->project_id})."],
+                url(route('projects.show', $task->project_id, false)),
+                'View Project'
+            );
+        }
+
+        $this->broadcastTaskChanged($task);
+
+        return back()->with('success', 'Task restored.');
+    }
+
+    /** Permanently deletes a trashed task (and its comments/deliverables/checklist items via cascading FKs) for good. Cannot be undone. */
+    public function forceDelete(Task $task)
+    {
+        $this->authorize('forceDelete', $task);
+
+        if (! $task->trashed()) {
+            return back()->with('success', 'That task is not in the trash.');
+        }
+
+        $taskTitle = $task->title;
+
+        if ($task->deliverables()->exists()) {
+            foreach ($task->deliverables as $deliverable) {
+                Storage::disk('public')->delete($deliverable->path);
+            }
+        }
+
+        $task->forceDelete();
+
+        return redirect()->route('trash.index')->with('success', "\"{$taskTitle}\" was permanently deleted.");
     }
 
     /**

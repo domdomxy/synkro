@@ -14,3 +14,5 @@ Schedule::command('feedback:close-inactive')->hourly();
 Schedule::command('appeals:close-inactive')->hourly();
 Schedule::command('tasks:notify-overdue')->everyFifteenMinutes();
 Schedule::command('accounts:purge-deleted')->daily();
+Schedule::command('projects:purge-deleted')->daily();
+Schedule::command('tasks:purge-deleted')->daily();

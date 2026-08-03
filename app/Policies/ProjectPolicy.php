@@ -41,6 +41,17 @@ class ProjectPolicy
         return $project->roleFor($user) === 'owner';
     }
 
+    /** Restoring or permanently deleting a trashed project is owner-only, same as trashing it in the first place. */
+    public function restore(User $user, Project $project): bool
+    {
+        return $project->roleFor($user) === 'owner';
+    }
+
+    public function forceDelete(User $user, Project $project): bool
+    {
+        return $project->roleFor($user) === 'owner';
+    }
+
     public function manageMembers(User $user, Project $project): bool
     {
         return in_array($project->roleFor($user), ['owner', 'manager']);

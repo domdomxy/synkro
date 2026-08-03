@@ -7,15 +7,33 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /** Minimum gap between deletion-confirmation email sends, in seconds. */
     public const DELETION_EMAIL_COOLDOWN_SECONDS = 20;
 
     protected $fillable = ['name', 'description', 'owner_id','is_archived', 'deletion_requested_at', 'deletion_email_sent_at'];
+
+    protected static function booted(): void
+    {
+        // A soft-deleted project's own tasks go into the trash alongside it, all
+        // stamped with the exact same deleted_at so restoring() below can tell
+        // "was trashed because its project was" apart from "was already independently
+        // trashed before the project was" - only the former comes back automatically.
+        static::deleting(function (Project $project) {
+            if (! $project->isForceDeleting()) {
+                $project->tasks()->whereNull('deleted_at')->update(['deleted_at' => $project->freshTimestamp()]);
+            }
+        });
+
+        static::restoring(function (Project $project) {
+            $project->tasks()->onlyTrashed()->where('deleted_at', $project->deleted_at)->restore();
+        });
+    }
 
     public function owner(): BelongsTo
     {
@@ -103,6 +121,20 @@ class Project extends Model
     public function canResendDeletionEmail(): bool
     {
         return $this->deletionEmailAvailableAt() === null;
+    }
+
+    /**
+     * The moment this project becomes eligible for permanent purging by the
+     * projects:purge-deleted scheduled command. Null if it isn't currently
+     * sitting in the trash at all.
+     */
+    public function deletionGraceEndsAt(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->deleted_at) {
+            return null;
+        }
+
+        return $this->deleted_at->copy()->addDays((int) config('synkro.project_deletion_grace_days', 7));
     }
 
     protected function casts(): array

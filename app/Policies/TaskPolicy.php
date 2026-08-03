@@ -44,6 +44,17 @@ class TaskPolicy
     {
         return in_array($task->project->roleFor($user), ['owner', 'manager']);
     }
+
+    /** Restoring or permanently deleting a trashed task is owner/manager-only, same as trashing it in the first place. */
+    public function restore(User $user, Task $task): bool
+    {
+        return in_array($task->project->roleFor($user), ['owner', 'manager']);
+    }
+
+    public function forceDelete(User $user, Task $task): bool
+    {
+        return in_array($task->project->roleFor($user), ['owner', 'manager']);
+    }
     public function review(User $user, Task $task): bool
     {
         return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
