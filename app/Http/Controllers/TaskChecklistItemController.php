@@ -174,12 +174,18 @@ class TaskChecklistItemController extends Controller
 
         $url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&checklist=1';
 
+        // Item titles can run long (there's no hard cap on checklist item
+        // length), so trim them here rather than let a single edit blow up
+        // the notification into a wall of text.
+        $oldTitleTrimmed = Str::limit($oldTitle, 40);
+        $newTitleTrimmed = Str::limit($item->title, 40);
+
         if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_checklist_item_updated')) {
             $notification = UserNotification::create([
                 'user_id' => $recipient->id,
                 'type' => 'task_checklist_item_updated',
                 'causer_id' => Auth::id(),
-                'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " edited \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\"",
+                'message' => "Checklist item edited\n" . '**' . Auth::user()->name . '**' . " edited \"{$oldTitleTrimmed}\" to \"{$newTitleTrimmed}\" on \"**{$task->title}**\"",
                 'url' => $url,
             ]);
 
@@ -195,7 +201,7 @@ class TaskChecklistItemController extends Controller
                 $recipient,
                 'task.checklist_item_updated',
                 Auth::user()->name . " edited a checklist item on \"{$task->title}\"",
-                ['**' . Auth::user()->name . '**' . " edited \"{$oldTitle}\" to \"{$item->title}\" on \"**{$task->title}**\""],
+                ['**' . Auth::user()->name . '**' . " edited \"{$oldTitleTrimmed}\" to \"{$newTitleTrimmed}\" on \"**{$task->title}**\""],
                 url($url),
                 'View Checklist'
             );

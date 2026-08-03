@@ -42,8 +42,8 @@ class TaskChecklistItemUpdated implements ShouldBroadcastNow
         return [
             'notification_id' => $this->notificationId,
             'title' => $task->title,
-            'old_item_title' => $this->oldTitle,
-            'new_item_title' => $this->item->title,
+            'old_item_title' => \Illuminate\Support\Str::limit($this->oldTitle, 40),
+            'new_item_title' => \Illuminate\Support\Str::limit($this->item->title, 40),
             'editor_name' => \Illuminate\Support\Facades\Auth::user()->name,
             'project_id' => $task->project_id,
             'task_id' => $task->id,

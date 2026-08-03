@@ -38,6 +38,26 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     const [hasPendingAlert, setHasPendingAlert] = useState(adminAlerts?.hasPending ?? false);
     const [pendingTestCount, setPendingTestCount] = useState(testing?.pendingCount ?? 0);
     const [theme, setThemeState] = useState(getStoredTheme());
+    // Hides the page header on scroll-down and brings it back on scroll-up,
+    // mirroring the common "auto-hide" toolbar pattern. Stays visible near
+    // the very top so it doesn't flicker away on tiny scroll jitter there.
+    const [headerVisible, setHeaderVisible] = useState(true);
+    useEffect(() => {
+        let lastScrollY = window.scrollY;
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY <= 64) {
+                setHeaderVisible(true);
+            } else if (currentScrollY > lastScrollY) {
+                setHeaderVisible(false);
+            } else if (currentScrollY < lastScrollY) {
+                setHeaderVisible(true);
+            }
+            lastScrollY = currentScrollY;
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
     const { overlay, open: openOverlay, close: closeOverlay } = useRouteOverlay();
     const openSettings = () => openOverlay('settings', route('settings.edit'), version);
     const openAccount = () => openOverlay('account', route('account.edit'), version);
@@ -230,7 +250,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
             <AccountDeletedListener />
             <PasswordResetListener />
             {header && (
-                <header className=" top-16 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md dark:border-gray-700/20 dark:bg-gray-800/20">
+                <header className={`sticky top-16 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md transition-transform duration-300 dark:border-gray-700/20 dark:bg-gray-800/20 ${headerVisible ? 'translate-y-0' : '-translate-y-[calc(100%_+_4rem)]'}`}>
                     <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>
                 </header>
             )}

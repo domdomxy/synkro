@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\IntendedRedirect;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class VerifyEmailController extends Controller
         $user = $request->user();
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('projects.index', absolute: false).'?verified=1');
+            return IntendedRedirect::to(route('projects.index', absolute: false).'?verified=1');
         }
 
         $request->validate([
@@ -59,6 +60,6 @@ class VerifyEmailController extends Controller
             event(new Verified($user));
         }
 
-        return redirect()->intended(route('projects.index', absolute: false).'?verified=1');
+        return IntendedRedirect::to(route('projects.index', absolute: false).'?verified=1');
     }
 }

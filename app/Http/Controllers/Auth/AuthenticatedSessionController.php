@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\AppealRateLimiter;
 use App\Support\DeviceTimezone;
 use App\Support\GeoLocator;
+use App\Support\IntendedRedirect;
 use App\Support\NotificationMailer;
 use App\Support\UserAgentParser;
 use Illuminate\Http\RedirectResponse;
@@ -190,7 +191,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('password.force-change');
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return IntendedRedirect::to(route('dashboard', absolute: false));
     }
 
     /**
