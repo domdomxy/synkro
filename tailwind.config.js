@@ -43,6 +43,20 @@ export default {
             fontFamily: {
                 sans: ['Figtree', 'sans-serif'],
             },
+            keyframes: {
+                'toast-drop-mobile': {
+                    '0%': { transform: 'translate(-50%, -150%)', opacity: '0' },
+                    '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
+                },
+                'toast-slide-desktop': {
+                    '0%': { transform: 'translateX(110%)', opacity: '0' },
+                    '100%': { transform: 'translateX(0)', opacity: '1' },
+                },
+            },
+            animation: {
+                'toast-drop-mobile': 'toast-drop-mobile 0.3s ease-out',
+                'toast-slide-desktop': 'toast-slide-desktop 0.3s ease-out',
+            },
         },
     },
     plugins: [require('@tailwindcss/forms')],

@@ -236,3 +236,16 @@ html.theme-black .dark\:from-gray-900.dark\:via-gray-900.dark\:to-gray-900 {
     background-image: none !important;
     background-color: #000000 !important;
 }
+
+/* NotificationToast - true black gets its own subtle colored glow (instead of
+   just a flat border) so it doesn't read as a plain darker copy of the dark
+   theme's card-with-border look. */
+html.theme-black .notification-toast[data-toast-type='success'] {
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25), 0 8px 24px -6px rgba(34, 197, 94, 0.35);
+}
+html.theme-black .notification-toast[data-toast-type='error'] {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25), 0 8px 24px -6px rgba(239, 68, 68, 0.35);
+}
+html.theme-black .notification-toast[data-toast-type='info'] {
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.25), 0 8px 24px -6px rgba(129, 140, 248, 0.35);
+}
