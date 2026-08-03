@@ -52,10 +52,20 @@ export default {
                     '0%': { transform: 'translateX(110%)', opacity: '0' },
                     '100%': { transform: 'translateX(0)', opacity: '1' },
                 },
+                'toast-lift-mobile': {
+                    '0%': { transform: 'translate(-50%, 0)', opacity: '1' },
+                    '100%': { transform: 'translate(-50%, -150%)', opacity: '0' },
+                },
+                'toast-slide-out-desktop': {
+                    '0%': { transform: 'translateX(0)', opacity: '1' },
+                    '100%': { transform: 'translateX(110%)', opacity: '0' },
+                },
             },
             animation: {
                 'toast-drop-mobile': 'toast-drop-mobile 0.3s ease-out',
                 'toast-slide-desktop': 'toast-slide-desktop 0.3s ease-out',
+                'toast-lift-mobile': 'toast-lift-mobile 0.25s ease-in forwards',
+                'toast-slide-out-desktop': 'toast-slide-out-desktop 0.25s ease-in forwards',
             },
         },
     },
