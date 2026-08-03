@@ -1,6 +1,6 @@
 import { useEcho } from '@laravel/echo-react';
 import { usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import useToastStack from '@/hooks/useToastStack';
 import { noteBoldSegments } from '../utils/noteFormat';
 
 // Visual treatment per notification outcome. Colors are drawn from shades
@@ -53,85 +53,66 @@ function toastFromPayload(payload) {
     }
 }
 
-// Matches the CSS animation duration below so the toast is only unmounted
-// once the exit animation has actually finished playing.
-const EXIT_DURATION = 250;
+// Newest toast lands nearest the entry edge (top on mobile, bottom on
+// desktop); older ones get pushed away from it as new ones arrive, and the
+// oldest is dropped once a 4th would otherwise show.
+const MAX_NOTIFICATION_TOASTS = 3;
 
 export default function NotificationToast() {
     const { auth } = usePage().props;
-    const [toast, setToast] = useState(null); // { type: 'success'|'error'|'info', message }
-    const [leaving, setLeaving] = useState(false);
-    const exitTimer = useRef(null);
+    const { toasts, push, dismiss } = useToastStack(MAX_NOTIFICATION_TOASTS);
 
     useEcho(
         `user.${auth.user.id}`,
         ['.task.assigned', '.task.reviewed', '.task.updated', '.task.deleted'],
-        (payload) => {
-            clearTimeout(exitTimer.current);
-            setLeaving(false);
-            setToast(toastFromPayload(payload));
-        },
+        (payload) => push(toastFromPayload(payload)),
         [auth.user.id],
     );
 
-    // Dismissing plays the mobile "lift back up" / desktop "slide back out"
-    // animation before actually unmounting, instead of just vanishing.
-    const dismiss = () => {
-        setLeaving(true);
-        exitTimer.current = setTimeout(() => {
-            setToast(null);
-            setLeaving(false);
-        }, EXIT_DURATION);
-    };
+    if (toasts.length === 0) return null;
 
-    // Auto-dismiss only applies on mobile, where the toast drops from the top
-    // and clears itself after 2s. On larger screens it stays put until the
-    // person dismisses it with the close button.
-    useEffect(() => {
-        if (!toast) return;
-        const isMobile = window.matchMedia('(max-width: 639px)').matches;
-        if (!isMobile) return;
-        const timer = setTimeout(dismiss, 2000);
-        return () => clearTimeout(timer);
-    }, [toast]);
-
-    useEffect(() => () => clearTimeout(exitTimer.current), []);
-
-    if (!toast) return null;
-
-    const style = TOAST_STYLES[toast.type] ?? TOAST_STYLES.info;
     const enterAnim = 'animate-toast-drop-mobile sm:animate-toast-slide-desktop';
     const exitAnim = 'animate-toast-lift-mobile sm:animate-toast-slide-out-desktop';
 
     return (
-        <div
-            data-toast-type={toast.type}
-            className={`notification-toast ${leaving ? exitAnim : enterAnim} fixed left-1/2 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-3 text-sm shadow-lg sm:left-auto sm:right-4 sm:top-auto sm:bottom-4 sm:w-auto sm:max-w-sm sm:translate-x-0 sm:pr-9 ${style.card}`}
-        >
-            <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
+        <div className="fixed left-1/2 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col-reverse gap-2 sm:left-auto sm:right-4 sm:top-auto sm:bottom-4 sm:w-auto sm:max-w-sm sm:translate-x-0 sm:flex-col">
+            {toasts.map((toast) => {
+                const style = TOAST_STYLES[toast.type] ?? TOAST_STYLES.info;
+                const anim = toast.leaving ? exitAnim : enterAnim;
 
-            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${style.iconWrap}`}>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={style.path} />
-                </svg>
-            </span>
+                return (
+                    <div
+                        key={toast.id}
+                        data-toast-type={toast.type}
+                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-3 text-sm shadow-lg sm:pr-9 ${style.card}`}
+                    >
+                        <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
 
-            <span className="text-gray-700 dark:text-gray-200">
-                {noteBoldSegments(toast.message, 'font-semibold text-gray-900 dark:text-white')}
-            </span>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${style.iconWrap}`}>
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d={style.path} />
+                            </svg>
+                        </span>
 
-            {/* Mobile clears itself after 2s, so there's nothing to dismiss by
-                hand there - the close button only shows from sm: up. */}
-            <button
-                type="button"
-                onClick={dismiss}
-                aria-label="Dismiss notification"
-                className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200 sm:block"
-            >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+                        <span className="text-gray-700 dark:text-gray-200">
+                            {noteBoldSegments(toast.message, 'font-semibold text-gray-900 dark:text-white')}
+                        </span>
+
+                        {/* Mobile clears itself after 2s, so there's nothing to dismiss by
+                            hand there - the close button only shows from sm: up. */}
+                        <button
+                            type="button"
+                            onClick={() => dismiss(toast.id)}
+                            aria-label="Dismiss notification"
+                            className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200 sm:block"
+                        >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                );
+            })}
         </div>
     );
 }

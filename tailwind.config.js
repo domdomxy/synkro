@@ -45,16 +45,16 @@ export default {
             },
             keyframes: {
                 'toast-drop-mobile': {
-                    '0%': { transform: 'translate(-50%, -150%)', opacity: '0' },
-                    '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
+                    '0%': { transform: 'translateY(-150%)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
                 'toast-slide-desktop': {
                     '0%': { transform: 'translateX(110%)', opacity: '0' },
                     '100%': { transform: 'translateX(0)', opacity: '1' },
                 },
                 'toast-lift-mobile': {
-                    '0%': { transform: 'translate(-50%, 0)', opacity: '1' },
-                    '100%': { transform: 'translate(-50%, -150%)', opacity: '0' },
+                    '0%': { transform: 'translateY(0)', opacity: '1' },
+                    '100%': { transform: 'translateY(-150%)', opacity: '0' },
                 },
                 'toast-slide-out-desktop': {
                     '0%': { transform: 'translateX(0)', opacity: '1' },
