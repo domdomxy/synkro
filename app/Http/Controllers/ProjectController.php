@@ -428,6 +428,14 @@ class ProjectController extends Controller
 
         $project->restore();
 
+        // The pending-deletion flag (set by destroy(), only cleared normally by
+        // cancelDeletion()) survives the soft-delete/trash round-trip untouched -
+        // without clearing it here, a project deleted via the email-confirmation
+        // flow comes back from the trash still showing the "pending deletion,
+        // check your email" banner on its page, with no real pending request
+        // behind it anymore.
+        $project->update(['deletion_requested_at' => null, 'deletion_email_sent_at' => null]);
+
         ProjectActivityLog::log($project, 'project_restored');
 
         $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();

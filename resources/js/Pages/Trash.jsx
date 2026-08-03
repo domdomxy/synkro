@@ -1,6 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useConfirm from '@/hooks/useConfirm';
+import Checkbox from '@/Components/Checkbox';
+import TextInput from '@/Components/TextInput';
+import FiltersMenu from '@/Components/FiltersMenu';
+import FilterSelect from '@/Components/FilterSelect';
+import DateRangeFilter from '@/Components/DateRangeFilter';
+import BackButton from '@/Components/BackButton';
 
 function TrashIcon({ className = 'h-5 w-5' }) {
     return (
@@ -18,6 +26,53 @@ function UndoIcon({ className = 'h-4 w-4' }) {
     );
 }
 
+function SearchIcon() {
+    return (
+        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+    );
+}
+
+function ProjectItemIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+        </svg>
+    );
+}
+
+function TaskItemIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    );
+}
+
+function SearchInput({ value, onChange, placeholder, className = '' }) {
+    return (
+        <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                <SearchIcon />
+            </div>
+            <TextInput value={value} onChange={onChange} placeholder={placeholder} className={`pl-9 ${className}`} />
+        </div>
+    );
+}
+
+const TYPE_OPTIONS = [
+    { value: 'all', label: 'All' },
+    { value: 'projects', label: 'Projects only' },
+    { value: 'tasks', label: 'Tasks only' },
+];
+
+const URGENCY_OPTIONS = [
+    { value: 'all', label: 'Any time left' },
+    { value: 'soon', label: 'Purging within 3 days' },
+    { value: 'today', label: 'Purging today' },
+];
+
 /** How many days remain before an item is purged for good, floored at 0 for anything already due. */
 function daysLeft(graceEndsAt) {
     if (!graceEndsAt) return null;
@@ -25,57 +80,315 @@ function daysLeft(graceEndsAt) {
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
 }
 
+function formatDeletedAt(deletedAt) {
+    if (!deletedAt) return null;
+    return new Date(deletedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 function GraceBadge({ graceEndsAt }) {
     const days = daysLeft(graceEndsAt);
     if (days === null) return null;
 
+    const urgent = days <= 1;
+    const soon = days > 1 && days <= 3;
+
     return (
-        <span className="text-xs text-gray-400 dark:text-gray-500">
+        <span
+            className={
+                'inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium ' +
+                (urgent
+                    ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                    : soon
+                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
+                        : 'text-gray-400 dark:text-gray-500')
+            }
+        >
             {days === 0 ? 'Purges today' : days === 1 ? 'Purges in 1 day' : `Purges in ${days} days`}
         </span>
     );
 }
 
-function TrashRow({ title, subtitle, graceEndsAt, onRestore, onDelete }) {
+function KebabIcon() {
     return (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3.5 last:border-0 dark:border-gray-700">
-            <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
-                <div className="mt-0.5 flex items-center gap-2">
-                    {subtitle && <p className="truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
-                    {subtitle && <span className="text-gray-300 dark:text-gray-600">·</span>}
-                    <GraceBadge graceEndsAt={graceEndsAt} />
-                </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-                <button
-                    type="button"
-                    onClick={onRestore}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+        </svg>
+    );
+}
+
+const ROW_MENU_WIDTH = 176; // matches w-44
+
+// Same portal-into-body + fixed-position + upward-flip treatment as
+// TaskRow's KebabMenu and Resources' row menu - a plain absolutely-positioned
+// dropdown gets clipped by this list's own overflow-hidden rounded corners,
+// and would run off the bottom of the screen for the last few rows in a
+// long trash list.
+function RowActionsMenu({ onRestore, onDelete }) {
+    const [open, setOpen] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const ref = useRef(null);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (
+                ref.current && !ref.current.contains(e.target) &&
+                menuRef.current && !menuRef.current.contains(e.target)
+            ) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, []);
+
+    useEffect(() => {
+        if (!open) return;
+        const close = () => setOpen(false);
+        window.addEventListener('scroll', close, true);
+        window.addEventListener('resize', close);
+        return () => {
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+    }, [open]);
+
+    useLayoutEffect(() => {
+        if (!open || !ref.current) return;
+        const buttonRect = ref.current.getBoundingClientRect();
+        const menuHeight = menuRef.current?.offsetHeight ?? 0;
+        const spaceBelow = window.innerHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+        const left = Math.min(
+            Math.max(buttonRect.right - ROW_MENU_WIDTH, 8),
+            window.innerWidth - ROW_MENU_WIDTH - 8
+        );
+        const top = openUpward ? buttonRect.top - menuHeight - 4 : buttonRect.bottom + 4;
+        setPosition({ top, left });
+    }, [open]);
+
+    return (
+        <div className="relative shrink-0" ref={ref}>
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-label="Actions"
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <KebabIcon />
+            </button>
+            {open && createPortal(
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: position.top, left: position.left, width: ROW_MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
-                    <UndoIcon />
-                    Restore
-                </button>
-                <button
-                    type="button"
-                    onClick={onDelete}
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                >
-                    Delete forever
-                </button>
-            </div>
+                    <button
+                        onClick={() => { setOpen(false); onRestore(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <UndoIcon />
+                        Restore
+                    </button>
+                    <button
+                        onClick={() => { setOpen(false); onDelete(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete forever
+                    </button>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }
 
-function EmptySection({ label }) {
+function TrashRow({ icon, title, subtitle, deletedAt, graceEndsAt, selected, onToggleSelect, onRestore, onDelete }) {
+    const deletedLabel = formatDeletedAt(deletedAt);
     return (
-        <div className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">{label}</div>
+        <div
+            className={
+                'flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3.5 transition last:border-0 dark:border-gray-700 ' +
+                (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
+            }
+        >
+            <div className="flex min-w-0 items-center gap-3">
+                <Checkbox checked={selected} onChange={onToggleSelect} className="shrink-0" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                    {icon}
+                </div>
+                <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        {subtitle && <p className="truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
+                        {subtitle && deletedLabel && <span className="text-gray-300 dark:text-gray-600">·</span>}
+                        {deletedLabel && <p className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">Deleted {deletedLabel}</p>}
+                        {deletedLabel && <span className="text-gray-300 dark:text-gray-600">·</span>}
+                        <GraceBadge graceEndsAt={graceEndsAt} />
+                    </div>
+                </div>
+            </div>
+            <RowActionsMenu onRestore={onRestore} onDelete={onDelete} />
+        </div>
+    );
+}
+
+function EmptySection({ label, showClear, onClear }) {
+    return (
+        <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+            <TrashIcon className="h-8 w-8 text-gray-200 dark:text-gray-700" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">{label}</p>
+            {showClear && (
+                <button type="button" onClick={onClear} className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                    Clear filters
+                </button>
+            )}
+        </div>
+    );
+}
+
+function SectionHeader({ label, count, allSelected, onToggleSelectAll }) {
+    return (
+        <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{label}</h3>
+            {count > 0 && (
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <Checkbox checked={allSelected} onChange={onToggleSelectAll} />
+                    Select all
+                </label>
+            )}
+        </div>
     );
 }
 
 export default function Trash({ trashedProjects, trashedTasks }) {
     const { confirm, ConfirmDialog } = useConfirm();
+
+    const [search, setSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [urgencyFilter, setUrgencyFilter] = useState('all');
+    const [deletedFrom, setDeletedFrom] = useState('');
+    const [deletedTo, setDeletedTo] = useState('');
+    const [selectedProjectIds, setSelectedProjectIds] = useState([]);
+    const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+
+    // A restore/delete round-trip changes the underlying arrays - drop any
+    // selection referencing ids that no longer exist in the trash.
+    useEffect(() => {
+        setSelectedProjectIds((prev) => prev.filter((id) => trashedProjects.some((p) => p.id === id)));
+        setSelectedTaskIds((prev) => prev.filter((id) => trashedTasks.some((t) => t.id === id)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [trashedProjects, trashedTasks]);
+
+    const matchesUrgency = (graceEndsAt) => {
+        if (urgencyFilter === 'all') return true;
+        const days = daysLeft(graceEndsAt);
+        if (days === null) return false;
+        return urgencyFilter === 'today' ? days === 0 : days <= 3;
+    };
+
+    // Filters by the date the item was moved to trash, matching the "Deleted
+    // on" custom range in the Filters panel - inclusive on both ends, with
+    // `to` extended through the end of that day so picking the same day
+    // twice still matches items trashed any time on it.
+    const matchesDeletedRange = (deletedAt) => {
+        if (!deletedFrom && !deletedTo) return true;
+        const deletedDate = new Date(deletedAt);
+        if (deletedFrom && deletedDate < new Date(deletedFrom)) return false;
+        if (deletedTo) {
+            const upperBound = new Date(deletedTo);
+            upperBound.setHours(23, 59, 59, 999);
+            if (deletedDate > upperBound) return false;
+        }
+        return true;
+    };
+
+    const filteredProjects = useMemo(() => {
+        if (typeFilter === 'tasks') return [];
+        const q = search.trim().toLowerCase();
+        return trashedProjects.filter((project) => {
+            if (q && !project.name.toLowerCase().includes(q)) return false;
+            if (!matchesDeletedRange(project.deleted_at)) return false;
+            return matchesUrgency(project.grace_ends_at);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [trashedProjects, typeFilter, search, urgencyFilter, deletedFrom, deletedTo]);
+
+    const filteredTasks = useMemo(() => {
+        if (typeFilter === 'projects') return [];
+        const q = search.trim().toLowerCase();
+        return trashedTasks.filter((task) => {
+            if (q && !task.title.toLowerCase().includes(q) && !task.project_name.toLowerCase().includes(q)) return false;
+            if (!matchesDeletedRange(task.deleted_at)) return false;
+            return matchesUrgency(task.grace_ends_at);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [trashedTasks, typeFilter, search, urgencyFilter, deletedFrom, deletedTo]);
+
+    const hasActiveFilters = search.trim() !== '' || typeFilter !== 'all' || urgencyFilter !== 'all' || Boolean(deletedFrom || deletedTo);
+    const activeFilterCount = [typeFilter !== 'all', urgencyFilter !== 'all', Boolean(deletedFrom || deletedTo)].filter(Boolean).length;
+    const clearFilters = () => {
+        setSearch('');
+        setTypeFilter('all');
+        setUrgencyFilter('all');
+        setDeletedFrom('');
+        setDeletedTo('');
+    };
+    const handleDeletedRangeApply = (from, to) => {
+        setDeletedFrom(from);
+        setDeletedTo(to);
+    };
+
+    const allProjectsSelected = filteredProjects.length > 0 && filteredProjects.every((p) => selectedProjectIds.includes(p.id));
+    const allTasksSelected = filteredTasks.length > 0 && filteredTasks.every((t) => selectedTaskIds.includes(t.id));
+
+    const toggleProjectSelected = (id) => {
+        setSelectedProjectIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+    const toggleTaskSelected = (id) => {
+        setSelectedTaskIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+    const toggleSelectAllProjects = () => {
+        setSelectedProjectIds(allProjectsSelected ? [] : filteredProjects.map((p) => p.id));
+    };
+    const toggleSelectAllTasks = () => {
+        setSelectedTaskIds(allTasksSelected ? [] : filteredTasks.map((t) => t.id));
+    };
+
+    const selectedCount = selectedProjectIds.length + selectedTaskIds.length;
+    const clearSelection = () => {
+        setSelectedProjectIds([]);
+        setSelectedTaskIds([]);
+    };
+
+    const restoreSelected = async () => {
+        const ok = await confirm(
+            `Restore ${selectedCount} selected item${selectedCount === 1 ? '' : 's'}? Trashed tasks belonging to a selected project come back with it.`,
+            { title: `Restore ${selectedCount} item${selectedCount === 1 ? '' : 's'}`, confirmLabel: 'Restore' }
+        );
+        if (!ok) return;
+        router.post(route('trash.restore-selected'), {
+            project_ids: selectedProjectIds,
+            task_ids: selectedTaskIds,
+        }, { preserveScroll: true, onSuccess: clearSelection });
+    };
+
+    const deleteSelectedForever = async () => {
+        const ok = await confirm(
+            `This permanently deletes ${selectedCount} selected item${selectedCount === 1 ? '' : 's'} and everything inside them. This cannot be undone.`,
+            { title: `Delete ${selectedCount} item${selectedCount === 1 ? '' : 's'} forever`, danger: true, confirmLabel: 'Delete forever' }
+        );
+        if (!ok) return;
+        router.delete(route('trash.force-delete-selected'), {
+            data: { project_ids: selectedProjectIds, task_ids: selectedTaskIds },
+            preserveScroll: true,
+            onSuccess: clearSelection,
+        });
+    };
 
     const restoreProject = async (project) => {
         const ok = await confirm(`Restore "${project.name}"? Its trashed tasks will come back too.`, {
@@ -111,10 +424,13 @@ export default function Trash({ trashedProjects, trashedTasks }) {
 
     return (
         <AuthenticatedLayout header={
-            <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
-                <TrashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                Trash
-            </h2>
+            <div className="flex items-center gap-4">
+                <BackButton href={route('dashboard')} label="Back to Dashboard" />
+                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+                    <TrashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    Trash
+                </h2>
+            </div>
         }>
             <Head title="Trash" />
             <div className="py-12">
@@ -123,45 +439,129 @@ export default function Trash({ trashedProjects, trashedTasks }) {
                         Deleted projects and tasks sit here before they're gone for good. Only projects you own and tasks in projects you manage show up here.
                     </p>
 
-                    <div>
-                        <h3 className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Projects</h3>
-                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                            {trashedProjects.length === 0 ? (
-                                <EmptySection label="No deleted projects." />
-                            ) : (
-                                trashedProjects.map((project) => (
-                                    <TrashRow
-                                        key={project.id}
-                                        title={project.name}
-                                        subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
-                                        graceEndsAt={project.grace_ends_at}
-                                        onRestore={() => restoreProject(project)}
-                                        onDelete={() => deleteProjectForever(project)}
-                                    />
-                                ))
-                            )}
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <SearchInput
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search trash..."
+                                className="w-56 text-sm"
+                            />
+                            <FiltersMenu activeCount={activeFilterCount} onClear={clearFilters}>
+                                <FiltersMenu.Row label="Type">
+                                    <FilterSelect className="w-full" value={typeFilter} onChange={setTypeFilter} options={TYPE_OPTIONS} />
+                                </FiltersMenu.Row>
+                                <FiltersMenu.Row label="Purging">
+                                    <FilterSelect className="w-full" value={urgencyFilter} onChange={setUrgencyFilter} options={URGENCY_OPTIONS} />
+                                </FiltersMenu.Row>
+                                <DateRangeFilter from={deletedFrom} to={deletedTo} onApply={handleDeletedRangeApply} />
+                            </FiltersMenu>
                         </div>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">
+                            {filteredProjects.length + filteredTasks.length} item{filteredProjects.length + filteredTasks.length === 1 ? '' : 's'} match{filteredProjects.length + filteredTasks.length === 1 ? 'es' : ''} your filters
+                        </p>
                     </div>
 
-                    <div>
-                        <h3 className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Tasks</h3>
-                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                            {trashedTasks.length === 0 ? (
-                                <EmptySection label="No deleted tasks." />
-                            ) : (
-                                trashedTasks.map((task) => (
-                                    <TrashRow
-                                        key={task.id}
-                                        title={task.title}
-                                        subtitle={task.project_name}
-                                        graceEndsAt={task.grace_ends_at}
-                                        onRestore={() => restoreTask(task)}
-                                        onDelete={() => deleteTaskForever(task)}
-                                    />
-                                ))
-                            )}
+                    {selectedCount > 0 && (
+                        <div className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-indigo-50 px-4 py-3 shadow dark:bg-indigo-950/40">
+                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                                {selectedCount} item{selectedCount === 1 ? '' : 's'} selected
+                                {selectedProjectIds.length > 0 && selectedTaskIds.length > 0 && (
+                                    <span className="font-normal text-indigo-600/80 dark:text-indigo-400/80">
+                                        {' '}({selectedProjectIds.length} project{selectedProjectIds.length === 1 ? '' : 's'}, {selectedTaskIds.length} task{selectedTaskIds.length === 1 ? '' : 's'})
+                                    </span>
+                                )}
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <button onClick={clearSelection} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+                                    Clear selection
+                                </button>
+                                <button
+                                    onClick={restoreSelected}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-700 dark:bg-gray-800 dark:text-indigo-300 dark:hover:bg-gray-700"
+                                >
+                                    <UndoIcon />
+                                    Restore selected
+                                </button>
+                                <button
+                                    onClick={deleteSelectedForever}
+                                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
+                                >
+                                    Delete forever
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {typeFilter !== 'tasks' && (
+                        <div>
+                            <SectionHeader
+                                label="Projects"
+                                count={filteredProjects.length}
+                                allSelected={allProjectsSelected}
+                                onToggleSelectAll={toggleSelectAllProjects}
+                            />
+                            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                                {filteredProjects.length === 0 ? (
+                                    <EmptySection
+                                        label={trashedProjects.length === 0 ? 'No deleted projects.' : 'No projects match your filters.'}
+                                        showClear={trashedProjects.length > 0 && hasActiveFilters}
+                                        onClear={clearFilters}
+                                    />
+                                ) : (
+                                    filteredProjects.map((project) => (
+                                        <TrashRow
+                                            key={project.id}
+                                            icon={<ProjectItemIcon />}
+                                            title={project.name}
+                                            subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
+                                            deletedAt={project.deleted_at}
+                                            graceEndsAt={project.grace_ends_at}
+                                            selected={selectedProjectIds.includes(project.id)}
+                                            onToggleSelect={() => toggleProjectSelected(project.id)}
+                                            onRestore={() => restoreProject(project)}
+                                            onDelete={() => deleteProjectForever(project)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {typeFilter !== 'projects' && (
+                        <div>
+                            <SectionHeader
+                                label="Tasks"
+                                count={filteredTasks.length}
+                                allSelected={allTasksSelected}
+                                onToggleSelectAll={toggleSelectAllTasks}
+                            />
+                            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                                {filteredTasks.length === 0 ? (
+                                    <EmptySection
+                                        label={trashedTasks.length === 0 ? 'No deleted tasks.' : 'No tasks match your filters.'}
+                                        showClear={trashedTasks.length > 0 && hasActiveFilters}
+                                        onClear={clearFilters}
+                                    />
+                                ) : (
+                                    filteredTasks.map((task) => (
+                                        <TrashRow
+                                            key={task.id}
+                                            icon={<TaskItemIcon />}
+                                            title={task.title}
+                                            subtitle={task.project_name}
+                                            deletedAt={task.deleted_at}
+                                            graceEndsAt={task.grace_ends_at}
+                                            selected={selectedTaskIds.includes(task.id)}
+                                            onToggleSelect={() => toggleTaskSelected(task.id)}
+                                            onRestore={() => restoreTask(task)}
+                                            onDelete={() => deleteTaskForever(task)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
