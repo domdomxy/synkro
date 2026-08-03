@@ -34,4 +34,18 @@ return [
     'project_deletion_grace_days' => (int) env('PROJECT_DELETION_GRACE_DAYS', 7),
     'task_deletion_grace_days' => (int) env('TASK_DELETION_GRACE_DAYS', 7),
 
+    /*
+    |--------------------------------------------------------------------|
+    | Display name change cooldown
+    |--------------------------------------------------------------------|
+    |
+    | Users can only change their display name this many days apart.
+    | Enforced in AccountUpdateRequest and surfaced to project owners/
+    | managers via the project.member_name_changed notification so a
+    | sudden name change doesn't read as a different, unfamiliar person.
+    |
+    */
+
+    'name_change_cooldown_days' => (int) env('NAME_CHANGE_COOLDOWN_DAYS', 7),
+
 ];

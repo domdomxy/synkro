@@ -12,6 +12,7 @@ import { useRef, useState } from 'react';
 export default function UpdateAccountInformation({
     mustVerifyEmail,
     status,
+    nameChangeAvailableAt,
     className = '',
 }) {
     const user = usePage().props.auth.user;
@@ -25,6 +26,12 @@ export default function UpdateAccountInformation({
     const [recentlySuccessful, setRecentlySuccessful] = useState(false);
     const successTimeout = useRef(null);
     const hasChanges = data.name !== user.name || data.email !== user.email;
+
+    // Users can only change their display name once every few days (see
+    // AccountUpdateRequest) so it doesn't read as a different person to
+    // project owners/managers who just got used to the old one.
+    const nameChangeLockedUntil = nameChangeAvailableAt ? new Date(nameChangeAvailableAt) : null;
+    const nameChangeLocked = nameChangeLockedUntil !== null && nameChangeLockedUntil > new Date();
 
     const submit = async (e) => {
         e.preventDefault();
@@ -61,13 +68,27 @@ export default function UpdateAccountInformation({
 
                     <TextInput
                         id="name"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                         required
                         isFocused
                         autoComplete="name"
+                        disabled={nameChangeLocked}
+                        title={nameChangeLocked ? `You can change your name again on ${nameChangeLockedUntil.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : undefined}
                     />
+
+                    {nameChangeLocked ? (
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            You can change your name again on{' '}
+                            {nameChangeLockedUntil.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.
+                            Project owners and managers you work with are notified whenever your name changes.
+                        </p>
+                    ) : (
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            You can change your name once every 7 days. Project owners and managers you work with will be notified when it changes.
+                        </p>
+                    )}
 
                     <InputError className="mt-2" message={errors.name} />
                 </div>

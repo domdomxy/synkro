@@ -10,6 +10,7 @@ import TaskRow from '@/Components/TaskRow';
 import TaskBoard from '@/Components/TaskBoard';
 import useConfirm from '@/hooks/useConfirm';
 import useMuteScope from '@/hooks/useMuteScope';
+import useLandscapeOnOpen from '@/hooks/useLandscapeOnOpen';
 import UserSearchInput from '@/Components/UserSearchInput';
 import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
@@ -703,6 +704,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [showBoardModal, setShowBoardModal] = useState(false);
+    useLandscapeOnOpen(showBoardModal);
 
     // Mobile swipeable panes: Team <-> Tasks <-> Notes, opening on Tasks.
     const teamPaneRef = useRef(null);

@@ -212,7 +212,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                             </span>
                                         </Dropdown.Trigger>
 
-                                        <Dropdown.Content width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
+                                        <Dropdown.Content width="72" contentClasses="overflow-hidden bg-white dark:bg-gray-800">
                                             <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} onOpenSettings={openSettings} onOpenAccount={openAccount} />
                                         </Dropdown.Content>
                                     </Dropdown>
@@ -232,7 +232,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
                                         pulls the trigger itself flush with the screen edge, so the
                                         panel opens right at the edge instead of leaving a gap where
                                         the hamburger used to sit. */}
-                                    <Dropdown.Content align="right" width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
+                                    <Dropdown.Content align="right" width="72" contentClasses="overflow-hidden bg-white dark:bg-gray-800">
                                         <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} navLinks={mobileNavLinks} onOpenSettings={openSettings} onOpenAccount={openAccount} />
                                     </Dropdown.Content>
                                 </Dropdown>

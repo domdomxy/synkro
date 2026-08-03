@@ -78,13 +78,13 @@ function TrashIcon({ className }) {
     );
 }
 
-function RoleBadge({ role }) {
+function RoleBadge({ role, className = '' }) {
     if (role !== 'admin' && role !== 'superadmin') {
         return null;
     }
 
     return (
-        <span className="inline-flex w-fit rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+        <span className={`inline-flex shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300 ${className}`}>
             {role === 'superadmin' ? 'Super Admin' : 'Admin'}
         </span>
     );
@@ -95,7 +95,7 @@ function MenuLink({ href, icon, children, onNavigate }) {
         <Link
             href={href}
             onClick={onNavigate}
-            className="flex items-center gap-3 rounded-md px-4 py-2.5 text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2.5 px-3 py-1.5 text-[13px] leading-5 text-gray-700 transition duration-100 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
         >
             {icon}
             {children}
@@ -110,7 +110,7 @@ function MenuButton({ onClick, icon, children }) {
         <button
             type="button"
             onClick={onClick}
-            className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-start text-sm text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-start text-[13px] leading-5 text-gray-700 transition duration-100 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700"
         >
             {icon}
             {children}
@@ -137,15 +137,15 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
     };
 
     return (
-        <div className="w-full">
-            <div className="flex items-center gap-3 px-4 py-4">
-                <Avatar user={user} size="h-11 w-11" rounded="rounded-full" />
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                    <div className="mt-1">
-                        <RoleBadge role={user.role} />
+        <div className="w-full py-1">
+            <div className="flex items-start gap-2.5 px-3 py-2.5">
+                <Avatar user={user} size="h-9 w-9" rounded="rounded-full" />
+                <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                     </div>
+                    <RoleBadge role={user.role} className="mt-0.5" />
                 </div>
             </div>
 
@@ -159,9 +159,9 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
                                 key={link.href}
                                 href={link.href}
                                 onClick={closeMenu}
-                                className={`flex items-center justify-between gap-2 rounded-md px-4 py-2.5 text-sm transition duration-150 ease-in-out focus:outline-none ${
+                                className={`flex items-center justify-between gap-2 px-3 py-1.5 text-[13px] leading-5 transition duration-100 ease-in-out focus:outline-none ${
                                     link.active
-                                        ? 'bg-indigo-50 font-medium text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
+                                        ? 'font-medium text-indigo-700 dark:text-indigo-300'
                                         : 'text-gray-700 hover:bg-gray-100 focus:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700'
                                 }`}
                             >
@@ -181,33 +181,30 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
 
             <div className="py-1">
                 {onOpenAccount ? (
-                    <MenuButton onClick={() => { closeMenu(); onOpenAccount(); }} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />}>
+                    <MenuButton onClick={() => { closeMenu(); onOpenAccount(); }} icon={<AccountIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />}>
                         Account
                     </MenuButton>
                 ) : (
-                    <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                    <MenuLink href={route('account.edit')} icon={<AccountIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
                         Account
                     </MenuLink>
                 )}
                 {onOpenSettings ? (
-                    <MenuButton onClick={() => { closeMenu(); onOpenSettings(); }} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />}>
+                    <MenuButton onClick={() => { closeMenu(); onOpenSettings(); }} icon={<SettingsIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />}>
                         Settings
                     </MenuButton>
                 ) : (
-                    <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                    <MenuLink href={route('settings.edit')} icon={<SettingsIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
                         Settings
                     </MenuLink>
                 )}
-                <MenuLink href={route('trash.index')} icon={<TrashIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
-                    Trash
-                </MenuLink>
             </div>
 
             <div className="border-t border-gray-100 dark:border-gray-700" />
 
-            <div className="flex items-center justify-between gap-3 px-4 py-3">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Appearance</span>
-                <div className="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900">
+            <div className="flex items-center justify-between gap-3 px-3 py-2">
+                <span className="text-[13px] text-gray-700 dark:text-gray-300">Appearance</span>
+                <div className="inline-flex items-center gap-0.5 rounded-md bg-gray-100 p-0.5 dark:bg-gray-900">
                     {QUICK_THEME_OPTIONS.map(({ id, label, icon }) => (
                         <button
                             key={id}
@@ -215,7 +212,7 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
                             title={label}
                             aria-pressed={theme === id}
                             onClick={() => onThemeChange(id)}
-                            className={`rounded-md p-1.5 transition ${
+                            className={`rounded p-1 transition [&>svg]:h-3.5 [&>svg]:w-3.5 ${
                                 theme === id
                                     ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
                                     : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
@@ -230,14 +227,22 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
             <div className="border-t border-gray-100 dark:border-gray-700" />
 
             <div className="py-1">
+                <MenuLink href={route('trash.index')} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                    Trash
+                </MenuLink>
+            </div>
+
+            <div className="border-t border-gray-100 dark:border-gray-700" />
+
+            <div className="py-1">
                 <Link
                     href={route('logout')}
                     method="post"
                     as="button"
                     onClick={closeMenu}
-                    className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-start text-sm text-red-600 transition duration-150 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none dark:text-red-400 dark:hover:bg-red-950/40 dark:focus:bg-red-950/40"
+                    className="flex w-full items-center gap-2.5 px-3 py-1.5 text-start text-[13px] leading-5 text-red-600 transition duration-100 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none dark:text-red-400 dark:hover:bg-red-950/40 dark:focus:bg-red-950/40"
                 >
-                    <LogOutIcon className="h-5 w-5" />
+                    <LogOutIcon className="h-4 w-4" />
                     Log Out
                 </Link>
             </div>

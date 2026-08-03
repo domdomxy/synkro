@@ -141,7 +141,7 @@ function buildSectionMeta(deletionGraceDays) {
     };
 }
 
-export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, initialSection, onClose }) {
+export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, nameChangeAvailableAt, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     // auth.user is a shared prop attached to every page for the logged-in
     // user, so this stays correct whether AccountPanel is the live page
@@ -298,6 +298,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                     <UpdateAccountInformationForm
                                         mustVerifyEmail={mustVerifyEmail}
                                         status={status}
+                                        nameChangeAvailableAt={nameChangeAvailableAt}
                                         className="max-w-xl"
                                     />
                                 )}

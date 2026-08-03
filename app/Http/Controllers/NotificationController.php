@@ -19,7 +19,7 @@ class NotificationController extends Controller
         'replies' => ['comment_replied'],
         'reviews' => ['task_approved', 'task_rejected', 'task_reopened', 'task_done', 'task_review_needed'],
         'membership' => [
-            'member_left', 'project_member_added', 'project_role_changed', 'project_updated',
+            'member_left', 'member_name_changed', 'project_member_added', 'project_role_changed', 'project_updated',
             'project_ownership_transferred', 'project_deleted', 'removed_from_project',
             'project_invitation', 'invitation_accepted', 'invitation_denied',
         ],

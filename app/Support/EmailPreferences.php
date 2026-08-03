@@ -31,6 +31,7 @@ class EmailPreferences
                     'project.invitation_denied' => 'Your invitation was declined',
                     'project.member_added' => 'A new member joined a project you belong to',
                     'project.member_left' => 'A member left a project you own or manage',
+                    'project.member_name_changed' => 'A member of a project you own or manage changed their display name',
                     'project.owner_account_deleted' => "A project you belong to's owner deleted their account",
                     'project.removed' => 'You were removed from a project',
                     'project.edited' => 'A project you belong to was edited',

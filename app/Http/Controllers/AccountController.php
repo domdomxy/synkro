@@ -9,6 +9,7 @@ use App\Models\UserNotification;
 use App\Events\AccountDeleted;
 use App\Events\EmailChanged;
 use App\Events\MemberLeftProject;
+use App\Events\MemberNameChanged;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class AccountController extends Controller
             'status' => session('status'),
             'deletionRequestedAt' => $request->user()->deletion_requested_at,
             'deletionGraceDays' => (int) config('synkro.account_deletion_grace_days', 7),
+            'nameChangeAvailableAt' => $request->user()->nameChangeAvailableAt(),
         ]);
     }
 
@@ -47,12 +49,20 @@ class AccountController extends Controller
         $oldEmail = $user->getOriginal('email');
         $oldName = $user->getOriginal('name');
         $newEmail = $request->validated()['email'];
+        $newName = $request->validated()['name'];
         $emailChanged = $oldEmail !== $newEmail;
+        $nameChanged = $oldName !== $newName;
 
         $user->fill($request->validated());
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
+        }
+
+        if ($user->isDirty('name')) {
+            // Starts the 7-day (configurable) cooldown enforced in
+            // AccountUpdateRequest for the *next* change.
+            $user->name_changed_at = now();
         }
 
         $user->save();
@@ -108,7 +118,59 @@ class AccountController extends Controller
             }
         }
 
+        if ($nameChanged) {
+            $this->notifyProjectLeadsOfNameChange($user, $oldName, $newName);
+        }
+
         return Redirect::route('account.edit');
+    }
+
+    /**
+     * Lets owners/managers of every project this user belongs to know their
+     * display name changed, so a member suddenly showing a different name
+     * doesn't read as someone new or as an impersonation attempt. Mirrors
+     * the recipient-gathering pattern used for member_left notifications
+     * (deactivate() below, ProjectMemberController::leave()).
+     */
+    private function notifyProjectLeadsOfNameChange(User $user, string $oldName, string $newName): void
+    {
+        foreach ($user->projects as $project) {
+            $role = $project->roleFor($user) ?? 'member';
+
+            $recipients = $project->members()
+                ->wherePivotIn('role', ['owner', 'manager'])
+                ->where('users.id', '!=', $user->id)
+                ->get();
+
+            foreach ($recipients as $recipient) {
+                if (NotificationPreferences::wantsType($recipient, 'member_name_changed')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'member_name_changed',
+                        'causer_id' => $user->id,
+                        'message' => "Member changed their name\n**{$oldName}** ({$role}) is now **{$newName}** in \"**{$project->name}**\"",
+                        'url' => route('projects.show', $project->id, false),
+                    ]);
+
+                    try {
+                        broadcast(new MemberNameChanged($recipient->id, $oldName, $newName, $role, $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                NotificationMailer::send(
+                    $recipient,
+                    'project.member_name_changed',
+                    "{$oldName} changed their name in {$project->name}",
+                    [
+                        "**{$oldName}** ({$role}) in the project \"**{$project->name}**\" (#{$project->id}) is now going by **{$newName}**.",
+                    ],
+                    url(route('projects.show', $project->id, false)),
+                    'View Project'
+                );
+            }
+        }
     }
 
     /**

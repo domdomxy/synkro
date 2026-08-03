@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name', 'email', 'password', 'role', 'is_active', 'avatar_path', 'is_suspended', 'suspended_until',
     'suspension_reason', 'suspended_by', 'email_preferences', 'active_status_changed_at', 'role_changed_at',
     'must_change_password', 'temp_password_expires_at', 'notification_preferences',
-    'deletion_requested_at', 'trusted_link_hosts',
+    'deletion_requested_at', 'trusted_link_hosts', 'name_changed_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -76,6 +76,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'role_changed_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
             'restore_code_expires_at' => 'datetime',
+            'name_changed_at' => 'datetime',
         ];
     }
     public function pinnedTasks()
@@ -154,6 +155,21 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->deleted_at->copy()->addDays((int) config('synkro.account_deletion_grace_days', 7));
+    }
+
+    /** When this user is next allowed to change their display name again. Null if they never have. */
+    public function nameChangeAvailableAt(): ?\Carbon\Carbon
+    {
+        if (! $this->name_changed_at) {
+            return null;
+        }
+
+        return $this->name_changed_at->copy()->addDays((int) config('synkro.name_change_cooldown_days', 7));
+    }
+
+    public function canChangeName(): bool
+    {
+        return $this->nameChangeAvailableAt()?->isPast() ?? true;
     }
 
     /** Still soft-deleted and inside the window where it can self-restore. */
