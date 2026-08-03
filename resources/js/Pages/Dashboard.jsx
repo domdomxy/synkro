@@ -595,7 +595,12 @@ function MiniNoteCard({ note, onToggleItem }) {
 // down. Each project group is independently collapsible, same interaction
 // pattern as NotesPanel's own collapse toggle.
 function MyNotesPanel({ notesByProject }) {
-    const [collapsedProjectIds, setCollapsedProjectIds] = useState(() => new Set());
+    // Every project group starts minimized - the dashboard is a quick glance,
+    // not the place to read through full checklists; people expand only the
+    // project they care about right now.
+    const [collapsedProjectIds, setCollapsedProjectIds] = useState(
+        () => new Set(notesByProject.map((group) => group.project.id))
+    );
 
     const toggleProjectCollapse = (projectId) => {
         setCollapsedProjectIds((prev) => {
@@ -638,7 +643,7 @@ function MyNotesPanel({ notesByProject }) {
                             <div key={group.project.id}>
                                 <button
                                     onClick={() => toggleProjectCollapse(group.project.id)}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                                    className="flex w-full items-center justify-between gap-2 rounded-md bg-gray-50 px-2.5 py-2 text-left ring-1 ring-gray-100 hover:bg-gray-100 dark:bg-gray-900/70 dark:ring-white/[0.06] dark:hover:bg-gray-900"
                                 >
                                     <span className="flex min-w-0 items-center gap-1.5">
                                         <svg className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
