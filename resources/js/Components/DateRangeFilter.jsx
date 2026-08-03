@@ -11,8 +11,15 @@ export default function DateRangeFilter({ from, to, onApply }) {
 
     return (
         <div>
-            <label className="mb-1 block text-xs text-gray-400 dark:text-gray-500">Date range</label>
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Date range</p>
+                {(from || to) && (
+                    <button type="button" onClick={() => { setCustomFrom(''); setCustomTo(''); onApply('', ''); }} className="text-xs text-gray-400 hover:underline dark:text-gray-500">
+                        Clear dates
+                    </button>
+                )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
                 <button
                     type="button"
                     onClick={() => setShowCustom((v) => !v)}
@@ -21,17 +28,12 @@ export default function DateRangeFilter({ from, to, onApply }) {
                     Custom
                 </button>
                 {showCustom && (
-                    <div className="flex items-center gap-1">
-                        <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                        <span className="text-xs text-gray-400">to</span>
-                        <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                        <button type="button" onClick={applyCustom} className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-32 rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                        <span className="shrink-0 text-xs text-gray-400">to</span>
+                        <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="w-32 rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                        <button type="button" onClick={applyCustom} className="shrink-0 rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500">Go</button>
                     </div>
-                )}
-                {(from || to) && (
-                    <button type="button" onClick={() => { setCustomFrom(''); setCustomTo(''); onApply('', ''); }} className="px-2 text-xs text-gray-400 hover:underline dark:text-gray-500">
-                        Clear dates
-                    </button>
                 )}
             </div>
         </div>

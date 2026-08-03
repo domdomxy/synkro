@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
@@ -551,27 +552,31 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         </div>
                     )}
                     <div className="mb-2 flex flex-wrap items-center gap-3">
-                        <FilterSelect
-                            value={project}
-                            onChange={handleProjectChange}
-                            className="w-44"
-                            options={[{ value: 'all', label: 'All Projects' }, ...userProjects.map((p) => ({ value: String(p.id), label: p.name }))]}
-                        />
-                        <FilterSelect
-                            value={action}
-                            onChange={handleActionChange}
-                            className="w-56"
-                            options={[
-                                { value: 'all', label: 'All Actions' },
-                                ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
-                            ]}
-                        />
-                        <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[project !== 'all', action !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            onClear={clearFilters}
+                        >
+                            <FiltersMenu.Row label="Project">
+                                <FilterSelect
+                                    value={project}
+                                    onChange={handleProjectChange}
+                                    className="w-full"
+                                    options={[{ value: 'all', label: 'All Projects' }, ...userProjects.map((p) => ({ value: String(p.id), label: p.name }))]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Action">
+                                <FilterSelect
+                                    value={action}
+                                    onChange={handleActionChange}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Actions' },
+                                        ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
+                        </FiltersMenu>
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">

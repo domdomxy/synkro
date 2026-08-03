@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import ViewToggle from '@/Components/ViewToggle';
 import PerPageSelect from '@/Components/PerPageSelect';
 import LocalPagination from '@/Components/LocalPagination';
@@ -155,7 +156,6 @@ export default function Index({ tasks }) {
             });
     }, [tasks, search, statusFilter, projectFilter]);
 
-    const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all' || projectFilter !== 'all';
     const inReviewCount = useMemo(() => tasks.filter((t) => t.status === 'in_review').length, [tasks]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -179,23 +179,24 @@ export default function Index({ tasks }) {
                                 className="w-full pl-9 sm:w-72"
                             />
                         </div>
-                        <FilterSelect
-                            value={statusFilter}
-                            onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                            className="w-44"
-                            options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
-                        />
-                        <FilterSelect
-                            value={projectFilter}
-                            onChange={(v) => { setProjectFilter(v); setPage(1); }}
-                            className="w-48"
-                            options={projectOptions}
-                        />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu activeCount={[statusFilter !== 'all', projectFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
+                            <FiltersMenu.Row label="Status">
+                                <FilterSelect
+                                    value={statusFilter}
+                                    onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Project">
+                                <FilterSelect
+                                    value={projectFilter}
+                                    onChange={(v) => { setProjectFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={projectOptions}
+                                />
+                            </FiltersMenu.Row>
+                        </FiltersMenu>
                         {inReviewCount > 0 && (
                             <span className="ml-auto flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
                                 {inReviewCount} in review

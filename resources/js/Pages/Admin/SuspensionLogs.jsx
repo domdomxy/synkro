@@ -6,6 +6,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
@@ -185,37 +186,44 @@ export default function SuspensionLogs({ logs, filters }) {
                                 className="w-72 pl-9"
                             />
                         </div>
-                        <FilterSelect
-                            value={status}
-                            onChange={setStatus}
-                            className="w-48"
-                            options={[
-                                { value: 'all', label: 'All Statuses' },
-                                { value: 'active', label: 'Currently Suspended' },
-                                { value: 'lifted', label: 'Lifted' },
-                            ]}
-                        />
-                        <FilterSelect
-                            value={`${sort}:${direction}`}
-                            onChange={(v) => {
-                                const [col, dir] = v.split(':');
-                                setSort(col);
-                                setDirection(dir);
-                                router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort: col, direction: dir }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
-                            }}
-                            className="w-48"
-                            options={[
-                                { value: 'created_at:desc', label: 'Newest first' },
-                                { value: 'created_at:asc', label: 'Oldest first' },
-                                { value: 'suspended_until:asc', label: 'Ends soonest' },
-                                { value: 'suspended_until:desc', label: 'Ends latest' },
-                            ]}
-                        />
-                        <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
-                        <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[status !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            onApply={applyFilters}
+                            onClear={clearFilters}
+                            hasActiveFilters={hasActiveFilters}
+                        >
+                            <FiltersMenu.Row label="Status">
+                                <FilterSelect
+                                    value={status}
+                                    onChange={setStatus}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Statuses' },
+                                        { value: 'active', label: 'Currently Suspended' },
+                                        { value: 'lifted', label: 'Lifted' },
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Sort">
+                                <FilterSelect
+                                    value={`${sort}:${direction}`}
+                                    onChange={(v) => {
+                                        const [col, dir] = v.split(':');
+                                        setSort(col);
+                                        setDirection(dir);
+                                        router.get(route('admin.suspension-logs'), cleanParams({ search, status, from, to, per_page: perPage, sort: col, direction: dir }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+                                    }}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'created_at:desc', label: 'Newest first' },
+                                        { value: 'created_at:asc', label: 'Oldest first' },
+                                        { value: 'suspended_until:asc', label: 'Ends soonest' },
+                                        { value: 'suspended_until:desc', label: 'Ends latest' },
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
+                        </FiltersMenu>
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">

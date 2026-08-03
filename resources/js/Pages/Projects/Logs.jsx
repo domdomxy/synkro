@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import LogEntryRow from '@/Components/LogEntryRow';
 import PerPageSelect from '@/Components/PerPageSelect';
@@ -102,27 +103,31 @@ export default function Logs({ project, logs, backHref, backLabel }) {
             <div className="py-12">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
-                        <FilterSelect
-                            value={userFilter}
-                            onChange={(v) => { setUserFilter(v); setPage(1); }}
-                            className="w-44"
-                            options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name }))]}
-                        />
-                        <FilterSelect
-                            value={actionFilter}
-                            onChange={(v) => { setActionFilter(v); setPage(1); }}
-                            className="w-52"
-                            options={[
-                                { value: 'all', label: 'All Actions' },
-                                ...actions.map((a) => ({ value: a, label: actionLabels[a] ?? formatActionLabel(a) })),
-                            ]}
-                        />
-                        <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[userFilter !== 'all', actionFilter !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            onClear={clearFilters}
+                        >
+                            <FiltersMenu.Row label="User">
+                                <FilterSelect
+                                    value={userFilter}
+                                    onChange={(v) => { setUserFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name }))]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Action">
+                                <FilterSelect
+                                    value={actionFilter}
+                                    onChange={(v) => { setActionFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Actions' },
+                                        ...actions.map((a) => ({ value: a, label: actionLabels[a] ?? formatActionLabel(a) })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
+                        </FiltersMenu>
                     </div>
 
                     {logs.length > 0 && (

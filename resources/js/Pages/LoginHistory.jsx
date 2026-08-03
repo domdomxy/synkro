@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
@@ -220,21 +221,23 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
                         </div>
                     )}
                     <div className="mb-2 flex flex-wrap items-center gap-3">
-                        <FilterSelect
-                            value={action}
-                            onChange={handleActionChange}
-                            className="w-52"
-                            options={[
-                                { value: 'all', label: 'All Actions' },
-                                ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
-                            ]}
-                        />
-                        <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[action !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            onClear={clearFilters}
+                        >
+                            <FiltersMenu.Row label="Action">
+                                <FilterSelect
+                                    value={action}
+                                    onChange={handleActionChange}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Actions' },
+                                        ...Object.entries(actionLabels).map(([key, label]) => ({ value: key, label })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
+                        </FiltersMenu>
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">

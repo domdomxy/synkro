@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
@@ -115,35 +116,36 @@ export default function Notifications({ notificationsList, filters }) {
                                 className="w-full rounded-md border-gray-300 py-1.5 pl-8 pr-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                         </div>
-                        <FilterSelect
-                            value={filter}
-                            onChange={handleFilterChange}
-                            className="w-36"
-                            options={[
-                                { value: 'all', label: 'All' },
-                                { value: 'unread', label: 'Unread' },
-                            ]}
-                        />
-                        <FilterSelect
-                            value={category}
-                            onChange={handleCategoryChange}
-                            className="w-48"
-                            options={[
-                                { value: 'all', label: 'All Categories' },
-                                { value: 'assignments', label: 'Assignments' },
-                                { value: 'mentions', label: 'Mentions' },
-                                { value: 'reviews', label: 'Reviews' },
-                                { value: 'membership', label: 'Membership' },
-                                { value: 'replies', label: 'Replies' },
-                                { value: 'reminders', label: 'Reminders' },
-                                ...(auth.user.role === 'admin' || auth.user.role === 'superadmin' ? [{ value: 'administration', label: 'Administration' }] : []),
-                            ]}
-                        />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu activeCount={[filter !== 'all', category !== 'all'].filter(Boolean).length} onClear={clearFilters}>
+                            <FiltersMenu.Row label="Filter">
+                                <FilterSelect
+                                    value={filter}
+                                    onChange={handleFilterChange}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All' },
+                                        { value: 'unread', label: 'Unread' },
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Category">
+                                <FilterSelect
+                                    value={category}
+                                    onChange={handleCategoryChange}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Categories' },
+                                        { value: 'assignments', label: 'Assignments' },
+                                        { value: 'mentions', label: 'Mentions' },
+                                        { value: 'reviews', label: 'Reviews' },
+                                        { value: 'membership', label: 'Membership' },
+                                        { value: 'replies', label: 'Replies' },
+                                        { value: 'reminders', label: 'Reminders' },
+                                        ...(auth.user.role === 'admin' || auth.user.role === 'superadmin' ? [{ value: 'administration', label: 'Administration' }] : []),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                        </FiltersMenu>
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">

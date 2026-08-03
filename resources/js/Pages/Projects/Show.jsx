@@ -17,6 +17,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import Dropdown from '@/Components/Dropdown';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
@@ -1283,9 +1284,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-48 text-sm" />
-                                        <FilterSelect className="w-36" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
-                                        <FilterSelect className="w-36" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
-                                        {hasActiveTaskFilters && <button onClick={clearTaskFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>}
+                                        <FiltersMenu activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearTaskFilters}>
+                                            <FiltersMenu.Row label="Status">
+                                                <FilterSelect className="w-full" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
+                                            </FiltersMenu.Row>
+                                            <FiltersMenu.Row label="Priority">
+                                                <FilterSelect className="w-full" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
+                                            </FiltersMenu.Row>
+                                        </FiltersMenu>
                                     </div>
                                 </div>
                                 <TaskStatusBar tasks={project.tasks} />

@@ -6,6 +6,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
@@ -228,20 +229,25 @@ export default function Logs({ logs, actionCatalog, filters }) {
                                 className="w-72 pl-9"
                             />
                         </div>
-                        <FilterSelect
-                            value={action}
-                            onChange={setAction}
-                            className="w-52"
-                            options={[
-                                { value: 'all', label: 'All Actions' },
-                                ...Object.entries(actionCatalog).map(([key, label]) => ({ value: key, label })),
-                            ]}
-                        />
-                        <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
-                        <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="pb-2 text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[action !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            onApply={applyFilters}
+                            onClear={clearFilters}
+                            hasActiveFilters={hasActiveFilters}
+                        >
+                            <FiltersMenu.Row label="Action">
+                                <FilterSelect
+                                    value={action}
+                                    onChange={setAction}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Actions' },
+                                        ...Object.entries(actionCatalog).map(([key, label]) => ({ value: key, label })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
+                        </FiltersMenu>
                     </div>
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">

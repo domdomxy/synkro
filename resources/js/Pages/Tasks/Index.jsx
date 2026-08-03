@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import ViewToggle from '@/Components/ViewToggle';
 import RichTextContent from '@/Components/RichTextContent';
 import PerPageSelect from '@/Components/PerPageSelect';
@@ -188,7 +189,6 @@ export default function Index({ tasks }) {
             });
     }, [tasks, search, statusFilter, priorityFilter]);
 
-    const hasActiveFilters = search.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
     const overdueCount = useMemo(() => tasks.filter(isOverdue).length, [tasks]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -212,23 +212,24 @@ export default function Index({ tasks }) {
                                 className="w-full pl-9 sm:w-72"
                             />
                         </div>
-                        <FilterSelect
-                            value={statusFilter}
-                            onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                            className="w-44"
-                            options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
-                        />
-                        <FilterSelect
-                            value={priorityFilter}
-                            onChange={(v) => { setPriorityFilter(v); setPage(1); }}
-                            className="w-44"
-                            options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
-                        />
-                        {hasActiveFilters && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
-                                Clear
-                            </button>
-                        )}
+                        <FiltersMenu activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
+                            <FiltersMenu.Row label="Status">
+                                <FilterSelect
+                                    value={statusFilter}
+                                    onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Priority">
+                                <FilterSelect
+                                    value={priorityFilter}
+                                    onChange={(v) => { setPriorityFilter(v); setPage(1); }}
+                                    className="w-full"
+                                    options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
+                                />
+                            </FiltersMenu.Row>
+                        </FiltersMenu>
                         {overdueCount > 0 && (
                             <span className="ml-auto flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-950/30 dark:text-red-400">
                                 <AlertIcon className="h-3.5 w-3.5" />

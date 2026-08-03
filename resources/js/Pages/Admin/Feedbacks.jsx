@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import Linkify from '@/Components/Linkify';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ManageCategoriesModal from '@/Components/ManageCategoriesModal';
 import ImageLightbox from '@/Components/ImageLightbox';
@@ -269,31 +270,38 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
                             placeholder="Search by ID, subject, email..."
                             className="rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 w-64"
                         />
-                        <FilterSelect
-                            value={category}
-                            onChange={setCategory}
-                            className="w-44"
-                            options={[
-                                { value: '', label: 'All Categories' },
-                                ...categories.map((c) => ({ value: c.key, label: c.label })),
-                            ]}
-                        />
-                        <FilterSelect
-                            value={status}
-                            onChange={setStatus}
-                            className="w-44"
-                            options={[
-                                { value: '', label: 'All Statuses' },
-                                ...['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => ({
-                                    value: s,
-                                    label: s.charAt(0).toUpperCase() + s.slice(1),
-                                })),
-                            ]}
-                        />
-                        <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
-                        {(search || category || status) && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Clear</button>
-                        )}
+                        <FiltersMenu
+                            activeCount={[Boolean(category), Boolean(status)].filter(Boolean).length}
+                            onApply={applyFilters}
+                            onClear={clearFilters}
+                            hasActiveFilters={Boolean(search || category || status)}
+                        >
+                            <FiltersMenu.Row label="Category">
+                                <FilterSelect
+                                    value={category}
+                                    onChange={setCategory}
+                                    className="w-full"
+                                    options={[
+                                        { value: '', label: 'All Categories' },
+                                        ...categories.map((c) => ({ value: c.key, label: c.label })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Status">
+                                <FilterSelect
+                                    value={status}
+                                    onChange={setStatus}
+                                    className="w-full"
+                                    options={[
+                                        { value: '', label: 'All Statuses' },
+                                        ...['pending', 'reviewing', 'accepted', 'rejected', 'closed'].map((s) => ({
+                                            value: s,
+                                            label: s.charAt(0).toUpperCase() + s.slice(1),
+                                        })),
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                        </FiltersMenu>
                     </div>
 
                     <div className="space-y-3">
