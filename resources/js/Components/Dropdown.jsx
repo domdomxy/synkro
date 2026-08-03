@@ -1,6 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import useViewportClamp from '@/hooks/useViewportClamp';
 
 // Exported so nested content (e.g. AccountMenu) can close the dropdown itself
 // on a real navigation/action, instead of the whole content panel closing on
@@ -53,6 +54,11 @@ const Content = ({
     children,
 }) => {
     const { open } = useContext(DropDownContext);
+    // Anchor classes below set a sensible default side; this then nudges the
+    // panel back on screen with a transform if that default still runs off
+    // either edge for the trigger's actual position/viewport width (see
+    // useViewportClamp for why a same/flip-side anchor alone isn't enough).
+    const { ref: panelRef, style: clampStyle } = useViewportClamp(open);
 
     let alignmentClasses = 'origin-top';
 
@@ -84,6 +90,8 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
+                    ref={panelRef}
+                    style={clampStyle}
                     className={`absolute z-50 mt-2 rounded-xl shadow-xl ${alignmentClasses} ${widthClasses}`}
                 >
                     <div

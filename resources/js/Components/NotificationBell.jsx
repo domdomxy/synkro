@@ -6,6 +6,7 @@ import { NoteList } from '@/utils/noteFormat';
 import FilterSelect from '@/Components/FilterSelect';
 import { categoryMap, typeStyles, relativeTime, splitMessage } from '@/utils/notificationDisplay';
 import NotificationIcon from '@/Components/NotificationIcon';
+import useTabBadge from '@/hooks/useTabBadge';
 
 export default function NotificationBell() {
     const { auth, notifications } = usePage().props;
@@ -21,6 +22,11 @@ export default function NotificationBell() {
         setItems(notifications.recent);
         setUnreadCount(notifications.unreadCount);
     }, [notifications]);
+
+    // Surfaces unread activity on the browser tab itself (title prefix +
+    // favicon counter), so it stays visible even when this dropdown is
+    // closed or the tab is in the background.
+    useTabBadge(unreadCount);
 
     useEcho(
         `user.${auth.user.id}`,
