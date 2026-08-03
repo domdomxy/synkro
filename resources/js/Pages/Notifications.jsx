@@ -9,22 +9,25 @@ import { typeStyles, relativeTime, splitMessage } from '@/utils/notificationDisp
 import NotificationIcon from '@/Components/NotificationIcon';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useConfirm from '@/hooks/useConfirm';
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { filter: 'all', category: 'all', per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { filter: 'all', category: 'all', search: '', per_page: DEFAULT_PER_PAGE };
+const SEARCH_DEBOUNCE_MS = 400;
 
 export default function Notifications({ notificationsList, filters }) {
     const { auth } = usePage().props;
     const [filter, setFilter] = useState(filters?.filter ?? 'all');
     const [category, setCategory] = useState(filters?.category ?? 'all');
+    const [search, setSearch] = useState(filters?.search ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
     const paginationRef = useRef(null);
+    const searchDebounceRef = useRef(null);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const applyFilters = (overrides = {}) => {
-        const next = { filter, category, per_page: perPage, ...overrides };
+        const next = { filter, category, search, per_page: perPage, ...overrides };
         router.get(route('notifications.index'), cleanParams(next, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
@@ -32,14 +35,24 @@ export default function Notifications({ notificationsList, filters }) {
     const handleCategoryChange = (v) => { setCategory(v); applyFilters({ category: v }); };
     const handlePerPageChange = (v) => { setPerPage(v); applyFilters({ per_page: v }); };
 
+    const handleSearchChange = (v) => {
+        setSearch(v);
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => applyFilters({ search: v }), SEARCH_DEBOUNCE_MS);
+    };
+
+    useEffect(() => () => clearTimeout(searchDebounceRef.current), []);
+
     const clearFilters = () => {
+        clearTimeout(searchDebounceRef.current);
         setFilter('all');
         setCategory('all');
+        setSearch('');
         setPerPage(DEFAULT_PER_PAGE);
         router.get(route('notifications.index'));
     };
 
-    const hasActiveFilters = filter !== 'all' || category !== 'all';
+    const hasActiveFilters = filter !== 'all' || category !== 'all' || search !== '';
 
     const openNotification = (note) => {
         if (!note.read_at) {
@@ -57,8 +70,9 @@ export default function Notifications({ notificationsList, filters }) {
     };
 
     const clearAll = async () => {
-        if (!(await confirm('This cannot be undone.', { title: 'Clear All Notifications?', danger: true, confirmLabel: 'Clear All' }))) return;
-        router.delete(route('notifications.clear'), { preserveScroll: true });
+        const scopeLabel = hasActiveFilters ? ' matching your current filters' : '';
+        if (!(await confirm(`This will permanently delete all notifications${scopeLabel}. This cannot be undone.`, { title: `Clear ${hasActiveFilters ? 'Filtered' : 'All'} Notifications?`, danger: true, confirmLabel: 'Clear All' }))) return;
+        router.delete(route('notifications.clear'), { data: { filter, category, search }, preserveScroll: true });
     };
 
     const unreadOnPage = notificationsList.data.some((n) => !n.read_at);
@@ -78,7 +92,7 @@ export default function Notifications({ notificationsList, filters }) {
                     )}
                     {notificationsList.total > 0 && (
                         <button onClick={clearAll} className="text-sm font-medium text-gray-500 hover:underline dark:text-gray-400">
-                            Clear all
+                            {hasActiveFilters ? 'Clear filtered' : 'Clear all'}
                         </button>
                     )}
                 </div>
@@ -89,6 +103,18 @@ export default function Notifications({ notificationsList, filters }) {
             <div className="py-12">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
+                        <div className="relative w-full sm:w-64">
+                            <svg className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                placeholder="Search notifications..."
+                                className="w-full rounded-md border-gray-300 py-1.5 pl-8 pr-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                        </div>
                         <FilterSelect
                             value={filter}
                             onChange={handleFilterChange}

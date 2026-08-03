@@ -31,8 +31,30 @@ class NotificationController extends Controller
     {
         $filter = $request->input('filter', 'all');
         $category = $request->input('category', 'all');
+        $search = trim((string) $request->input('search', ''));
 
-        $query = $request->user()->notifications()->with('causer');
+        $notifications = $this->filteredQuery($request, $filter, $category, $search)
+            ->with('causer')
+            ->paginate($this->perPage($request, 10))
+            ->withQueryString();
+
+        return Inertia::render('Notifications', [
+            'notificationsList' => $notifications,
+            'filters' => [
+                'filter' => $filter,
+                'category' => $category,
+                'search' => $search,
+                'per_page' => $request->input('per_page'),
+            ],
+        ]);
+    }
+
+    // Shared by index (paginated listing) and destroyAll ("Clear all", which
+    // must only remove notifications matching the currently applied filter/
+    // category/search - not the user's entire notification history).
+    private function filteredQuery(Request $request, string $filter, string $category, string $search)
+    {
+        $query = $request->user()->notifications();
 
         if ($filter === 'unread') {
             $query->whereNull('read_at');
@@ -42,16 +64,11 @@ class NotificationController extends Controller
             $query->whereIn('type', self::CATEGORY_TYPES[$category]);
         }
 
-        $notifications = $query->paginate($this->perPage($request, 10))->withQueryString();
+        if ($search !== '') {
+            $query->where('message', 'like', '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%');
+        }
 
-        return Inertia::render('Notifications', [
-            'notificationsList' => $notifications,
-            'filters' => [
-                'filter' => $filter,
-                'category' => $category,
-                'per_page' => $request->input('per_page'),
-            ],
-        ]);
+        return $query;
     }
 
     private function perPage(Request $request, int $default): int
@@ -85,9 +102,13 @@ class NotificationController extends Controller
         return back();
     }
 
-    public function destroyAll()
+    public function destroyAll(Request $request)
     {
-        Auth::user()->notifications()->delete();
+        $filter = $request->input('filter', 'all');
+        $category = $request->input('category', 'all');
+        $search = trim((string) $request->input('search', ''));
+
+        $this->filteredQuery($request, $filter, $category, $search)->delete();
 
         return back();
     }

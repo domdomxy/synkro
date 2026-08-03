@@ -53,8 +53,8 @@ function toastFromPayload(payload) {
     }
 }
 
-// Newest toast lands nearest the entry edge (top on mobile, bottom on
-// desktop); older ones get pushed away from it as new ones arrive, and the
+// Newest toast lands nearest the bottom entry edge on both mobile and
+// desktop; older ones get pushed away from it as new ones arrive, and the
 // oldest is dropped once a 4th would otherwise show.
 const MAX_NOTIFICATION_TOASTS = 3;
 
@@ -75,7 +75,7 @@ export default function NotificationToast() {
     const exitAnim = 'animate-toast-lift-mobile sm:animate-toast-slide-out-desktop';
 
     return (
-        <div className="fixed left-1/2 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col-reverse gap-2 sm:left-auto sm:right-4 sm:top-auto sm:bottom-4 sm:w-auto sm:max-w-sm sm:translate-x-0 sm:flex-col">
+        <div className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 sm:left-auto sm:right-4 sm:w-auto sm:max-w-sm sm:translate-x-0">
             {toasts.map((toast) => {
                 const style = TOAST_STYLES[toast.type] ?? TOAST_STYLES.info;
                 const anim = toast.leaving ? exitAnim : enterAnim;
@@ -84,7 +84,7 @@ export default function NotificationToast() {
                     <div
                         key={toast.id}
                         data-toast-type={toast.type}
-                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-3 text-sm shadow-lg sm:pr-9 ${style.card}`}
+                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-9 text-sm shadow-lg ${style.card}`}
                     >
                         <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
 
@@ -98,13 +98,11 @@ export default function NotificationToast() {
                             {noteBoldSegments(toast.message, 'font-semibold text-gray-900 dark:text-white')}
                         </span>
 
-                        {/* Mobile clears itself after 2s, so there's nothing to dismiss by
-                            hand there - the close button only shows from sm: up. */}
                         <button
                             type="button"
                             onClick={() => dismiss(toast.id)}
                             aria-label="Dismiss notification"
-                            className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200 sm:block"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200"
                         >
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

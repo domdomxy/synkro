@@ -43,9 +43,9 @@ export default function useToastStack(maxToasts = 3) {
         t.exit = setTimeout(() => remove(id), EXIT_DURATION);
     }, [remove]);
 
-    // Auto-dismiss only applies on mobile, where toasts drop from the top
-    // and clear themselves after 2s. On larger screens each one stays put
-    // until dismissed by hand via its close button.
+    // Toasts stick on every screen size now - they stay put until the user
+    // dismisses them by hand via the close button, or get pushed out once
+    // the stack exceeds maxToasts.
     const push = useCallback((toast) => {
         const id = ++nextToastId;
 
@@ -62,13 +62,8 @@ export default function useToastStack(maxToasts = 3) {
             return [{ ...oldest, leaving: true }, ...rest];
         });
 
-        if (window.matchMedia('(max-width: 639px)').matches) {
-            const t = timers.current[id] ?? (timers.current[id] = {});
-            t.auto = setTimeout(() => dismiss(id), 2000);
-        }
-
         return id;
-    }, [maxToasts, remove, dismiss]);
+    }, [maxToasts, remove]);
 
     useEffect(() => () => {
         Object.values(timers.current).forEach((t) => {
