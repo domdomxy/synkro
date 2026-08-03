@@ -16,7 +16,7 @@ import Linkify from '@/Components/Linkify';
 import CommentBody from '@/Components/CommentBody';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import LogEntryRow from '@/Components/LogEntryRow';
-import { describeLog, formatActionLabel } from '@/utils/activityLog';
+import { describeLog } from '@/utils/activityLog';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
 import { router, useForm } from '@inertiajs/react';
@@ -849,7 +849,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [historySearch, setHistorySearch] = useState('');
-    const [historyActionFilter, setHistoryActionFilter] = useState('all');
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();
 
@@ -2051,7 +2050,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
 
         <Modal
             show={showHistory}
-            onClose={() => { setShowHistory(false); setHistorySearch(''); setHistoryActionFilter('all'); }}
+            onClose={() => { setShowHistory(false); setHistorySearch(''); }}
             maxWidth="2xl"
             overlayClassName="bg-black/55 dark:bg-black/70"
         >
@@ -2068,36 +2067,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                         </svg>
                     </button>
                 </div>
-                {task.activity_logs && task.activity_logs.length > 0 && (() => {
-                    const actionOptions = [
-                        { value: 'all', label: 'All Actions' },
-                        ...Array.from(new Set(task.activity_logs.map((log) => log.action)))
-                            .map((action) => ({ value: action, label: formatActionLabel(action) })),
-                    ];
-                    return (
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <TextInput
-                                type="text"
-                                value={historySearch}
-                                onChange={(e) => setHistorySearch(e.target.value)}
-                                placeholder="Search history…"
-                                className="min-w-0 flex-1 text-sm"
-                            />
-                            <FilterSelect
-                                value={historyActionFilter}
-                                onChange={setHistoryActionFilter}
-                                options={actionOptions}
-                                buttonClassName="w-44"
-                            />
-                        </div>
-                    );
-                })()}
+                {task.activity_logs && task.activity_logs.length > 0 && (
+                    <div className="mt-3">
+                        <TextInput
+                            type="text"
+                            value={historySearch}
+                            onChange={(e) => setHistorySearch(e.target.value)}
+                            placeholder="Search history…"
+                            className="w-full text-sm"
+                        />
+                    </div>
+                )}
                 <div className="mt-4 max-h-96 overflow-y-auto">
                     {(() => {
                         const logs = task.activity_logs ?? [];
                         const query = historySearch.trim().toLowerCase();
                         const filteredLogs = logs.filter((log) => {
-                            if (historyActionFilter !== 'all' && log.action !== historyActionFilter) return false;
                             if (query) {
                                 const haystack = `${describeLog(log)} ${log.user?.name ?? ''}`.toLowerCase();
                                 if (!haystack.includes(query)) return false;
