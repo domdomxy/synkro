@@ -486,7 +486,7 @@ export default function Users({ users, stats, filters }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3">
-                                                <span className={`rounded-full px-2 py-1 text-xs capitalize ${user.role === 'superadmin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                <span className={`inline-block whitespace-nowrap rounded-full px-2 py-1 text-xs capitalize ${user.role === 'superadmin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                     {user.role === 'superadmin' ? 'Super Admin' : user.role}
                                                 </span>
                                             </td>
