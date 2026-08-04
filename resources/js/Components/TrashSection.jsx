@@ -1,4 +1,3 @@
-import Modal from '@/Components/Modal';
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -8,14 +7,6 @@ import TextInput from '@/Components/TextInput';
 import FiltersMenu from '@/Components/FiltersMenu';
 import FilterSelect from '@/Components/FilterSelect';
 import DateRangeFilter from '@/Components/DateRangeFilter';
-
-function CloseIcon({ className }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    );
-}
 
 function TrashIcon({ className = 'h-5 w-5' }) {
     return (
@@ -378,8 +369,15 @@ function PickRow({ icon, title, subtitle, selected, onToggleSelect }) {
     );
 }
 
-export default function TrashPanel({ trashedProjects, trashedTasks, deletableProjects, deletableTasks, onClose }) {
+export default function TrashSection({ trashedProjects, trashedTasks, deletableProjects, deletableTasks }) {
     const { confirm, ConfirmDialog } = useConfirm();
+
+    // Raw (unfiltered) counts for the tab badges - deliberately not the
+    // filtered counts, so the badge always reflects what's actually sitting
+    // in the trash / available to delete, not just what the current search
+    // happens to match.
+    const trashedTotalCount = trashedProjects.length + trashedTasks.length;
+    const deletableTotalCount = deletableProjects.length + deletableTasks.length;
 
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -389,9 +387,11 @@ export default function TrashPanel({ trashedProjects, trashedTasks, deletablePro
     const [selectedProjectIds, setSelectedProjectIds] = useState([]);
     const [selectedTaskIds, setSelectedTaskIds] = useState([]);
 
-    // State for the separate "delete from here" picker below - lets someone
-    // send still-active projects/tasks to the trash without leaving this page.
-    const [showDeletePicker, setShowDeletePicker] = useState(false);
+    // Which pane is showing: the deleted-items list, or the "send more to
+    // trash" picker. These used to be stacked in one long scroll (see git
+    // history) - with a long trash list, reaching the picker meant scrolling
+    // past everything above it, so they're now separate tabs instead.
+    const [view, setView] = useState('trash');
     const [existingSearch, setExistingSearch] = useState('');
     const [selectedExistingProjectIds, setSelectedExistingProjectIds] = useState([]);
     const [selectedExistingTaskIds, setSelectedExistingTaskIds] = useState([]);
@@ -620,32 +620,67 @@ export default function TrashPanel({ trashedProjects, trashedTasks, deletablePro
         }, { preserveScroll: true, onSuccess: clearExistingSelection });
     };
 
+
     return (
         <>
-            {/* Trash opens as a modal, same treatment as Settings/Account/Support,
-                reached from the account menu instead of a standalone page. */}
-            <Modal show onClose={onClose} maxWidth="4xl" overlayClassName="bg-black/55 dark:bg-black/70" panelClassName="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                {/* Rendered inside the outer Modal (not as a sibling) so Headless UI sees the
-                    true parent/child nesting - see SettingsPanel's identical note on why. */}
-                {ConfirmDialog}
+            {ConfirmDialog}
 
-                <div className="flex h-[88vh] max-h-[860px] w-full flex-col">
-                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-3.5 dark:border-gray-600">
-                        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
-                            <TrashIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                            Trash
-                        </h2>
+            <div className="space-y-4 sm:space-y-6">
+                    {/* Trash / Add to Trash tabs - switching panes instead of stacking
+                        them means getting to the picker never requires scrolling past
+                        however many deleted items are above it. */}
+                    <div role="tablist" aria-label="Trash view" className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-800">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+                            role="tab"
+                            aria-selected={view === 'trash'}
+                            onClick={() => setView('trash')}
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                view === 'trash'
+                                    ? 'bg-white text-indigo-700 shadow-sm dark:bg-gray-700 dark:text-indigo-300'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
                         >
-                            <CloseIcon className="h-5 w-5" />
-                            <span className="sr-only">Close trash</span>
+                            <TrashIcon className="h-4 w-4" />
+                            Trash
+                            {trashedTotalCount > 0 && (
+                                <span className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
+                                    view === 'trash'
+                                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                                        : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                    {trashedTotalCount > 99 ? '99+' : trashedTotalCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={view === 'delete'}
+                            onClick={() => setView('delete')}
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                view === 'delete'
+                                    ? 'bg-white text-indigo-700 shadow-sm dark:bg-gray-700 dark:text-indigo-300'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Add to Trash
+                            {deletableTotalCount > 0 && (
+                                <span className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
+                                    view === 'delete'
+                                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                                        : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                    {deletableTotalCount > 99 ? '99+' : deletableTotalCount}
+                                </span>
+                            )}
                         </button>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                {view === 'trash' && (
                 <div className="space-y-4 sm:space-y-6">
                     <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                         Deleted projects and tasks sit here before they're gone for good. Only projects you own and tasks in projects you manage show up here.
@@ -788,135 +823,114 @@ export default function TrashPanel({ trashedProjects, trashedTasks, deletablePro
                             </div>
                         </div>
                     )}
+                </div>
+                )}
 
-                    <div className="border-t border-gray-200 pt-4 dark:border-gray-700 sm:pt-6">
-                        <button
-                            type="button"
-                            onClick={() => setShowDeletePicker((v) => !v)}
-                            aria-expanded={showDeletePicker}
-                            aria-controls="delete-picker-panel"
-                            className="flex w-full items-center justify-between gap-2 rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                        >
-                            <span>
-                                <span className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                    Delete from your projects and tasks
-                                </span>
-                                <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                                    Pick existing projects or tasks to send to the trash, without opening each one.
-                                </span>
-                            </span>
-                            <svg
-                                className={`h-5 w-5 shrink-0 text-gray-500 transition-transform dark:text-gray-400 ${showDeletePicker ? 'rotate-180' : ''}`}
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                {view === 'delete' && (
+                <div className="space-y-4 sm:space-y-6">
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            Delete from your projects and tasks
+                        </h3>
+                        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
+                            Tasks move to trash right away. Deleting a project always sends you a confirmation
+                            email first - it only moves to trash once you click the link in it.
+                        </p>
+                    </div>
 
-                        {showDeletePicker && (
-                            <div id="delete-picker-panel" className="mt-4 space-y-4">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Tasks move to trash right away. Deleting a project always sends you a confirmation
-                                    email first - it only moves to trash once you click the link in it.
-                                </p>
+                    <SearchInput
+                        value={existingSearch}
+                        onChange={(e) => setExistingSearch(e.target.value)}
+                        placeholder="Search your projects and tasks..."
+                        label="Search your projects and tasks"
+                        className="w-full min-w-0 text-sm sm:w-56"
+                    />
 
-                                <SearchInput
-                                    value={existingSearch}
-                                    onChange={(e) => setExistingSearch(e.target.value)}
-                                    placeholder="Search your projects and tasks..."
-                                    label="Search your projects and tasks"
-                                    className="w-full min-w-0 text-sm sm:w-56"
-                                />
-
-                                {selectedExistingCount > 0 && (
-                                    <div role="status" aria-live="polite" className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-red-50 px-3 py-2.5 dark:bg-red-950/20 sm:gap-3 sm:px-4 sm:py-3">
-                                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                                            {selectedExistingCount} item{selectedExistingCount === 1 ? '' : 's'} selected
-                                            {selectedExistingProjectIds.length > 0 && selectedExistingTaskIds.length > 0 && (
-                                                <span className="font-normal text-red-600/80 dark:text-red-400/80">
-                                                    {' '}({selectedExistingProjectIds.length} project{selectedExistingProjectIds.length === 1 ? '' : 's'}, {selectedExistingTaskIds.length} task{selectedExistingTaskIds.length === 1 ? '' : 's'})
-                                                </span>
-                                            )}
-                                        </p>
-                                        <div className="flex items-center gap-2 sm:gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={clearExistingSelection}
-                                                className="rounded-sm text-sm text-red-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400"
-                                            >
-                                                Clear
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={deleteExistingSelected}
-                                                className="rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 sm:px-3 sm:py-1.5"
-                                            >
-                                                Delete selected
-                                            </button>
-                                        </div>
-                                    </div>
+                    {selectedExistingCount > 0 && (
+                        <div role="status" aria-live="polite" className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-red-50 px-3 py-2.5 shadow dark:bg-red-950/20 sm:gap-3 sm:px-4 sm:py-3">
+                            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                                {selectedExistingCount} item{selectedExistingCount === 1 ? '' : 's'} selected
+                                {selectedExistingProjectIds.length > 0 && selectedExistingTaskIds.length > 0 && (
+                                    <span className="font-normal text-red-600/80 dark:text-red-400/80">
+                                        {' '}({selectedExistingProjectIds.length} project{selectedExistingProjectIds.length === 1 ? '' : 's'}, {selectedExistingTaskIds.length} task{selectedExistingTaskIds.length === 1 ? '' : 's'})
+                                    </span>
                                 )}
-
-                                <div>
-                                    <SectionHeader
-                                        label="Your projects"
-                                        count={filteredDeletableProjects.length}
-                                        allSelected={allDeletableProjectsSelected}
-                                        onToggleSelectAll={toggleSelectAllDeletableProjects}
-                                    />
-                                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                                        {filteredDeletableProjects.length === 0 ? (
-                                            <EmptySection
-                                                label={deletableProjects.length === 0 ? 'No projects available to delete.' : 'No projects match your search.'}
-                                            />
-                                        ) : (
-                                            filteredDeletableProjects.map((project) => (
-                                                <PickRow
-                                                    key={project.id}
-                                                    icon={<ProjectItemIcon />}
-                                                    title={project.name}
-                                                    subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
-                                                    selected={selectedExistingProjectIds.includes(project.id)}
-                                                    onToggleSelect={() => toggleExistingProjectSelected(project.id)}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <SectionHeader
-                                        label="Tasks you manage"
-                                        count={filteredDeletableTasks.length}
-                                        allSelected={allDeletableTasksSelected}
-                                        onToggleSelectAll={toggleSelectAllDeletableTasks}
-                                    />
-                                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                                        {filteredDeletableTasks.length === 0 ? (
-                                            <EmptySection
-                                                label={deletableTasks.length === 0 ? 'No tasks available to delete.' : 'No tasks match your search.'}
-                                            />
-                                        ) : (
-                                            filteredDeletableTasks.map((task) => (
-                                                <PickRow
-                                                    key={task.id}
-                                                    icon={<TaskItemIcon />}
-                                                    title={task.title}
-                                                    subtitle={task.project_name}
-                                                    selected={selectedExistingTaskIds.includes(task.id)}
-                                                    onToggleSelect={() => toggleExistingTaskSelected(task.id)}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                            </p>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <button
+                                    type="button"
+                                    onClick={clearExistingSelection}
+                                    className="rounded-sm text-sm text-red-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400"
+                                >
+                                    Clear
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={deleteExistingSelected}
+                                    className="rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 sm:px-3 sm:py-1.5"
+                                >
+                                    Delete selected
+                                </button>
                             </div>
-                        )}
+                        </div>
+                    )}
+
+                    <div>
+                        <SectionHeader
+                            label="Your projects"
+                            count={filteredDeletableProjects.length}
+                            allSelected={allDeletableProjectsSelected}
+                            onToggleSelectAll={toggleSelectAllDeletableProjects}
+                        />
+                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            {filteredDeletableProjects.length === 0 ? (
+                                <EmptySection
+                                    label={deletableProjects.length === 0 ? 'No projects available to delete.' : 'No projects match your search.'}
+                                />
+                            ) : (
+                                filteredDeletableProjects.map((project) => (
+                                    <PickRow
+                                        key={project.id}
+                                        icon={<ProjectItemIcon />}
+                                        title={project.name}
+                                        subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
+                                        selected={selectedExistingProjectIds.includes(project.id)}
+                                        onToggleSelect={() => toggleExistingProjectSelected(project.id)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div>
+                        <SectionHeader
+                            label="Tasks you manage"
+                            count={filteredDeletableTasks.length}
+                            allSelected={allDeletableTasksSelected}
+                            onToggleSelectAll={toggleSelectAllDeletableTasks}
+                        />
+                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            {filteredDeletableTasks.length === 0 ? (
+                                <EmptySection
+                                    label={deletableTasks.length === 0 ? 'No tasks available to delete.' : 'No tasks match your search.'}
+                                />
+                            ) : (
+                                filteredDeletableTasks.map((task) => (
+                                    <PickRow
+                                        key={task.id}
+                                        icon={<TaskItemIcon />}
+                                        title={task.title}
+                                        subtitle={task.project_name}
+                                        selected={selectedExistingTaskIds.includes(task.id)}
+                                        onToggleSelect={() => toggleExistingTaskSelected(task.id)}
+                                    />
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
-                    </div>
-                </div>
-            </Modal>
+                )}
+            </div>
         </>
     );
 }

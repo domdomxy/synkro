@@ -232,7 +232,7 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
                         Trash
                     </MenuButton>
                 ) : (
-                    <MenuLink href={route('trash.index')} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                    <MenuLink href={route('settings.edit', { section: 'trash' })} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
                         Trash
                     </MenuLink>
                 )}

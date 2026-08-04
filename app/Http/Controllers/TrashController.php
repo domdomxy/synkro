@@ -6,99 +6,16 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
+/**
+ * Action endpoints for the Trash section of Settings (see TrashSection.jsx
+ * and SettingsController::edit(), which now supplies the listing itself via
+ * App\Support\TrashData - this controller used to also render a standalone
+ * /trash page, but that's been folded into Settings so there's one place to
+ * manage deleted items instead of two.
+ */
 class TrashController extends Controller
 {
-    /**
-     * Lists what this user can act on in the trash: projects they own that are
-     * soft-deleted, and independently-trashed tasks (project itself still active)
-     * in projects where they're owner or manager - matching ProjectPolicy::restore()/
-     * forceDelete() and TaskPolicy::restore()/forceDelete() exactly, so nothing shown
-     * here 403s when acted on.
-     *
-     * Tasks trashed alongside their project (see Project::booted()) aren't listed
-     * separately - restoring or permanently deleting the project already covers them.
-     *
-     * Also lists the still-active projects/tasks this user is allowed to delete
-     * (see ProjectPolicy::delete()/TaskPolicy::delete()), so the page can offer a
-     * "delete from here" picker instead of requiring a trip to each project/task
-     * individually. Projects already mid deletion-request are left out of that
-     * picker - see deleteExisting()'s docblock for why.
-     */
-    public function index()
-    {
-        $user = Auth::user();
-
-        $trashedProjects = Project::onlyTrashed()
-            ->where('owner_id', $user->id)
-            ->withCount('tasks')
-            ->orderByDesc('deleted_at')
-            ->get()
-            ->map(fn (Project $project) => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'tasks_count' => $project->tasks_count,
-                'deleted_at' => $project->deleted_at,
-                'grace_ends_at' => $project->deletionGraceEndsAt(),
-                // projects.show is withTrashed() (see routes/web.php) and
-                // Projects/Show.jsx already renders a read-only banner and
-                // freezes every mutating control while `project.deleted_at` is
-                // set - see TaskPolicy/ProjectPolicy/CommentPolicy trashed()
-                // checks for the backend side of that freeze. This just lets
-                // the owner click straight into that view from the trash list.
-                'url' => route('projects.show', $project->id),
-            ]);
-
-        $managedProjectIds = $user->projects()
-            ->wherePivotIn('role', ['owner', 'manager'])
-            ->pluck('projects.id');
-
-        $trashedTasks = Task::onlyTrashed()
-            ->whereIn('project_id', $managedProjectIds)
-            ->whereHas('project', fn ($query) => $query->whereNull('deleted_at'))
-            ->with('project:id,name')
-            ->orderByDesc('deleted_at')
-            ->get()
-            ->map(fn (Task $task) => [
-                'id' => $task->id,
-                'title' => $task->title,
-                'project_id' => $task->project_id,
-                'project_name' => $task->project->name,
-                'deleted_at' => $task->deleted_at,
-                'grace_ends_at' => $task->deletionGraceEndsAt(),
-            ]);
-
-        $deletableProjects = Project::where('owner_id', $user->id)
-            ->whereNull('deletion_requested_at')
-            ->withCount('tasks')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Project $project) => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'tasks_count' => $project->tasks_count,
-            ]);
-
-        $deletableTasks = Task::whereIn('project_id', $managedProjectIds)
-            ->with('project:id,name')
-            ->orderBy('title')
-            ->get()
-            ->map(fn (Task $task) => [
-                'id' => $task->id,
-                'title' => $task->title,
-                'project_id' => $task->project_id,
-                'project_name' => $task->project->name,
-            ]);
-
-        return Inertia::render('Trash', [
-            'trashedProjects' => $trashedProjects,
-            'trashedTasks' => $trashedTasks,
-            'deletableProjects' => $deletableProjects,
-            'deletableTasks' => $deletableTasks,
-        ]);
-    }
-
     /**
      * Bulk-restores whichever selected projects/tasks the user is allowed to
      * restore. Delegates each individual restore to ProjectController::restore()/

@@ -153,7 +153,9 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore')->withTrashed();
     Route::delete('/projects/{project}/force-delete', [ProjectController::class, 'forceDeleteProject'])->name('projects.force-delete')->withTrashed();
 
-    Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+    // Trash no longer has its own page - it's the Trash section of Settings
+    // (see SettingsController::edit() + TrashSection.jsx). These action
+    // endpoints stay as-is; only the GET listing route moved into Settings.
     Route::post('/trash/restore', [TrashController::class, 'restoreSelected'])->name('trash.restore-selected');
     Route::delete('/trash/force-delete', [TrashController::class, 'forceDeleteSelected'])->name('trash.force-delete-selected');
     Route::post('/trash/delete-existing', [TrashController::class, 'deleteExisting'])->name('trash.delete-existing');

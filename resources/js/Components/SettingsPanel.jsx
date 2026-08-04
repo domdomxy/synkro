@@ -1,6 +1,7 @@
 import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
+import TrashSection from '@/Components/TrashSection';
 import { Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { silentSubmit } from '@/utils/silentSubmit';
@@ -345,16 +346,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
         </div>
     );
 }
-// How many whole days remain before the soonest-purging trashed item is gone
-// for good - same calculation as Trash.jsx's own daysLeft(), duplicated here
-// for the same reason TrashIcon is: this is a component module, not a page.
-function daysUntil(dateString) {
-    if (!dateString) return null;
-    const ms = new Date(dateString) - new Date();
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-}
-
-export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashSummary, initialSection, onClose }) {
+export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashedProjects, trashedTasks, deletableProjects, deletableTasks, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
@@ -375,6 +367,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
         return settingsNavItems.some((s) => s.id === requested) ? requested : settingsNavItems[0].id;
     });
     const [notificationSearchQuery, setNotificationSearchQuery] = useState('');
+    const trashItemCount = (trashedProjects?.length ?? 0) + (trashedTasks?.length ?? 0);
     // Feeds NavSearchInput - same section list, but with the notifications
     // entry's terms extended by the actual category labels from the catalog
     // (e.g. "Task assigned", "Project deleted") so those are searchable too,
@@ -592,7 +585,15 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                                         }`}
                                     >
                                         <span className="h-4 w-4 shrink-0">{s.icon}</span>
-                                        {s.label}
+                                        <span className="flex-1">{s.label}</span>
+                                        {/* Quick-glance count so a full trash doesn't require opening the
+                                            section to notice - mirrors the notification bell's own badge
+                                            pattern instead of inventing a new one. */}
+                                        {s.id === 'trash' && trashItemCount > 0 && (
+                                            <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 px-1 text-[10px] font-semibold text-gray-700 dark:bg-gray-600 dark:text-gray-200">
+                                                {trashItemCount > 99 ? '99+' : trashItemCount}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -819,93 +820,12 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                     )}
 
                     {activeSection === 'trash' && (
-                    <div className="space-y-4">
-                        {(() => {
-                            const trashCount = trashSummary?.count ?? 0;
-                            const daysLeft = daysUntil(trashSummary?.nextPurgeAt);
-                            const urgent = daysLeft !== null && daysLeft <= 1;
-                            const soon = daysLeft !== null && daysLeft > 1 && daysLeft <= 3;
-                            return (
-                                <div
-                                    role="status"
-                                    className={`flex items-center gap-3 rounded-lg border p-4 ${
-                                        urgent
-                                            ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20'
-                                            : soon
-                                                ? 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20'
-                                                : 'border-gray-200 bg-gray-50/60 dark:border-gray-700 dark:bg-black/20'
-                                    }`}
-                                >
-                                    <span
-                                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                                            urgent
-                                                ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                                                : soon
-                                                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
-                                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                                        }`}
-                                    >
-                                        <TrashIcon className="h-5 w-5" />
-                                    </span>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        {trashCount === 0 ? (
-                                            'Your trash is empty.'
-                                        ) : (
-                                            <>
-                                                <span className="font-medium text-gray-900 dark:text-gray-100">
-                                                    {trashCount} item{trashCount === 1 ? '' : 's'}
-                                                </span>{' '}
-                                                {trashCount === 1 ? 'is' : 'are'} waiting in your trash.
-                                                {daysLeft !== null && (
-                                                    <>
-                                                        {' '}
-                                                        {daysLeft === 0
-                                                            ? 'One or more purge for good today.'
-                                                            : `The soonest purges for good in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`}
-                                                    </>
-                                                )}
-                                            </>
-                                        )}
-                                    </p>
-                                </div>
-                            );
-                        })()}
-
-                        <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                            Deleted projects and tasks sit in your trash before they're gone for good. From there
-                            you can restore them, permanently delete them, or send more items to the trash without
-                            opening each one individually.
-                        </p>
-
-                        {overlayActions?.switchToTrash ? (
-                            <button
-                                type="button"
-                                onClick={() => overlayActions.switchToTrash()}
-                                className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-4 text-start transition hover:border-indigo-300 hover:bg-indigo-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-                            >
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                    <TrashIcon className="h-5 w-5" />
-                                </span>
-                                <span>
-                                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Open Trash</span>
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Review, search, restore, or permanently delete items</span>
-                                </span>
-                            </button>
-                        ) : (
-                            <Link
-                                href={route('trash.index')}
-                                className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-                            >
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                    <TrashIcon className="h-5 w-5" />
-                                </span>
-                                <span>
-                                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Open Trash</span>
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Review, search, restore, or permanently delete items</span>
-                                </span>
-                            </Link>
-                        )}
-                    </div>
+                        <TrashSection
+                            trashedProjects={trashedProjects}
+                            trashedTasks={trashedTasks}
+                            deletableProjects={deletableProjects}
+                            deletableTasks={deletableTasks}
+                        />
                     )}
 
                     {activeSection === 'support' && (

@@ -551,7 +551,7 @@ class TaskController extends Controller
 
         $task->forceDelete();
 
-        return redirect()->route('trash.index')->with('success', "\"{$taskTitle}\" was permanently deleted.");
+        return redirect()->route('settings.edit', ['section' => 'trash'])->with('success', "\"{$taskTitle}\" was permanently deleted.");
     }
 
     /**

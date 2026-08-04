@@ -17,15 +17,15 @@ import useRouteOverlay, { RouteOverlayActionsContext } from '@/hooks/useRouteOve
 import SettingsPanel from '@/Components/SettingsPanel';
 import AccountPanel from '@/Components/AccountPanel';
 import FeedbackPanel from '@/Components/FeedbackPanel';
-import TrashPanel from '@/Components/TrashPanel';
 
 // Route overlay panels reached from the account menu / Settings sidebar.
 // Keyed the same way useRouteOverlay's `open(key, url)` is called below.
+// Trash used to be its own overlay/panel here (see git history) - it now
+// lives as a section inside SettingsPanel, opened via openSettings('trash').
 const OVERLAY_PANELS = {
     settings: SettingsPanel,
     account: AccountPanel,
     feedback: FeedbackPanel,
-    trash: TrashPanel,
 };
 
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
@@ -62,9 +62,15 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
     const { overlay, open: openOverlay, close: closeOverlay } = useRouteOverlay();
-    const openSettings = () => openOverlay('settings', route('settings.edit'), version);
+    // An optional `section` opens Settings directly on that tab instead of
+    // always landing on Appearance - used by the account menu's "Trash"
+    // shortcut below now that Trash lives inside Settings rather than as
+    // its own overlay.
+    const openSettings = (section) => openOverlay('settings', route('settings.edit'), version, {
+        extraProps: section ? { initialSection: section } : undefined,
+    });
     const openAccount = () => openOverlay('account', route('account.edit'), version);
-    const openTrash = () => openOverlay('trash', route('trash.index'), version);
+    const openTrash = () => openSettings('trash');
     // Used when a panel links to the other panel (Settings <-> Account)
     // instead of opening fresh from the account menu - reuses the current
     // back-stack entry (see useRouteOverlay) instead of pushing a new one.
@@ -87,7 +93,6 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
         version,
         { replace: true, extraProps: { initialTab: tab } },
     );
-    const switchToTrash = () => openOverlay('trash', route('trash.index'), version, { replace: true });
     const OverlayPanel = overlay ? OVERLAY_PANELS[overlay.key] : null;
 
     const handleThemeChange = (value) => {
@@ -143,7 +148,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     ];
 
     return (
-        <RouteOverlayActionsContext.Provider value={{ openSettings, openAccount, openTrash, switchToSettings, switchToAccount, switchToFeedback, switchToTrash }}>
+        <RouteOverlayActionsContext.Provider value={{ openSettings, openAccount, openTrash, switchToSettings, switchToAccount, switchToFeedback }}>
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             <FlashMessages />
             <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/50 backdrop-blur dark:border-gray-700 dark:bg-gray-800/50">

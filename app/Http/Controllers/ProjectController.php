@@ -487,7 +487,7 @@ class ProjectController extends Controller
         }
 
         if ($confirmed === 0) {
-            return redirect()->route('trash.index')->with('success', 'Nothing left to confirm - those deletion request(s) may have already been actioned or cancelled.');
+            return redirect()->route('settings.edit', ['section' => 'trash'])->with('success', 'Nothing left to confirm - those deletion request(s) may have already been actioned or cancelled.');
         }
 
         $message = ($confirmed === 1 ? '1 project' : "{$confirmed} projects") . " moved to trash. It'll be permanently deleted in {$graceDays} day(s) unless restored.";
@@ -495,7 +495,7 @@ class ProjectController extends Controller
             $message .= " {$skipped} skipped.";
         }
 
-        return redirect()->route('trash.index')->with('success', $message);
+        return redirect()->route('settings.edit', ['section' => 'trash'])->with('success', $message);
     }
 
     /**
@@ -628,7 +628,7 @@ class ProjectController extends Controller
 
         $project->forceDelete();
 
-        return redirect()->route('trash.index')->with('success', "\"{$projectName}\" was permanently deleted.");
+        return redirect()->route('settings.edit', ['section' => 'trash'])->with('success', "\"{$projectName}\" was permanently deleted.");
     }
 
     public function cancelDeletion(Project $project)
