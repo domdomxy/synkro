@@ -9,7 +9,7 @@ import DateRangeFilter from '@/Components/DateRangeFilter';
 import Modal from '@/Components/Modal';
 import Avatar from '@/Components/Avatar';
 import { cleanParams } from '@/utils/queryParams';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 const actionLabels = {
@@ -167,9 +167,16 @@ function LoginDetailsModal({ log, onClose }) {
 const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
 
-export default function LoginHistory({ logs, filters, backHref, backLabel, viewingUser }) {
-    const { auth } = usePage().props;
-    const actorUser = viewingUser ?? auth.user;
+/**
+ * Admin's read-only look at one user's login history (logged_in/logged_out
+ * event log), reached from Admin > Users > a user's Activity Logs. This is a
+ * fork of what used to be the shared Pages/LoginHistory.jsx - the self-service
+ * side of that page was replaced by the "Logged in devices" section of
+ * Settings (live sessions, not a log - see DeviceSessionsSection.jsx), but
+ * admin support/investigation genuinely needs the full historical log, not
+ * just current sessions, so this half was kept as its own page instead.
+ */
+export default function UserLoginHistory({ logs, filters, backHref, backLabel, viewingUser }) {
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
@@ -177,7 +184,7 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
     const paginationRef = useRef(null);
     const [selectedLog, setSelectedLog] = useState(null);
 
-    const indexRoute = viewingUser ? route('admin.users.login-history', viewingUser.id) : route('activity.login-history');
+    const indexRoute = route('admin.users.login-history', viewingUser.id);
 
     const applyFilters = (overrides = {}) => {
         const next = { action, from, to, per_page: perPage, ...overrides };
@@ -201,25 +208,23 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
     return (
         <AuthenticatedLayout header={
             <div className="flex items-center gap-4">
-                <BackButton href={backHref ?? route('activity.index')} label={backLabel ?? 'Back to Activity Logs'} />
+                <BackButton href={backHref ?? route('admin.users')} label={backLabel ?? 'Back to Users'} />
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    {viewingUser ? `${viewingUser.name}'s Login History` : 'Login History'}
+                    {viewingUser.name}'s Login History
                 </h2>
             </div>
         }>
-            <Head title={viewingUser ? `${viewingUser.name}'s Login History` : 'Login History'} />
+            <Head title={`${viewingUser.name}'s Login History`} />
             <div className="py-12">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-                    {viewingUser && (
-                        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
-                            <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p>
-                                You're viewing {viewingUser.name}'s sign-in history for support and security purposes. This is read-only and is recorded in the admin audit log.
-                            </p>
-                        </div>
-                    )}
+                    <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p>
+                            You're viewing {viewingUser.name}'s sign-in history for support and security purposes. This is read-only and is recorded in the admin audit log.
+                        </p>
+                    </div>
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FiltersMenu
                             activeCount={[action !== 'all', Boolean(from || to)].filter(Boolean).length}
@@ -264,7 +269,7 @@ export default function LoginHistory({ logs, filters, backHref, backLabel, viewi
                         ) : (
                             <ul>
                                 {logs.data.map((log) => (
-                                    <LoginHistoryRow key={log.id} log={log} onSelect={setSelectedLog} actor={actorUser} />
+                                    <LoginHistoryRow key={log.id} log={log} onSelect={setSelectedLog} actor={viewingUser} />
                                 ))}
                             </ul>
                         )}

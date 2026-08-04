@@ -843,7 +843,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                         onChange={(e) => setExistingSearch(e.target.value)}
                         placeholder="Search your projects and tasks..."
                         label="Search your projects and tasks"
-                        className="w-full min-w-0 text-sm sm:w-56"
+                        className="w-full min-w-0 text-sm sm:w-80"
                     />
 
                     {selectedExistingCount > 0 && (

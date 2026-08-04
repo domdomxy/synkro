@@ -2,6 +2,7 @@ import Modal from '@/Components/Modal';
 import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
 import TrashSection from '@/Components/TrashSection';
+import DeviceSessionsSection from '@/Components/DeviceSessionsSection';
 import { Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { silentSubmit } from '@/utils/silentSubmit';
@@ -29,6 +30,16 @@ function TrashIcon({ className }) {
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    );
+}
+
+// Same glyph DeviceSessionsSection.jsx uses for a desktop device row - kept
+// as a local copy for the same reason as TrashIcon above.
+function DevicesIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
         </svg>
     );
 }
@@ -102,6 +113,12 @@ const settingsNavItems = [
         label: 'Trash',
         terms: ['Trash', 'Deleted items', 'Recently deleted', 'Restore', 'Recycle bin', 'Purge'],
         icon: <TrashIcon className="h-5 w-5" />,
+    },
+    {
+        id: 'devices',
+        label: 'Logged in devices',
+        terms: ['Logged in devices', 'Devices', 'Sessions', 'Active sessions', 'Browsers', 'Login history', 'Disconnect', 'Log out other devices'],
+        icon: <DevicesIcon className="h-5 w-5" />,
     },
     {
         id: 'support',
@@ -184,6 +201,7 @@ const SECTION_META = {
     'trusted-sites': { title: 'Trusted Sites', description: 'Manage links you\'ve told Synkro to trust' },
     notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
     trash: { title: 'Trash', description: 'Review deleted projects and tasks before they\'re gone for good' },
+    devices: { title: 'Logged in devices', description: 'See where you\'re signed in and disconnect devices you don\'t recognize' },
     support: { title: 'Support', description: 'Get help, report a bug, or send us feedback' },
 };
 
@@ -346,7 +364,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
         </div>
     );
 }
-export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashedProjects, trashedTasks, deletableProjects, deletableTasks, initialSection, onClose }) {
+export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashedProjects, trashedTasks, deletableProjects, deletableTasks, devices, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
@@ -368,6 +386,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     });
     const [notificationSearchQuery, setNotificationSearchQuery] = useState('');
     const trashItemCount = (trashedProjects?.length ?? 0) + (trashedTasks?.length ?? 0);
+    const deviceCount = devices?.length ?? 0;
     // Feeds NavSearchInput - same section list, but with the notifications
     // entry's terms extended by the actual category labels from the catalog
     // (e.g. "Task assigned", "Project deleted") so those are searchable too,
@@ -592,6 +611,11 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                                         {s.id === 'trash' && trashItemCount > 0 && (
                                             <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 px-1 text-[10px] font-semibold text-gray-700 dark:bg-gray-600 dark:text-gray-200">
                                                 {trashItemCount > 99 ? '99+' : trashItemCount}
+                                            </span>
+                                        )}
+                                        {s.id === 'devices' && deviceCount > 0 && (
+                                            <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 px-1 text-[10px] font-semibold text-gray-700 dark:bg-gray-600 dark:text-gray-200">
+                                                {deviceCount > 99 ? '99+' : deviceCount}
                                             </span>
                                         )}
                                     </button>
@@ -826,6 +850,10 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                             deletableProjects={deletableProjects}
                             deletableTasks={deletableTasks}
                         />
+                    )}
+
+                    {activeSection === 'devices' && (
+                        <DeviceSessionsSection devices={devices ?? []} />
                     )}
 
                     {activeSection === 'support' && (

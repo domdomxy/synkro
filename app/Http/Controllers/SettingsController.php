@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DeviceSessionData;
 use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
 use App\Support\TrashData;
@@ -28,7 +29,7 @@ class SettingsController extends Controller
             // Full trash listing, not just a summary - the Trash tab now
             // renders the actual restore/delete UI inline (see TrashSection.jsx)
             // instead of linking out to a separate /trash page.
-        ], TrashData::forUser($user)));
+        ], TrashData::forUser($user), DeviceSessionData::forUser($user, $request->session()->getId())));
     }
 
     public function updateEmailPreferences(Request $request)

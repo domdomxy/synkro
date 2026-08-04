@@ -1316,7 +1316,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-48 text-sm" />
+                                        <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-56 text-sm" />
                                         <FiltersMenu activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearTaskFilters}>
                                             <FiltersMenu.Row label="Status">
                                                 <FilterSelect className="w-full" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />

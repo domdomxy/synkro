@@ -264,8 +264,12 @@ class DashboardController extends Controller
 
     /**
      * Actions that never show in the main feed: preference-update noise that
-     * isn't meaningful activity, and login/logout events which get their own
-     * dedicated Login History view instead (see loginHistory() below).
+     * isn't meaningful activity, and login/logout events, which are routine
+     * and high-frequency enough that they'd drown out actual project/account
+     * activity. The self-service side of this data now lives in the "Logged
+     * in devices" section of Settings (current sessions, not a log - see
+     * App\Support\DeviceSessionData); admin's own investigative history view
+     * of a user's logins is untouched (see AdminController::userLoginHistory()).
      */
     private const EXCLUDED_ACCOUNT_ACTIONS = [
         'email_preferences_updated',
@@ -371,54 +375,4 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Login History: a focused view of just this user's logged_in/logged_out
-     * events, split out of the main activity feed so signing in and out
-     * (routine, high-frequency) doesn't drown out actual project/account
-     * activity. Reached via a button on the Activity Logs page.
-     */
-    public function loginHistory(Request $request)
-    {
-        $user = Auth::user();
-        $action = $request->input('action', 'all');
-
-        $query = DB::table('account_activity_logs')
-            ->where('user_id', $user->id)
-            ->whereIn('action', ['logged_in', 'logged_out']);
-
-        if ($action !== 'all') {
-            $query->where('action', $action);
-        }
-
-        $from = $request->input('from');
-        $to = $request->input('to');
-
-        if ($from) {
-            $query->whereDate('created_at', '>=', $from);
-        }
-        if ($to) {
-            $query->whereDate('created_at', '<=', $to);
-        }
-
-        $logs = $query->orderByDesc('created_at')
-            ->paginate($this->perPage($request, 10))
-            ->withQueryString();
-
-        $logs->getCollection()->transform(fn ($row) => [
-            'id' => $row->id,
-            'action' => $row->action,
-            'details' => $row->details ? json_decode($row->details, true) : null,
-            'created_at' => $this->toIsoUtc($row->created_at),
-        ]);
-
-        return Inertia::render('LoginHistory', [
-            'logs' => $logs,
-            'filters' => [
-                'action' => $action,
-                'from' => $from ?? '',
-                'to' => $to ?? '',
-                'per_page' => (string) $this->perPage($request, 10),
-            ],
-        ]);
-    }
 }

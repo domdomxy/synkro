@@ -10,8 +10,9 @@ import RichTextContent from '@/Components/RichTextContent';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import Avatar from '@/Components/Avatar';
 import { cleanParams } from '@/utils/queryParams';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
 
 const actionLabels = {
     // Project activity
@@ -498,6 +499,7 @@ const FILTER_DEFAULTS = { action: 'all', project: 'all', per_page: DEFAULT_PER_P
 
 export default function ActivityLogs({ logs, userProjects, filters, backHref, backLabel, viewingUser }) {
     const { auth } = usePage().props;
+    const overlayActions = useRouteOverlayActions();
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [project, setProject] = useState(filters?.project ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
@@ -510,7 +512,10 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
     // GET back to whichever route rendered it, so this picks the matching route + params once
     // rather than threading an admin/self branch through every handler.
     const indexRoute = viewingUser ? route('admin.users.logs', viewingUser.id) : route('activity.index');
-    const loginHistoryRoute = viewingUser ? route('admin.users.login-history', viewingUser.id) : route('activity.login-history');
+    // Admin's side is still a real history page (see Admin/UserLoginHistory.jsx); the
+    // self-service side moved into the "Logged in devices" section of Settings (current
+    // sessions, not a log), opened as an overlay instead of a route.
+    const adminLoginHistoryRoute = viewingUser ? route('admin.users.login-history', viewingUser.id) : null;
     const actorName = viewingUser ? viewingUser.name.split(' ')[0] : null;
     const actorUser = viewingUser ?? auth.user;
 
@@ -544,12 +549,29 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         {viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'}
                     </h2>
                 </div>
-                <a
-                    href={loginHistoryRoute}
-                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                    Login History
-                </a>
+                {viewingUser ? (
+                    <a
+                        href={adminLoginHistoryRoute}
+                        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Login History
+                    </a>
+                ) : overlayActions?.openSettings ? (
+                    <button
+                        type="button"
+                        onClick={() => overlayActions.openSettings('devices')}
+                        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Logged in devices
+                    </button>
+                ) : (
+                    <Link
+                        href={route('settings.edit', { section: 'devices' })}
+                        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Logged in devices
+                    </Link>
+                )}
             </div>
         }>
             <Head title={viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'} />

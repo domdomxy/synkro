@@ -28,6 +28,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\TaskChecklistItemController;
 use App\Http\Controllers\TaskDependencyController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\DeviceSessionController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -54,7 +55,11 @@ Route::post('/feedback/reopen', [FeedbackController::class, 'reopen'])->middlewa
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'password.change'])->name('dashboard');
 Route::get('/activity', [DashboardController::class, 'activity'])->middleware(['auth', 'verified', 'password.change'])->name('activity.index');
-Route::get('/activity/login-history', [DashboardController::class, 'loginHistory'])->middleware(['auth', 'verified', 'password.change'])->name('activity.login-history');
+// Self-service Login History no longer has its own page - it's the "Logged in
+// devices" section of Settings now (see SettingsController::edit() +
+// DeviceSessionsSection.jsx). Admin's read-only look at a *user's* history
+// (below, users.login-history) is a different feature - a real event log for
+// support/audit purposes - and is unaffected.
 
 Route::post('/appeal', [SuspensionAppealController::class, 'store'])
     ->name('appeal.store');
@@ -217,6 +222,10 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
 
     Route::match(['patch'], '/settings/notifications', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications');
     Route::match(['patch'], '/settings/notifications-settings', [SettingsController::class, 'updateNotificationPreferences'])->name('settings.notifications-settings');
+
+    // "Logged in devices" section of Settings - see DeviceSessionsSection.jsx.
+    Route::delete('/settings/devices/disconnect-others', [DeviceSessionController::class, 'disconnectOthers'])->name('settings.devices.disconnect-others');
+    Route::delete('/settings/devices/{session}/disconnect', [DeviceSessionController::class, 'disconnect'])->name('settings.devices.disconnect');
 
     Route::get('/trusted-hosts', [TrustedHostController::class, 'index'])->name('trusted-hosts.index');
     Route::put('/trusted-hosts/{host}', [TrustedHostController::class, 'store'])->name('trusted-hosts.store');

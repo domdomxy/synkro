@@ -526,7 +526,7 @@ class AdminController extends Controller
             'created_at' => $this->toIsoUtc($row->created_at),
         ]);
 
-        return Inertia::render('LoginHistory', [
+        return Inertia::render('Admin/UserLoginHistory', [
             'logs' => $logs,
             'filters' => [
                 'action' => $action,
