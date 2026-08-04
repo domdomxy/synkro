@@ -124,13 +124,22 @@ export default function NotificationBell() {
                 message = `Removed from task\nYou were removed from task "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_commented') {
-                message = `New comment\n**${payload.commenter_name}** commented on "**${payload.title}**"`;
+                // Piled: once 2+ comments on the same task stack up unread, this
+                // (and the two blocks below) show the folded count instead of
+                // re-announcing the single latest commenter every time.
+                message = payload.pile_count > 1
+                    ? `New comments\nYou have **${payload.pile_count}** new comments on "**${payload.title}**"`
+                    : `New comment\n**${payload.commenter_name}** commented on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.type === 'task_mentioned') {
-                message = `You were mentioned\n**${payload.commenter_name}** mentioned you on "**${payload.title}**"`;
+                message = payload.pile_count > 1
+                    ? `You were mentioned\nYou have **${payload.pile_count}** new mentions on "**${payload.title}**"`
+                    : `You were mentioned\n**${payload.commenter_name}** mentioned you on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.type === 'comment_replied') {
-                message = `New reply\n**${payload.commenter_name}** replied to your comment on "**${payload.title}**"`;
+                message = payload.pile_count > 1
+                    ? `New replies\nYou have **${payload.pile_count}** new replies on "**${payload.title}**"`
+                    : `New reply\n**${payload.commenter_name}** replied to your comment on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}` + (payload.comment_id ? `&comment=${payload.comment_id}` : '');
             } else if (payload.type === 'task_checklist_item_added') {
                 message = `New checklist item\n**${payload.added_by_name ?? 'Someone'}** added "${payload.item_title}" to the checklist on "**${payload.title}**"`;
@@ -206,7 +215,13 @@ export default function NotificationBell() {
                 },
                 ...prev.filter((n) => n.id !== payload.notification_id),
             ].slice(0, 10));
-            setUnreadCount((c) => c + 1);
+            // payload.is_new is only present on pileable types (task_commented,
+            // task_mentioned, comment_replied). A folded event (is_new === false)
+            // updates an existing unread row rather than adding one, so it must
+            // not bump the badge again - the row was already counted.
+            if (payload.is_new !== false) {
+                setUnreadCount((c) => c + 1);
+            }
         },
         [auth.user.id],
     );

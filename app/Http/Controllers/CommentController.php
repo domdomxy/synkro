@@ -17,6 +17,7 @@ use App\Events\TaskMentioned;
 use App\Events\CommentReplied;
 use App\Support\MentionParser;
 use App\Support\NotificationMailer;
+use App\Support\NotificationPiler;
 use App\Support\NotificationPreferences;
 
 class CommentController extends Controller
@@ -117,16 +118,24 @@ class CommentController extends Controller
             $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
             if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_commented')) {
-                $notification = UserNotification::create([
-                    'user_id' => $recipient->id,
-                    'type' => 'task_commented',
-                    'causer_id' => Auth::id(),
-                    'message' => "New comment\n" . '**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\"",
-                    'url' => $url,
-                ]);
+                // Piled by task: a burst of comments on the same task collapses
+                // into one "You have N new comments on ..." row instead of N
+                // separate bell notifications, as long as it stays unread.
+                $piled = NotificationPiler::pile(
+                    [
+                        'user_id' => $recipient->id,
+                        'type' => 'task_commented',
+                        'causer_id' => Auth::id(),
+                        'url' => $url,
+                        'group_key' => "task:{$task->id}",
+                    ],
+                    "New comment\n" . '**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\"",
+                    fn ($count) => "New comments\nYou have **{$count}** new comments on \"**{$task->title}**\""
+                );
+                $notification = $piled['notification'];
 
                 try {
-                    broadcast(new TaskCommented($comment, $recipient->id, $notification->id))->toOthers();
+                    broadcast(new TaskCommented($comment, $recipient->id, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                 } catch (\Throwable $e) {
                     report($e);
                 }
@@ -149,16 +158,23 @@ class CommentController extends Controller
             $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
             if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
-                $notification = UserNotification::create([
-                    'user_id' => $recipient->id,
-                    'type' => 'task_mentioned',
-                    'causer_id' => Auth::id(),
-                    'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
-                    'url' => $url,
-                ]);
+                // Piled by task: several @mentions on the same task collapse
+                // into one "You have N new mentions on ..." row while unread.
+                $piled = NotificationPiler::pile(
+                    [
+                        'user_id' => $recipient->id,
+                        'type' => 'task_mentioned',
+                        'causer_id' => Auth::id(),
+                        'url' => $url,
+                        'group_key' => "task:{$task->id}",
+                    ],
+                    "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
+                    fn ($count) => "You were mentioned\nYou have **{$count}** new mentions on \"**{$task->title}**\""
+                );
+                $notification = $piled['notification'];
 
                 try {
-                    broadcast(new TaskMentioned($comment, $recipient->id, $notification->id))->toOthers();
+                    broadcast(new TaskMentioned($comment, $recipient->id, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                 } catch (\Throwable $e) {
                     report($e);
                 }
@@ -184,16 +200,24 @@ class CommentController extends Controller
                 $emailMuted = in_array($replyToUserId, $mutedEmailUserIds, true);
 
                 if (! $inAppMuted && NotificationPreferences::wantsType($replyRecipient, 'comment_replied')) {
-                    $notification = UserNotification::create([
-                        'user_id' => $replyRecipient->id,
-                        'type' => 'comment_replied',
-                        'causer_id' => Auth::id(),
-                        'message' => "New reply\n" . '**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\"",
-                        'url' => $url,
-                    ]);
+                    // Piled by the comment being replied to: several replies to the
+                    // same comment collapse into one "You have N new replies on ..."
+                    // row while unread, rather than a notification per reply.
+                    $piled = NotificationPiler::pile(
+                        [
+                            'user_id' => $replyRecipient->id,
+                            'type' => 'comment_replied',
+                            'causer_id' => Auth::id(),
+                            'url' => $url,
+                            'group_key' => "comment:{$parentComment->id}",
+                        ],
+                        "New reply\n" . '**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\"",
+                        fn ($count) => "New replies\nYou have **{$count}** new replies on \"**{$task->title}**\""
+                    );
+                    $notification = $piled['notification'];
 
                     try {
-                        broadcast(new CommentReplied($comment, $replyRecipient->id, $notification->id))->toOthers();
+                        broadcast(new CommentReplied($comment, $replyRecipient->id, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                     } catch (\Throwable $e) {
                         report($e);
                     }
@@ -362,16 +386,21 @@ class CommentController extends Controller
                 $emailMuted = in_array($recipient->id, $mutedEmailUserIds, true);
 
                 if (! $inAppMuted && NotificationPreferences::wantsType($recipient, 'task_mentioned')) {
-                    $notification = UserNotification::create([
-                        'user_id' => $recipient->id,
-                        'type' => 'task_mentioned',
-                        'causer_id' => Auth::id(),
-                        'message' => "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
-                        'url' => $url,
-                    ]);
+                    $piled = NotificationPiler::pile(
+                        [
+                            'user_id' => $recipient->id,
+                            'type' => 'task_mentioned',
+                            'causer_id' => Auth::id(),
+                            'url' => $url,
+                            'group_key' => "task:{$task->id}",
+                        ],
+                        "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
+                        fn ($count) => "You were mentioned\nYou have **{$count}** new mentions on \"**{$task->title}**\""
+                    );
+                    $notification = $piled['notification'];
 
                     try {
-                        broadcast(new TaskMentioned($comment, $recipient->id, $notification->id))->toOthers();
+                        broadcast(new TaskMentioned($comment, $recipient->id, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                     } catch (\Throwable $e) {
                         report($e);
                     }

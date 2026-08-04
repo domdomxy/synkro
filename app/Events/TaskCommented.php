@@ -12,7 +12,13 @@ class TaskCommented implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
-    public function __construct(public Comment $comment, public int $recipientId, public int $notificationId) {}
+    public function __construct(
+        public Comment $comment,
+        public int $recipientId,
+        public int $notificationId,
+        public int $pileCount = 1,
+        public bool $isNew = true,
+    ) {}
 
     public function broadcastOn(): array
     {
@@ -33,6 +39,8 @@ class TaskCommented implements ShouldBroadcastNow
             'task_id' => $this->comment->task->id,
             'comment_id' => $this->comment->id,
             'commenter_name' => $this->comment->user->name,
+            'pile_count' => $this->pileCount,
+            'is_new' => $this->isNew,
             'type' => 'task_commented',
         ];
     }

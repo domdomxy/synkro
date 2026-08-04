@@ -139,6 +139,7 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
     Route::post('/trash/restore', [TrashController::class, 'restoreSelected'])->name('trash.restore-selected');
     Route::delete('/trash/force-delete', [TrashController::class, 'forceDeleteSelected'])->name('trash.force-delete-selected');
+    Route::post('/trash/delete-existing', [TrashController::class, 'deleteExisting'])->name('trash.delete-existing');
 
     Route::patch('/tasks/{task}/resolve', [TaskController::class, 'resolvePending'])->name('tasks.resolve');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

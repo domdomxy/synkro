@@ -19,6 +19,12 @@ class TrashController extends Controller
      *
      * Tasks trashed alongside their project (see Project::booted()) aren't listed
      * separately - restoring or permanently deleting the project already covers them.
+     *
+     * Also lists the still-active projects/tasks this user is allowed to delete
+     * (see ProjectPolicy::delete()/TaskPolicy::delete()), so the page can offer a
+     * "delete from here" picker instead of requiring a trip to each project/task
+     * individually. Projects already mid deletion-request are left out of that
+     * picker - see deleteExisting()'s docblock for why.
      */
     public function index()
     {
@@ -56,9 +62,33 @@ class TrashController extends Controller
                 'grace_ends_at' => $task->deletionGraceEndsAt(),
             ]);
 
+        $deletableProjects = Project::where('owner_id', $user->id)
+            ->whereNull('deletion_requested_at')
+            ->withCount('tasks')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Project $project) => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'tasks_count' => $project->tasks_count,
+            ]);
+
+        $deletableTasks = Task::whereIn('project_id', $managedProjectIds)
+            ->with('project:id,name')
+            ->orderBy('title')
+            ->get()
+            ->map(fn (Task $task) => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'project_id' => $task->project_id,
+                'project_name' => $task->project->name,
+            ]);
+
         return Inertia::render('Trash', [
             'trashedProjects' => $trashedProjects,
             'trashedTasks' => $trashedTasks,
+            'deletableProjects' => $deletableProjects,
+            'deletableTasks' => $deletableTasks,
         ]);
     }
 
@@ -183,6 +213,117 @@ class TrashController extends Controller
         }
 
         $message = $parts ? implode(' and ', $parts) . " {$verb}." : 'Nothing was ' . $verb . '.';
+
+        if ($skipped > 0) {
+            $message .= " {$skipped} item" . ($skipped === 1 ? '' : 's') . ' skipped.';
+        }
+
+        return $message;
+    }
+
+    /**
+     * Deletes selected still-active (not-yet-trashed) projects and/or tasks,
+     * picked from the "delete from here" section of the Trash page rather than
+     * from each project/task individually.
+     *
+     * Tasks are moved to trash immediately - this just delegates to
+     * TaskController::destroy(), the same single-task delete path used from a
+     * project page, so the notification/activity-log/broadcast side effects
+     * stay in one place.
+     *
+     * Projects are NOT trashed here. Deleting a project always requires the
+     * owner to confirm by email (see ProjectController::destroy()'s docblock) -
+     * that safeguard doesn't get bypassed just because the request originated
+     * from a bulk picker, so this only starts the deletion request per selected
+     * project (one confirmation email each); the project itself only moves to
+     * trash once its owner clicks the emailed link.
+     *
+     * Items the user can't act on, or a project with a deletion already
+     * pending, are silently skipped and counted rather than 403'd - a stale
+     * selection shouldn't blow up the whole batch. Plain whereIn() queries
+     * (rather than onlyTrashed()) are enough to keep already-trashed items
+     * out: Eloquent's soft-delete scope excludes them by default.
+     *
+     * Each delegated call is individually try/caught: destroy() on either
+     * controller does real work beyond the DB write (queues a mail, logs
+     * activity, broadcasts) that can throw for reasons that have nothing to
+     * do with authorization - a mail failure on the 2nd of 3 selected items,
+     * say. Without the try/catch here, that exception would bubble out of
+     * the whole request and silently abort every item after it, even though
+     * the ones before it had already gone through - "I selected two, only
+     * one actually got deleted" with no error shown. Catching per item means
+     * a failure only costs that one item (counted as skipped, and reported
+     * for investigation) instead of the rest of the batch.
+     */
+    public function deleteExisting(Request $request)
+    {
+        $validated = $request->validate([
+            'project_ids' => ['array'],
+            'project_ids.*' => ['integer'],
+            'task_ids' => ['array'],
+            'task_ids.*' => ['integer'],
+        ]);
+
+        $projectIds = $validated['project_ids'] ?? [];
+        $taskIds = $validated['task_ids'] ?? [];
+
+        if (empty($projectIds) && empty($taskIds)) {
+            return back()->withErrors(['error' => 'Nothing selected to delete.']);
+        }
+
+        $user = Auth::user();
+        $projectController = new ProjectController();
+        $taskController = new TaskController();
+
+        $requestedProjects = 0;
+        $skipped = 0;
+
+        foreach (Project::whereIn('id', $projectIds)->get() as $project) {
+            if (! $user->can('delete', $project) || $project->hasPendingDeletion()) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                $projectController->destroy($project);
+                $requestedProjects++;
+            } catch (\Throwable $e) {
+                report($e);
+                $skipped++;
+            }
+        }
+
+        $deletedTasks = 0;
+
+        foreach (Task::whereIn('id', $taskIds)->get() as $task) {
+            if (! $user->can('delete', $task)) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                $taskController->destroy($task);
+                $deletedTasks++;
+            } catch (\Throwable $e) {
+                report($e);
+                $skipped++;
+            }
+        }
+
+        return back()->with('success', $this->deleteExistingResultMessage($requestedProjects, $deletedTasks, $skipped));
+    }
+
+    private function deleteExistingResultMessage(int $projects, int $tasks, int $skipped): string
+    {
+        $parts = [];
+        if ($tasks > 0) {
+            $parts[] = ($tasks === 1 ? '1 task' : "{$tasks} tasks") . ' moved to trash';
+        }
+        if ($projects > 0) {
+            $parts[] = 'deletion confirmation email sent for ' . ($projects === 1 ? '1 project' : "{$projects} projects");
+        }
+
+        $message = $parts ? ucfirst(implode('; ', $parts)) . '.' : 'Nothing was deleted.';
 
         if ($skipped > 0) {
             $message .= " {$skipped} item" . ($skipped === 1 ? '' : 's') . ' skipped.';

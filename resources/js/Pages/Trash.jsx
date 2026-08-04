@@ -291,7 +291,30 @@ function SectionHeader({ label, count, allSelected, onToggleSelectAll }) {
     );
 }
 
-export default function Trash({ trashedProjects, trashedTasks }) {
+// A selectable row for the "delete from here" picker - same visual language
+// as TrashRow, but without the restore/delete-forever kebab menu, since here
+// the whole row's job is just to be checked and included in the bulk delete.
+function PickRow({ icon, title, subtitle, selected, onToggleSelect }) {
+    return (
+        <label
+            className={
+                'flex cursor-pointer flex-nowrap items-center gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
+                (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
+            }
+        >
+            <Checkbox checked={selected} onChange={onToggleSelect} className="shrink-0" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 sm:h-8 sm:w-8">
+                {icon}
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
+                {subtitle && <p className="truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
+            </div>
+        </label>
+    );
+}
+
+export default function Trash({ trashedProjects, trashedTasks, deletableProjects, deletableTasks }) {
     const { confirm, ConfirmDialog } = useConfirm();
 
     const [search, setSearch] = useState('');
@@ -302,6 +325,13 @@ export default function Trash({ trashedProjects, trashedTasks }) {
     const [selectedProjectIds, setSelectedProjectIds] = useState([]);
     const [selectedTaskIds, setSelectedTaskIds] = useState([]);
 
+    // State for the separate "delete from here" picker below - lets someone
+    // send still-active projects/tasks to the trash without leaving this page.
+    const [showDeletePicker, setShowDeletePicker] = useState(false);
+    const [existingSearch, setExistingSearch] = useState('');
+    const [selectedExistingProjectIds, setSelectedExistingProjectIds] = useState([]);
+    const [selectedExistingTaskIds, setSelectedExistingTaskIds] = useState([]);
+
     // A restore/delete round-trip changes the underlying arrays - drop any
     // selection referencing ids that no longer exist in the trash.
     useEffect(() => {
@@ -309,6 +339,15 @@ export default function Trash({ trashedProjects, trashedTasks }) {
         setSelectedTaskIds((prev) => prev.filter((id) => trashedTasks.some((t) => t.id === id)));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [trashedProjects, trashedTasks]);
+
+    // Same idea for the delete picker - once something's sent to trash (or a
+    // project's deletion request goes out) it drops out of these lists, so
+    // any stale selection referencing it needs to go too.
+    useEffect(() => {
+        setSelectedExistingProjectIds((prev) => prev.filter((id) => deletableProjects.some((p) => p.id === id)));
+        setSelectedExistingTaskIds((prev) => prev.filter((id) => deletableTasks.some((t) => t.id === id)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deletableProjects, deletableTasks]);
 
     const matchesUrgency = (graceEndsAt) => {
         if (urgencyFilter === 'all') return true;
@@ -446,6 +485,75 @@ export default function Trash({ trashedProjects, trashedTasks }) {
             { title: 'Delete task forever', danger: true, confirmLabel: 'Delete forever' }
         );
         if (ok) router.delete(route('tasks.force-delete', task.id));
+    };
+
+    // --- "Delete from here" picker: active (not-yet-trashed) projects/tasks ---
+
+    const filteredDeletableProjects = useMemo(() => {
+        const q = existingSearch.trim().toLowerCase();
+        return deletableProjects.filter((project) => !q || project.name.toLowerCase().includes(q));
+    }, [deletableProjects, existingSearch]);
+
+    const filteredDeletableTasks = useMemo(() => {
+        const q = existingSearch.trim().toLowerCase();
+        return deletableTasks.filter(
+            (task) => !q || task.title.toLowerCase().includes(q) || task.project_name.toLowerCase().includes(q)
+        );
+    }, [deletableTasks, existingSearch]);
+
+    const allDeletableProjectsSelected = filteredDeletableProjects.length > 0
+        && filteredDeletableProjects.every((p) => selectedExistingProjectIds.includes(p.id));
+    const allDeletableTasksSelected = filteredDeletableTasks.length > 0
+        && filteredDeletableTasks.every((t) => selectedExistingTaskIds.includes(t.id));
+
+    const toggleExistingProjectSelected = (id) => {
+        setSelectedExistingProjectIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+    const toggleExistingTaskSelected = (id) => {
+        setSelectedExistingTaskIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+    const toggleSelectAllDeletableProjects = () => {
+        setSelectedExistingProjectIds(allDeletableProjectsSelected ? [] : filteredDeletableProjects.map((p) => p.id));
+    };
+    const toggleSelectAllDeletableTasks = () => {
+        setSelectedExistingTaskIds(allDeletableTasksSelected ? [] : filteredDeletableTasks.map((t) => t.id));
+    };
+
+    const selectedExistingCount = selectedExistingProjectIds.length + selectedExistingTaskIds.length;
+    const clearExistingSelection = () => {
+        setSelectedExistingProjectIds([]);
+        setSelectedExistingTaskIds([]);
+    };
+
+    const deleteExistingSelected = async () => {
+        const taskCount = selectedExistingTaskIds.length;
+        const projectCount = selectedExistingProjectIds.length;
+
+        const lines = [];
+        if (taskCount > 0) {
+            lines.push(`${taskCount} task${taskCount === 1 ? '' : 's'} will move to trash immediately.`);
+        }
+        if (projectCount > 0) {
+            // Deleting a project never happens instantly here either - it always
+            // needs the owner's email confirmation first, same as deleting one
+            // from its own settings page.
+            lines.push(
+                `${projectCount} project${projectCount === 1 ? '' : 's'} will get a deletion confirmation email` +
+                ` - nothing happens to ${projectCount === 1 ? 'it' : 'them'} until you click the link.`
+            );
+        }
+
+        const ok = await confirm(lines.join(' '), {
+            title: `Delete ${selectedExistingCount} item${selectedExistingCount === 1 ? '' : 's'}`,
+            danger: true,
+            confirmLabel: 'Delete',
+        });
+        if (!ok) return;
+
+        router.post(route('trash.delete-existing'), {
+            project_ids: selectedExistingProjectIds,
+            task_ids: selectedExistingTaskIds,
+        }, { preserveScroll: true, onSuccess: clearExistingSelection });
     };
 
     return (
@@ -592,6 +700,123 @@ export default function Trash({ trashedProjects, trashedTasks }) {
                             </div>
                         </div>
                     )}
+
+                    <div className="border-t border-gray-200 pt-4 dark:border-gray-700 sm:pt-6">
+                        <button
+                            type="button"
+                            onClick={() => setShowDeletePicker((v) => !v)}
+                            className="flex w-full items-center justify-between gap-2 text-left"
+                        >
+                            <span>
+                                <span className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    Delete from your projects and tasks
+                                </span>
+                                <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
+                                    Pick existing projects or tasks to send to the trash, without opening each one.
+                                </span>
+                            </span>
+                            <svg
+                                className={`h-5 w-5 shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${showDeletePicker ? 'rotate-180' : ''}`}
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {showDeletePicker && (
+                            <div className="mt-4 space-y-4">
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                    Tasks move to trash right away. Deleting a project always sends you a confirmation
+                                    email first - it only moves to trash once you click the link in it.
+                                </p>
+
+                                <SearchInput
+                                    value={existingSearch}
+                                    onChange={(e) => setExistingSearch(e.target.value)}
+                                    placeholder="Search your projects and tasks..."
+                                    className="w-full min-w-0 text-sm sm:w-56"
+                                />
+
+                                {selectedExistingCount > 0 && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-red-50 px-3 py-2.5 dark:bg-red-950/20 sm:gap-3 sm:px-4 sm:py-3">
+                                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                                            {selectedExistingCount} item{selectedExistingCount === 1 ? '' : 's'} selected
+                                            {selectedExistingProjectIds.length > 0 && selectedExistingTaskIds.length > 0 && (
+                                                <span className="font-normal text-red-600/80 dark:text-red-400/80">
+                                                    {' '}({selectedExistingProjectIds.length} project{selectedExistingProjectIds.length === 1 ? '' : 's'}, {selectedExistingTaskIds.length} task{selectedExistingTaskIds.length === 1 ? '' : 's'})
+                                                </span>
+                                            )}
+                                        </p>
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <button onClick={clearExistingSelection} className="text-sm text-red-600 hover:underline dark:text-red-400">
+                                                Clear
+                                            </button>
+                                            <button
+                                                onClick={deleteExistingSelected}
+                                                className="rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white transition hover:bg-red-500 sm:px-3 sm:py-1.5"
+                                            >
+                                                Delete selected
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <SectionHeader
+                                        label="Your projects"
+                                        count={filteredDeletableProjects.length}
+                                        allSelected={allDeletableProjectsSelected}
+                                        onToggleSelectAll={toggleSelectAllDeletableProjects}
+                                    />
+                                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                                        {filteredDeletableProjects.length === 0 ? (
+                                            <EmptySection
+                                                label={deletableProjects.length === 0 ? 'No projects available to delete.' : 'No projects match your search.'}
+                                            />
+                                        ) : (
+                                            filteredDeletableProjects.map((project) => (
+                                                <PickRow
+                                                    key={project.id}
+                                                    icon={<ProjectItemIcon />}
+                                                    title={project.name}
+                                                    subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
+                                                    selected={selectedExistingProjectIds.includes(project.id)}
+                                                    onToggleSelect={() => toggleExistingProjectSelected(project.id)}
+                                                />
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <SectionHeader
+                                        label="Tasks you manage"
+                                        count={filteredDeletableTasks.length}
+                                        allSelected={allDeletableTasksSelected}
+                                        onToggleSelectAll={toggleSelectAllDeletableTasks}
+                                    />
+                                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                                        {filteredDeletableTasks.length === 0 ? (
+                                            <EmptySection
+                                                label={deletableTasks.length === 0 ? 'No tasks available to delete.' : 'No tasks match your search.'}
+                                            />
+                                        ) : (
+                                            filteredDeletableTasks.map((task) => (
+                                                <PickRow
+                                                    key={task.id}
+                                                    icon={<TaskItemIcon />}
+                                                    title={task.title}
+                                                    subtitle={task.project_name}
+                                                    selected={selectedExistingTaskIds.includes(task.id)}
+                                                    onToggleSelect={() => toggleExistingTaskSelected(task.id)}
+                                                />
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
