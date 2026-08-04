@@ -670,6 +670,10 @@ class ProjectController extends Controller
             abort(403);
         }
 
+        // Doesn't run through ProjectPolicy, so the trashed-project freeze needs
+        // its own check here - see ProjectPolicy::update()'s docblock.
+        abort_if($project->trashed(), 403, 'This project is in the trash and read-only.');
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
         ]);

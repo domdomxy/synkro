@@ -8,9 +8,10 @@ use App\Models\User;
 
 class TaskPolicy
 {
+    /** Frozen while the project is trashed - see ProjectPolicy::update()'s docblock. */
     public function create(User $user, Project $project): bool
     {
-        return in_array($project->roleFor($user), ['owner', 'manager']);
+        return ! $project->trashed() && in_array($project->roleFor($user), ['owner', 'manager']);
     }
 
     /**
@@ -18,9 +19,16 @@ class TaskPolicy
      * destroyDeliverable(). Deliberately stays open to the assignee: those routes
      * are how an assignee progresses their own work and manages their own
      * submitted files/links before review, and must keep working for them.
+     * Frozen while the project is trashed, same as every other write here - see
+     * ProjectPolicy::update()'s docblock. That freeze applies to the assignee too:
+     * a trashed project is fully read-only for everyone, not just owner/manager.
      */
     public function update(User $user, Task $task): bool
     {
+        if ($task->project->trashed()) {
+            return false;
+        }
+
         $role = $task->project->roleFor($user);
 
         return in_array($role, ['owner', 'manager']) || $task->assigned_to === $user->id;
@@ -37,12 +45,12 @@ class TaskPolicy
      */
     public function edit(User $user, Task $task): bool
     {
-        return in_array($task->project->roleFor($user), ['owner', 'manager']);
+        return ! $task->project->trashed() && in_array($task->project->roleFor($user), ['owner', 'manager']);
     }
 
     public function delete(User $user, Task $task): bool
     {
-        return in_array($task->project->roleFor($user), ['owner', 'manager']);
+        return ! $task->project->trashed() && in_array($task->project->roleFor($user), ['owner', 'manager']);
     }
 
     /** Restoring or permanently deleting a trashed task is owner/manager-only, same as trashing it in the first place. */
@@ -55,9 +63,11 @@ class TaskPolicy
     {
         return in_array($task->project->roleFor($user), ['owner', 'manager']);
     }
+
+    /** Frozen while the project is trashed - see update()'s docblock. */
     public function review(User $user, Task $task): bool
     {
-        return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
+        return ! $task->project->trashed() && in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
     }
 
     /**
@@ -68,9 +78,10 @@ class TaskPolicy
      * project. Removing one is gated by this same check in the controller, but a
      * tester (unlike owner/manager) is further restricted there to items they
      * added themselves - see TaskChecklistItemController::destroy().
+     * Frozen while the project is trashed - see update()'s docblock.
      */
     public function manageChecklist(User $user, Task $task): bool
     {
-        return in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
+        return ! $task->project->trashed() && in_array($task->project->roleFor($user), ['owner', 'manager', 'tester']);
     }
 }

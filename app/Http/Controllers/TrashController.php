@@ -41,6 +41,13 @@ class TrashController extends Controller
                 'tasks_count' => $project->tasks_count,
                 'deleted_at' => $project->deleted_at,
                 'grace_ends_at' => $project->deletionGraceEndsAt(),
+                // projects.show is withTrashed() (see routes/web.php) and
+                // Projects/Show.jsx already renders a read-only banner and
+                // freezes every mutating control while `project.deleted_at` is
+                // set - see TaskPolicy/ProjectPolicy/CommentPolicy trashed()
+                // checks for the backend side of that freeze. This just lets
+                // the owner click straight into that view from the trash list.
+                'url' => route('projects.show', $project->id),
             ]);
 
         $managedProjectIds = $user->projects()

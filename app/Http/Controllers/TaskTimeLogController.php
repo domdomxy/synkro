@@ -32,6 +32,11 @@ class TaskTimeLogController extends Controller
     public function destroy(TaskTimeLog $timeLog)
     {
         $task = $timeLog->task;
+
+        // Doesn't run through a policy, so the trashed-project freeze needs its
+        // own check here - see TaskPolicy::update()'s docblock.
+        abort_if($task->project->trashed(), 403, 'This project is in the trash and read-only.');
+
         $role = $task->project->roleFor(Auth::user());
         $canManage = in_array($role, ['owner', 'manager']);
 

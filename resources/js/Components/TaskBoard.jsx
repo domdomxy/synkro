@@ -287,7 +287,7 @@ export function BoardLegendModal({ show, onClose }) {
     );
 }
 
-export default function TaskBoard({ tasks, canManage, canReview, currentUserId, projectId, onCardClick }) {
+export default function TaskBoard({ tasks, canManage, canReview, isTrashed, currentUserId, projectId, onCardClick }) {
     const [draggedId, setDraggedId] = useState(null);
     const [dragOverStatus, setDragOverStatus] = useState(null);
     const [notice, setNotice] = useState(null);
@@ -319,11 +319,13 @@ export default function TaskBoard({ tasks, canManage, canReview, currentUserId, 
         flash._t = window.setTimeout(() => setNotice(null), 4000);
     };
 
-    const canStartTask = (task) => canManage || task.assigned_to === currentUserId;
+    // A trashed project is frozen for everyone, assignee included - see
+    // TaskPolicy::update()'s docblock on the backend for the matching enforcement.
+    const canStartTask = (task) => !isTrashed && (canManage || task.assigned_to === currentUserId);
 
     const isDraggable = (task) => {
         if (task.status === 'todo') return canStartTask(task);
-        if (task.status === 'submitted' || task.status === 'in_review') return canReview;
+        if (task.status === 'submitted' || task.status === 'in_review') return !isTrashed && canReview;
         return false;
     };
 

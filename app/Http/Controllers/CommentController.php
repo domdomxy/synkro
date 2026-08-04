@@ -327,6 +327,10 @@ class CommentController extends Controller
     {
         abort_unless($comment->user_id === Auth::id(), 403);
         abort_if($comment->is_deleted, 404);
+        // Editing a comment doesn't run through CommentPolicy (only create/delete
+        // do), so the trashed-project freeze needs its own check here too - see
+        // CommentPolicy::create()'s docblock for why a trashed project is frozen.
+        abort_if($comment->task->project->trashed(), 403, 'This project is in the trash and read-only.');
 
         $validated = $request->validate([
             'body' => 'required|string|max:2000',

@@ -1094,7 +1094,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
                         {/* LEFT: Team — Invite, Members, and Pending Invitations grouped together */}
                         <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
-                            {canManage && (
+                            {canManage && !isTrashed && (
                                 <div className="rounded-lg bg-white shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                     <button
                                         onClick={() => setShowInviteForm((v) => !v)}
@@ -1167,7 +1167,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                             <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                                 {member.pivot.role}
                                                             </span>
-                                                            {canManage && member.id !== project.owner_id && (
+                                                            {canManage && !isTrashed && member.id !== project.owner_id && (
                                                                 <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => setMemberToRemove(member)} />
                                                             )}
                                                         </div>
@@ -1180,7 +1180,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
                                 </ul>
 
-                                {canManage && pendingInvitations?.length > 0 && (
+                                {canManage && !isTrashed && pendingInvitations?.length > 0 && (
                                     <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
                                         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Pending Invitations</p>
                                         <ul className="space-y-1.5">
@@ -1333,7 +1333,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 )}
                             </div>
 
-                            {viewMode === 'list' && canManage && selectedTaskIds.length > 0 && (
+                            {viewMode === 'list' && canManage && !isTrashed && selectedTaskIds.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
                                     <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedTaskIds.length} selected</span>
                                     <FilterSelect
@@ -1381,14 +1381,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         key={task.id}
                                         task={task}
                                         currentUserId={auth.user.id}
-                                        canManage={canManage}
-                                        canReview={canReview}
+                                        canManage={canManage && !isTrashed}
+                                        canReview={canReview && !isTrashed}
+                                        isTrashed={isTrashed}
                                         isHighlighted={task.id === highlightedTaskId}
                                         autoOpenHistory={task.id === autoOpenHistoryTaskId}
                                         autoOpenChecklist={task.id === autoOpenChecklistTaskId}
                                         autoOpenCommentId={autoOpenCommentId}
                                         members={project.members}
-                                        selectable={canManage}
+                                        selectable={canManage && !isTrashed}
                                         selected={selectedTaskIds.includes(task.id)}
                                         onToggleSelect={toggleTaskSelect}
                                         allTasks={project.tasks}
@@ -1436,7 +1437,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </button>
                     </div>
                     <div className="mt-4">
-                        <TaskBoard tasks={filteredTasks} canManage={canManage} canReview={canReview} currentUserId={auth.user.id} projectId={project.id} onCardClick={(task) => jumpToTaskInList(task.id)} />
+                        <TaskBoard tasks={filteredTasks} canManage={canManage && !isTrashed} canReview={canReview && !isTrashed} isTrashed={isTrashed} currentUserId={auth.user.id} projectId={project.id} onCardClick={(task) => jumpToTaskInList(task.id)} />
                     </div>
                 </div>
             </Modal>

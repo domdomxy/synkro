@@ -49,6 +49,11 @@ function SectionCard({ icon, title, description, children, danger }) {
 
 export default function Settings({ project, role }) {
     const isOwner = role === 'owner';
+    // A trashed project (soft-deleted, still inside its grace period) is frozen -
+    // same read-only rule as Projects/Show.jsx's `isTrashed`, and backed by the
+    // same trashed() checks in ProjectPolicy/ProjectController on the server, so
+    // hiding these forms here is UX, not the actual enforcement.
+    const isTrashed = !!project.deleted_at;
 
     const editForm = useForm({ name: project.name, description: project.description ?? '' });
     const transferForm = useForm({ user_id: '' });
@@ -126,6 +131,12 @@ export default function Settings({ project, role }) {
             <div className="py-12">
                 <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
 
+                    {isTrashed && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                            This project is in the trash. Settings are read-only until it's restored from the Trash page.
+                        </div>
+                    )}
+
                     <div className="flex justify-end">
                         <Link
                             href={route('projects.logs', project.id)}
@@ -147,10 +158,13 @@ export default function Settings({ project, role }) {
                             </svg>
                         }
                     >
-                        <form onSubmit={submitEdit} className="space-y-4">
+                        <form
+                            onSubmit={submitEdit}
+                            className={`space-y-4 ${isTrashed ? 'pointer-events-none opacity-60' : ''}`}
+                        >
                             <div>
                                 <InputLabel htmlFor="name" value="Project Name" />
-                                <TextInput id="name" value={editForm.data.name} onChange={(e) => editForm.setData('name', e.target.value)} className="mt-1 block w-full" />
+                                <TextInput id="name" disabled={isTrashed} value={editForm.data.name} onChange={(e) => editForm.setData('name', e.target.value)} className="mt-1 block w-full disabled:cursor-not-allowed" />
                                 <InputError message={editForm.errors.name} className="mt-2" />
                             </div>
                             <div>
@@ -161,16 +175,18 @@ export default function Settings({ project, role }) {
                                 />
                                 <InputError message={editForm.errors.description} className="mt-2" />
                             </div>
-                            <div className="flex items-center gap-3">
-                                <PrimaryButton disabled={editForm.processing || !hasUnsavedChanges}>Save Changes</PrimaryButton>
-                                {hasUnsavedChanges && (
-                                    <span className="text-sm text-amber-600 dark:text-amber-400">You have unsaved changes</span>
-                                )}
-                            </div>
+                            {!isTrashed && (
+                                <div className="flex items-center gap-3">
+                                    <PrimaryButton disabled={editForm.processing || !hasUnsavedChanges}>Save Changes</PrimaryButton>
+                                    {hasUnsavedChanges && (
+                                        <span className="text-sm text-amber-600 dark:text-amber-400">You have unsaved changes</span>
+                                    )}
+                                </div>
+                            )}
                         </form>
                     </SectionCard>
 
-                    {isOwner && (
+                    {isOwner && !isTrashed && (
                         <SectionCard
                             title="Transfer Ownership"
                             description="Hand this project over to another member. You'll become a manager."
@@ -212,7 +228,7 @@ export default function Settings({ project, role }) {
                         </SectionCard>
                     )}
 
-                    {isOwner && (
+                    {isOwner && !isTrashed && (
                         <SectionCard
                             title="Danger Zone"
                             description="Deleting a project moves it to trash, where it can still be restored for a few days before it's gone for good."

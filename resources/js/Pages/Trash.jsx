@@ -666,6 +666,7 @@ export default function Trash({ trashedProjects, trashedTasks, deletableProjects
                                             key={project.id}
                                             icon={<ProjectItemIcon />}
                                             title={project.name}
+                                            titleHref={project.url}
                                             subtitle={`${project.tasks_count} task${project.tasks_count === 1 ? '' : 's'}`}
                                             deletedAt={project.deleted_at}
                                             graceEndsAt={project.grace_ends_at}

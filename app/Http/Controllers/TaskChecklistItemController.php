@@ -286,6 +286,13 @@ class TaskChecklistItemController extends Controller
     {
         $task = $checklistItem->task;
 
+        // The 'done' toggle below is deliberately open to the assignee and
+        // doesn't run through manageChecklist (see that branch's comment), so
+        // the trashed-project freeze needs its own check up front - see
+        // TaskPolicy::update()'s docblock for why a trashed project is frozen
+        // for every role, assignee included.
+        abort_if($task->project->trashed(), 403, 'This project is in the trash and read-only.');
+
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
             'done' => 'sometimes|boolean',

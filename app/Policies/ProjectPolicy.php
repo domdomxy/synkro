@@ -31,14 +31,22 @@ class ProjectPolicy
         return true; // any authenticated user can start a project
     }
 
+    /**
+     * A trashed project (soft-deleted, still inside its grace period) is frozen -
+     * reachable for viewing/downloading only, same as the read-only banner tells
+     * anyone opening it. This is the actual enforcement backing that banner: even
+     * an owner/manager hitting the write routes directly can't mutate a project
+     * while it sits in the trash. Restoring it first is the only way back in.
+     */
     public function update(User $user, Project $project): bool
     {
-        return in_array($project->roleFor($user), ['owner', 'manager']);
+        return ! $project->trashed() && in_array($project->roleFor($user), ['owner', 'manager']);
     }
 
+    /** Frozen while already trashed - see update()'s docblock; there's nothing left to request deletion of. */
     public function delete(User $user, Project $project): bool
     {
-        return $project->roleFor($user) === 'owner';
+        return ! $project->trashed() && $project->roleFor($user) === 'owner';
     }
 
     /** Restoring or permanently deleting a trashed project is owner-only, same as trashing it in the first place. */
@@ -52,14 +60,18 @@ class ProjectPolicy
         return $project->roleFor($user) === 'owner';
     }
 
+    /** Frozen while trashed - see update()'s docblock. */
     public function manageMembers(User $user, Project $project): bool
     {
-        return in_array($project->roleFor($user), ['owner', 'manager']);
+        return ! $project->trashed() && in_array($project->roleFor($user), ['owner', 'manager']);
     }
 
-    /** Upload, rename/edit, replace, or delete a project resource (package/source/reference file). */
+    /**
+     * Upload, rename/edit, replace, or delete a project resource (package/source/reference file).
+     * Frozen while trashed - see update()'s docblock.
+     */
     public function manageResources(User $user, Project $project): bool
     {
-        return in_array($project->roleFor($user), ['owner', 'manager']);
+        return ! $project->trashed() && in_array($project->roleFor($user), ['owner', 'manager']);
     }
 }

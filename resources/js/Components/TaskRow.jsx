@@ -473,6 +473,7 @@ function CommentEntry({
     editCommentForm,
     currentUserId,
     canManage,
+    isTrashed = false,
     members,
     authorRole,
     onSaveEdit,
@@ -505,7 +506,7 @@ function CommentEntry({
                             {/* Only a moderator can purge a tombstone outright - its own
                                 author already said everything they can here by deleting
                                 it in the first place. */}
-                            {canManage && (
+                            {canManage && !isTrashed && (
                                 <>
                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                     <button
@@ -517,13 +518,17 @@ function CommentEntry({
                                     </button>
                                 </>
                             )}
-                            <span className="text-gray-300 dark:text-gray-600">·</span>
-                            <button
-                                onClick={() => onStartReply(comment)}
-                                className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
-                            >
-                                Reply
-                            </button>
+                            {!isTrashed && (
+                                <>
+                                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    <button
+                                        onClick={() => onStartReply(comment)}
+                                        className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                                    >
+                                        Reply
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </>
                 ) : editingCommentId === comment.id ? (
@@ -634,7 +639,7 @@ function CommentEntry({
                                 {timeAgo(comment.created_at)}
                                 {comment.edited_at && ' · edited'}
                             </span>
-                            {comment.user?.id === currentUserId && (
+                            {comment.user?.id === currentUserId && !isTrashed && (
                                 <>
                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                     <button
@@ -645,7 +650,7 @@ function CommentEntry({
                                     </button>
                                 </>
                             )}
-                            {(comment.user?.id === currentUserId || canManage) && (
+                            {(comment.user?.id === currentUserId || canManage) && !isTrashed && (
                                 <>
                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                     <button
@@ -656,13 +661,17 @@ function CommentEntry({
                                     </button>
                                 </>
                             )}
-                            <span className="text-gray-300 dark:text-gray-600">·</span>
-                            <button
-                                onClick={() => onStartReply(comment)}
-                                className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
-                            >
-                                Reply
-                            </button>
+                            {!isTrashed && (
+                                <>
+                                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                                    <button
+                                        onClick={() => onStartReply(comment)}
+                                        className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
+                                    >
+                                        Reply
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </>
                 )}
@@ -692,6 +701,7 @@ function CommentThread({
     editCommentForm,
     currentUserId,
     canManage,
+    isTrashed = false,
     members,
     onSaveEdit,
     onStartEdit,
@@ -728,6 +738,7 @@ function CommentThread({
                     editCommentForm={editCommentForm}
                     currentUserId={currentUserId}
                     canManage={canManage}
+                    isTrashed={isTrashed}
                     members={members}
                     authorRole={authorRole}
                     onSaveEdit={onSaveEdit}
@@ -775,6 +786,7 @@ function CommentThread({
                                             editCommentForm={editCommentForm}
                                             currentUserId={currentUserId}
                                             canManage={canManage}
+                                            isTrashed={isTrashed}
                                             members={members}
                                             authorRole={members.find((m) => m.id === reply.user?.id)?.pivot?.role ?? null}
                                             onSaveEdit={onSaveEdit}
@@ -797,7 +809,7 @@ function CommentThread({
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenChecklist = false, onJumpToTask, projectMuted = false }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isTrashed = false, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenChecklist = false, onJumpToTask, projectMuted = false }) {
     const isAssignee = task.assigned_to === currentUserId;
     // Roles are mutually exclusive per project, so "can review but can't manage"
     // means the role is exactly tester - no separate prop needs threading down
@@ -823,7 +835,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     // Checking an item done/undone is narrower still and assignee-only, even for
     // an owner or manager who can otherwise edit the task - see
     // TaskChecklistItemController::update()'s separate check for the 'done' field.
-    const canToggleChecklistItems = isAssignee;
+    // Frozen while the project is trashed, same as every other write here - see
+    // TaskChecklistItemController::update()'s trashed check for the matching
+    // server-side enforcement (this 'done' toggle bypasses manageChecklist).
+    const canToggleChecklistItems = isAssignee && !isTrashed;
 
     const [isEditing, setIsEditing] = useState(false);
     const [showAddPanel, setShowAddPanel] = useState(false);
@@ -1193,7 +1208,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     // starting a fresh top-level comment, or inline inside a thread (right
     // after its existing replies, or immediately below it if it's the first
     // reply) when replyingTo is set.
-    const commentComposer = (
+    const commentComposer = isTrashed ? (
+        <p className="px-1 text-sm text-gray-400 dark:text-gray-500">
+            This project is in the trash — comments are read-only until it's restored.
+        </p>
+    ) : (
         <form onSubmit={submitComment} className="flex items-start gap-2.5">
             <div className="min-w-0 flex-1">
                 {replyingTo && (
@@ -1242,7 +1261,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     );
     const dependencyCount = task.dependencies?.length ?? 0;
     const dependenciesBlocked = task.dependencies?.some((d) => d.status !== 'done') ?? false;
-    const canEditDeliverables = isAssignee && ['in_progress', 'submitted'].includes(task.status);
+    const canEditDeliverables = isAssignee && !isTrashed && ['in_progress', 'submitted'].includes(task.status);
 
     return (
         <div
@@ -1508,7 +1527,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </>
             )}
 
-            {!isEditing && isAssignee && task.status === 'todo' && (
+            {!isEditing && isAssignee && !isTrashed && task.status === 'todo' && (
                 <div className="mt-2">
                     {task.dependencies?.some((d) => d.status !== 'done') ? (
                         <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -1532,7 +1551,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                 </div>
             )}
 
-            {!isEditing && isAssignee && ['in_progress', 'submitted'].includes(task.status) && (
+            {!isEditing && isAssignee && !isTrashed && ['in_progress', 'submitted'].includes(task.status) && (
                 <div className="mt-3">
                     {!showAddPanel && submitForm.data.files.length === 0 && submitForm.data.links.length === 0 && (
                         <button
@@ -2027,6 +2046,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
                                 editCommentForm={editCommentForm}
                                 currentUserId={currentUserId}
                                 canManage={canManage}
+                                isTrashed={isTrashed}
                                 members={members}
                                 onSaveEdit={saveCommentEdit}
                                 onStartEdit={startEditComment}
