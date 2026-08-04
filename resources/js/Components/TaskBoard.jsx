@@ -501,6 +501,26 @@ export default function TaskBoard({ tasks, canManage, canReview, isTrashed, curr
         return () => cancelAnimationFrame(rafId);
     }, [draggedId]);
 
+    // Lets the mouse wheel scroll the board horizontally too, not just the scrollbar drag -
+    // a plain vertical wheel gesture (deltaY, the normal case for a mouse) is redirected into
+    // scrollLeft; a gesture that's already mostly horizontal (deltaX, e.g. a trackpad swipe)
+    // is left alone so it keeps working natively. Only intercepts while the row actually has
+    // overflow to scroll, so page scroll isn't hijacked once every column is visible.
+    useEffect(() => {
+        const container = boardScrollRef.current;
+        if (!container) return;
+
+        const handleWheel = (e) => {
+            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+            if (container.scrollWidth <= container.clientWidth) return;
+            e.preventDefault();
+            container.scrollLeft += e.deltaY;
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
+
     const submitReject = (e) => {
         e.preventDefault();
         if (!rejectFeedback.trim()) {
