@@ -50,6 +50,7 @@ export default function NotificationBell() {
             '.project.updated',
             '.project.ownership-transferred',
             '.project.deleted',
+            '.project.deletion-requested',
             '.task.done',
             '.task.review-needed',
             '.task.overdue',
@@ -105,6 +106,9 @@ export default function NotificationBell() {
             } else if (payload.type === 'project_deleted') {
                 message = `Project deleted\n"**${payload.project_name}**" was deleted`;
                 url = '/projects';
+            } else if (payload.type === 'project_deletion_requested') {
+                message = `Deletion requested\n**${payload.requested_by_name}** requested to delete "**${payload.project_name}**"`;
+                url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'task_reopened') {
                 message = `Task reopened\n"**${payload.title}**" was reopened for changes${payload.feedback ? ': ' + payload.feedback : ''}`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;

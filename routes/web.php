@@ -96,7 +96,14 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
     Route::delete('/account/avatar', [AccountController::class, 'destroyAvatar'])->name('account.avatar.destroy');
     Route::post('/account/deactivate', [AccountController::class, 'deactivate'])->name('account.deactivate');
-    Route::resource('projects', ProjectController::class);
+    Route::resource('projects', ProjectController::class)->except(['show']);
+    // Split out from the resource() call above and given withTrashed() so a
+    // project's members can still open it (read-only - every write route below
+    // stays on normal, non-trashed binding) during its trash grace period to
+    // collect whatever they need before it's purged for good. Registered after
+    // the resource group's edit/create routes, so those more specific paths
+    // still match first.
+    Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show')->withTrashed();
     Route::post('/projects/{project}/members', [ProjectMemberController::class, 'store'])->name('projects.members.store');
     Route::patch('/projects/{project}/members/{user}', [ProjectMemberController::class, 'update'])->name('projects.members.update')->withTrashed();
     Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy')->withTrashed();
@@ -105,6 +112,13 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::get('/projects/{project}/confirm-deletion', [ProjectController::class, 'confirmDeletion'])
         ->middleware(['signed', 'throttle:6,1'])
         ->name('projects.deletion.confirm');
+    // One signed link that confirms every project in a batch at once - used when
+    // several projects were selected together from the Trash page's "delete from
+    // here" picker, so the owner gets a single email instead of one per project.
+    // See ProjectController::sendDeletionConfirmationEmailBatch()/confirmDeletionBatch().
+    Route::get('/projects/deletion/confirm-batch', [ProjectController::class, 'confirmDeletionBatch'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('projects.deletion.confirmBatch');
     Route::post('/projects/{project}/cancel-deletion', [ProjectController::class, 'cancelDeletion'])->name('projects.deletion.cancel');
     Route::post('/projects/{project}/resend-deletion-email', [ProjectController::class, 'resendDeletionConfirmation'])
         ->middleware('throttle:5,1')
@@ -119,11 +133,14 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::delete('/notes/{note}/items/{itemId}', [ProjectNoteController::class, 'removeItem'])->name('projects.notes.items.remove');
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::post('/projects/{project}/tasks/bulk', [TaskController::class, 'bulkUpdate'])->name('tasks.bulk');
-    Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings');
-    Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs');
-    Route::get('/projects/{project}/deliverables', [ProjectController::class, 'deliverables'])->name('projects.deliverables');
-    Route::get('/projects/{project}/deliverables/download', [ProjectController::class, 'downloadDeliverables'])->name('projects.deliverables.download');
-    Route::get('/projects/{project}/resources', [ProjectResourceController::class, 'index'])->name('projects.resources');
+    // withTrashed() on this read-only group too, same reasoning as projects.show
+    // above - settings/logs stay owner/manager-gated inside the controller same
+    // as always, this only lets the model itself still bind while trashed.
+    Route::get('/projects/{project}/settings', [ProjectController::class, 'settings'])->name('projects.settings')->withTrashed();
+    Route::get('/projects/{project}/logs', [ProjectController::class, 'logs'])->name('projects.logs')->withTrashed();
+    Route::get('/projects/{project}/deliverables', [ProjectController::class, 'deliverables'])->name('projects.deliverables')->withTrashed();
+    Route::get('/projects/{project}/deliverables/download', [ProjectController::class, 'downloadDeliverables'])->name('projects.deliverables.download')->withTrashed();
+    Route::get('/projects/{project}/resources', [ProjectResourceController::class, 'index'])->name('projects.resources')->withTrashed();
     Route::post('/projects/{project}/resources', [ProjectResourceController::class, 'store'])->name('projects.resources.store');
     Route::post('/resources/{resource}', [ProjectResourceController::class, 'update'])->name('projects.resources.update');
     Route::delete('/resources/{resource}', [ProjectResourceController::class, 'destroy'])->name('projects.resources.destroy');
@@ -158,7 +175,7 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/tasks/{task}/restore', [TaskController::class, 'restore'])->name('tasks.restore')->withTrashed();
     Route::delete('/tasks/{task}/force-delete', [TaskController::class, 'forceDelete'])->name('tasks.force-delete')->withTrashed();
     Route::post('/tasks/{task}/comments', [CommentController::class, 'store'])->name('comments.store');
-    Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download');
+    Route::get('/tasks/{task}/download', [TaskController::class, 'downloadDeliverables'])->name('tasks.download')->withTrashed();
     Route::post('/tasks/{task}/checklist', [TaskChecklistItemController::class, 'store'])->name('checklist.store');
     Route::patch('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'update'])->name('checklist.update');
     Route::delete('/checklist/{checklistItem}', [TaskChecklistItemController::class, 'destroy'])->name('checklist.destroy');

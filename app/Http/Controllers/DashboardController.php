@@ -220,6 +220,11 @@ class DashboardController extends Controller
             ->with('project:id,name')
             ->latest('updated_at')
             ->get()
+            // A note's project can be soft-deleted (or otherwise gone) while
+            // the note itself lingers, in which case the `project` relation
+            // resolves to null - drop those before grouping so the dashboard
+            // doesn't crash reading ->name off a null project.
+            ->filter(fn ($note) => $note->project !== null)
             ->groupBy('project_id')
             ->map(fn ($notes) => [
                 'project' => ['id' => $notes->first()->project_id, 'name' => $notes->first()->project->name],

@@ -80,11 +80,18 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
+        // A trashed project's own tasks were cascade-trashed alongside it (see
+        // Project::booted()) - without withTrashed() here they'd load as an empty
+        // list, defeating the point of a member being able to open a project
+        // during its grace period to collect what they need before it's gone.
+        $trashed = $project->trashed();
+
         $project->load([
             // withTrashed() so an owner who's mid-deletion (still inside the
             // grace period) doesn't just vanish from the member list — see
             // Project::owner() for the same reasoning.
             'members' => fn ($q) => $q->withTrashed(),
+            'tasks' => fn ($q) => $trashed ? $q->withTrashed() : $q,
             'tasks.assignee',
             'tasks.comments.user',
             'tasks.deliverables',
@@ -98,6 +105,9 @@ class ProjectController extends Controller
         // Keyed by task id so each task's individual mute_in_app/mute_email pivot
         // flags are available below, not just whether a mute row exists at all.
         $mutedTasks = Auth::user()->mutedTasks()->get()->keyBy('id');
+        // Only meaningful (non-null) while the project is actually trashed - lets
+        // the read-only banner tell a member exactly when it'll be gone for good.
+        $project->grace_ends_at = $project->deletionGraceEndsAt();
         $project->is_muted = $project->isMutedBy(Auth::user());
         $project->mute_in_app = $project->inAppMutedBy(Auth::user());
         $project->mute_email = $project->emailMutedBy(Auth::user());
@@ -256,6 +266,21 @@ class ProjectController extends Controller
             return back()->with('success', 'A deletion request is already pending confirmation by email.');
         }
 
+        $this->requestDeletion($project);
+        $this->sendDeletionConfirmationEmail($project);
+
+        return back()->with('success', 'Deletion requested. Check your email to confirm.');
+    }
+
+    /**
+     * Marks a project pending deletion and notifies its other members - everything
+     * destroy() above used to do except sending the owner's own confirmation email,
+     * split out so a caller acting on several projects at once (see TrashController::
+     * deleteExisting()) can run this per project but send just one combined
+     * confirmation email for the whole batch instead of one per project.
+     */
+    public function requestDeletion(Project $project): void
+    {
         $project->update([
             'deletion_requested_at' => now(),
             'deletion_email_sent_at' => now(),
@@ -263,19 +288,32 @@ class ProjectController extends Controller
 
         ProjectActivityLog::log($project, 'project_deletion_requested');
 
-        $this->sendDeletionConfirmationEmail($project);
-
         $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
 
         foreach ($recipients as $recipient) {
             if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deletion_requested')) {
-                \App\Models\UserNotification::create([
+                $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
                     'type' => 'project_deletion_requested',
                     'causer_id' => Auth::id(),
                     'message' => "Deletion requested\n**" . Auth::user()->name . "** requested to delete \"**{$project->name}**\"",
-                    'url' => route('projects.settings', $project->id, false),
+                    // projects.show, not projects.settings: settings is owner/manager-only,
+                    // and this notification goes out to every member. The pending-deletion
+                    // banner is shown on the project page too, which any member can open.
+                    'url' => route('projects.show', $project->id, false),
                 ]);
+
+                try {
+                    broadcast(new \App\Events\ProjectDeletionRequestedNotification(
+                        $recipient->id,
+                        $project->id,
+                        $project->name,
+                        Auth::user()->name,
+                        $notification->id
+                    ))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(
@@ -283,8 +321,8 @@ class ProjectController extends Controller
                 'project.deletion_requested',
                 "{$project->name} deletion requested",
                 ["**" . Auth::user()->name . "** has requested to delete the project \"**{$project->name}**\" (#{$project->id}). It will move to trash once the owner confirms by email, unless cancelled first."],
-                url(route('projects.settings', $project->id, false)),
-                'View Project Settings'
+                url(route('projects.show', $project->id, false)),
+                'View Project'
             );
         }
 
@@ -295,8 +333,6 @@ class ProjectController extends Controller
         } catch (\Throwable $e) {
             report($e);
         }
-
-        return back()->with('success', 'Deletion requested. Check your email to confirm.');
     }
 
     /**
@@ -332,7 +368,7 @@ class ProjectController extends Controller
      * reach the owner regardless of their notification preferences, so it's sent
      * directly rather than through NotificationMailer/EmailPreferences::wants().
      */
-    private function sendDeletionConfirmationEmail(Project $project): void
+    public function sendDeletionConfirmationEmail(Project $project): void
     {
         $confirmUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'projects.deletion.confirm',
@@ -361,6 +397,44 @@ class ProjectController extends Controller
     }
 
     /**
+     * One email, one confirm click, for every project passed in - used instead of
+     * sendDeletionConfirmationEmail() (which is one email per project) when several
+     * projects were requested for deletion together from the Trash page's "delete
+     * from here" picker (see TrashController::deleteExisting()), so selecting, say,
+     * 3 projects doesn't mean digging 3 separate confirmation emails out of an
+     * inbox. Same security posture as the single-project version: signed, 24-hour
+     * link, sent directly regardless of email notification preferences.
+     */
+    public function sendDeletionConfirmationEmailBatch(\Illuminate\Support\Collection $projects): void
+    {
+        $confirmUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'projects.deletion.confirmBatch',
+            now()->addHours(24),
+            ['projects' => $projects->pluck('id')->implode(',')]
+        );
+
+        $graceDays = (int) config('synkro.project_deletion_grace_days', 7);
+        $names = $projects->pluck('name')->map(fn ($name) => "\"**{$name}**\"")->implode(', ');
+
+        try {
+            \Illuminate\Support\Facades\Mail::to(Auth::user()->email)->queue(
+                new \App\Mail\SynkroNotificationMail(
+                    Auth::user()->name,
+                    $projects->count() === 1 ? "Confirm deletion of {$projects->first()->name}" : 'Confirm deletion of ' . $projects->count() . ' projects',
+                    [
+                        "You requested to delete {$names}. Confirming moves all of them to trash at once, where you'll have {$graceDays} day(s) to restore each before it's gone for good.",
+                        'This link expires in 24 hours. If you didn\'t request this, open the trash page and cancel the pending deletion(s) instead.',
+                    ],
+                    $confirmUrl,
+                    'Confirm Deletion'
+                )
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
      * Reached only via the signed link mailed out by destroy() above - the 'signed'
      * route middleware rejects the request outright if the URL has been tampered with
      * or has expired, so no extra token comparison is needed here. $project->delete()
@@ -376,6 +450,64 @@ class ProjectController extends Controller
             return redirect()->route('projects.settings', $project)->with('success', 'There is no pending deletion to confirm.');
         }
 
+        $graceDays = $this->finalizeDeletion($project);
+
+        return redirect()->route('projects.index')->with('success', "Project moved to trash. It'll be permanently deleted in {$graceDays} day(s) unless restored.");
+    }
+
+    /**
+     * Confirms every project in a batch at once - reached from the single signed
+     * link sendDeletionConfirmationEmailBatch() mails out when several projects
+     * were selected together from the Trash page's "delete from here" picker
+     * (see TrashController::deleteExisting()), instead of the owner needing to
+     * click a separate email for each one. Shares finalizeDeletion() with the
+     * single-project confirmDeletion() above so the trash/notify/broadcast side
+     * effects stay in exactly one place.
+     *
+     * A project that's no longer pending by the time this is opened (deletion
+     * cancelled, link re-used after expiry-adjacent edge cases, etc.) is silently
+     * skipped rather than failing the whole batch.
+     */
+    public function confirmDeletionBatch(Request $request)
+    {
+        $projectIds = array_filter(array_map('intval', explode(',', (string) $request->query('projects', ''))));
+
+        $confirmed = 0;
+        $skipped = 0;
+        $graceDays = (int) config('synkro.project_deletion_grace_days', 7);
+
+        foreach (Project::whereIn('id', $projectIds)->get() as $project) {
+            if (! Auth::user()->can('delete', $project) || ! $project->hasPendingDeletion()) {
+                $skipped++;
+                continue;
+            }
+
+            $graceDays = $this->finalizeDeletion($project);
+            $confirmed++;
+        }
+
+        if ($confirmed === 0) {
+            return redirect()->route('trash.index')->with('success', 'Nothing left to confirm - those deletion request(s) may have already been actioned or cancelled.');
+        }
+
+        $message = ($confirmed === 1 ? '1 project' : "{$confirmed} projects") . " moved to trash. It'll be permanently deleted in {$graceDays} day(s) unless restored.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} skipped.";
+        }
+
+        return redirect()->route('trash.index')->with('success', $message);
+    }
+
+    /**
+     * The actual trash-and-notify work shared by confirmDeletion() and
+     * confirmDeletionBatch() - logs the deletion, notifies every other member,
+     * and soft-deletes the project. Caller is responsible for the pending-deletion
+     * and authorization checks beforehand. Returns the configured grace period in
+     * days, purely so callers can include it in their own response message
+     * without a second config() lookup.
+     */
+    private function finalizeDeletion(Project $project): int
+    {
         ProjectActivityLog::log($project, 'project_deleted');
 
         // Capture recipients and name before delete() soft-deletes the project -
@@ -393,7 +525,7 @@ class ProjectController extends Controller
                     'type' => 'project_deleted',
                     'causer_id' => Auth::id(),
                     'message' => "Project deleted\n\"**{$projectName}**\" was deleted",
-                    'url' => route('projects.index', [], false),
+                    'url' => route('projects.show', $projectId, false),
                 ]);
 
                 try {
@@ -409,14 +541,16 @@ class ProjectController extends Controller
                 "{$projectName} was deleted",
                 [
                     "The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted.",
-                    "Its owner has {$graceDays} day(s) to restore it from the trash before it's gone for good.",
+                    "It's still viewable for {$graceDays} more day(s) while it sits in the trash - open it to grab anything you need before it's gone for good.",
                 ],
+                url(route('projects.show', $projectId, false)),
+                'View Project'
             );
         }
 
         $project->delete();
 
-        return redirect()->route('projects.index')->with('success', "Project moved to trash. It'll be permanently deleted in {$graceDays} day(s) unless restored.");
+        return $graceDays;
     }
 
     /** Restores a trashed project (and, via Project::booted(), the tasks that were trashed alongside it). */
@@ -619,7 +753,15 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $tasks = $project->tasks()
+        // See show()'s $trashed comment - a trashed project's tasks need
+        // withTrashed() or a member opening this mid-grace-period to grab files
+        // would find nothing here at all.
+        $tasksQuery = $project->tasks();
+        if ($project->trashed()) {
+            $tasksQuery->withTrashed();
+        }
+
+        $tasks = $tasksQuery
             ->where('status', 'done')
             ->with('deliverables', 'assignee')
             ->orderBy('title')
@@ -635,7 +777,12 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $tasks = $project->tasks()->where('status', 'done')->with('deliverables')->get();
+        $tasksQuery = $project->tasks();
+        if ($project->trashed()) {
+            $tasksQuery->withTrashed();
+        }
+
+        $tasks = $tasksQuery->where('status', 'done')->with('deliverables')->get();
 
         $files = $tasks->flatMap(fn ($task) => $task->deliverables
             ->where('type', 'file')

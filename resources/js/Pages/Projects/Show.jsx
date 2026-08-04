@@ -632,6 +632,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const canManage = ['owner', 'manager'].includes(role);
     const canReview = ['owner', 'manager', 'tester'].includes(role);
     const isOwner = project.owner_id === auth.user.id;
+    // A trashed project (soft-deleted, still inside its grace period) is
+    // reachable for viewing/downloading only - every write route on the
+    // backend stays on non-trashed model binding, so gate the obvious
+    // mutating controls here too rather than letting them 404 silently.
+    const isTrashed = !!project.deleted_at;
 
     const [memberSearch, setMemberSearch] = useState('');
     const [taskSearch, setTaskSearch] = useState('');
@@ -1043,7 +1048,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             `}</style>
             <div className="py-12">
                 <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-                    {project.deletion_requested_at && (
+                    {isTrashed && (
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">
+                            <span>
+                                This project is in the trash{project.grace_ends_at ? ` and will be permanently deleted on ${new Date(project.grace_ends_at).toLocaleDateString()}` : ''}.
+                                {' '}You can still view everything here and download deliverables, but nothing can be added or changed while it's trashed.
+                            </span>
+                            <SecondaryButton onClick={() => router.visit(route('projects.deliverables', project.id))}>View Deliverables</SecondaryButton>
+                        </div>
+                    )}
+                    {!isTrashed && project.deletion_requested_at && (
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
                             <span>
                                 {isOwner
@@ -1192,7 +1206,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
                         {/* MIDDLE: Tasks */}
                         <div ref={tasksPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
-                            {canManage && (
+                            {canManage && !isTrashed && (
                                 <>
                                     <button onClick={() => setShowNewTaskForm((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                         <span className="flex items-center gap-2 text-sm font-semibold dark:text-gray-100">

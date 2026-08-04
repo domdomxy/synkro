@@ -234,9 +234,12 @@ class TrashController extends Controller
      * Projects are NOT trashed here. Deleting a project always requires the
      * owner to confirm by email (see ProjectController::destroy()'s docblock) -
      * that safeguard doesn't get bypassed just because the request originated
-     * from a bulk picker, so this only starts the deletion request per selected
-     * project (one confirmation email each); the project itself only moves to
-     * trash once its owner clicks the emailed link.
+     * from a bulk picker. Every selected project starts its deletion request
+     * (via ProjectController::requestDeletion(), same per-project notifications
+     * as a single delete), but rather than one confirmation email per project,
+     * a batch of two or more gets a single combined email with one confirm link
+     * for all of them - see ProjectController::sendDeletionConfirmationEmailBatch().
+     * The project itself only moves to trash once that link is clicked.
      *
      * Items the user can't act on, or a project with a deletion already
      * pending, are silently skipped and counted rather than 403'd - a stale
@@ -275,7 +278,7 @@ class TrashController extends Controller
         $projectController = new ProjectController();
         $taskController = new TaskController();
 
-        $requestedProjects = 0;
+        $requestedProjects = collect();
         $skipped = 0;
 
         foreach (Project::whereIn('id', $projectIds)->get() as $project) {
@@ -285,12 +288,22 @@ class TrashController extends Controller
             }
 
             try {
-                $projectController->destroy($project);
-                $requestedProjects++;
+                $projectController->requestDeletion($project);
+                $requestedProjects->push($project);
             } catch (\Throwable $e) {
                 report($e);
                 $skipped++;
             }
+        }
+
+        // One combined confirmation email for a multi-project batch instead of
+        // one per project (see this method's docblock); a single-project
+        // selection still gets the normal per-project email so it looks and
+        // reads exactly like deleting from that project's own settings page.
+        if ($requestedProjects->count() === 1) {
+            $projectController->sendDeletionConfirmationEmail($requestedProjects->first());
+        } elseif ($requestedProjects->count() > 1) {
+            $projectController->sendDeletionConfirmationEmailBatch($requestedProjects);
         }
 
         $deletedTasks = 0;
@@ -310,7 +323,7 @@ class TrashController extends Controller
             }
         }
 
-        return back()->with('success', $this->deleteExistingResultMessage($requestedProjects, $deletedTasks, $skipped));
+        return back()->with('success', $this->deleteExistingResultMessage($requestedProjects->count(), $deletedTasks, $skipped));
     }
 
     private function deleteExistingResultMessage(int $projects, int $tasks, int $skipped): string
