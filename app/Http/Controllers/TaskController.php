@@ -11,6 +11,7 @@ use App\Events\TaskReviewNeeded;
 use App\Events\TaskUnassigned;
 use App\Events\TaskUpdated;
 use App\Events\TaskDeleted;
+use App\Events\TaskRestored;
 use App\Events\TaskChanged;
 use App\Support\TestingQueueBroadcaster;
 use App\Models\Project;
@@ -495,13 +496,25 @@ class TaskController extends Controller
 
         if ($task->assigned_to && $task->assignee && $task->project->isMember($task->assignee)) {
             if (NotificationPreferences::wantsType($task->assignee, 'task_deleted')) {
-                UserNotification::create([
-                    'user_id' => $task->assigned_to,
-                    'type' => 'task_deleted',
-                    'causer_id' => Auth::id(),
-                    'message' => "Task restored\n\"**{$task->title}**\" was restored from the trash in **{$task->project->name}**.",
-                    'url' => route('projects.show', $task->project_id, false),
-                ]);
+                $notification = null;
+
+                try {
+                    $notification = UserNotification::create([
+                        'user_id' => $task->assigned_to,
+                        'type' => 'task_restored',
+                        'causer_id' => Auth::id(),
+                        'message' => "Task restored\n\"**{$task->title}**\" was restored from the trash in **{$task->project->name}**.",
+                        'url' => route('projects.show', $task->project_id, false),
+                    ]);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+
+                try {
+                    broadcast(new TaskRestored($task->assigned_to, $task->title, $task->project->name, $task->project_id, $notification?->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(

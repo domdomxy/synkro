@@ -50,6 +50,7 @@ export default function NotificationBell() {
             '.project.updated',
             '.project.ownership-transferred',
             '.project.deleted',
+            '.project.restored',
             '.project.deletion-requested',
             '.task.done',
             '.task.review-needed',
@@ -57,6 +58,7 @@ export default function NotificationBell() {
             '.task.updated',
             '.task.unassigned',
             '.task.deleted',
+            '.task.restored',
             '.reminder.due',
             '.project.removed',
             '.feedback.replied',
@@ -106,6 +108,9 @@ export default function NotificationBell() {
             } else if (payload.type === 'project_deleted') {
                 message = `Project deleted\n"**${payload.project_name}**" was deleted`;
                 url = '/projects';
+            } else if (payload.type === 'project_restored') {
+                message = `Project restored\n"**${payload.project_name}**" was restored from the trash`;
+                url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_deletion_requested') {
                 message = `Deletion requested\n**${payload.requested_by_name}** requested to delete "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
@@ -154,6 +159,10 @@ export default function NotificationBell() {
             } else if (payload.type === 'task_checklist_item_deleted') {
                 message = `Checklist item removed\n**${payload.deleted_by_name ?? 'Someone'}** removed "${payload.item_title}" from the checklist on "**${payload.title}**"`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}&checklist=1`;
+            } else if (payload.type === 'task_restored') {
+                // TaskRestored event shape: { notification_id, task_title, project_name, project_id, message, type }
+                message = payload.message.includes('\n') ? payload.message : `Task restored\n${payload.message}`;
+                url = `/projects/${payload.project_id}`;
             } else if (payload.task_title !== undefined && payload.project_name !== undefined && payload.project_id !== undefined && payload.message) {
                 // TaskDeleted event shape: { notification_id, task_title, project_name, project_id, message }
                 type = 'task_deleted';

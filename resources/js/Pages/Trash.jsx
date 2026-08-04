@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useConfirm from '@/hooks/useConfirm';
@@ -215,7 +215,7 @@ function RowActionsMenu({ onRestore, onDelete }) {
     );
 }
 
-function TrashRow({ icon, title, subtitle, deletedAt, graceEndsAt, selected, onToggleSelect, onRestore, onDelete }) {
+function TrashRow({ icon, title, titleHref, subtitle, deletedAt, graceEndsAt, selected, onToggleSelect, onRestore, onDelete }) {
     const deletedLabel = formatDeletedAt(deletedAt);
     const deletedLabelShort = formatDeletedAtShort(deletedAt);
     return (
@@ -235,7 +235,21 @@ function TrashRow({ icon, title, subtitle, deletedAt, graceEndsAt, selected, onT
                     {icon}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
+                    {/* View-only access to the trashed project itself - Projects/Show.jsx already
+                        renders a read-only banner and disables editing while a project is trashed
+                        (see its `trashed` prop handling), and the projects.show route already
+                        supports withTrashed(), so this just needed a link in. Task rows have no
+                        equivalent standalone page, so titleHref is only ever passed for projects. */}
+                    {titleHref ? (
+                        <Link
+                            href={titleHref}
+                            className="truncate text-sm font-medium text-gray-800 hover:text-indigo-600 hover:underline dark:text-gray-200 dark:hover:text-indigo-400"
+                        >
+                            {title}
+                        </Link>
+                    ) : (
+                        <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
+                    )}
                     <div className="mt-0.5 flex flex-nowrap items-center gap-x-1.5 overflow-hidden sm:gap-x-2">
                         {subtitle && <p className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
                         {subtitle && deletedLabel && <span className="shrink-0 text-gray-300 dark:text-gray-600">·</span>}

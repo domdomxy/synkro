@@ -577,13 +577,19 @@ class ProjectController extends Controller
         $recipients = $project->members()->where('users.id', '!=', Auth::id())->get();
         foreach ($recipients as $recipient) {
             if (\App\Support\NotificationPreferences::wantsType($recipient, 'project_deleted')) {
-                \App\Models\UserNotification::create([
+                $notification = \App\Models\UserNotification::create([
                     'user_id' => $recipient->id,
-                    'type' => 'project_deleted',
+                    'type' => 'project_restored',
                     'causer_id' => Auth::id(),
                     'message' => "Project restored\n\"**{$project->name}**\" was restored from the trash",
                     'url' => route('projects.show', $project->id, false),
                 ]);
+
+                try {
+                    broadcast(new \App\Events\ProjectRestored($recipient->id, $project->name, $project->id, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
 
             NotificationMailer::send(
