@@ -72,7 +72,7 @@ function LogOutIcon({ className }) {
 
 function TrashIcon({ className }) {
     return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
     );
@@ -123,7 +123,7 @@ function MenuButton({ onClick, icon, children }) {
  * (same floating panel on both): avatar + name + email up top, an inline
  * quick-theme toggle, then Account/Settings links and Log Out at the bottom.
  */
-export default function AccountMenu({ user, theme, onThemeChange, onNavigate, navLinks, onOpenSettings, onOpenAccount }) {
+export default function AccountMenu({ user, theme, onThemeChange, onNavigate, navLinks, onOpenSettings, onOpenAccount, onOpenTrash }) {
     // DropDownContext is only present when AccountMenu is rendered inside the
     // shared Dropdown (desktop + mobile floating menu). The Content panel no
     // longer closes on any click inside it (that used to swallow clicks on
@@ -227,9 +227,15 @@ export default function AccountMenu({ user, theme, onThemeChange, onNavigate, na
             <div className="border-t border-gray-100 dark:border-gray-700" />
 
             <div className="py-1">
-                <MenuLink href={route('trash.index')} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
-                    Trash
-                </MenuLink>
+                {onOpenTrash ? (
+                    <MenuButton onClick={() => { closeMenu(); onOpenTrash(); }} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />}>
+                        Trash
+                    </MenuButton>
+                ) : (
+                    <MenuLink href={route('trash.index')} icon={<TrashIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />} onNavigate={closeMenu}>
+                        Trash
+                    </MenuLink>
+                )}
             </div>
 
             <div className="border-t border-gray-100 dark:border-gray-700" />

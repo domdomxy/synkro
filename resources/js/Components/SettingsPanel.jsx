@@ -22,6 +22,16 @@ function LinkIcon({ className }) {
     );
 }
 
+// Same glyph as Trash.jsx's own TrashIcon - kept as a local copy rather than
+// a shared import since Trash.jsx is a page module, not a component one.
+function TrashIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    );
+}
+
 const categoryIcons = {
     account: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -85,6 +95,12 @@ const settingsNavItems = [
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
         ),
+    },
+    {
+        id: 'trash',
+        label: 'Trash',
+        terms: ['Trash', 'Deleted items', 'Recently deleted', 'Restore', 'Recycle bin', 'Purge'],
+        icon: <TrashIcon className="h-5 w-5" />,
     },
     {
         id: 'support',
@@ -166,6 +182,7 @@ const SECTION_META = {
     appearance: { title: 'Appearance', description: 'Choose how Synkro looks on this device' },
     'trusted-sites': { title: 'Trusted Sites', description: 'Manage links you\'ve told Synkro to trust' },
     notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
+    trash: { title: 'Trash', description: 'Review deleted projects and tasks before they\'re gone for good' },
     support: { title: 'Support', description: 'Get help, report a bug, or send us feedback' },
 };
 
@@ -328,7 +345,16 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
         </div>
     );
 }
-export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, initialSection, onClose }) {
+// How many whole days remain before the soonest-purging trashed item is gone
+// for good - same calculation as Trash.jsx's own daysLeft(), duplicated here
+// for the same reason TrashIcon is: this is a component module, not a page.
+function daysUntil(dateString) {
+    if (!dateString) return null;
+    const ms = new Date(dateString) - new Date();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashSummary, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
@@ -790,6 +816,96 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                             </div>
                         </div>
                     </form>
+                    )}
+
+                    {activeSection === 'trash' && (
+                    <div className="space-y-4">
+                        {(() => {
+                            const trashCount = trashSummary?.count ?? 0;
+                            const daysLeft = daysUntil(trashSummary?.nextPurgeAt);
+                            const urgent = daysLeft !== null && daysLeft <= 1;
+                            const soon = daysLeft !== null && daysLeft > 1 && daysLeft <= 3;
+                            return (
+                                <div
+                                    role="status"
+                                    className={`flex items-center gap-3 rounded-lg border p-4 ${
+                                        urgent
+                                            ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20'
+                                            : soon
+                                                ? 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20'
+                                                : 'border-gray-200 bg-gray-50/60 dark:border-gray-700 dark:bg-black/20'
+                                    }`}
+                                >
+                                    <span
+                                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                                            urgent
+                                                ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                                                : soon
+                                                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+                                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                        }`}
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </span>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                                        {trashCount === 0 ? (
+                                            'Your trash is empty.'
+                                        ) : (
+                                            <>
+                                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                    {trashCount} item{trashCount === 1 ? '' : 's'}
+                                                </span>{' '}
+                                                {trashCount === 1 ? 'is' : 'are'} waiting in your trash.
+                                                {daysLeft !== null && (
+                                                    <>
+                                                        {' '}
+                                                        {daysLeft === 0
+                                                            ? 'One or more purge for good today.'
+                                                            : `The soonest purges for good in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`}
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            );
+                        })()}
+
+                        <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                            Deleted projects and tasks sit in your trash before they're gone for good. From there
+                            you can restore them, permanently delete them, or send more items to the trash without
+                            opening each one individually.
+                        </p>
+
+                        {overlayActions?.switchToTrash ? (
+                            <button
+                                type="button"
+                                onClick={() => overlayActions.switchToTrash()}
+                                className="flex w-full items-center gap-3 rounded-lg border border-gray-200 p-4 text-start transition hover:border-indigo-300 hover:bg-indigo-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                            >
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <TrashIcon className="h-5 w-5" />
+                                </span>
+                                <span>
+                                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Open Trash</span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Review, search, restore, or permanently delete items</span>
+                                </span>
+                            </button>
+                        ) : (
+                            <Link
+                                href={route('trash.index')}
+                                className="flex items-center gap-3 rounded-lg border border-gray-200 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-700 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                            >
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <TrashIcon className="h-5 w-5" />
+                                </span>
+                                <span>
+                                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Open Trash</span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400">Review, search, restore, or permanently delete items</span>
+                                </span>
+                            </Link>
+                        )}
+                    </div>
                     )}
 
                     {activeSection === 'support' && (
