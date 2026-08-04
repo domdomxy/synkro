@@ -1181,7 +1181,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isH
     };
 
     const deleteTask = async () => {
-        if (await confirm(`"${task.title}" will be permanently deleted. This cannot be undone.`, { title: 'Delete Task?', danger: true, confirmLabel: 'Delete' })) {
+        if (await confirm(`"${task.title}" will be moved to trash. You can restore it from Trash before it's permanently deleted.`, { title: 'Delete Task?', danger: true, confirmLabel: 'Delete' })) {
             router.delete(route('tasks.destroy', task.id), { preserveScroll: true });
         }
     };

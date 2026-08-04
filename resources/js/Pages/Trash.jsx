@@ -85,6 +85,14 @@ function formatDeletedAt(deletedAt) {
     return new Date(deletedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+// Compact form used on narrow screens where the full "medium" date + time
+// (e.g. "Aug 3, 2026, 10:19 PM") is too wide to sit next to the subtitle and
+// grace badge without wrapping the row onto a second line.
+function formatDeletedAtShort(deletedAt) {
+    if (!deletedAt) return null;
+    return new Date(deletedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function GraceBadge({ graceEndsAt }) {
     const days = daysLeft(graceEndsAt);
     if (days === null) return null;
@@ -209,26 +217,44 @@ function RowActionsMenu({ onRestore, onDelete }) {
 
 function TrashRow({ icon, title, subtitle, deletedAt, graceEndsAt, selected, onToggleSelect, onRestore, onDelete }) {
     const deletedLabel = formatDeletedAt(deletedAt);
+    const deletedLabelShort = formatDeletedAtShort(deletedAt);
     return (
+        // flex-nowrap (not flex-wrap) is the fix for the row dropping the
+        // kebab menu onto its own line on narrow/mobile widths - the row now
+        // always stays on one line, and the text block shrinks + truncates
+        // instead of pushing the actions button out.
         <div
             className={
-                'flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3.5 transition last:border-0 dark:border-gray-700 ' +
+                'flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
                 (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
             }
         >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                 <Checkbox checked={selected} onChange={onToggleSelect} className="shrink-0" />
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 sm:h-8 sm:w-8">
                     {icon}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        {subtitle && <p className="truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
-                        {subtitle && deletedLabel && <span className="text-gray-300 dark:text-gray-600">·</span>}
-                        {deletedLabel && <p className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">Deleted {deletedLabel}</p>}
-                        {deletedLabel && <span className="text-gray-300 dark:text-gray-600">·</span>}
-                        <GraceBadge graceEndsAt={graceEndsAt} />
+                    <div className="mt-0.5 flex flex-nowrap items-center gap-x-1.5 overflow-hidden sm:gap-x-2">
+                        {subtitle && <p className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
+                        {subtitle && deletedLabel && <span className="shrink-0 text-gray-300 dark:text-gray-600">·</span>}
+                        {deletedLabel && (
+                            <>
+                                {/* Full date+time from ~sm up; a short "Aug 3" form below that so the
+                                    row never needs a second line to fit it. */}
+                                <p className="hidden shrink-0 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 sm:inline">
+                                    Deleted {deletedLabel}
+                                </p>
+                                <p className="shrink-0 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                                    {deletedLabelShort}
+                                </p>
+                            </>
+                        )}
+                        {deletedLabel && <span className="shrink-0 text-gray-300 dark:text-gray-600">·</span>}
+                        <span className="shrink-0">
+                            <GraceBadge graceEndsAt={graceEndsAt} />
+                        </span>
                     </div>
                 </div>
             </div>
@@ -433,19 +459,21 @@ export default function Trash({ trashedProjects, trashedTasks }) {
             </div>
         }>
             <Head title="Trash" />
-            <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-4xl space-y-4 px-3 sm:space-y-6 sm:px-6 lg:px-8">
                     <p className="text-sm text-gray-400 dark:text-gray-500">
                         Deleted projects and tasks sit here before they're gone for good. Only projects you own and tasks in projects you manage show up here.
                     </p>
 
                     <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
+                        {/* flex-nowrap: the search box flexes/shrinks instead of the Filters
+                            button dropping to a second line on narrow screens. */}
+                        <div className="flex flex-nowrap items-center gap-2">
                             <SearchInput
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search trash..."
-                                className="w-56 text-sm"
+                                className="w-full min-w-0 text-sm sm:w-56"
                             />
                             <FiltersMenu activeCount={activeFilterCount} onClear={clearFilters}>
                                 <FiltersMenu.Row label="Type">
@@ -463,7 +491,7 @@ export default function Trash({ trashedProjects, trashedTasks }) {
                     </div>
 
                     {selectedCount > 0 && (
-                        <div className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-indigo-50 px-4 py-3 shadow dark:bg-indigo-950/40">
+                        <div className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-indigo-50 px-3 py-2.5 shadow dark:bg-indigo-950/40 sm:gap-3 sm:px-4 sm:py-3">
                             <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
                                 {selectedCount} item{selectedCount === 1 ? '' : 's'} selected
                                 {selectedProjectIds.length > 0 && selectedTaskIds.length > 0 && (
@@ -472,22 +500,24 @@ export default function Trash({ trashedProjects, trashedTasks }) {
                                     </span>
                                 )}
                             </p>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <button onClick={clearSelection} className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
-                                    Clear selection
+                                    Clear
                                 </button>
                                 <button
                                     onClick={restoreSelected}
-                                    className="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-700 dark:bg-gray-800 dark:text-indigo-300 dark:hover:bg-gray-700"
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 bg-white px-2.5 py-1 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-700 dark:bg-gray-800 dark:text-indigo-300 dark:hover:bg-gray-700 sm:px-3 sm:py-1.5"
                                 >
                                     <UndoIcon />
-                                    Restore selected
+                                    <span className="hidden sm:inline">Restore selected</span>
+                                    <span className="sm:hidden">Restore</span>
                                 </button>
                                 <button
                                     onClick={deleteSelectedForever}
-                                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
+                                    className="rounded-md bg-red-600 px-2.5 py-1 text-sm font-medium text-white transition hover:bg-red-500 sm:px-3 sm:py-1.5"
                                 >
-                                    Delete forever
+                                    <span className="hidden sm:inline">Delete forever</span>
+                                    <span className="sm:hidden">Delete</span>
                                 </button>
                             </div>
                         </div>

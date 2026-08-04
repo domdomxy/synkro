@@ -282,7 +282,7 @@ class ProjectController extends Controller
                 $recipient,
                 'project.deletion_requested',
                 "{$project->name} deletion requested",
-                ["**" . Auth::user()->name . "** has requested to delete the project \"**{$project->name}**\" (#{$project->id}). It will be permanently removed once the owner confirms by email, unless cancelled first."],
+                ["**" . Auth::user()->name . "** has requested to delete the project \"**{$project->name}**\" (#{$project->id}). It will move to trash once the owner confirms by email, unless cancelled first."],
                 url(route('projects.settings', $project->id, false)),
                 'View Project Settings'
             );
@@ -340,13 +340,15 @@ class ProjectController extends Controller
             ['project' => $project->id]
         );
 
+        $graceDays = (int) config('synkro.project_deletion_grace_days', 7);
+
         try {
             \Illuminate\Support\Facades\Mail::to(Auth::user()->email)->queue(
                 new \App\Mail\SynkroNotificationMail(
                     Auth::user()->name,
                     "Confirm deletion of {$project->name}",
                     [
-                        "You requested to permanently delete the project \"**{$project->name}**\" (#{$project->id}). This cannot be undone once confirmed.",
+                        "You requested to delete the project \"**{$project->name}**\" (#{$project->id}). Confirming moves it to trash, where you'll have {$graceDays} day(s) to restore it before it's gone for good.",
                         'This link expires in 24 hours. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
                     ],
                     $confirmUrl,

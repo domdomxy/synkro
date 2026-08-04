@@ -1048,7 +1048,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             <span>
                                 {isOwner
                                     ? 'You requested to delete this project. Check your email for the confirmation link — nothing has been deleted yet.'
-                                    : 'The project owner has requested to delete this project. It will be permanently removed once they confirm by email.'}
+                                    : "The project owner has requested to delete this project. It will move to trash once they confirm by email, and can still be restored for a few days after that."}
                             </span>
                             {isOwner && (
                                 <div className="flex flex-wrap items-center gap-2">

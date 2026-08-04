@@ -801,10 +801,10 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                         <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
-                    <MyNotesPanel notesByProject={myNotes} />
+                    <DueSoonPanel dueSoon={stats.dueSoon} />
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <DueSoonPanel dueSoon={stats.dueSoon} />
+                        <MyNotesPanel notesByProject={myNotes} />
 
                         <RemindersPanel reminders={stats.reminders} highlightedReminderId={highlightedReminderId} />
                     </div>

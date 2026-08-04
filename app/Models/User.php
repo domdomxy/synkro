@@ -198,11 +198,11 @@ class User extends Authenticatable implements MustVerifyEmail
             'account.deletion_requested',
             'Confirm account deletion',
             [
-                'We received a request to permanently delete your Synkro account. Nothing has been deleted yet.',
+                'We received a request to delete your Synkro account. Nothing has been deleted yet — confirming starts a grace period during which you can still restore it by logging back in.',
                 "This link expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email and your account will stay exactly as it is.",
             ],
             $confirmUrl,
-            'Permanently Delete My Account'
+            'Confirm Account Deletion'
         );
     }
 

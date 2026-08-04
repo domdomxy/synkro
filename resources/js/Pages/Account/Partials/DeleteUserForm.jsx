@@ -64,8 +64,9 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
                             Deletion pending confirmation
                         </p>
                         <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                            We've emailed you a link to confirm permanently deleting your account. Your account
-                            stays exactly as it is unless you click that link.
+                            We've emailed you a link to confirm deleting your account. Your account
+                            stays exactly as it is unless you click that link — confirming starts the {deletionGraceDays}-day
+                            grace period, it doesn't delete anything immediately.
                         </p>
                     </div>
                 </div>
