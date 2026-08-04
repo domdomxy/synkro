@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TrustedHostsUpdated;
 use Illuminate\Http\Request;
 
 /**
@@ -34,6 +35,7 @@ class TrustedHostController extends Controller
         if (! in_array($host, $hosts, true)) {
             $hosts[] = $host;
             $user->update(['trusted_link_hosts' => $hosts]);
+            $this->broadcastHosts($user->id, $hosts);
         }
 
         return response()->json(['hosts' => $hosts]);
@@ -46,6 +48,7 @@ class TrustedHostController extends Controller
         $user = $request->user();
         $hosts = array_values(array_diff($user->trusted_link_hosts ?? [], [$host]));
         $user->update(['trusted_link_hosts' => $hosts]);
+        $this->broadcastHosts($user->id, $hosts);
 
         return response()->json(['hosts' => $hosts]);
     }
@@ -53,6 +56,7 @@ class TrustedHostController extends Controller
     public function destroyAll(Request $request)
     {
         $request->user()->update(['trusted_link_hosts' => []]);
+        $this->broadcastHosts($request->user()->id, []);
 
         return response()->json(['hosts' => []]);
     }
@@ -60,5 +64,18 @@ class TrustedHostController extends Controller
     private function normalize(string $host): string
     {
         return strtolower(substr(trim($host), 0, 255));
+    }
+
+    /**
+     * Self-sync only - lets any other open tab/device keep the same trusted
+     * list this one just saved (see TrustedHostsUpdated's docblock).
+     */
+    private function broadcastHosts(int $userId, array $hosts): void
+    {
+        try {
+            broadcast(new TrustedHostsUpdated($userId, $hosts))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

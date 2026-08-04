@@ -12,6 +12,10 @@ import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import SuspensionListener from '@/Components/SuspensionListener';
 import AccountDeletedListener from '@/Components/AccountDeletedListener';
+import AccountDeactivatedListener from '@/Components/AccountDeactivatedListener';
+import DeviceDisconnectedListener from '@/Components/DeviceDisconnectedListener';
+import TrustedHostsSyncListener from '@/Components/TrustedHostsSyncListener';
+import AvatarSyncListener from '@/Components/AvatarSyncListener';
 import PasswordResetListener from '@/Components/PasswordResetListener';
 import useRouteOverlay, { RouteOverlayActionsContext } from '@/hooks/useRouteOverlay';
 import SettingsPanel from '@/Components/SettingsPanel';
@@ -258,6 +262,10 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
             </nav>
             <SuspensionListener />
             <AccountDeletedListener />
+            <AccountDeactivatedListener />
+            <DeviceDisconnectedListener />
+            <TrustedHostsSyncListener />
+            <AvatarSyncListener />
             <PasswordResetListener />
             <NotificationToast />
             {header && (

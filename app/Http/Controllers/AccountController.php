@@ -6,7 +6,10 @@ use App\Http\Requests\AccountUpdateRequest;
 use App\Models\AccountActivityLog;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Events\AccountDeactivated;
 use App\Events\AccountDeleted;
+use App\Events\AccountDeletionRequestUpdated;
+use App\Events\AvatarUpdated;
 use App\Events\EmailChanged;
 use App\Events\MemberLeftProject;
 use App\Events\MemberNameChanged;
@@ -194,6 +197,12 @@ class AccountController extends Controller
 
         $user->sendAccountDeletionConfirmationNotification();
 
+        try {
+            broadcast(new AccountDeletionRequestUpdated($user->id, true, $user->deletion_requested_at?->toIso8601String()))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return Redirect::route('account.edit')->with(
             'success',
             "We've sent a confirmation link to {$user->email}. Your account won't be deleted until you click it."
@@ -279,6 +288,12 @@ class AccountController extends Controller
         $user->forceFill(['deletion_requested_at' => null])->save();
 
         AccountActivityLog::log('account_deletion_cancelled');
+
+        try {
+            broadcast(new AccountDeletionRequestUpdated($user->id, false))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return Redirect::route('account.edit')->with('success', 'Account deletion cancelled.');
     }
@@ -407,6 +422,12 @@ class AccountController extends Controller
 
         AccountActivityLog::log('avatar_updated');
 
+        try {
+            broadcast(new AvatarUpdated($user->id))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return Redirect::route('account.edit')->with('success', 'Avatar updated.');
     }
 
@@ -418,6 +439,12 @@ class AccountController extends Controller
             Storage::disk('public')->delete($user->avatar_path);
             $user->update(['avatar_path' => null]);
             AccountActivityLog::log('avatar_removed');
+
+            try {
+                broadcast(new AvatarUpdated($user->id))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return Redirect::route('account.edit')->with('success', 'Avatar removed.');
@@ -492,6 +519,18 @@ class AccountController extends Controller
         $user->update(['is_active' => false, 'active_status_changed_at' => now()]);
 
         AccountActivityLog::log('account_deactivated', [], $user->id);
+
+        // Every open tab/device for this account, not just this session -
+        // deactivating today only ever logged out the session that made
+        // this request (see AccountDeactivated's docblock). Deliberately
+        // NOT ->toOthers(): this session is about to be torn down by
+        // Auth::logout()/session invalidation below anyway, so it doesn't
+        // matter whether it also receives its own broadcast.
+        try {
+            broadcast(new AccountDeactivated($user->id));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         Auth::logout();
         $request->session()->invalidate();

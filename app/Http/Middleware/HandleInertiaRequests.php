@@ -35,6 +35,12 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                // Same id already sent per-row in the "Logged in devices" list
+                // (DeviceSessionData) marking is_current - shared here too so
+                // any listener can tell whether a DeviceDisconnected broadcast
+                // is about *this* tab without a fresh round trip. Not new
+                // exposure, just the same value made available app-wide.
+                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

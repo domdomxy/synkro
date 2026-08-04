@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\EmailPreferencesUpdated;
+use App\Events\NotificationPreferencesUpdated;
 use App\Support\DeviceSessionData;
 use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
@@ -39,7 +41,14 @@ class SettingsController extends Controller
             'preferences.*' => 'boolean',
         ]);
 
-        $request->user()->update(['email_preferences' => $validated['preferences']]);
+        $user = $request->user();
+        $user->update(['email_preferences' => $validated['preferences']]);
+
+        try {
+            broadcast(new EmailPreferencesUpdated($user->id, $validated['preferences']))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('success', 'Email preferences updated.');
     }
@@ -51,7 +60,14 @@ class SettingsController extends Controller
             'preferences.*' => 'boolean',
         ]);
 
-        $request->user()->update(['notification_preferences' => $validated['preferences']]);
+        $user = $request->user();
+        $user->update(['notification_preferences' => $validated['preferences']]);
+
+        try {
+            broadcast(new NotificationPreferencesUpdated($user->id, $validated['preferences']))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('success', 'Notification preferences updated.');
     }

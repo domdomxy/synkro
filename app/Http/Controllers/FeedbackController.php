@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Events\FeedbackReplied;
+use App\Events\TicketUserClosed;
+use App\Events\TicketUserReopened;
+use App\Events\TicketUserReplied;
 use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
 use App\Models\User;
@@ -99,6 +102,14 @@ class FeedbackController extends Controller
 
         $this->notifyAdmins($feedback, $request->message);
 
+        if ($user = $this->registeredOwner($feedback)) {
+            try {
+                broadcast(new TicketUserReplied($user->id, $feedback->tracking_id, $feedback->subject, $request->message))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return response()->json(['success' => true, 'response' => $response]);
     }
 
@@ -122,6 +133,14 @@ class FeedbackController extends Controller
         }
 
         $feedback->update(['status' => 'closed']);
+
+        if ($user = $this->registeredOwner($feedback)) {
+            try {
+                broadcast(new TicketUserClosed($user->id, $feedback->tracking_id, $feedback->subject))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return response()->json(['success' => true, 'status' => 'closed']);
     }
@@ -147,7 +166,28 @@ class FeedbackController extends Controller
 
         $feedback->update(['status' => 'pending']);
 
+        if ($user = $this->registeredOwner($feedback)) {
+            try {
+                broadcast(new TicketUserReopened($user->id, $feedback->tracking_id, $feedback->subject))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return response()->json(['success' => true, 'status' => 'pending']);
+    }
+
+    /**
+     * Feedback tickets are guests by default (just an email on the ticket),
+     * so most have no account to sync live - only if that email happens to
+     * belong to a registered user is there a private channel to broadcast
+     * on at all. Same lookup FeedbackAdminController::notifySubmitterInApp()
+     * already does for the admin->user direction; this is the reverse
+     * (user->their own other devices) for reply()/close()/reopen() above.
+     */
+    private function registeredOwner(Feedback $feedback): ?User
+    {
+        return User::where('email', $feedback->email)->first();
     }
 
     /**

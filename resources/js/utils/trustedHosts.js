@@ -88,3 +88,14 @@ export function subscribeTrustedHosts(callback) {
     window.addEventListener(CHANGE_EVENT, handler);
     return () => window.removeEventListener(CHANGE_EVENT, handler);
 }
+
+/**
+ * Applies a trusted-hosts list that arrived from a TrustedHostsUpdated
+ * broadcast (a change made on a *different* tab/device) - see
+ * TrustedHostsSyncListener.jsx. Reuses the same module-scope cache and
+ * CHANGE_EVENT as every other write here, so both this tab's Settings
+ * panel and its ExternalLinkGuard pick it up exactly like a local change.
+ */
+export function applyRemoteTrustedHosts(hosts) {
+    broadcast(hosts);
+}
