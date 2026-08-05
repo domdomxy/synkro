@@ -86,9 +86,10 @@ function CalendarView({ tasks }) {
     }, [tasks, calRange]);
 
     const today = new Date().toDateString();
+    const now = new Date();
 
     const rangeLabel = calRange === 'week'
-        ? `Week of ${days[0]?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+        ? `Week of ${days[0]?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`
         : calRange === 'month'
         ? baseDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
         : baseDate.getFullYear().toString();
@@ -121,9 +122,10 @@ function CalendarView({ tasks }) {
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {days.map((d, i) => {
                         const monthTasks = tasksByDay[i] ?? [];
+                        const isCurrentMonth = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
                         return (
-                            <div key={i} className="rounded-md border border-gray-100 p-2 dark:border-gray-700">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{d.toLocaleDateString(undefined, { month: 'short' })}</p>
+                            <div key={i} className={`rounded-md border p-2 transition-colors ${isCurrentMonth ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' : 'border-gray-100 dark:border-gray-700'}`}>
+                                <p className={`text-xs font-medium ${isCurrentMonth ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>{d.toLocaleDateString(undefined, { month: 'short' })}</p>
                                 {monthTasks.length > 0 && <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">{monthTasks.length} deadline{monthTasks.length > 1 ? 's' : ''}</p>}
                             </div>
                         );

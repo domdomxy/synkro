@@ -98,11 +98,18 @@ function TasksByStatusCard({ tasksByStatus, total }) {
 function RecentPanel({ title, icon, viewAllHref, viewAllLabel, children }) {
     return (
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
-            <SectionHeader title={title} icon={icon} />
+            <SectionHeader title={title} icon={icon}>
+                <Link
+                    href={viewAllHref}
+                    className="group inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-900/50 dark:focus-visible:ring-offset-gray-900"
+                >
+                    {viewAllLabel}
+                    <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </Link>
+            </SectionHeader>
             {children}
-            <Link href={viewAllHref} className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                {viewAllLabel} <span aria-hidden>→</span>
-            </Link>
         </div>
     );
 }

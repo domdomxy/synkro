@@ -2,8 +2,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 function FolderIcon({ className = 'h-5 w-5' }) {
     return (
@@ -88,6 +89,7 @@ export default function Deliverables({ project, tasks }) {
     const linkTasks = tasks.filter((t) => t.deliverables.some((d) => d.type === 'link'));
     const hasAnyFiles = folderTasks.length > 0;
     const [previewingDeliverable, setPreviewingDeliverable] = useState(null);
+    const toolbarRef = useRef(null);
 
     return (
         <AuthenticatedLayout header={
@@ -102,7 +104,7 @@ export default function Deliverables({ project, tasks }) {
             <div className="py-12">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div ref={toolbarRef} className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-400 dark:text-gray-500">Files and links from completed tasks</p>
                         {hasAnyFiles && (
                             <a
@@ -156,6 +158,8 @@ export default function Deliverables({ project, tasks }) {
             </div>
 
             <DeliverableViewer deliverable={previewingDeliverable} onClose={() => setPreviewingDeliverable(null)} />
+
+            <ScrollToPaginationButton targetRef={toolbarRef} />
         </AuthenticatedLayout>
     );
 }

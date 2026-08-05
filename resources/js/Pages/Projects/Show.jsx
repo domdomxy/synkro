@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
@@ -719,6 +720,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // Mobile swipeable panes: Team <-> Tasks <-> Notes, opening on Tasks.
     const teamPaneRef = useRef(null);
     const tasksPaneRef = useRef(null);
+    const taskToolbarRef = useRef(null);
     const notesPaneRef = useRef(null);
 
     useEffect(() => {
@@ -1300,7 +1302,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 </>
                             )}
 
-                            <div className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                            <div ref={taskToolbarRef} className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>
@@ -1464,6 +1466,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             />
             {ConfirmDialog}
             {MuteScopeDialog}
+
+            {viewMode === 'list' && <ScrollToPaginationButton targetRef={taskToolbarRef} />}
         </AuthenticatedLayout>
     );
 }

@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import Linkify from '@/Components/Linkify';
 import FilterSelect from '@/Components/FilterSelect';
@@ -8,6 +8,7 @@ import FiltersMenu from '@/Components/FiltersMenu';
 import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ManageCategoriesModal from '@/Components/ManageCategoriesModal';
 import ImageLightbox from '@/Components/ImageLightbox';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -218,6 +219,7 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
     const [status, setStatus] = useState(filters.status ?? '');
     const [highlightedTicketId, setHighlightedTicketId] = useState(null);
     const [manageOpen, setManageOpen] = useState(false);
+    const toolbarRef = useRef(null);
 
     useEffect(() => {
         const ticketId = new URLSearchParams(window.location.search).get('ticket');
@@ -261,7 +263,7 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
             <Head title="Admin - Feedback" />
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-wrap items-end gap-3">
+                    <div ref={toolbarRef} className="flex flex-wrap items-end gap-3">
                         <input
                             type="text"
                             value={search}
@@ -331,6 +333,8 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
             </div>
 
             <ManageCategoriesModal show={manageOpen} onClose={() => setManageOpen(false)} categories={categories} />
+
+            <ScrollToPaginationButton targetRef={toolbarRef} />
         </AuthenticatedLayout>
     );
 }

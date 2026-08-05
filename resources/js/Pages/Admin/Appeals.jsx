@@ -3,10 +3,11 @@ import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
 import Linkify from '@/Components/Linkify';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
 import { Link } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -254,6 +255,7 @@ function AppealItem({ appeal }) {
 export default function Appeals({ appeals, filters }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [search, setSearch] = useState(filters?.search ?? '');
+    const toolbarRef = useRef(null);
 
     const applySearch = () => router.get(route('admin.appeals'), { search, status: statusFilter !== 'all' ? statusFilter : undefined }, { preserveState: true });
 
@@ -274,7 +276,7 @@ export default function Appeals({ appeals, filters }) {
             <Head title="Admin - Appeals" />
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div ref={toolbarRef} className="flex flex-wrap items-center gap-3">
                         <div className="relative">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon />
@@ -326,6 +328,8 @@ export default function Appeals({ appeals, filters }) {
                     </div>
                 </div>
             </div>
+
+            <ScrollToPaginationButton targetRef={toolbarRef} />
         </AuthenticatedLayout>
     );
 }

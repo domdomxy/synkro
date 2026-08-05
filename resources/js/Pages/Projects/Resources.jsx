@@ -3,6 +3,7 @@ import BackButton from '@/Components/BackButton';
 import Modal from '@/Components/Modal';
 import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
+import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import useConfirm from '@/hooks/useConfirm';
 import { Head, useForm, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -657,6 +658,7 @@ export default function Resources({ project, resources, canManage }) {
     const [editingResource, setEditingResource] = useState(null);
     const [previewingResource, setPreviewingResource] = useState(null);
     const { confirm, ConfirmDialog } = useConfirm();
+    const toolbarRef = useRef(null);
 
     const deleteResource = async (resource) => {
         if (await confirm(`"${resource.name}" will be permanently removed for everyone.`, {
@@ -687,7 +689,7 @@ export default function Resources({ project, resources, canManage }) {
             <div className="py-12">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div ref={toolbarRef} className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-400 dark:text-gray-500">
                             Packages, sources, and references shared by the project's owner and managers
                         </p>
@@ -742,6 +744,8 @@ export default function Resources({ project, resources, canManage }) {
             {canManage && <EditResourceModal resource={editingResource} onClose={() => setEditingResource(null)} />}
             <DeliverableViewer deliverable={previewDeliverable} onClose={() => setPreviewingResource(null)} />
             {ConfirmDialog}
+
+            <ScrollToPaginationButton targetRef={toolbarRef} />
         </AuthenticatedLayout>
     );
 }
