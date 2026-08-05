@@ -190,49 +190,49 @@ function describeLog(log, actorName = null) {
         case 'project_updated': return `${actor} updated the project`;
         case 'member_added': return `${actor} added ${target} as ${role}`;
         case 'member_removed': return `${actor} removed ${target} (${role})`;
-        case 'member_left': return `${actor} left the project`;
-        case 'role_changed': return `${actor} changed ${target}'s role from ${oldRole} to ${newRole}`;
+        case 'member_left': return `**${actor}** left the project`;
+        case 'role_changed': return `**${actor}** changed ${target}'s role from ${oldRole} to ${newRole}`;
         case 'ownership_transferred': return `${actor} transferred ownership to ${target}`;
-        case 'task_created': return `${actor} created task "${d.task_title}"`;
-        case 'task_deleted': return `${actor} deleted task "${d.task_title}"`;
-        case 'task_restored': return `${actor} restored task "${d.task_title}" from the trash`;
-        case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${target}`;
-        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ? `**${d.old_assignee}**` : 'unassigned'} to ${d.new_assignee ? `**${d.new_assignee}**` : 'unassigned'}`;
-        case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee ? `**${d.old_assignee}**` : d.old_assignee})`;
-        case 'task_updated': return `${actor} updated "${d.task_title}"`;
-        case 'task_started': return `${actor} started "${d.task_title}"`;
-        case 'task_review_started': return `${actor} started reviewing "${d.task_title}"`;
-        case 'task_approved': return `${actor} approved "${d.task_title}"`;
-        case 'task_rejected': return `${actor} sent "${d.task_title}" back for changes`;
-        case 'submission_reset': return `${actor} reset the submission for "${d.task_title}"`;
-        case 'submission_kept': return `${actor} kept the submission for "${d.task_title}"`;
-        case 'task_reopened': return `${actor} reopened "${d.task_title}" for changes`;
-        case 'checklist_item_updated': return `${actor} renamed a checklist item on "${d.task_title}" from "${d.old_item_title}" to "${d.new_item_title}"`;
-        case 'checklist_item_deleted': return `${actor} removed the checklist item "${d.item_title}" from "${d.task_title}"`;
-        case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
-        case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
+        case 'task_created': return `${actor} created task "**${d.task_title}**"`;
+        case 'task_deleted': return `${actor} deleted task "**${d.task_title}**"`;
+        case 'task_restored': return `${actor} restored task "**${d.task_title}**" from the trash`;
+        case 'task_assigned': return `${actor} assigned "**${d.task_title}**" to ${target}`;
+        case 'task_reassigned': return `${actor} reassigned "**${d.task_title}**" from ${d.old_assignee ? `**${d.old_assignee}**` : 'unassigned'} to ${d.new_assignee ? `**${d.new_assignee}**` : 'unassigned'}`;
+        case 'task_unassigned': return `${actor} unassigned "**${d.task_title}**" (was ${d.old_assignee ? `**${d.old_assignee}**` : d.old_assignee})`;
+        case 'task_updated': return `${actor} updated "**${d.task_title}**"`;
+        case 'task_started': return `${actor} started "**${d.task_title}**"`;
+        case 'task_review_started': return `${actor} started reviewing "**${d.task_title}**"`;
+        case 'task_approved': return `${actor} approved "**${d.task_title}**"`;
+        case 'task_rejected': return `${actor} sent "**${d.task_title}**" back for changes`;
+        case 'submission_reset': return `${actor} reset the submission for "**${d.task_title}**"`;
+        case 'submission_kept': return `${actor} kept the submission for "**${d.task_title}**"`;
+        case 'task_reopened': return `${actor} reopened "**${d.task_title}**" for changes`;
+        case 'checklist_item_updated': return `${actor} renamed a checklist item on "**${d.task_title}**" from "**${d.old_item_title}**" to "**${d.new_item_title}**"`;
+        case 'checklist_item_deleted': return `${actor} removed the checklist item "**${d.item_title}**" from "**${d.task_title}**"`;
+        case 'dependency_added': return `${actor} made "**${d.task_title}**" depend on "**${d.depends_on_title}**"`;
+        case 'dependency_removed': return `${actor} removed the dependency of "**${d.task_title}**" on "**${d.depends_on_title}**"`;
         case 'invitation_denied': return `${actor} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${target} as ${role}`;
         case 'invitation_accepted': return `${actor} accepted the invitation and joined as ${role}`;
-        case 'comment_added': return `${actor} commented on "${d.task_title}"`;
-        case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
-        case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
-        case 'resource_added': return `${actor} added the file "${d.name}"`;
-        case 'resource_updated': return `${actor} updated the file "${d.old_name}"`;
-        case 'resource_removed': return `${actor} removed the file "${d.name}"`;
-        case 'account_created': return `${actor} created ${possessive} account`;
-        case 'password_changed': return `${actor} changed ${possessive} password`;
-        case 'password_reset': return `${actor} reset ${possessive} password`;
-        case 'profile_updated': return `${actor} updated ${possessive} profile`;
-        case 'avatar_updated': return `${actor} updated ${possessive} account photo`;
-        case 'avatar_removed': return `${actor} removed ${possessive} account photo`;
-        case 'account_deactivated': return `${actor} deactivated ${possessive} account`;
+        case 'comment_added': return `${actor} commented on "**${d.task_title}**"`;
+        case 'comment_edited': return `${actor} edited a comment on "**${d.task_title}**"`;
+        case 'comment_deleted': return `${actor} deleted a comment on "**${d.task_title}**"`;
+        case 'resource_added': return `${actor} added the file "**${d.name}**"`;
+        case 'resource_updated': return `${actor} updated the file "**${d.old_name}**"`;
+        case 'resource_removed': return `${actor} removed the file "**${d.name}**"`;
+        case 'account_created': return `${actor} created **${possessive} account**`;
+        case 'password_changed': return `${actor} changed **${possessive} password**`;
+        case 'password_reset': return `${actor} reset **${possessive} password**`;
+        case 'profile_updated': return `${actor} updated **${possessive} profile**`;
+        case 'avatar_updated': return `${actor} updated **${possessive} account photo**`;
+        case 'avatar_removed': return `${actor} removed **${possessive} account photo**`;
+        case 'account_deactivated': return `${actor} deactivated **${possessive} account**`;
         case 'account_deletion_requested': return actorName
             ? `${actor} requested account deletion`
             : `${actor} requested account deletion — check your email to confirm`;
-        case 'account_deletion_cancelled': return `${actor} cancelled the pending account deletion`;
-        case 'account_deleted': return `${actor} deleted ${possessive} account`;
-        case 'account_restored': return `${actor} restored ${possessive} account`;
+        case 'account_deletion_cancelled': return `**${actor} cancelled the pending account deletion**`;
+        case 'account_deleted': return `${actor} deleted **${possessive} account**`;
+        case 'account_restored': return `${actor} restored **${possessive} account**`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }
@@ -405,10 +405,11 @@ function LogRow({ log, actorName, actor }) {
                         {noteBoldSegments(describeLog(log, actorName), 'font-semibold text-gray-900 dark:text-white')}
                     </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                        <span>
                             {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
-                        {relative && <span className="font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
+                        {relative && <span>· {relative}</span>}
+
                         {log.project ? (
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                                 {log.project.name}

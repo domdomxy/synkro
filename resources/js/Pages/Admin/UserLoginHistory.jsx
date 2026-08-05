@@ -38,17 +38,6 @@ const actionIconConfig = {
     logged_out: { path: ICON_PATHS.logout, color: 'text-gray-400' },
 };
 
-function timeAgo(dateString) {
-    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return null;
-}
 
 function formatDuration(seconds) {
     if (seconds === null || seconds === undefined) return null;
@@ -59,6 +48,18 @@ function formatDuration(seconds) {
     const remMinutes = minutes % 60;
     if (hours === 0) return `${remMinutes}m`;
     return remMinutes > 0 ? `${hours}h ${remMinutes}m` : `${hours}h`;
+}
+
+function timeAgo(dateString) {
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return null;
 }
 
 function LoginHistoryRow({ log, onSelect, actor }) {
@@ -100,8 +101,11 @@ function LoginHistoryRow({ log, onSelect, actor }) {
                         </p>
                     )}
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                        {relative && <span className="text-gray-300 dark:text-gray-600">· {relative}</span>}
+                        <span>
+                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        </span>
+                        {relative && <span>· {relative}</span>}
+
                     </p>
                 </div>
                 {hasDeviceInfo && (
@@ -131,6 +135,7 @@ function LoginDetailsModal({ log, onClose }) {
     const d = log?.details ?? {};
     const isMobileDevice = d.device === 'Mobile' || d.device === 'Tablet';
     const deviceValue = [d.model ? `${d.device} (${d.model})` : d.device, d.os].filter(Boolean).join(' · ');
+    const relative = log ? timeAgo(log.created_at) : null;
 
     return (
         <Modal show={!!log} onClose={onClose} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
@@ -138,7 +143,10 @@ function LoginDetailsModal({ log, onClose }) {
                 <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Sign-in details</h3>
                 {log && (
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })}
+                        <span>
+                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })}
+                        </span>
+                        {relative && <span className="ml-1.5">· {relative}</span>}
                     </p>
                 )}
             </div>

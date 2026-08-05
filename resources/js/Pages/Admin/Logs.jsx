@@ -93,22 +93,9 @@ const actionColors = {
 // get the "automated" label instead of "Deleted admin".
 const AUTOMATED_ACTIONS = new Set(['ticket.auto_closed', 'appeal.auto_closed']);
 
-function timeAgo(dateString) {
-    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return null;
-}
-
 function AdminLogRow({ log, actionCatalog }) {
     const [open, setOpen] = useState(false);
     const iconConfig = actionIconConfig[log.action] ?? { path: ICON_PATHS.dot, color: 'text-gray-400' };
-    const relative = timeAgo(log.created_at);
     const description = log.description ?? '';
     const reason = log.reason ?? '';
     const hasReason = reason.trim().length > 0;
@@ -154,10 +141,10 @@ function AdminLogRow({ log, actionCatalog }) {
                         </div>
                     )}
                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                        <span>
                             {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
-                        {relative && <span className="ml-1.5 font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
+                        {relative && <span className="ml-1.5">· {relative}</span>}
                     </p>
                 </div>
                 {hasReason && (

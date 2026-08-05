@@ -25,6 +25,7 @@ function timeAgo(dateString) {
     return null;
 }
 
+
 /**
  * A single activity-log entry: actor avatar (with a small action-type icon
  * badge), description, timestamp, and (when the log carries structured
@@ -64,10 +65,10 @@ export default function LogEntryRow({ log, dense = false }) {
                         {noteBoldSegments(describeLog(log), 'font-semibold text-gray-900 dark:text-white')}
                     </p>
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                        <span>
                             {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
-                        {relative && <span className="ml-1.5 font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
+                        {relative && <span className="ml-1.5">· {relative}</span>}
                     </p>
                 </div>
                 {hasDetails && (
@@ -88,7 +89,7 @@ export default function LogEntryRow({ log, dense = false }) {
                                 {item.isChange ? (
                                     item.isHtml ? (
                                         <div>
-                                            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                            <dt className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                             <div className="mt-1.5 space-y-2">
                                                 <div className="rounded-md border border-red-100 bg-red-50/50 p-2.5 dark:border-red-900 dark:bg-red-950/20">
                                                     <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">Previous</p>
@@ -110,7 +111,7 @@ export default function LogEntryRow({ log, dense = false }) {
                                         </div>
                                     ) : (
                                         <div>
-                                            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                            <dt className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                                                 <span className="break-words rounded bg-red-100 px-2 py-0.5 text-red-700 line-through decoration-red-700/60 dark:bg-red-900/40 dark:text-red-400 dark:decoration-red-400/60">
                                                     {item.oldValue ? <Linkify text={item.oldValue} /> : '-'}
@@ -126,14 +127,14 @@ export default function LogEntryRow({ log, dense = false }) {
                                     )
                                 ) : item.label === 'Comment' ? (
                                     <div>
-                                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                        <dt className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <dd className="mt-1 whitespace-pre-wrap break-words rounded-md border-l-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
                                             <Linkify text={item.value} />
                                         </dd>
                                     </div>
                                 ) : item.label === 'Reason' ? (
                                     <div>
-                                        <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                        <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M6.5 6C4 6 2 8 2 10.5c0 2.2 1.6 4 3.7 4.4-.3 1-1 1.9-2.2 2.6-.3.2-.2.7.2.7 2.9-.2 5.3-2.4 5.3-6.2C9 8 7.8 6 6.5 6zm11 0c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4 3.7 4.4-.3 1-1 1.9-2.2 2.6-.3.2-.2.7.2.7 2.9-.2 5.3-2.4 5.3-6.2 0-3-1.2-6-2.5-6z" />
                                             </svg>
@@ -145,14 +146,14 @@ export default function LogEntryRow({ log, dense = false }) {
                                     </div>
                                 ) : item.label === 'Checklist Item' && dense ? (
                                     <div>
-                                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                        <dt className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <dd className="mt-1 whitespace-pre-wrap break-words rounded-md border-l-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
                                             {item.value}
                                         </dd>
                                     </div>
                                 ) : (
                                     <div className="flex items-baseline gap-2">
-                                        <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
+                                        <dt className="w-28 shrink-0 text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <dd className="break-words text-sm text-gray-700 dark:text-gray-300">
                                             {item.label === 'Reason' ? <Linkify text={item.value} /> : item.value}
                                         </dd>
