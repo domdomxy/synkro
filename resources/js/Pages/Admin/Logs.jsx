@@ -138,7 +138,7 @@ function AdminLogRow({ log, actionCatalog }) {
                     </div>
                     {description && (
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {noteBoldSegments(description, 'font-semibold text-gray-800 dark:text-gray-200')}
+                            {noteBoldSegments(description, 'font-bold text-gray-800 dark:text-gray-200')}
                         </p>
                     )}
                     {hasReason && open && (

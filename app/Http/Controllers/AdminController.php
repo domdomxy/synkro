@@ -450,7 +450,7 @@ class AdminController extends Controller
      */
     public function userLogs(Request $request, User $user)
     {
-        AdminLog::log('user.logs_viewed', "Viewed activity logs for **{$user->name}** ({$user->email})", $user);
+        AdminLog::log('user.logs_viewed', "Viewed activity logs for **{$user->name}** (**{$user->email}**)", $user);
 
         $action = $request->input('action', 'all');
         $projectFilter = $request->input('project', 'all');
@@ -531,7 +531,7 @@ class AdminController extends Controller
      */
     public function userLoginHistory(Request $request, User $user)
     {
-        AdminLog::log('user.login_history_viewed', "Viewed login history for **{$user->name}** ({$user->email})", $user);
+        AdminLog::log('user.login_history_viewed', "Viewed login history for **{$user->name}** (**{$user->email}**)", $user);
 
         $action = $request->input('action', 'all');
 
@@ -649,7 +649,7 @@ public function suspend(Request $request, User $user)
         'suspended_until' => $suspendedUntil,
     ]);
 
-    AdminLog::log('user.suspended', "Suspended **{$user->name}** ({$user->email})", $user, $request->reason);
+    AdminLog::log('user.suspended', "Suspended **{$user->name}** (**{$user->email}**)", $user, $request->reason);
 
     event(new UserSuspended($user));
 
@@ -695,7 +695,7 @@ public function suspend(Request $request, User $user)
                 'lifted_by' => auth()->id(),
             ]);
 
-            AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$user->name}** ({$user->email})", $user, $request->reason);
+            AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$user->name}** (**{$user->email}**)", $user, $request->reason);
 
             // Resolve any pending appeal(s) tied to this account, same as reviewAppeal()
             // does when an appeal is approved from the Appeals page — so lifting a
@@ -1071,7 +1071,7 @@ public function suspend(Request $request, User $user)
         $name = $user->name;
 
         if ($mode === 'permanent') {
-            AdminLog::log('user.deleted_permanent', "Permanently deleted account for **{$name}** ({$user->email})", $user);
+            AdminLog::log('user.deleted_permanent', "Permanently deleted account for **{$name}** (**{$user->email}**)", $user);
 
             NotificationMailer::send(
                 $user,
@@ -1100,7 +1100,7 @@ public function suspend(Request $request, User $user)
         $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
         $graceEndsAt = AccountDeletion::unwindProjectsAndDelete($user);
 
-        AdminLog::log('user.deleted', "Deleted account for **{$name}** ({$user->email})", $user);
+        AdminLog::log('user.deleted', "Deleted account for **{$name}** (**{$user->email}**)", $user);
 
         NotificationMailer::send(
             $user,
@@ -1233,7 +1233,7 @@ public function suspend(Request $request, User $user)
             'temp_password_expires_at' => now()->addHours(24),
         ]);
 
-        AdminLog::log('user.password_reset', "Reset password for **{$user->name}** ({$user->email})", $user);
+        AdminLog::log('user.password_reset', "Reset password for **{$user->name}** (**{$user->email}**)", $user);
 
         // If the user has an active session open right now, this kicks them out of it
         // immediately rather than leaving a stale session running on the old password.
@@ -1383,7 +1383,7 @@ public function suspend(Request $request, User $user)
                     'lifted_by' => auth()->id(),
                 ]);
 
-                AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$appeal->user->name}** ({$appeal->user->email})", $appeal->user, $request->reason);
+                AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$appeal->user->name}** (**{$appeal->user->email}**)", $appeal->user, $request->reason);
             }
 
             // A user can end up with more than one pending appeal — e.g. an earlier
