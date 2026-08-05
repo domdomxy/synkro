@@ -6,7 +6,8 @@ import ChartControlsMenu from '@/Components/ChartControlsMenu';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
 import QuickActionsMenu from '@/Components/QuickActionsMenu';
-import { Head, Link } from '@inertiajs/react';
+import SessionActivityCalendar from '@/Components/SessionActivityCalendar';
+import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import { statusLabels, statusColors } from '@/utils/taskStatus';
@@ -115,6 +116,14 @@ function RecentPanel({ title, icon, viewAllHref, viewAllLabel, children }) {
 }
 
 export default function Dashboard({ stats, range, customFrom, customTo }) {
+    const navigateWebsiteSessions = (offset) => {
+        router.get(route('admin.dashboard', { range, from: customFrom, to: customTo, website_session_offset: offset }), {}, {
+            only: ['stats'],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     const totalTasks = stats.tasks;
     const [chartType, setChartType] = useState('area');
     const activitySeries = [
@@ -220,7 +229,16 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         />
                     </div>
 
-                    <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
+                    <div className="grid items-start gap-6 lg:grid-cols-2">
+                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
+
+                        <SessionActivityCalendar
+                            title="Website Sessions"
+                            sessionsByDay={stats.websiteSessionActivity}
+                            offset={stats.websiteSessionOffset}
+                            onNavigate={navigateWebsiteSessions}
+                        />
+                    </div>
 
                     <div className="grid items-start gap-6 lg:grid-cols-2">
                         <RecentPanel title="Recent Users" icon={statIcons.users} viewAllHref={route('admin.users')} viewAllLabel="View all users">

@@ -250,6 +250,13 @@ class AdminController extends Controller
 
         $alertCounts = \App\Support\AdminAlerts::counts();
 
+        // Site-wide counterpart to the user dashboard's "Session Activity" card -
+        // same two-month grid and counting logic (App\Support\SessionActivity), just
+        // across every user instead of one.
+        $websiteSessionOffset = max(0, (int) request('website_session_offset', 0));
+        $websiteSessionRange = \App\Support\SessionActivity::monthPairRange($websiteSessionOffset);
+        $websiteSessionActivity = \App\Support\SessionActivity::countsByDay(null, $websiteSessionRange['start'], $websiteSessionRange['end']);
+
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
             'customFrom' => request('from'),
@@ -276,6 +283,8 @@ class AdminController extends Controller
                 'projectGrowthRate' => $projectGrowthRate,
                 'taskGrowthRate' => $taskGrowthRate,
                 'currentlyOnline' => $currentlyOnline,
+                'websiteSessionActivity' => $websiteSessionActivity,
+                'websiteSessionOffset' => $websiteSessionOffset,
             ],
         ]);
     }

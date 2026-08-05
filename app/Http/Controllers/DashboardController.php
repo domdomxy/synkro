@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AccountActivityLog;
 use App\Models\Project;
 use App\Models\Reminder;
 use App\Models\Task;
@@ -235,82 +234,15 @@ class DashboardController extends Controller
             ->orderBy('due_date')
             ->get();
 
-        // Session activity calendar: per-day session start/end/duration for a single
-        // month (mirrors the Claude Status "Uptime" widget's month grid, drilled down
-        // to real session detail instead of just a count). sessionOffset shifts the
-        // window back in whole months (0 = the current month) so the dashboard's
-        // Prev/Next controls can page through older history.
-        //
-        // 'logged_out' rows already carry duration_seconds (computed at logout from the
-        // session's own start, stored server-side - see AuthenticatedSessionController),
-        // so a completed session's start is derived from that rather than by trying to
-        // match up separate logged_in/logged_out rows by proximity, which would be
-        // unreliable if a user has multiple devices logged in around the same time.
-        // Any 'logged_in' row left over once every logout has claimed one (FIFO - the
-        // oldest still-open login is assumed to be the one a given logout closed) has no
-        // logout yet, i.e. still an active session.
+        // Session activity calendar: per-day session-start counts across two months
+        // (mirrors the Claude Status "Uptime" widget's month grid). sessionOffset
+        // shifts the window back two whole months at a time (0 = this month and
+        // last) so the dashboard's Prev/Next controls can page through older
+        // history. See App\Support\SessionActivity for the counting logic, shared
+        // with the admin dashboard's site-wide "Website Sessions" card.
         $sessionOffset = max(0, (int) request('session_offset', 0));
-        $sessionMonthStart = now()->subMonths($sessionOffset)->startOfMonth();
-        $sessionMonthEnd = now()->subMonths($sessionOffset)->endOfMonth();
-
-        $sessionEvents = AccountActivityLog::where('user_id', $user->id)
-            ->whereIn('action', ['logged_in', 'logged_out'])
-            ->whereBetween('created_at', [$sessionMonthStart, $sessionMonthEnd])
-            ->orderBy('created_at')
-            ->get(['action', 'created_at', 'details']);
-
-        $openLogins = [];
-        $sessions = collect();
-        foreach ($sessionEvents as $event) {
-            if ($event->action === 'logged_in') {
-                $openLogins[] = ['time' => \Carbon\Carbon::parse($event->created_at, 'UTC'), 'details' => $event->details ?? []];
-                continue;
-            }
-            $durationSeconds = $event->details['duration_seconds'] ?? null;
-            $end = \Carbon\Carbon::parse($event->created_at, 'UTC');
-            $matchedLogin = !empty($openLogins) ? array_shift($openLogins) : null;
-            $start = $durationSeconds !== null
-                ? $end->copy()->subSeconds($durationSeconds)
-                : ($matchedLogin['time'] ?? $end->copy());
-            $sessions->push([
-                'start' => $start->toJSON(),
-                'end' => $end->toJSON(),
-                'duration_seconds' => $durationSeconds,
-                'ongoing' => false,
-                'expired' => false,
-                'device' => $matchedLogin['details']['device'] ?? null,
-                'browser' => $matchedLogin['details']['browser'] ?? null,
-                'location' => $matchedLogin['details']['location'] ?? null,
-            ]);
-        }
-        // A login left with no matching logout has either genuinely never ended (the
-        // user is still signed in right now) or was abandoned - tab/browser closed
-        // without ever hitting "log out", which leaves no logged_out row at all. Past
-        // the session lifetime (how long Laravel actually keeps that session alive
-        // server-side, config/session.php) it can't still be "active" no matter how
-        // old the row is, so it's shown as expired instead of an increasingly
-        // misleading "now" that would otherwise never go away.
-        $lifetimeMinutes = (int) config('session.lifetime', 120);
-        foreach ($openLogins as $login) {
-            $isExpired = $login['time']->diffInMinutes(now()) > $lifetimeMinutes;
-            $sessions->push([
-                'start' => $login['time']->toJSON(),
-                'end' => null,
-                'duration_seconds' => null,
-                'ongoing' => !$isExpired,
-                'expired' => $isExpired,
-                'device' => $login['details']['device'] ?? null,
-                'browser' => $login['details']['browser'] ?? null,
-                'location' => $login['details']['location'] ?? null,
-            ]);
-        }
-
-        $sessionActivity = $sessions
-            ->groupBy(fn ($s) => \Carbon\Carbon::parse($s['start'])->toDateString())
-            ->map(fn ($daySessions) => [
-                'count' => $daySessions->count(),
-                'sessions' => $daySessions->sortBy('start')->values(),
-            ]);
+        $sessionRange = \App\Support\SessionActivity::monthPairRange($sessionOffset);
+        $sessionActivity = \App\Support\SessionActivity::countsByDay($user->id, $sessionRange['start'], $sessionRange['end']);
 
         $reminders = Reminder::where('user_id', $user->id)
             ->where('dismissed', false)
