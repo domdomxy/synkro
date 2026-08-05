@@ -1,6 +1,7 @@
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
 import { Fragment, forwardRef } from 'react';
 import useViewportClamp from '@/hooks/useViewportClamp';
+import Avatar from '@/Components/Avatar';
 
 function ChevronIcon() {
     return (
@@ -20,10 +21,14 @@ function CheckIcon() {
 
 /**
  * Styled replacement for a native <select> used as a list filter.
- * options: [{ value, label, disabled? }]. Panel is capped to a scrollable
- * ~15rem (roughly 5-6 items) instead of a native OS listbox with no size
- * control. Pass disabled: true on an option to show but not allow picking it
- * (e.g. a stale/former value kept only so its label still renders).
+ * options: [{ value, label, disabled?, avatar? }]. Panel is capped to a
+ * scrollable ~15rem (roughly 5-6 items) instead of a native OS listbox with
+ * no size control. Pass disabled: true on an option to show but not allow
+ * picking it (e.g. a stale/former value kept only so its label still
+ * renders). Pass avatar: <user-like object with name/avatar_path> on an
+ * option (e.g. a project member or "All Users" entry) to show that user's
+ * picture/initials next to the label, both in the closed button and in the
+ * open list.
  */
 export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '' }) {
     const selected = options.find((o) => String(o.value) === String(value)) ?? options[0];
@@ -36,7 +41,10 @@ export default function FilterSelect({ id, value, onChange, options, className =
                         id={id}
                         className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${buttonClassName}`}
                     >
-                        <span className="truncate">{selected?.label ?? 'Select...'}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                            {selected?.avatar && <Avatar user={selected.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
+                            <span className="truncate">{selected?.label ?? 'Select...'}</span>
+                        </span>
                         <ChevronIcon />
                     </ListboxButton>
                     <Transition
@@ -61,7 +69,10 @@ export default function FilterSelect({ id, value, onChange, options, className =
                                 >
                                     {({ selected: isSelected }) => (
                                         <>
-                                            <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
+                                            <span className="flex min-w-0 items-center gap-2">
+                                                {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
+                                                <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
+                                            </span>
                                             {isSelected && (
                                                 <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-indigo-600 dark:text-indigo-400">
                                                     <CheckIcon />

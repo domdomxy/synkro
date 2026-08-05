@@ -1340,9 +1340,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                         value: task.assigned_to,
                                         label: `${task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member — pick someone else or Unassigned)`,
                                         disabled: true,
+                                        avatar: task.assignee ?? { name: task.assignee_name },
                                     }]
                                     : []),
-                                ...(members?.map((m) => ({ value: m.id, label: m.name })) ?? []),
+                                ...(members?.map((m) => ({ value: m.id, label: m.name, avatar: m })) ?? []),
                             ]}
                         />
                         <InputError message={editForm.errors.assigned_to} className="mt-1" />

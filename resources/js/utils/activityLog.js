@@ -57,6 +57,7 @@ export const actionIconConfig = {
     invitation_sent: { path: ICON_PATHS.plus, color: 'text-blue-500' },
     invitation_accepted: { path: ICON_PATHS.check, color: 'text-green-500' },
     invitation_denied: { path: ICON_PATHS.close_or_x, color: 'text-red-500' },
+    invitation_cancelled: { path: ICON_PATHS.minus, color: 'text-gray-400' },
     comment_added: { path: ICON_PATHS.chat, color: 'text-blue-500' },
     comment_edited: { path: ICON_PATHS.pencil, color: 'text-blue-500' },
     comment_deleted: { path: ICON_PATHS.trash, color: 'text-red-500' },
@@ -240,6 +241,7 @@ export function describeLog(log) {
         case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
         case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
         case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
+        case 'invitation_cancelled': return `${actor} cancelled ${d.target_name}'s invitation to join as ${d.role}`;
         case 'invitation_accepted': return `${d.target_name ?? actor} accepted the invitation and joined as ${d.role}`;
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;

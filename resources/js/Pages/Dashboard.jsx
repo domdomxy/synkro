@@ -205,7 +205,7 @@ function timeLeftLabel(remindAt, now, { short = false } = {}) {
     return overdue ? `Overdue ${short ? text : `by ${text}`}` : `${short ? 'in ' : ''}${text}`;
 }
 
-function AlarmRow({ r, now, onDelete, isHighlighted }) {
+function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
     const { time, ampm } = formatAlarmTime(r.remind_at);
     const { overdue } = timeLeftParts(r.remind_at, now);
     const label = timeLeftLabel(r.remind_at, now, { short: true });
@@ -340,6 +340,16 @@ function AlarmRow({ r, now, onDelete, isHighlighted }) {
                     </button>
 
                     <button
+                        onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                        title="Dismiss reminder (keeps it in your history, stops it from alerting again)"
+                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-green-50 hover:text-green-600 dark:text-gray-500 dark:hover:bg-green-950/40 dark:hover:text-green-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+
+                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(); }}
                         title="Delete reminder"
                         className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
@@ -463,6 +473,8 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
 
     const remove = async (id) => { if (await confirm('Delete this reminder?', { title: 'Delete Reminder?', danger: true, confirmLabel: 'Delete' })) router.delete(route('reminders.destroy', id), { preserveScroll: true }); };
 
+    const dismiss = (id) => router.patch(route('reminders.dismiss', id), {}, { preserveScroll: true });
+
     const sorted = useMemo(
         () => [...reminders].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)),
         [reminders]
@@ -521,7 +533,7 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
             ) : (
                 <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1.5">
                     {sorted.map((r) => (
-                        <AlarmRow key={r.id} r={r} now={now} onDelete={() => remove(r.id)} isHighlighted={r.id === highlightedReminderId} />
+                        <AlarmRow key={r.id} r={r} now={now} onDismiss={() => dismiss(r.id)} onDelete={() => remove(r.id)} isHighlighted={r.id === highlightedReminderId} />
                     ))}
                 </ul>
             )}

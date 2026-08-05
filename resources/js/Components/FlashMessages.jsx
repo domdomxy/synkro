@@ -43,8 +43,11 @@ export default function FlashMessages() {
     const enterAnim = 'animate-toast-drop-mobile sm:animate-toast-slide-desktop';
     const exitAnim = 'animate-toast-lift-mobile sm:animate-toast-slide-out-desktop';
 
+    // No outer `fixed` wrapper here: this renders inside the shared <ToastLayer>
+    // alongside NotificationToast's list, so both sources stack in one column
+    // instead of each anchoring to bottom-right independently and overlapping.
     return (
-        <div className="fixed bottom-4 left-1/2 z-[60] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 sm:left-auto sm:right-4 sm:w-auto sm:max-w-sm sm:translate-x-0">
+        <>
             {toasts.map((message) => {
                 const style = FLASH_STYLES[message.type] ?? FLASH_STYLES.success;
                 const anim = message.leaving ? exitAnim : enterAnim;
@@ -78,6 +81,6 @@ export default function FlashMessages() {
                     </div>
                 );
             })}
-        </div>
+        </>
     );
 }

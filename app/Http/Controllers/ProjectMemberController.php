@@ -104,20 +104,39 @@ class ProjectMemberController extends Controller
             report($e);
         }
 
+        ProjectActivityLog::log($project, 'invitation_sent', [
+            'target_name' => $user->name,
+            'role' => $validated['role'],
+        ]);
+
         return back()->with('success', 'Invitation sent.');
     }
 
     public function destroyInvitation(ProjectInvitation $invitation)
     {
         $this->authorize('manageMembers', $invitation->project);
+
+        if ($invitation->status !== 'pending') {
+            return back()->withErrors(['error' => 'This invitation has already been responded to.']);
+        }
+
         $projectId = $invitation->project_id;
-        $invitation->delete();
+
+        // Mark as revoked rather than deleting the row, so that if the invited
+        // user still has the link open (or clicks an old email/notification),
+        // they see a clear "this was cancelled" message instead of a 404.
+        $invitation->update(['status' => 'revoked']);
 
         try {
             broadcast(new ProjectRosterUpdated($projectId, 'invitation_cancelled'))->toOthers();
         } catch (\Throwable $e) {
             report($e);
         }
+
+        ProjectActivityLog::log($invitation->project, 'invitation_cancelled', [
+            'target_name' => $invitation->invitedUser?->name,
+            'role' => $invitation->role,
+        ]);
 
         return back()->with('success', 'Invitation cancelled.');
     }

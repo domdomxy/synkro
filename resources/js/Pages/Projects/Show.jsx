@@ -1244,7 +1244,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                             className="mt-1"
                                                             value={taskForm.data.assigned_to}
                                                             onChange={(v) => taskForm.setData('assigned_to', v)}
-                                                            options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name }))]}
+                                                            options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name, avatar: m }))]}
                                                         />
                                                     </div>
                                                     <div className="flex-1">
@@ -1354,7 +1354,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         className="w-40"
                                         value={bulkAction.assigned_to}
                                         onChange={(v) => { setBulkAction((s) => ({ ...s, assigned_to: v })); setBulkTouched((t) => ({ ...t, assigned_to: true })); }}
-                                        options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name }))]}
+                                        options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name, avatar: m }))]}
                                     />
 
                                     <PrimaryButton

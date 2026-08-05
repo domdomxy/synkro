@@ -55,8 +55,8 @@ export default function Logs({ project, logs, backHref, backLabel }) {
 
     const users = useMemo(() => {
         const map = new Map();
-        logs.forEach((l) => l.user && map.set(l.user.id, l.user.name));
-        return Array.from(map, ([id, name]) => ({ id, name }));
+        logs.forEach((l) => l.user && map.set(l.user.id, l.user));
+        return Array.from(map.values());
     }, [logs]);
 
     const actions = useMemo(() => [...new Set(logs.map((l) => l.action))], [logs]);
@@ -112,7 +112,7 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                                     value={userFilter}
                                     onChange={(v) => { setUserFilter(v); setPage(1); }}
                                     className="w-full"
-                                    options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name }))]}
+                                    options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name, avatar: u }))]}
                                 />
                             </FiltersMenu.Row>
                             <FiltersMenu.Row label="Action">

@@ -4,8 +4,7 @@ import Dropdown from '@/Components/Dropdown';
 import AccountMenu from '@/Components/AccountMenu';
 import NavLink from '@/Components/NavLink';
 import NotificationBell from '@/Components/NotificationBell';
-import FlashMessages from '@/Components/FlashMessages';
-import NotificationToast from '@/Components/NotificationToast';
+import ToastLayer from '@/Components/ToastLayer';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -154,7 +153,6 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     return (
         <RouteOverlayActionsContext.Provider value={{ openSettings, openAccount, openTrash, switchToSettings, switchToAccount, switchToFeedback }}>
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <FlashMessages />
             <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/50 backdrop-blur dark:border-gray-700 dark:bg-gray-800/50">
                 <div className="mx-auto w-full px-4 sm:px-6 lg:px-10">
                     <div className="flex h-16 justify-between">
@@ -267,7 +265,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
             <TrustedHostsSyncListener />
             <AvatarSyncListener />
             <PasswordResetListener />
-            <NotificationToast />
+            <ToastLayer />
             {header && (
                 <header className={`sticky top-16 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md transition-transform duration-300 dark:border-gray-700/20 dark:bg-gray-800/20 ${headerVisible ? 'translate-y-0' : '-translate-y-[calc(100%_+_4rem)]'}`}>
                     <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>
