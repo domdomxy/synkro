@@ -29,7 +29,7 @@ export default function SuspendModal({ user, show, onClose }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70">
+        <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70" overflowVisible>
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">Suspend {user?.name}?</h2>
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">They won't be able to log in until the suspension is lifted or expires.</p>

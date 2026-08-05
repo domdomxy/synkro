@@ -8,6 +8,12 @@ export default function Modal({
     onClose = () => {},
     overlayClassName = 'bg-gray-500/75 dark:bg-gray-900/75',
     panelClassName = 'bg-white dark:bg-gray-800',
+    // Panel clips to its rounded corners by default (overflow-hidden), which also
+    // clips any absolutely-positioned floating content inside it — e.g. a
+    // FilterSelect's open options list gets cut off instead of extending past the
+    // panel edge the way it would outside a modal. Pass true for modals that host
+    // this kind of floating content so it can render in full.
+    overflowVisible = false,
 }) {
     const close = () => {
         if (closeable) {
@@ -55,7 +61,7 @@ export default function Modal({
                     leaveFrom="translate-y-0 opacity-100 sm:scale-100"
                     leaveTo="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
                 >
-                    <DialogPanel className={`mb-6 w-full transform overflow-hidden rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
+                    <DialogPanel className={`mb-6 w-full transform ${overflowVisible ? 'overflow-visible' : 'overflow-hidden'} rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
                         {children}
                     </DialogPanel>
                 </TransitionChild>

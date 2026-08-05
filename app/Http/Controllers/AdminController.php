@@ -825,6 +825,17 @@ public function suspend(Request $request, User $user)
             $query->where('action', $request->action);
         }
 
+        // 'deleted' is a synthetic value (no admin_id in the DB is ever literally
+        // "deleted") standing in for admin_id IS NULL, i.e. the admin who performed
+        // the action no longer has an account. Real admins are filtered by id.
+        if ($request->admin && $request->admin !== 'all') {
+            if ($request->admin === 'deleted') {
+                $query->whereNull('admin_id');
+            } else {
+                $query->where('admin_id', $request->admin);
+            }
+        }
+
         // Date filters are inclusive on both ends and compare by day only (no time-of-day precision).
         if ($request->from) {
             $query->whereDate('created_at', '>=', $request->from);
@@ -835,14 +846,24 @@ public function suspend(Request $request, User $user)
 
         $logs = $query->latest()->paginate($this->perPage($request, 10))->withQueryString();
 
+        // Distinct admins who have ever produced a log entry, for the "who did this"
+        // filter — not all users, since most users are never admins/never act.
+        $admins = User::whereIn('id', AdminLog::query()->whereNotNull('admin_id')->distinct()->pluck('admin_id'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'avatar_path']);
+        $hasDeletedAdminLogs = AdminLog::whereNull('admin_id')->exists();
+
         return Inertia::render('Admin/Logs', [
             'logs' => $logs,
             'actionCatalog' => AdminLog::actionCatalog(),
+            'admins' => $admins,
+            'hasDeletedAdminLogs' => $hasDeletedAdminLogs,
             // Explicit keys, not $request->only([...]) — see users() above. No key here collides
             // with an Array.prototype method today, but this avoids the landmine entirely.
             'filters' => [
                 'search' => $request->input('search', ''),
                 'action' => $request->input('action', 'all'),
+                'admin' => $request->input('admin', 'all'),
                 'from' => $request->input('from', ''),
                 'to' => $request->input('to', ''),
                 'per_page' => (string) $this->perPage($request, 10),

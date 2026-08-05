@@ -174,23 +174,31 @@ function AdminLogRow({ log, actionCatalog }) {
 }
 
 const DEFAULT_PER_PAGE = 10;
-const FILTER_DEFAULTS = { action: 'all', per_page: DEFAULT_PER_PAGE };
+const FILTER_DEFAULTS = { action: 'all', admin: 'all', per_page: DEFAULT_PER_PAGE };
 
-export default function Logs({ logs, actionCatalog, filters }) {
+export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [action, setAction] = useState(filters?.action ?? 'all');
+    const [admin, setAdmin] = useState(filters?.admin ?? 'all');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [perPage, setPerPage] = useState(Number(filters?.per_page) || DEFAULT_PER_PAGE);
     const paginationRef = useRef(null);
 
+    const adminOptions = [
+        { value: 'all', label: 'All Admins' },
+        ...admins.map((a) => ({ value: String(a.id), label: a.name, avatar: a })),
+        ...(hasDeletedAdminLogs ? [{ value: 'deleted', label: 'Deleted admin' }] : []),
+    ];
+
     const applyFilters = () => {
-        router.get(route('admin.logs'), cleanParams({ search, action, from, to, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.logs'), cleanParams({ search, action, admin, from, to, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
     const clearFilters = () => {
         setSearch('');
         setAction('all');
+        setAdmin('all');
         setFrom('');
         setTo('');
         setPerPage(DEFAULT_PER_PAGE);
@@ -199,16 +207,16 @@ export default function Logs({ logs, actionCatalog, filters }) {
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
-        router.get(route('admin.logs'), cleanParams({ search, action, from, to, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+        router.get(route('admin.logs'), cleanParams({ search, action, admin, from, to, per_page: value }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
     };
 
     const applyDateRange = (newFrom, newTo) => {
         setFrom(newFrom);
         setTo(newTo);
-        router.get(route('admin.logs'), cleanParams({ search, action, from: newFrom, to: newTo, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
+        router.get(route('admin.logs'), cleanParams({ search, action, admin, from: newFrom, to: newTo, per_page: perPage }, FILTER_DEFAULTS), { preserveState: true });
     };
 
-    const hasActiveFilters = search !== '' || action !== 'all' || from !== '' || to !== '';
+    const hasActiveFilters = search !== '' || action !== 'all' || admin !== 'all' || from !== '' || to !== '';
 
     return (
         <AuthenticatedLayout header={
@@ -235,7 +243,7 @@ export default function Logs({ logs, actionCatalog, filters }) {
                             />
                         </div>
                         <FiltersMenu
-                            activeCount={[action !== 'all', Boolean(from || to)].filter(Boolean).length}
+                            activeCount={[action !== 'all', admin !== 'all', Boolean(from || to)].filter(Boolean).length}
                             onApply={applyFilters}
                             onClear={clearFilters}
                             hasActiveFilters={hasActiveFilters}
@@ -249,6 +257,14 @@ export default function Logs({ logs, actionCatalog, filters }) {
                                         { value: 'all', label: 'All Actions' },
                                         ...Object.entries(actionCatalog).map(([key, label]) => ({ value: key, label })),
                                     ]}
+                                />
+                            </FiltersMenu.Row>
+                            <FiltersMenu.Row label="Admin">
+                                <FilterSelect
+                                    value={admin}
+                                    onChange={setAdmin}
+                                    className="w-full"
+                                    options={adminOptions}
                                 />
                             </FiltersMenu.Row>
                             <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
