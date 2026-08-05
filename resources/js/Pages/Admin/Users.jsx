@@ -13,6 +13,7 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import Pagination from '@/Components/Pagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import UserFiltersMenu from '@/Components/UserFiltersMenu';
+import AdminConfirmationModal from '@/Components/AdminConfirmationModal';
 import { cleanParams } from '@/utils/queryParams';
 import useConfirm from '@/hooks/useConfirm';
 
@@ -263,6 +264,7 @@ export default function Users({ users, stats, filters }) {
     const [liftTarget, setLiftTarget] = useState(null);
     const [editTarget, setEditTarget] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
     const { confirm, ConfirmDialog } = useConfirm();
 
     // Only accounts a superadmin could actually select for bulk delete: not
@@ -326,20 +328,84 @@ export default function Users({ users, stats, filters }) {
         router.post(route('admin.users.reset-password', user.id), {}, { preserveScroll: true });
     };
 
+    const deleteChoices = (count) => [
+        {
+            value: 'graceful',
+            label: 'Move to trash',
+            description: `${count === 1 ? 'The account' : 'Each account'} gets a grace period and can be restored by logging back in.`,
+            icon: 'clock',
+            confirmLabel: 'Delete',
+            default: true,
+        },
+        {
+            value: 'permanent',
+            label: 'Delete permanently',
+            description: `Immediate and unrecoverable — no grace period, no restore. ${count === 1 ? 'Only' : count} ${count === 1 ? 'use this if you\'re certain.' : 'accounts, gone for good.'}`,
+            icon: 'trash',
+            danger: true,
+            confirmLabel: 'Delete Permanently',
+        },
+    ];
+
     const deleteUser = async (user) => {
-        if (!(await confirm(`This deletes ${user.name}'s account. They'll have a grace period to restore it themselves by logging back in.`, { title: `Delete ${user.name}'s Account?`, danger: true, confirmLabel: 'Delete' }))) return;
-        router.delete(route('admin.users.destroy', user.id), { preserveScroll: true });
+        const mode = await confirm(`Choose how to delete ${user.name}'s account.`, {
+            title: `Delete ${user.name}'s Account?`,
+            cancelLabel: 'Cancel',
+            choices: deleteChoices(1),
+        });
+        if (!mode) return;
+        if (mode === 'permanent') {
+            setPermanentDeleteTarget({ type: 'single', user });
+            return;
+        }
+        router.delete(route('admin.users.destroy', user.id), { data: { mode }, preserveScroll: true });
     };
 
     const deleteSelected = async () => {
         const count = selectedIds.length;
-        if (!(await confirm(`This deletes ${count} account${count !== 1 ? 's' : ''}. Each will have a grace period to be restored by logging back in.`, { title: `Delete ${count} Account${count !== 1 ? 's' : ''}?`, danger: true, confirmLabel: 'Delete' }))) return;
+        const mode = await confirm(`Choose how to delete ${count} account${count !== 1 ? 's' : ''}.`, {
+            title: `Delete ${count} Account${count !== 1 ? 's' : ''}?`,
+            cancelLabel: 'Cancel',
+            choices: deleteChoices(count),
+        });
+        if (!mode) return;
+        if (mode === 'permanent') {
+            setPermanentDeleteTarget({ type: 'bulk', ids: selectedIds, count });
+            return;
+        }
         router.delete(route('admin.users.destroy-bulk'), {
-            data: { user_ids: selectedIds },
+            data: { user_ids: selectedIds, mode },
             preserveScroll: true,
             onSuccess: () => setSelectedIds([]),
         });
     };
+
+    // Called by AdminConfirmationModal once a 6-digit code has been entered — the
+    // code is what actually authorizes the permanent delete server-side; this just
+    // submits it alongside the original target(s) and surfaces any rejection back
+    // into the modal (wrong/expired code, too many attempts, etc).
+    const verifyAndDeletePermanently = (code) =>
+        new Promise((resolve, reject) => {
+            if (!permanentDeleteTarget) return reject();
+
+            const onError = (errors) => reject(errors.confirmation_code || errors.error || '');
+
+            if (permanentDeleteTarget.type === 'single') {
+                router.delete(route('admin.users.destroy', permanentDeleteTarget.user.id), {
+                    data: { mode: 'permanent', confirmation_code: code },
+                    preserveScroll: true,
+                    onSuccess: () => { setPermanentDeleteTarget(null); resolve(); },
+                    onError,
+                });
+            } else {
+                router.delete(route('admin.users.destroy-bulk'), {
+                    data: { user_ids: permanentDeleteTarget.ids, mode: 'permanent', confirmation_code: code },
+                    preserveScroll: true,
+                    onSuccess: () => { setSelectedIds([]); setPermanentDeleteTarget(null); resolve(); },
+                    onError,
+                });
+            }
+        });
 
     return (
         <AuthenticatedLayout header={
@@ -542,6 +608,19 @@ export default function Users({ users, stats, filters }) {
                 onClose={() => setEditTarget(null)}
             />
             {ConfirmDialog}
+            <AdminConfirmationModal
+                show={permanentDeleteTarget !== null}
+                purpose="users.delete_permanent"
+                title={permanentDeleteTarget?.type === 'single' ? `Confirm Permanent Deletion` : `Confirm Permanent Deletion of ${permanentDeleteTarget?.count} Accounts`}
+                description={
+                    permanentDeleteTarget?.type === 'single'
+                        ? `This will immediately and permanently delete ${permanentDeleteTarget?.user?.name}'s account — no grace period, no restore.`
+                        : `This will immediately and permanently delete ${permanentDeleteTarget?.count} account${permanentDeleteTarget?.count !== 1 ? 's' : ''} — no grace period, no restore.`
+                }
+                confirmLabel="Delete Permanently"
+                onVerify={verifyAndDeletePermanently}
+                onClose={() => setPermanentDeleteTarget(null)}
+            />
             <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );

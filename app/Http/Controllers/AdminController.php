@@ -188,16 +188,54 @@ class AdminController extends Controller
         // projects, tasks) — not for the active/inactive/suspended/admin breakdowns.
         $startOfMonth = now()->startOfMonth();
 
-        $growthRate = function (string $model) use ($startOfMonth) {
-            $before = $model::where('created_at', '<', $startOfMonth)->count();
-            $newThisMonth = $model::where('created_at', '>=', $startOfMonth)->count();
-            $rate = $before > 0 ? round($newThisMonth / $before * 100, 1) : ($newThisMonth > 0 ? 100.0 : 0.0);
-            return [$newThisMonth, $rate];
+        // Deletions this month, read off whichever rows still show a deleted_at right now.
+        // Once something's been soft-deleted *and* since purged past its grace period, its
+        // deleted_at becomes unqueryable (the row's gone for good) — so a deletion from
+        // early this month that's already been purged quietly stops counting here. An
+        // accepted, honest gap given grace periods (a handful of days) are short relative
+        // to a month; a fully gapless count would need a permanent deletion-events log this
+        // app doesn't have. Accounts an admin deleted *permanently* (skips the grace period
+        // and soft-delete step entirely — see AdminController::destroy()) leave no deleted_at
+        // at all, so those are added back in separately from the admin log below.
+        $deletionsThisMonth = fn (string $model) => $model::onlyTrashed()->whereBetween('deleted_at', [$startOfMonth, now()])->count();
+
+        $permanentUserDeletionsThisMonth = AdminLog::where('action', 'user.deleted_permanent')
+            ->whereBetween('created_at', [$startOfMonth, now()])
+            ->count();
+
+        // Net change (creations minus departures) as a % of where the count stood at the
+        // start of the month — unlike a pure creation-count trend, this can go negative
+        // when deletions outpace new signups/projects/tasks in a given month.
+        //
+        // The baseline ("how many existed at the start of this month") deliberately uses
+        // withTrashed(): a plain where(created_at < startOfMonth) count would shrink every
+        // time something soft-deleted this month gets purged out of the table, or the moment
+        // an admin permanently deletes it — both make the row disappear from that count too,
+        // on top of it already being subtracted as a departure, silently exaggerating the
+        // negative rate (9 members, 2 permanently deleted, 0 new => a naive count-based
+        // baseline drops to 7 and reports -2/7 = -29%, when the real answer against last
+        // month's actual 9 is -2/9 = -22%). $extraBaseline adds back anyone who existed at
+        // the start of the month but has since been forceDelete()'d with literally no row
+        // left at all (only relevant for users right now, via permanentUserDeletionsThisMonth
+        // above — accepted approximation: assumes they were around before this month, which
+        // is true except in the rare case of a same-month signup immediately followed by an
+        // admin permanently deleting them).
+        $netGrowthRate = function (string $model, int $removedThisMonth = 0, int $extraBaseline = 0) use ($startOfMonth) {
+            $before = $model::withTrashed()->where('created_at', '<', $startOfMonth)->count() + $extraBaseline;
+            $netThisMonth = $model::where('created_at', '>=', $startOfMonth)->count() - $removedThisMonth;
+
+            if ($before <= 0) {
+                return $netThisMonth > 0 ? 100.0 : ($netThisMonth < 0 ? -100.0 : 0.0);
+            }
+
+            return round($netThisMonth / $before * 100, 1);
         };
 
-        [$newUsersThisMonth, $userGrowthRate] = $growthRate(User::class);
-        [, $projectGrowthRate] = $growthRate(Project::class);
-        [, $taskGrowthRate] = $growthRate(Task::class);
+        $newUsersThisMonth = User::where('created_at', '>=', $startOfMonth)->count();
+        $userGrowthRate = $netGrowthRate(User::class, $deletionsThisMonth(User::class) + $permanentUserDeletionsThisMonth, $permanentUserDeletionsThisMonth);
+        $projectGrowthRate = $netGrowthRate(Project::class, $deletionsThisMonth(Project::class));
+        $taskGrowthRate = $netGrowthRate(Task::class, $deletionsThisMonth(Task::class));
+
 
         // We don't track session start/end times, so a true "average session length" isn't
         // computable from the sessions table (it only has last_activity). "Currently online"
@@ -1019,16 +1057,47 @@ public function suspend(Request $request, User $user)
 
     /**
      * Shared by destroy() and destroyBulk(): unwinds project memberships (same path
-     * self-service deletion uses), logs the action, and notifies the deleted user.
-     * Uses its own always-sent 'account.deleted_by_admin' preference key rather than
-     * the self-service 'account.deleted' key, since this is security-relevant and
-     * shouldn't be suppressible by a preference the user set for their own actions.
+     * self-service deletion uses) or purges the account outright, logs the action, and
+     * notifies the deleted user. Uses its own always-sent 'account.deleted_by_admin'
+     * preference key rather than the self-service 'account.deleted' key, since this is
+     * security-relevant and shouldn't be suppressible by a preference the user set for
+     * their own actions.
+     *
+     * $mode is 'graceful' (default: soft-delete with the usual restore window) or
+     * 'permanent' (immediate, no grace period, cannot be restored).
      */
-    private function performAdminDelete(User $user): void
+    private function performAdminDelete(User $user, string $mode = 'graceful'): void
     {
-        $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
         $name = $user->name;
 
+        if ($mode === 'permanent') {
+            AdminLog::log('user.deleted_permanent', "Permanently deleted account for {$name} ({$user->email})", $user);
+
+            NotificationMailer::send(
+                $user,
+                'account.deleted_by_admin',
+                'Your account has been permanently deleted',
+                [
+                    'Your Synkro account was permanently deleted by an administrator.',
+                    'This was immediate — there is no grace period, and the account cannot be restored.',
+                    "If you believe this was done in error, please [contact support](" . url(route('feedback.page', [], false)) . ') as soon as possible.',
+                ]
+            );
+
+            try {
+                event(new \App\Events\AccountDeleted($user->id));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            // Nothing has been unwound yet for this account, so release every task
+            // assigned to it (not just pending_resolution ones) in a single pass.
+            AccountDeletion::purgeNow($user, onlyPendingTasks: false);
+
+            return;
+        }
+
+        $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
         $graceEndsAt = AccountDeletion::unwindProjectsAndDelete($user);
 
         AdminLog::log('user.deleted', "Deleted account for {$name} ({$user->email})", $user);
@@ -1051,8 +1120,26 @@ public function suspend(Request $request, User $user)
         }
     }
 
-    /** Superadmin-only: delete a single user account. */
-    public function destroy(User $user)
+    /**
+     * Superadmin-only: emails a fresh step-up confirmation code to the current
+     * admin's own address. Required before an irreversible action is allowed
+     * to proceed — currently just permanently deleting user accounts, see
+     * destroy()/destroyBulk() below, which verify it via
+     * User::verifyAdminConfirmationCode().
+     */
+    public function sendConfirmationCode(Request $request)
+    {
+        $validated = $request->validate([
+            'purpose' => ['required', 'string', Rule::in(['users.delete_permanent'])],
+        ]);
+
+        $request->user()->sendAdminConfirmationCodeNotification($validated['purpose']);
+
+        return back()->with('success', 'A confirmation code has been sent to your email.');
+    }
+
+    /** Superadmin-only: delete a single user account, either gracefully or permanently. */
+    public function destroy(Request $request, User $user)
     {
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => "You can't delete your own account this way. Use your account settings."]);
@@ -1064,24 +1151,51 @@ public function suspend(Request $request, User $user)
             return back()->withErrors(['error' => 'That account is already deleted.']);
         }
 
-        $name = $user->name;
-        $this->performAdminDelete($user);
+        $validated = $request->validate([
+            'mode' => ['sometimes', 'string', 'in:graceful,permanent'],
+            'confirmation_code' => ['required_if:mode,permanent', 'string'],
+        ]);
+        $mode = $validated['mode'] ?? 'graceful';
 
-        return back()->with('success', "{$name}'s account was deleted.");
+        if ($mode === 'permanent') {
+            $error = $request->user()->verifyAdminConfirmationCode('users.delete_permanent', $validated['confirmation_code']);
+            if ($error) {
+                return back()->withErrors(['confirmation_code' => $error]);
+            }
+        }
+
+        $name = $user->name;
+        $this->performAdminDelete($user, $mode);
+
+        $message = $mode === 'permanent'
+            ? "{$name}'s account was permanently deleted."
+            : "{$name}'s account was deleted.";
+
+        return back()->with('success', $message);
     }
 
     /**
-     * Superadmin-only: delete several user accounts at once. Skips (rather than
-     * fails) any target that can't be deleted this way — your own account, a
-     * superadmin, or one already deleted — so one bad id in the selection doesn't
-     * block the rest, and reports how many actually went through.
+     * Superadmin-only: delete several user accounts at once, either gracefully or
+     * permanently. Skips (rather than fails) any target that can't be deleted this
+     * way — your own account, a superadmin, or one already deleted — so one bad id in
+     * the selection doesn't block the rest, and reports how many actually went through.
      */
     public function destroyBulk(Request $request)
     {
         $validated = $request->validate([
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'exists:users,id'],
+            'mode' => ['sometimes', 'string', 'in:graceful,permanent'],
+            'confirmation_code' => ['required_if:mode,permanent', 'string'],
         ]);
+        $mode = $validated['mode'] ?? 'graceful';
+
+        if ($mode === 'permanent') {
+            $error = $request->user()->verifyAdminConfirmationCode('users.delete_permanent', $validated['confirmation_code']);
+            if ($error) {
+                return back()->withErrors(['confirmation_code' => $error]);
+            }
+        }
 
         $deleted = 0;
         $skipped = 0;
@@ -1092,11 +1206,12 @@ public function suspend(Request $request, User $user)
                 continue;
             }
 
-            $this->performAdminDelete($user);
+            $this->performAdminDelete($user, $mode);
             $deleted++;
         }
 
-        $message = $deleted === 1 ? '1 account deleted.' : "{$deleted} accounts deleted.";
+        $verb = $mode === 'permanent' ? 'permanently deleted' : 'deleted';
+        $message = $deleted === 1 ? "1 account {$verb}." : "{$deleted} accounts {$verb}.";
         if ($skipped > 0) {
             $message .= " {$skipped} skipped (your own account or a superadmin can't be deleted this way).";
         }

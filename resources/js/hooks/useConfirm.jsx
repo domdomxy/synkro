@@ -33,7 +33,11 @@ export default function useConfirm() {
             danger={data?.danger}
             confirmLabel={data?.confirmLabel}
             cancelLabel={data?.cancelLabel}
-            onConfirm={() => settle(true)}
+            choices={data?.choices}
+            // Without `choices`, confirm() resolves to a plain boolean as before. With
+            // `choices`, it resolves to the selected choice's value (or false on cancel),
+            // so callers can tell which option was picked.
+            onConfirm={(value) => settle(value)}
             onCancel={() => settle(false)}
         />
     );

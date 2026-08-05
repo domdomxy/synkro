@@ -3,10 +3,13 @@
 namespace App\Support;
 
 use App\Models\Comment;
+use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Events\OwnerAccountDeleted;
 use App\Events\MemberLeftProject;
+use App\Events\ProjectDeleted;
 use Carbon\Carbon;
 
 class AccountDeletion
@@ -130,5 +133,142 @@ class AccountDeletion
         $user->delete();
 
         return $graceEndsAt;
+    }
+
+    /**
+     * Permanently removes an account for real: notifies members of any project the
+     * user owns (those projects cascade-delete the instant forceDelete() below runs,
+     * via projects.owner_id's onDelete('cascade') FK), releases their task assignments
+     * in every project they don't own, and then forceDelete()s the row. Two callers:
+     *
+     *  - The scheduled `accounts:purge-deleted` sweep, for accounts whose grace period
+     *    already ran out. These were already unwound via unwindProjectsAndDelete() when
+     *    first soft-deleted, so only $onlyPendingTasks-scoped (frozen) tasks remain to
+     *    release — pass $onlyPendingTasks: true (the default).
+     *  - An admin choosing "delete permanently" on a still-active account, which skips
+     *    the grace period entirely. Nothing has been unwound yet, so every task assigned
+     *    to the user needs releasing in one pass — pass $onlyPendingTasks: false.
+     */
+    public static function purgeNow(User $user, bool $onlyPendingTasks = true): void
+    {
+        self::notifyOwnedProjectMembers($user);
+        self::releaseAssignedTasks($user, $onlyPendingTasks);
+        $user->forceDelete();
+    }
+
+    /**
+     * Projects this user owned are about to cascade-delete along with them (see
+     * purgeNow() above) — give their remaining members a heads-up before that happens,
+     * not after, since there's nothing left to query once forceDelete() runs.
+     */
+    private static function notifyOwnedProjectMembers(User $user): void
+    {
+        $ownedProjects = Project::where('owner_id', $user->id)->get();
+
+        foreach ($ownedProjects as $project) {
+            $recipients = $project->members()->where('users.id', '!=', $user->id)->get();
+
+            foreach ($recipients as $recipient) {
+                if (NotificationPreferences::wantsType($recipient, 'project_deleted')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'project_deleted',
+                        'message' => "Project deleted\n\"**{$project->name}**\" was permanently deleted — its owner's account was permanently deleted",
+                        'url' => route('projects.index', [], false),
+                    ]);
+
+                    try {
+                        broadcast(new ProjectDeleted($recipient->id, $project->name, $project->id, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                NotificationMailer::send(
+                    $recipient,
+                    'project.deleted',
+                    "{$project->name} was deleted",
+                    [
+                        "The project \"**{$project->name}**\" (#{$project->id}) you were a member of has been permanently deleted.",
+                        "Its owner's account was permanently deleted, and it went with it.",
+                    ],
+                );
+            }
+        }
+    }
+
+    /**
+     * Releases the user's task assignments in every project they don't own (owned
+     * projects cascade-delete separately, see notifyOwnedProjectMembers() above) and
+     * lets the project's owner/manager know. When $onlyPendingTasks is true, only tasks
+     * already frozen with pending_resolution=true are touched (used by the scheduled
+     * sweep, where everything else was already reset back when the account was first
+     * soft-deleted); otherwise every task currently assigned to the user is released in
+     * one pass, since nothing has been unwound yet.
+     */
+    private static function releaseAssignedTasks(User $user, bool $onlyPendingTasks): void
+    {
+        $query = Task::where('assigned_to', $user->id);
+        if ($onlyPendingTasks) {
+            $query->where('pending_resolution', true);
+        }
+        $tasks = $query->get()->groupBy('project_id');
+
+        foreach ($tasks as $projectId => $projectTasks) {
+            $project = Project::find($projectId);
+            if (! $project || $project->owner_id === $user->id) {
+                continue; // guards against a race with the project itself being deleted, and owned projects are handled above
+            }
+
+            $taskIds = $projectTasks->pluck('id');
+
+            Task::whereIn('id', $taskIds)->update([
+                'assigned_to' => null,
+                'status' => 'todo',
+                'pending_resolution' => false,
+            ]);
+
+            if (! $onlyPendingTasks) {
+                Comment::where('user_id', $user->id)->whereIn('task_id', $taskIds)->delete();
+            }
+
+            $count = $projectTasks->count();
+            $taskWord = $count === 1 ? 'task' : 'tasks';
+
+            $recipients = $project->members()
+                ->wherePivotIn('role', ['owner', 'manager'])
+                ->where('users.id', '!=', $user->id)
+                ->get();
+
+            foreach ($recipients as $recipient) {
+                if (NotificationPreferences::wantsType($recipient, 'member_left')) {
+                    $notification = UserNotification::create([
+                        'user_id' => $recipient->id,
+                        'type' => 'member_left',
+                        'causer_id' => $user->id,
+                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good — {$count} {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
+                        'url' => route('projects.show', $project->id, false),
+                    ]);
+
+                    try {
+                        broadcast(new MemberLeftProject($recipient->id, $user->name, $project->roleFor($user) ?? 'member', $project, $notification->id))->toOthers();
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                NotificationMailer::send(
+                    $recipient,
+                    'project.member_left',
+                    "{$user->name}'s account was permanently deleted",
+                    [
+                        "**{$user->name}** was a member of \"**{$project->name}**\" (#{$project->id}) and their account has now been permanently deleted.",
+                        "{$count} {$taskWord} assigned to them have been automatically unassigned and reset to Todo.",
+                    ],
+                    route('projects.show', $project->id),
+                    'View Project'
+                );
+            }
+        }
     }
 }

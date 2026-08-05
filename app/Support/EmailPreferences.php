@@ -122,6 +122,7 @@ class EmailPreferences
             'account.restored',
             'account.restore_code',
             'account.deleted_by_admin',
+            'account.admin_confirmation_code',
             'project.deletion_confirm',
         ];
     }

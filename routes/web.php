@@ -239,6 +239,7 @@ Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('adm
         Route::patch('/users/{user}/toggle-role', [AdminController::class, 'toggleRole'])->name('users.toggle-role');
         Route::patch('/users/{user}/toggle-superadmin', [AdminController::class, 'toggleSuperAdmin'])->name('users.toggle-superadmin');
         Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+        Route::post('/users/send-confirmation-code', [AdminController::class, 'sendConfirmationCode'])->name('users.send-confirmation-code')->middleware('throttle:6,1');
         Route::delete('/users/bulk-delete', [AdminController::class, 'destroyBulk'])->name('users.destroy-bulk');
         Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
     });

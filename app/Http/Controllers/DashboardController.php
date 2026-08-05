@@ -17,16 +17,24 @@ class DashboardController extends Controller
      * this happen" timestamp column (created_at, submitted_at, etc). Mirrors
      * AdminController::monthOverMonthChange — real historical data, never a
      * fabricated/hardcoded percentage.
+     *
+     * `$removedThisMonth` is subtracted from this month's count before the ratio is
+     * taken, so — unlike a plain creation-count trend — the result can go negative
+     * when more of whatever this is tracking disappeared this month than newly
+     * appeared. Defaults to 0 (the original creation-only behavior) for callers that
+     * don't have a departure count to feed in.
      */
-    private function monthOverMonthChange($query, string $column): float
+    private function monthOverMonthChange($query, string $column, int $removedThisMonth = 0): float
     {
         $startOfMonth = now()->startOfMonth();
         $before = (clone $query)->where($column, '<', $startOfMonth)->count();
-        $thisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count();
+        $netThisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count() - $removedThisMonth;
 
-        return $before > 0
-            ? round($thisMonth / $before * 100, 1)
-            : ($thisMonth > 0 ? 100.0 : 0.0);
+        if ($before <= 0) {
+            return $netThisMonth > 0 ? 100.0 : ($netThisMonth < 0 ? -100.0 : 0.0);
+        }
+
+        return round($netThisMonth / $before * 100, 1);
     }
 
     /**
@@ -179,13 +187,35 @@ class DashboardController extends Controller
         // treats it — updated_at is used as the completion-time proxy. "Active" tasks have
         // no such timestamp at all (a task drifts in and out of "active" with every status
         // change), so instead of a fake trend it gets an honest composition ratio.
+        //
+        // Both Task queries below use withTrashed(): tasks are soft-deletable now, and
+        // without it a task that was done/submitted before this month but got deleted since
+        // would silently vanish from the "before" count too — shrinking the baseline right
+        // along with the numerator and exaggerating whichever direction the trend already
+        // leans, the same baseline bug the admin dashboard's growth rates had. doneTasksTrend
+        // goes one step further and can go genuinely negative: it subtracts this month's
+        // deletions of the user's own done tasks from this month's count, so losing more
+        // completed work to deletion than you complete anew reads as a real decline, not 0%.
+        // pendingReviewTrend stays a plain (non-negative) count-ratio, since leaving the
+        // review queue normally means a task got approved/rejected, not deleted — a
+        // deletion-based negative there would rarely reflect what actually happened. Project
+        // membership doesn't get the same treatment either: leaving a project hard-deletes
+        // the project_user pivot row with no historical trace at all (no soft-delete on
+        // pivot tables), so that trend can still understate a departure-heavy month — an
+        // accepted, pre-existing gap that would need real membership-history tracking to close.
         $projectsTrend = $this->monthOverMonthChange($user->projects(), 'project_user.created_at');
+        $doneTasksDeletedThisMonth = Task::onlyTrashed()
+            ->where('assigned_to', $user->id)
+            ->where('status', 'done')
+            ->whereBetween('deleted_at', [now()->startOfMonth(), now()])
+            ->count();
         $doneTasksTrend = $this->monthOverMonthChange(
-            Task::where('assigned_to', $user->id)->where('status', 'done'),
-            'updated_at'
+            Task::withTrashed()->where('assigned_to', $user->id)->where('status', 'done'),
+            'updated_at',
+            $doneTasksDeletedThisMonth
         );
         $pendingReviewTrend = $this->monthOverMonthChange(
-            Task::whereIn('project_id', $reviewerProjectIds)->where('status', 'submitted'),
+            Task::withTrashed()->whereIn('project_id', $reviewerProjectIds)->where('status', 'submitted'),
             'submitted_at'
         );
         $activeTasksCount = (clone $myTasksQuery)->whereNotIn('status', ['done'])->count();

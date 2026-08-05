@@ -76,6 +76,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'role_changed_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
             'restore_code_expires_at' => 'datetime',
+            'admin_confirmation_code_expires_at' => 'datetime',
             'name_changed_at' => 'datetime',
         ];
     }
@@ -258,6 +259,88 @@ class User extends Authenticatable implements MustVerifyEmail
                 "If you didn't do this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
         );
+    }
+
+    /**
+     * Generate a fresh 6-digit step-up confirmation code for a superadmin about
+     * to perform an irreversible admin action, and email it to their own
+     * address (proving continued access to the inbox, on top of the session
+     * they're already authenticated with). $purpose scopes the code to a
+     * specific action — see verifyAdminConfirmationCode() below.
+     */
+    public function sendAdminConfirmationCodeNotification(string $purpose): void
+    {
+        $code = (string) random_int(100000, 999999);
+        $expireMinutes = 10;
+
+        $this->forceFill([
+            'admin_confirmation_code' => Hash::make($code),
+            'admin_confirmation_code_expires_at' => now()->addMinutes($expireMinutes),
+            'admin_confirmation_code_attempts' => 0,
+            'admin_confirmation_code_purpose' => $purpose,
+        ])->save();
+
+        NotificationMailer::send(
+            $this,
+            'account.admin_confirmation_code',
+            'Your confirmation code',
+            [
+                'You (or someone signed into your admin account) requested a permanent, unrecoverable action on Synkro.',
+                "Enter the code below to confirm it. This code expires in {$expireMinutes} minutes.",
+                "If you didn't request this, secure your account immediately — change your password and review your active sessions.",
+            ],
+            null,
+            null,
+            [
+                'label' => 'Confirmation code',
+                'content' => $code,
+                'mono' => true,
+                'hint' => 'Tap and hold the code above to copy it, or select it manually.',
+            ]
+        );
+    }
+
+    /**
+     * Verifies and consumes a step-up confirmation code issued for $purpose.
+     * Returns null on success, or a user-facing error message otherwise. The
+     * code is cleared both on success and once the attempt limit is hit, so
+     * it can't be brute-forced or reused for a second action afterwards.
+     */
+    public function verifyAdminConfirmationCode(string $purpose, #[\SensitiveParameter] string $code): ?string
+    {
+        if (! $this->admin_confirmation_code || ! $this->admin_confirmation_code_expires_at || now()->greaterThan($this->admin_confirmation_code_expires_at)) {
+            return 'This code has expired. Request a new one.';
+        }
+
+        if ($this->admin_confirmation_code_purpose !== $purpose) {
+            return 'This code is not valid for this action. Request a new one.';
+        }
+
+        if ($this->admin_confirmation_code_attempts >= 5) {
+            $this->clearAdminConfirmationCode();
+
+            return 'Too many incorrect attempts. Request a new code.';
+        }
+
+        if (! Hash::check($code, $this->admin_confirmation_code)) {
+            $this->increment('admin_confirmation_code_attempts');
+
+            return 'The code you entered is incorrect.';
+        }
+
+        $this->clearAdminConfirmationCode();
+
+        return null;
+    }
+
+    private function clearAdminConfirmationCode(): void
+    {
+        $this->forceFill([
+            'admin_confirmation_code' => null,
+            'admin_confirmation_code_expires_at' => null,
+            'admin_confirmation_code_attempts' => 0,
+            'admin_confirmation_code_purpose' => null,
+        ])->save();
     }
 
     /**

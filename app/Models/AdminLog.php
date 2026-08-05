@@ -43,6 +43,7 @@ class AdminLog extends Model
             'user.role_changed' => 'Role changed',
             'user.info_updated' => 'User info updated',
             'user.deleted' => 'User account deleted',
+            'user.deleted_permanent' => 'User account permanently deleted',
             'user.password_reset' => 'Password reset',
             'user.logs_viewed' => 'Activity logs viewed',
             'user.login_history_viewed' => 'Login history viewed',
