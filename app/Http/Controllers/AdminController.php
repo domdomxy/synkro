@@ -256,6 +256,7 @@ class AdminController extends Controller
         $websiteSessionOffset = max(0, (int) request('website_session_offset', 0));
         $websiteSessionRange = \App\Support\SessionActivity::monthPairRange($websiteSessionOffset);
         $websiteSessionActivity = \App\Support\SessionActivity::countsByDay(null, $websiteSessionRange['start'], $websiteSessionRange['end']);
+        $websiteSessionUserBreakdown = \App\Support\SessionActivity::userBreakdownByDay($websiteSessionRange['start'], $websiteSessionRange['end']);
 
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
@@ -285,6 +286,7 @@ class AdminController extends Controller
                 'currentlyOnline' => $currentlyOnline,
                 'websiteSessionActivity' => $websiteSessionActivity,
                 'websiteSessionOffset' => $websiteSessionOffset,
+                'websiteSessionUserBreakdown' => $websiteSessionUserBreakdown,
             ],
         ]);
     }

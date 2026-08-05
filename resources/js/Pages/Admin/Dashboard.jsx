@@ -237,6 +237,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             sessionsByDay={stats.websiteSessionActivity}
                             offset={stats.websiteSessionOffset}
                             onNavigate={navigateWebsiteSessions}
+                            userBreakdownByDay={stats.websiteSessionUserBreakdown}
                         />
                     </div>
 

@@ -37,6 +37,50 @@ class SessionActivity
     }
 
     /**
+     * Day-keyed per-user breakdown ('Y-m-d' => [...]) for the site-wide
+     * (admin) calendar's day popover: who logged in the most that day, and
+     * the min/max/avg session count across every user who logged in at all
+     * that day. Not used by the per-user dashboard card, since "top user"
+     * and "per-user avg" are meaningless when already scoped to one user.
+     */
+    public static function userBreakdownByDay(Carbon $start, Carbon $end): array
+    {
+        $rows = AccountActivityLog::where('action', 'logged_in')
+            ->whereBetween('created_at', [$start, $end])
+            ->with(['user:id,name,avatar_path'])
+            ->get(['user_id', 'created_at']);
+
+        $result = [];
+
+        $rows->groupBy(fn ($row) => Carbon::parse($row->created_at, 'UTC')->toDateString())
+            ->each(function ($dayRows, $day) use (&$result) {
+                $perUser = $dayRows->groupBy('user_id');
+                $counts = $perUser->map->count();
+
+                if ($counts->isEmpty()) {
+                    return;
+                }
+
+                $topUserId = $counts->sortDesc()->keys()->first();
+                $topUser = $perUser[$topUserId]->first()->user;
+
+                $result[$day] = [
+                    'top_user' => $topUser ? [
+                        'id' => $topUser->id,
+                        'name' => $topUser->name,
+                        'avatar_path' => $topUser->avatar_path,
+                    ] : null,
+                    'top_count' => (int) $counts->get($topUserId),
+                    'min' => (int) $counts->min(),
+                    'max' => (int) $counts->max(),
+                    'avg' => round($counts->avg(), 1),
+                ];
+            });
+
+        return $result;
+    }
+
+    /**
      * Resolves a "two months, most recent = $offset months back" window into
      * the Carbon range to query and the two month anchors themselves (older
      * first), so both dashboards' Prev/Next pagination stays identical.
