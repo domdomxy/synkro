@@ -1011,7 +1011,7 @@ public function suspend(Request $request, User $user)
             $user->wasChanged('name') ? "name to \"{$user->name}\"" : null,
             $user->wasChanged('email') ? "email to {$newEmail}" : null,
         ]);
-        AdminLog::log('user.info_updated', "Updated ".implode(' and ', $summary)." for **#{$user->id}**", $user);
+        AdminLog::log('user.info_updated', "Updated ".implode(' and ', $summary)." for **{$user->name}** (**{$user->email}**)", $user);
 
         if ($user->wasChanged('email')) {
             // Security alert to the OLD address, always sent (same as a self-service change).
