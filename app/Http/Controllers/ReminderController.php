@@ -42,8 +42,31 @@ class ReminderController extends Controller
     public function dismiss(Reminder $reminder)
     {
         abort_unless($reminder->user_id === Auth::id(), 403);
-        $reminder->update(['dismissed' => true]);
-        return back();
+
+        if ($reminder->repeat_interval === 'none') {
+            // A one-off reminder has no future occurrence to skip to, so
+            // dismissing it is the same as before: hide it from the dashboard
+            // for good. The frontend no longer offers this button for
+            // one-off reminders, but the guard stays here in case the route
+            // is ever hit directly.
+            $reminder->update(['dismissed' => true]);
+            return back();
+        }
+
+        // Repeating reminder: skip only the upcoming occurrence. Advance
+        // remind_at by one cadence (same math as SendDueReminders uses when
+        // a reminder actually fires) and reset notified_at, WITHOUT setting
+        // dismissed - so the reminder stays visible on the dashboard and
+        // keeps repeating, it just never notifies for this turn.
+        $nextDate = match ($reminder->repeat_interval) {
+            'daily' => $reminder->remind_at->copy()->addDay(),
+            'weekly' => $reminder->remind_at->copy()->addWeek(),
+            'monthly' => $reminder->remind_at->copy()->addMonth(),
+        };
+
+        $reminder->update(['remind_at' => $nextDate, 'notified_at' => null]);
+
+        return back()->with('success', 'Skipped to the next occurrence.');
     }
 
     public function destroy(Reminder $reminder)

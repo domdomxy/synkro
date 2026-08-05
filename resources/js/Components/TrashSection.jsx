@@ -353,7 +353,12 @@ function PickRow({ icon, title, subtitle, selected, onToggleSelect }) {
     return (
         <label
             className={
-                'flex cursor-pointer flex-nowrap items-center gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
+                // first:/last: rounding matches the parent's own rounded-lg
+                // corners - without it, the focus-within ring (ring-inset,
+                // sharp-cornered by default) pokes square corners out past
+                // the container's rounded top/bottom edge whenever the
+                // first or last row in the list gets focus.
+                'flex cursor-pointer flex-nowrap items-center gap-2 border-b border-gray-100 px-3 py-3 transition first:rounded-t-lg last:rounded-b-lg last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
                 (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
             }
         >

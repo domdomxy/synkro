@@ -362,29 +362,34 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
                 <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
             </div>
 
-            <ul className="mt-2 space-y-1.5 pl-0.5">
-                {items.map((item) => (
-                    <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
-                ))}
-            </ul>
+            {/* border-t + pt separates the note's own header (title, progress,
+                Clear completed) from its items - previously just an mt-2 gap,
+                which read as one continuous block instead of two sections. */}
+            <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
+                <ul className="space-y-1.5 pl-0.5">
+                    {items.map((item) => (
+                        <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
+                    ))}
+                </ul>
 
-            <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-start gap-1.5">
-                <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                <AutoGrowTextarea
-                    value={quickAdd}
-                    onChange={(e) => setQuickAdd(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            if (quickAdd.trim()) submitQuickAdd(e);
-                        }
-                    }}
-                    placeholder="Add item..."
-                    className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
-                />
-            </form>
+                <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-start gap-1.5">
+                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <AutoGrowTextarea
+                        value={quickAdd}
+                        onChange={(e) => setQuickAdd(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if (quickAdd.trim()) submitQuickAdd(e);
+                            }
+                        }}
+                        placeholder="Add item..."
+                        className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
+                    />
+                </form>
+            </div>
         </li>
     );
 }

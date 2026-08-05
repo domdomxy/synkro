@@ -20,8 +20,22 @@ use Illuminate\Http\Request;
  */
 class TrustedHostController extends Controller
 {
+    /**
+     * A plain top-level browser visit here (someone typing/clicking the URL
+     * directly, rather than ExternalLinkGuard's own fetch()) has no UI to
+     * render - it's a JSON-only API route. Send a human somewhere real
+     * instead of dumping raw JSON in their tab: straight to the Settings >
+     * Trusted Sites panel, which shows this same list properly. The actual
+     * frontend caller always sets Accept: application/json (see
+     * resources/js/utils/trustedHosts.js), so wantsJson() reliably tells the
+     * two apart.
+     */
     public function index(Request $request)
     {
+        if (! $request->wantsJson()) {
+            return redirect()->route('settings.edit', ['section' => 'trusted-sites']);
+        }
+
         return response()->json(['hosts' => $request->user()->trusted_link_hosts ?? []]);
     }
 

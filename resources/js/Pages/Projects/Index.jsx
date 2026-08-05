@@ -438,7 +438,7 @@ export default function Index({ projects, showingArchived }) {
                             return (
                                 <div
                                     key={project.id}
-                                    className="group relative rounded-lg border border-transparent bg-white p-4 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md dark:bg-gray-800 dark:hover:border-indigo-900 sm:p-6"
+                                    className="group relative rounded-lg border border-transparent bg-white p-4 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md group-focus-within:ring-2 group-focus-within:ring-indigo-400 dark:bg-gray-800 dark:hover:border-indigo-900 dark:group-focus-within:ring-indigo-500 sm:p-6"
                                 >
                                     <ProjectActionsMenu
                                         project={project}
@@ -451,7 +451,14 @@ export default function Index({ projects, showingArchived }) {
                                         onMute={() => muteProject(project)}
                                         onUnmute={() => unmuteProject(project)}
                                     />
-                                    <Link href={route('projects.show', project.id)} className="block">
+                                    {/* Browser back-navigation restores keyboard focus to whichever
+                                        card link was last clicked, and by default that shows the
+                                        browser's own square, off-brand focus outline. outline-none
+                                        here + group-focus-within:ring-2 on the card above swaps it
+                                        for a ring that follows the card's own rounded-lg shape
+                                        instead, so it reads as an intentional highlight rather than
+                                        a leftover browser artifact. */}
+                                    <Link href={route('projects.show', project.id)} className="block rounded-lg focus:outline-none">
                                         <div className="flex items-start justify-between gap-2 pr-6">
                                             <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
                                                 {project.name}

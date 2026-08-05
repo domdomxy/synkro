@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { NoteList, notePreview } from '@/utils/noteFormat';
 import useConfirm from '@/hooks/useConfirm';
@@ -205,6 +206,107 @@ function timeLeftLabel(remindAt, now, { short = false } = {}) {
     return overdue ? `Overdue ${short ? text : `by ${text}`}` : `${short ? 'in ' : ''}${text}`;
 }
 
+const REMINDER_MENU_WIDTH = 144; // matches w-36
+
+// Edit/Delete live behind this kebab; Dismiss stays out of the menu as its
+// own standalone button on AlarmRow (only rendered for repeating reminders)
+// since it's the one action people reach for often enough to want a single
+// click, not two.
+function ReminderKebabMenu({ onEdit, onDelete }) {
+    const [open, setOpen] = useState(false);
+    // Portal'd into document.body and positioned with fixed coordinates
+    // instead of being absolutely positioned inside the row, so it isn't
+    // clipped by the reminders list's own overflow-y-auto scroll container.
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const ref = useRef(null);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (
+                ref.current && !ref.current.contains(e.target) &&
+                menuRef.current && !menuRef.current.contains(e.target)
+            ) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, []);
+
+    // Close on scroll/resize anywhere (capture phase also catches scrolling
+    // inside the reminders list itself) rather than trying to keep the menu
+    // glued to a moving anchor.
+    useEffect(() => {
+        if (!open) return;
+        const close = () => setOpen(false);
+        window.addEventListener('scroll', close, true);
+        window.addEventListener('resize', close);
+        return () => {
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+    }, [open]);
+
+    // Flip upward and clamp horizontally so the menu never runs past the
+    // edge of the screen, same approach as TaskRow's KebabMenu.
+    useLayoutEffect(() => {
+        if (!open || !ref.current) return;
+        const buttonRect = ref.current.getBoundingClientRect();
+        const menuHeight = menuRef.current?.offsetHeight ?? 0;
+        const spaceBelow = window.innerHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+        const left = Math.min(
+            Math.max(buttonRect.right - REMINDER_MENU_WIDTH, 8),
+            window.innerWidth - REMINDER_MENU_WIDTH - 8
+        );
+        const top = openUpward ? buttonRect.top - menuHeight - 4 : buttonRect.bottom + 4;
+        setPosition({ top, left });
+    }, [open]);
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+                title="More options"
+                className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && createPortal(
+                <div
+                    ref={menuRef}
+                    style={{ position: 'fixed', top: position.top, left: position.left, width: REMINDER_MENU_WIDTH }}
+                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                    </button>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
+
 function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
     const { time, ampm } = formatAlarmTime(r.remind_at);
     const { overdue } = timeLeftParts(r.remind_at, now);
@@ -329,35 +431,26 @@ function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
                         {label}
                     </span>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                        title="Edit reminder"
-                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </button>
+                    {/* Dismiss only makes sense for a repeating reminder - skips the
+                        upcoming occurrence without touching future ones. A one-off
+                        reminder has no "next turn" to skip, so it only gets Edit/Delete
+                        (in the kebab below). */}
+                    {r.repeat_interval !== 'none' && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                            title="Dismiss this occurrence (stays on your list, just skips the next alert)"
+                            className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-green-50 hover:text-green-600 dark:text-gray-500 dark:hover:bg-green-950/40 dark:hover:text-green-400"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    )}
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-                        title="Dismiss reminder (keeps it in your history, stops it from alerting again)"
-                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-green-50 hover:text-green-600 dark:text-gray-500 dark:hover:bg-green-950/40 dark:hover:text-green-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </button>
-
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                        title="Delete reminder"
-                        className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
-                        </svg>
-                    </button>
+                    <ReminderKebabMenu
+                        onEdit={() => setIsEditing(true)}
+                        onDelete={onDelete}
+                    />
                 </div>
             </div>
 
@@ -531,7 +624,13 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
                     <p className="text-sm text-gray-400 dark:text-gray-500">No reminders set</p>
                 </div>
             ) : (
-                <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1.5">
+                /* px/py (not just pr) so the highlight ring on a deep-linked
+                   reminder has room to render fully - overflow-y-auto forces
+                   overflow-x to clip too (CSS spec: setting only one axis to
+                   non-visible flips the other from visible to auto), so
+                   without left/top/bottom padding the ring's box-shadow was
+                   getting cut off flush against the scroll container's edge. */
+                <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto px-1.5 py-1">
                     {sorted.map((r) => (
                         <AlarmRow key={r.id} r={r} now={now} onDismiss={() => dismiss(r.id)} onDelete={() => remove(r.id)} isHighlighted={r.id === highlightedReminderId} />
                     ))}
@@ -590,11 +689,15 @@ function MiniNoteCard({ note, onToggleItem }) {
                 <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length}</span>
             </div>
             {items.length > 0 && (
-                <ul className="mt-1.5 space-y-1.5">
-                    {items.map((item) => (
-                        <NoteItemMini key={item.id} item={item} onToggle={() => onToggleItem(item.id)} />
-                    ))}
-                </ul>
+                // Same soft border-t treatment as Projects/Show.jsx's NoteCard,
+                // so the rollup here reads consistently with the full panel.
+                <div className="mt-2 border-t border-gray-200/70 pt-1.5 dark:border-gray-700/50">
+                    <ul className="space-y-1.5">
+                        {items.map((item) => (
+                            <NoteItemMini key={item.id} item={item} onToggle={() => onToggleItem(item.id)} />
+                        ))}
+                    </ul>
+                </div>
             )}
         </li>
     );
