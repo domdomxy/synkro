@@ -15,6 +15,7 @@ class AdminAlertsUpdated implements ShouldBroadcastNow
         public bool $hasPending,
         public int $pendingAppeals = 0,
         public int $pendingFeedbacks = 0,
+        public int $pendingResolution = 0,
     ) {}
 
     public function broadcastOn(): array
@@ -33,6 +34,7 @@ class AdminAlertsUpdated implements ShouldBroadcastNow
             'hasPending' => $this->hasPending,
             'pendingAppeals' => $this->pendingAppeals,
             'pendingFeedbacks' => $this->pendingFeedbacks,
+            'pendingResolution' => $this->pendingResolution,
         ];
     }
 }

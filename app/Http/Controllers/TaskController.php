@@ -1254,6 +1254,8 @@ class TaskController extends Controller
             ProjectActivityLog::log($task->project, 'submission_kept', ['task_title' => $task->title], $task);
         }
 
+        \App\Support\AdminAlerts::broadcastRefresh();
+
         $this->broadcastTaskChanged($task);
 
         return redirect()->route('projects.show', [

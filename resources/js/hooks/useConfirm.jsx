@@ -34,6 +34,7 @@ export default function useConfirm() {
             confirmLabel={data?.confirmLabel}
             cancelLabel={data?.cancelLabel}
             choices={data?.choices}
+            hideCancel={data?.hideCancel}
             // Without `choices`, confirm() resolves to a plain boolean as before. With
             // `choices`, it resolves to the selected choice's value (or false on cancel),
             // so callers can tell which option was picked.

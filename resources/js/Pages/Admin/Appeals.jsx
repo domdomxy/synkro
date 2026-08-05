@@ -28,6 +28,7 @@ function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
     const [note, setNote] = useState('');
+    const [showNote, setShowNote] = useState(false);
     const [sendingNote, setSendingNote] = useState(false);
     const { confirm, ConfirmDialog } = useConfirm();
 
@@ -49,7 +50,11 @@ function AppealItem({ appeal }) {
 
     const decide = async (outcome) => {
         if (!reason.trim()) {
-            alert('Please add a reason before continuing — it will be included in the email sent to the user.');
+            await confirm('Please add a reason before continuing — it will be included in the email sent to the user.', {
+                title: 'Reason required',
+                hideCancel: true,
+                confirmLabel: 'OK',
+            });
             return;
         }
         const confirmTitle = outcome === 'approved' ? 'Lift Suspension?' : 'Reject Appeal?';
@@ -65,7 +70,7 @@ function AppealItem({ appeal }) {
         setSendingNote(true);
         router.patch(route('admin.appeals.respond', appeal.id), { message: note }, {
             preserveScroll: true,
-            onSuccess: () => setNote(''),
+            onSuccess: () => { setNote(''); setShowNote(false); },
             onFinish: () => setSendingNote(false),
         });
     };
@@ -150,7 +155,7 @@ function AppealItem({ appeal }) {
                         </div>
                     )}
 
-                    {isPending && (
+                    {isPending && showNote && (
                         <div className="rounded-md border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900/30">
                             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -158,14 +163,14 @@ function AppealItem({ appeal }) {
                                 </svg>
                                 Leave a note without deciding yet (emailed to {appeal.user?.name ?? 'the user'})
                             </label>
-                            <div className="flex items-start gap-2">
-                                <textarea
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    rows={2}
-                                    placeholder="e.g. Thanks for reaching out — we're looking into this and will follow up soon."
-                                    className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-                                />
+                            <textarea
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                rows={2}
+                                placeholder="e.g. Thanks for reaching out — we're looking into this and will follow up soon."
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                            />
+                            <div className="mt-2 flex justify-end">
                                 <button
                                     onClick={sendNote}
                                     disabled={!note.trim() || sendingNote}
@@ -207,6 +212,12 @@ function AppealItem({ appeal }) {
                                     className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500"
                                 >
                                     Rejected
+                                </button>
+                                <button
+                                    onClick={() => setShowNote((v) => !v)}
+                                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                >
+                                    {showNote ? 'Hide Note' : 'Leave a Note'}
                                 </button>
                             </div>
                         </>

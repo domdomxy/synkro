@@ -11,6 +11,7 @@ import StatusDonut from '@/Components/StatusDonut';
 import ChartControlsMenu from '@/Components/ChartControlsMenu';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
+import SessionActivityCalendar from '@/Components/SessionActivityCalendar';
 import { statusLabels, statusColors } from '@/utils/taskStatus';
 
 const statIcons = {
@@ -795,6 +796,14 @@ function MyNotesPanel({ notesByProject }) {
 }
 
 export default function Dashboard({ stats, range, customFrom, customTo, myNotes = [] }) {
+    const navigateSessionActivity = (offset) => {
+        router.get(route('dashboard', { range, from: customFrom, to: customTo, session_offset: offset }), {}, {
+            only: ['stats'],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     const totalTasks = Object.values(stats.tasksByStatus).reduce((a, b) => a + b, 0);
     const activeRatio = totalTasks ? Math.round((stats.activeTasksCount / totalTasks) * 100) : 0;
     const [highlightedReminderId, setHighlightedReminderId] = useState(null);
@@ -918,7 +927,15 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                         <CalendarView tasks={stats.calendarTasks} />
                     </div>
 
-                    <DueSoonPanel dueSoon={stats.dueSoon} />
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                        <SessionActivityCalendar
+                            sessionsByDay={stats.sessionActivity}
+                            offset={stats.sessionOffset}
+                            onNavigate={navigateSessionActivity}
+                        />
+
+                        <DueSoonPanel dueSoon={stats.dueSoon} />
+                    </div>
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <MyNotesPanel notesByProject={myNotes} />

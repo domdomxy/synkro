@@ -43,6 +43,10 @@ class ProjectMemberController extends Controller
         Comment::where('user_id', $userId)
             ->whereIn('task_id', $resettable->pluck('id'))
             ->delete();
+
+        if ($frozen->isNotEmpty()) {
+            \App\Support\AdminAlerts::broadcastRefresh();
+        }
     }
 
     public function store(Request $request, Project $project)

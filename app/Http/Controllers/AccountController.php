@@ -506,6 +506,8 @@ class AccountController extends Controller
             }
         }
 
+        \App\Support\AdminAlerts::broadcastRefresh();
+
         NotificationMailer::send(
             $user,
             'account.deactivated',

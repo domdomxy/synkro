@@ -129,14 +129,23 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     const [liveCounts, setLiveCounts] = useState({
         pendingAppeals: stats.pendingAppeals,
         pendingFeedbacks: stats.pendingFeedbacks,
+        pendingResolution: stats.pendingResolution,
     });
 
     useEffect(() => {
-        setLiveCounts({ pendingAppeals: stats.pendingAppeals, pendingFeedbacks: stats.pendingFeedbacks });
-    }, [stats.pendingAppeals, stats.pendingFeedbacks]);
+        setLiveCounts({
+            pendingAppeals: stats.pendingAppeals,
+            pendingFeedbacks: stats.pendingFeedbacks,
+            pendingResolution: stats.pendingResolution,
+        });
+    }, [stats.pendingAppeals, stats.pendingFeedbacks, stats.pendingResolution]);
 
     useEcho('admin-alerts', ['.alerts.updated'], (payload) => {
-        setLiveCounts({ pendingAppeals: payload.pendingAppeals, pendingFeedbacks: payload.pendingFeedbacks });
+        setLiveCounts({
+            pendingAppeals: payload.pendingAppeals,
+            pendingFeedbacks: payload.pendingFeedbacks,
+            pendingResolution: payload.pendingResolution,
+        });
     });
 
     const dateRangeLabel = (() => {
@@ -147,7 +156,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
     })();
 
     const attentionItems = [
-        { label: 'Tasks with pending submission decisions', count: stats.pendingResolution, icon: statIcons.warning, color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
+        { label: 'Tasks with pending submission decisions', count: liveCounts.pendingResolution, icon: statIcons.warning, color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
         { label: 'Suspension appeals awaiting review', count: liveCounts.pendingAppeals, icon: statIcons.appeal, color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400', href: route('admin.appeals') },
         { label: 'Feedback tickets awaiting review', count: liveCounts.pendingFeedbacks, icon: statIcons.feedback, color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400', href: route('admin.feedbacks', { status: 'pending' }) },
     ];

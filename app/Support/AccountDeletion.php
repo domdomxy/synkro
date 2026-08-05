@@ -130,6 +130,8 @@ class AccountDeletion
             }
         }
 
+        \App\Support\AdminAlerts::broadcastRefresh();
+
         $user->delete();
 
         return $graceEndsAt;
@@ -269,6 +271,10 @@ class AccountDeletion
                     'View Project'
                 );
             }
+        }
+
+        if ($tasks->isNotEmpty()) {
+            \App\Support\AdminAlerts::broadcastRefresh();
         }
     }
 }
