@@ -191,7 +191,7 @@ function describeLog(log, actorName = null) {
         case 'member_added': return `${actor} added ${target} as ${role}`;
         case 'member_removed': return `${actor} removed ${target} (${role})`;
         case 'member_left': return `**${actor}** left the project`;
-        case 'role_changed': return `**${actor}** changed ${target}'s role from ${oldRole} to ${newRole}`;
+        case 'role_changed': return `${actor} changed ${target}'s role from ${oldRole} to ${newRole}`;
         case 'ownership_transferred': return `${actor} transferred ownership to ${target}`;
         case 'task_created': return `${actor} created task "**${d.task_title}**"`;
         case 'task_deleted': return `${actor} deleted task "**${d.task_title}**"`;
@@ -242,7 +242,7 @@ function getDetails(log) {
 
     if (['task_created', 'task_started', 'task_review_started', 'task_approved', 'task_rejected'].includes(log.action)) {
         return [
-            d.task_title && { label: 'Task Name', value: d.task_title },
+            d.task_title && { label: 'Task Name', value: `**${d.task_title}**` },
         ].filter(Boolean);
     }
 
@@ -277,14 +277,14 @@ function getDetails(log) {
 
     if (log.action === 'comment_added' || log.action === 'comment_deleted') {
         return [
-            { label: 'Task', value: d.task_title },
+            { label: 'Task', value: `**${d.task_title}**` },
             { label: 'Comment', value: d.preview },
         ].filter((r) => r.value);
     }
 
     if (log.action === 'comment_edited') {
         return [
-            { label: 'Task', value: d.task_title },
+            { label: 'Task', value: `**${d.task_title}**` },
             d.old_preview !== undefined && d.new_preview !== undefined && {
                 label: 'Comment',
                 oldValue: d.old_preview || '-',
@@ -296,14 +296,14 @@ function getDetails(log) {
 
     if (log.action === 'dependency_added' || log.action === 'dependency_removed') {
         return [
-            { label: 'Task', value: d.task_title },
-            { label: 'Depends On', value: d.depends_on_title },
+            { label: 'Task', value: `**${d.task_title}**` },
+            { label: 'Depends On', value: `**${d.depends_on_title}**` },
         ].filter((r) => r.value);
     }
 
     if (log.action === 'resource_added' || log.action === 'resource_removed') {
         return [
-            { label: 'File', value: d.name },
+            { label: 'File', value: `**${d.name}**` },
         ].filter((r) => r.value);
     }
 
@@ -311,8 +311,8 @@ function getDetails(log) {
         return [
             d.old_name !== undefined && d.name !== undefined && {
                 label: 'File',
-                oldValue: d.old_name || '-',
-                newValue: d.name || '-',
+                oldValue: `**${d.old_name}**` || '-',
+                newValue: `**${d.name}**` || '-',
                 isChange: true,
             },
         ].filter(Boolean);
@@ -320,18 +320,18 @@ function getDetails(log) {
 
     if (log.action === 'task_assigned') {
         return [
-            { label: 'Assigned To', value: d.target_name },
-            { label: 'Task', value: d.task_title },
+            { label: 'Assigned To', value: `**${d.target_name}**` },
+            { label: 'Task', value: `**${d.task_title}**` },
         ].filter((r) => r.value);
     }
 
     if (log.action === 'task_reassigned') {
         return [
-            { label: 'Task', value: d.task_title },
+            { label: 'Task', value: `**${d.task_title}**` },
             {
                 label: 'Assignee',
-                oldValue: d.old_assignee ?? 'Unassigned',
-                newValue: d.new_assignee,
+                oldValue: d.old_assignee ? `**${d.old_assignee}**` : 'Unassigned',
+                newValue: d.new_assignee ? `**${d.new_assignee}**` : 'Unassigned',
                 isChange: true,
             },
         ].filter((r) => r.value || r.isChange);
@@ -339,11 +339,11 @@ function getDetails(log) {
 
     if (log.action === 'role_changed') {
         return [
-            { label: 'User', value: d.target_name },
+            { label: 'User', value: `**${d.target_name}**` },
             {
                 label: 'Role',
-                oldValue: d.old_role,
-                newValue: d.new_role,
+                oldValue: `**${d.old_role}**`,
+                newValue: `**${d.new_role}**`,
                 isChange: true,
             },
         ].filter((r) => r.value || r.isChange);
@@ -351,15 +351,15 @@ function getDetails(log) {
 
     if (log.action === 'member_added') {
         return [
-            { label: 'User', value: d.target_name },
-            { label: 'Role', value: d.role },
+            { label: 'User', value: `**${d.target_name}**` },
+            { label: 'Role', value: `**${d.role}**` },
         ].filter((r) => r.value);
     }
 
     if (log.action === 'member_removed' || log.action === 'member_left') {
         return [
-            { label: 'User', value: d.target_name },
-            { label: 'Role', value: d.role },
+            { label: 'User', value: `**${d.target_name}**` },
+            { label: 'Role', value: `**${d.role}**` },
             { label: 'Reason', value: d.reason },
         ].filter((r) => r.value);
     }
@@ -464,13 +464,13 @@ function LogRow({ log, actorName, actor }) {
                                             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                             <div className="mt-1 flex items-center gap-2 text-sm">
                                                 <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 line-through dark:bg-red-900/40 dark:text-red-400">
-                                                    {item.oldValue || '-'}
+                                                    {noteBoldSegments(item.oldValue || '-', 'font-semibold text-red-900 dark:text-red-300')}
                                                 </span>
                                                 <svg className="h-3 w-3 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                                 </svg>
                                                 <span className="rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                    {item.newValue || '-'}
+                                                    {noteBoldSegments(item.newValue || '-', 'font-semibold text-green-900 dark:text-green-300')}
                                                 </span>
                                             </div>
                                         </div>
@@ -491,7 +491,7 @@ function LogRow({ log, actorName, actor }) {
                                     <div className="flex items-baseline gap-2">
                                         <dt className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{item.label}</dt>
                                         <dd className="break-words text-sm text-gray-700 dark:text-gray-300">
-                                            {item.value}
+                                            {noteBoldSegments(item.value, 'font-semibold text-gray-900 dark:text-gray-100')}
                                         </dd>
                                     </div>
                                 )}
