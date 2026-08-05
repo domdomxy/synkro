@@ -9,6 +9,7 @@ import Linkify from '@/Components/Linkify';
 import RichTextContent from '@/Components/RichTextContent';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import Avatar from '@/Components/Avatar';
+import { noteBoldSegments } from '@/utils/noteFormat';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -173,9 +174,13 @@ const actionIconConfig = {
  * pronoun that isn't ours to guess.
  */
 function describeLog(log, actorName = null) {
-    const actor = actorName ?? 'You';
+    const actor = `**${actorName ?? 'You'}**`;
     const possessive = actorName ? 'the' : 'your';
     const d = log.details ?? {};
+    const target = d.target_name ? `**${d.target_name}**` : d.target_name;
+    const role = d.role ? `**${d.role}**` : d.role;
+    const oldRole = d.old_role ? `**${d.old_role}**` : d.old_role;
+    const newRole = d.new_role ? `**${d.new_role}**` : d.new_role;
     switch (log.action) {
         case 'project_created': return `${actor} created the project`;
         case 'project_deleted': return `${actor} deleted the project`;
@@ -183,17 +188,17 @@ function describeLog(log, actorName = null) {
         case 'project_deletion_requested': return `${actor} requested project deletion`;
         case 'project_deletion_cancelled': return `${actor} cancelled the project deletion`;
         case 'project_updated': return `${actor} updated the project`;
-        case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
-        case 'member_removed': return `${actor} removed ${d.target_name} (${d.role})`;
+        case 'member_added': return `${actor} added ${target} as ${role}`;
+        case 'member_removed': return `${actor} removed ${target} (${role})`;
         case 'member_left': return `${actor} left the project`;
-        case 'role_changed': return `${actor} changed ${d.target_name}'s role from ${d.old_role} to ${d.new_role}`;
-        case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
+        case 'role_changed': return `${actor} changed ${target}'s role from ${oldRole} to ${newRole}`;
+        case 'ownership_transferred': return `${actor} transferred ownership to ${target}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;
         case 'task_deleted': return `${actor} deleted task "${d.task_title}"`;
         case 'task_restored': return `${actor} restored task "${d.task_title}" from the trash`;
-        case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${d.target_name}`;
-        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee ?? 'unassigned'}`;
-        case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee})`;
+        case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${target}`;
+        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ? `**${d.old_assignee}**` : 'unassigned'} to ${d.new_assignee ? `**${d.new_assignee}**` : 'unassigned'}`;
+        case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee ? `**${d.old_assignee}**` : d.old_assignee})`;
         case 'task_updated': return `${actor} updated "${d.task_title}"`;
         case 'task_started': return `${actor} started "${d.task_title}"`;
         case 'task_review_started': return `${actor} started reviewing "${d.task_title}"`;
@@ -207,8 +212,8 @@ function describeLog(log, actorName = null) {
         case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
         case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
         case 'invitation_denied': return `${actor} declined the invitation to join`;
-        case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
-        case 'invitation_accepted': return `${actor} accepted the invitation and joined as ${d.role}`;
+        case 'invitation_sent': return `${actor} invited ${target} as ${role}`;
+        case 'invitation_accepted': return `${actor} accepted the invitation and joined as ${role}`;
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;
@@ -396,10 +401,14 @@ function LogRow({ log, actorName, actor }) {
                     </span>
                 </span>
                 <div className="flex-1">
-                    <p className="text-sm text-gray-800 dark:text-gray-200">{describeLog(log, actorName)}</p>
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                        {noteBoldSegments(describeLog(log, actorName), 'font-semibold text-gray-900 dark:text-white')}
+                    </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                        {relative && <span className="text-gray-300 dark:text-gray-600">· {relative}</span>}
+                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        </span>
+                        {relative && <span className="font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
                         {log.project ? (
                             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                                 {log.project.name}

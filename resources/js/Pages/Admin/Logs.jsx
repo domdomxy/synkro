@@ -9,6 +9,7 @@ import FilterSelect from '@/Components/FilterSelect';
 import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
+import { noteBoldSegments } from '@/utils/noteFormat';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -128,7 +129,7 @@ function AdminLogRow({ log, actionCatalog }) {
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                             {log.admin?.name ?? (AUTOMATED_ACTIONS.has(log.action) ? 'Synkro (automated)' : 'Deleted admin')}
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-xs ${actionColors[log.action] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
@@ -137,7 +138,7 @@ function AdminLogRow({ log, actionCatalog }) {
                     </div>
                     {description && (
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {description}
+                            {noteBoldSegments(description, 'font-semibold text-gray-800 dark:text-gray-200')}
                         </p>
                     )}
                     {hasReason && open && (
@@ -153,8 +154,10 @@ function AdminLogRow({ log, actionCatalog }) {
                         </div>
                     )}
                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                        {relative && <span className="ml-1.5 text-gray-300 dark:text-gray-600">· {relative}</span>}
+                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        </span>
+                        {relative && <span className="ml-1.5 font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
                     </p>
                 </div>
                 {hasReason && (

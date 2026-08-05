@@ -100,7 +100,7 @@ class CloseInactiveAppeals extends Command
         $notification = UserNotification::create([
             'user_id' => $appeal->user->id,
             'type' => 'appeal_auto_closed',
-            'message' => "Appeal closed\nYour suspension appeal was automatically closed after 24h of inactivity.",
+            'message' => "Appeal closed\nYour suspension appeal was automatically closed after **24h** of inactivity.",
             'url' => route('login', [], false),
         ]);
 

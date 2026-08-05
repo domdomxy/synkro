@@ -207,8 +207,12 @@ export function getLogDetails(log) {
 }
 
 export function describeLog(log) {
-    const actor = log.user?.name ?? 'Someone';
+    const actor = `**${log.user?.name ?? 'Someone'}**`;
     const d = log.details ?? {};
+    const target = d.target_name ? `**${d.target_name}**` : d.target_name;
+    const role = d.role ? `**${d.role}**` : d.role;
+    const oldRole = d.old_role ? `**${d.old_role}**` : d.old_role;
+    const newRole = d.new_role ? `**${d.new_role}**` : d.new_role;
     switch (log.action) {
         case 'project_created': return `${actor} created the project`;
         case 'project_deleted': return `${actor} deleted the project`;
@@ -216,17 +220,17 @@ export function describeLog(log) {
         case 'project_deletion_requested': return `${actor} requested project deletion`;
         case 'project_deletion_cancelled': return `${actor} cancelled the project deletion`;
         case 'project_updated': return `${actor} updated the project`;
-        case 'member_added': return `${actor} added ${d.target_name} as ${d.role}`;
-        case 'member_removed': return `${actor} removed ${d.target_name} (${d.role})`;
-        case 'member_left': return `${d.target_name ?? actor} (${d.role}) left the project`;
-        case 'role_changed': return `${actor} changed ${d.target_name}'s role from ${d.old_role} to ${d.new_role}`;
-        case 'ownership_transferred': return `${actor} transferred ownership to ${d.target_name}`;
+        case 'member_added': return `${actor} added ${target} as ${role}`;
+        case 'member_removed': return `${actor} removed ${target} (${role})`;
+        case 'member_left': return `${target ?? actor} (${role}) left the project`;
+        case 'role_changed': return `${actor} changed ${target}'s role from ${oldRole} to ${newRole}`;
+        case 'ownership_transferred': return `${actor} transferred ownership to ${target}`;
         case 'task_created': return `${actor} created task "${d.task_title}"`;
         case 'task_deleted': return `${actor} deleted task "${d.task_title}"`;
         case 'task_restored': return `${actor} restored task "${d.task_title}" from the trash`;
-        case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${d.target_name}`;
-        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ?? 'unassigned'} to ${d.new_assignee ?? 'unassigned'}`;
-        case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee})`;
+        case 'task_assigned': return `${actor} assigned "${d.task_title}" to ${target}`;
+        case 'task_reassigned': return `${actor} reassigned "${d.task_title}" from ${d.old_assignee ? `**${d.old_assignee}**` : 'unassigned'} to ${d.new_assignee ? `**${d.new_assignee}**` : 'unassigned'}`;
+        case 'task_unassigned': return `${actor} unassigned "${d.task_title}" (was ${d.old_assignee ? `**${d.old_assignee}**` : d.old_assignee})`;
         case 'task_updated': return `${actor} updated "${d.task_title}"`;
         case 'task_started': return `${actor} started "${d.task_title}"`;
         case 'task_review_started': return `${actor} started reviewing "${d.task_title}"`;
@@ -239,10 +243,10 @@ export function describeLog(log) {
         case 'checklist_item_deleted': return `${actor} removed the checklist item "${d.item_title}" from "${d.task_title}"`;
         case 'dependency_added': return `${actor} made "${d.task_title}" depend on "${d.depends_on_title}"`;
         case 'dependency_removed': return `${actor} removed the dependency of "${d.task_title}" on "${d.depends_on_title}"`;
-        case 'invitation_denied': return `${d.target_name} declined the invitation to join`;
-        case 'invitation_sent': return `${actor} invited ${d.target_name} as ${d.role}`;
-        case 'invitation_cancelled': return `${actor} cancelled ${d.target_name}'s invitation to join as ${d.role}`;
-        case 'invitation_accepted': return `${d.target_name ?? actor} accepted the invitation and joined as ${d.role}`;
+        case 'invitation_denied': return `${target} declined the invitation to join`;
+        case 'invitation_sent': return `${actor} invited ${target} as ${role}`;
+        case 'invitation_cancelled': return `${actor} cancelled ${target}'s invitation to join as ${role}`;
+        case 'invitation_accepted': return `${target ?? actor} accepted the invitation and joined as ${role}`;
         case 'comment_added': return `${actor} commented on "${d.task_title}"`;
         case 'comment_edited': return `${actor} edited a comment on "${d.task_title}"`;
         case 'comment_deleted': return `${actor} deleted a comment on "${d.task_title}"`;

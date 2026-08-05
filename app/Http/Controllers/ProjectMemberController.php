@@ -78,7 +78,7 @@ class ProjectMemberController extends Controller
                 'user_id' => $user->id,
                 'type' => 'project_invitation',
                 'causer_id' => $request->user()->id,
-                'message' => "Project invitation\n**{$request->user()->name}** invited you to join \"**{$project->name}**\" as {$validated['role']}",
+                'message' => "Project invitation\n**{$request->user()->name}** invited you to join \"**{$project->name}**\" as **{$validated['role']}**",
                 'url' => $inviteUrl,
             ]);
 
@@ -93,7 +93,7 @@ class ProjectMemberController extends Controller
             $user,
             'project.invitation_received',
             "{$request->user()->name} invited you to join {$project->name}",
-            ["**{$request->user()->name}** invited you to join the project \"**{$project->name}**\" (#{$project->id}) as {$validated['role']}."],
+            ["**{$request->user()->name}** invited you to join the project \"**{$project->name}**\" (#{$project->id}) as **{$validated['role']}**."],
             url($inviteUrl),
             'View Invitation'
         );
@@ -166,7 +166,7 @@ class ProjectMemberController extends Controller
                     'user_id' => $user->id,
                     'type' => 'project_role_changed',
                     'causer_id' => Auth::id(),
-                    'message' => "Role changed\nYour role in \"**{$project->name}**\" changed from {$oldRole} to {$validated['role']}",
+                    'message' => "Role changed\nYour role in \"**{$project->name}**\" changed from **{$oldRole}** to **{$validated['role']}**",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -180,7 +180,7 @@ class ProjectMemberController extends Controller
                 $user,
                 'project.role_changed',
                 "Your role changed in {$project->name}",
-                ["Your role in \"**{$project->name}**\" changed from {$oldRole} to {$validated['role']}."],
+                ["Your role in \"**{$project->name}**\" changed from **{$oldRole}** to **{$validated['role']}**."],
                 url(route('projects.show', $project->id, false)),
                 'View Project'
             );
@@ -307,7 +307,7 @@ class ProjectMemberController extends Controller
                     'user_id' => $recipient->id,
                     'type' => 'member_left',
                     'causer_id' => Auth::id(),
-                    'message' => "Member left\n**{$leavingName}** ({$leavingRole}) left \"**{$project->name}**\"",
+                    'message' => "Member left\n**{$leavingName}** (**{$leavingRole}**) left \"**{$project->name}**\"",
                     'url' => route('projects.show', $project->id, false),
                 ]);
 
@@ -323,7 +323,7 @@ class ProjectMemberController extends Controller
                 'project.member_left',
                 "{$leavingName} left {$project->name}",
                 [
-                    "**{$leavingName}** ({$leavingRole}) left the project \"**{$project->name}**\" (#{$project->id}).",
+                    "**{$leavingName}** (**{$leavingRole}**) left the project \"**{$project->name}**\" (#{$project->id}).",
                 ],
                 url(route('projects.show', $project->id, false)),
                 'View Project',

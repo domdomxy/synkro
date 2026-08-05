@@ -450,7 +450,7 @@ class AdminController extends Controller
      */
     public function userLogs(Request $request, User $user)
     {
-        AdminLog::log('user.logs_viewed', "Viewed activity logs for {$user->name} ({$user->email})", $user);
+        AdminLog::log('user.logs_viewed', "Viewed activity logs for **{$user->name}** ({$user->email})", $user);
 
         $action = $request->input('action', 'all');
         $projectFilter = $request->input('project', 'all');
@@ -531,7 +531,7 @@ class AdminController extends Controller
      */
     public function userLoginHistory(Request $request, User $user)
     {
-        AdminLog::log('user.login_history_viewed', "Viewed login history for {$user->name} ({$user->email})", $user);
+        AdminLog::log('user.login_history_viewed', "Viewed login history for **{$user->name}** ({$user->email})", $user);
 
         $action = $request->input('action', 'all');
 
@@ -649,7 +649,7 @@ public function suspend(Request $request, User $user)
         'suspended_until' => $suspendedUntil,
     ]);
 
-    AdminLog::log('user.suspended', "Suspended {$user->name} ({$user->email})", $user, $request->reason);
+    AdminLog::log('user.suspended', "Suspended **{$user->name}** ({$user->email})", $user, $request->reason);
 
     event(new UserSuspended($user));
 
@@ -695,7 +695,7 @@ public function suspend(Request $request, User $user)
                 'lifted_by' => auth()->id(),
             ]);
 
-            AdminLog::log('user.suspension_lifted', "Lifted suspension for {$user->name} ({$user->email})", $user, $request->reason);
+            AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$user->name}** ({$user->email})", $user, $request->reason);
 
             // Resolve any pending appeal(s) tied to this account, same as reviewAppeal()
             // does when an appeal is approved from the Appeals page — so lifting a
@@ -720,7 +720,7 @@ public function suspend(Request $request, User $user)
                     'outcome' => 'approved',
                     'admin_reason' => $request->reason,
                 ]);
-                AdminLog::log('appeal.reviewed', "Reviewed {$user->name}'s suspension appeal", $appeal, $request->reason);
+                AdminLog::log('appeal.reviewed', "Reviewed **{$user->name}**'s suspension appeal", $appeal, $request->reason);
             }
         });
 
@@ -860,7 +860,7 @@ public function suspend(Request $request, User $user)
         }
         $newRole = $user->role === 'admin' ? 'user' : 'admin';
         $user->update(['role' => $newRole, 'role_changed_at' => now()]);
-        AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
+        AdminLog::log('user.role_changed', "Changed **{$user->name}**'s role to **{$newRole}**", $user);
 
         if ($newRole === 'admin') {
             if (NotificationPreferences::wantsType($user, 'admin_status_changed')) {
@@ -868,7 +868,7 @@ public function suspend(Request $request, User $user)
                     'user_id' => $user->id,
                     'type' => 'admin_status_changed',
                     'causer_id' => auth()->id(),
-                    'message' => "Promoted to admin\nYou were granted administrator access on Synkro.",
+                    'message' => "Promoted to admin\nYou were granted **administrator** access on Synkro.",
                     'url' => route('admin.dashboard', [], false),
                 ]);
 
@@ -893,7 +893,7 @@ public function suspend(Request $request, User $user)
                     'user_id' => $user->id,
                     'type' => 'admin_status_changed',
                     'causer_id' => auth()->id(),
-                    'message' => "Removed from admin\nYour administrator access on Synkro was removed.",
+                    'message' => "Removed from admin\nYour **administrator** access on Synkro was removed.",
                     'url' => route('dashboard', [], false),
                 ]);
 
@@ -908,7 +908,7 @@ public function suspend(Request $request, User $user)
                 $user,
                 'account.admin_revoked',
                 'Your administrator access was removed',
-                ['Your administrator access on Synkro was removed.'],
+                ['Your **administrator** access on Synkro was removed.'],
                 url(route('dashboard', [], false)),
                 'Go to Dashboard'
             );
@@ -934,11 +934,11 @@ public function suspend(Request $request, User $user)
 
         $newRole = $user->isSuperAdmin() ? 'admin' : 'superadmin';
         $user->update(['role' => $newRole, 'role_changed_at' => now()]);
-        AdminLog::log('user.role_changed', "Changed {$user->name}'s role to {$newRole}", $user);
+        AdminLog::log('user.role_changed', "Changed **{$user->name}**'s role to **{$newRole}**", $user);
 
         $message = $newRole === 'superadmin'
-            ? "Promoted to superadmin\nYou were granted superadmin access on Synkro."
-            : "Demoted to admin\nYour superadmin access on Synkro was removed. You're still an admin.";
+            ? "Promoted to superadmin\nYou were granted **superadmin** access on Synkro."
+            : "Demoted to admin\nYour **superadmin** access on Synkro was removed. You're still an **admin**.";
 
         if (NotificationPreferences::wantsType($user, 'admin_status_changed')) {
             $notification = UserNotification::create([
@@ -1011,7 +1011,7 @@ public function suspend(Request $request, User $user)
             $user->wasChanged('name') ? "name to \"{$user->name}\"" : null,
             $user->wasChanged('email') ? "email to {$newEmail}" : null,
         ]);
-        AdminLog::log('user.info_updated', "Updated ".implode(' and ', $summary)." for #{$user->id}", $user);
+        AdminLog::log('user.info_updated', "Updated ".implode(' and ', $summary)." for **#{$user->id}**", $user);
 
         if ($user->wasChanged('email')) {
             // Security alert to the OLD address, always sent (same as a self-service change).
@@ -1071,7 +1071,7 @@ public function suspend(Request $request, User $user)
         $name = $user->name;
 
         if ($mode === 'permanent') {
-            AdminLog::log('user.deleted_permanent', "Permanently deleted account for {$name} ({$user->email})", $user);
+            AdminLog::log('user.deleted_permanent', "Permanently deleted account for **{$name}** ({$user->email})", $user);
 
             NotificationMailer::send(
                 $user,
@@ -1100,7 +1100,7 @@ public function suspend(Request $request, User $user)
         $graceDays = (int) config('synkro.account_deletion_grace_days', 7);
         $graceEndsAt = AccountDeletion::unwindProjectsAndDelete($user);
 
-        AdminLog::log('user.deleted', "Deleted account for {$name} ({$user->email})", $user);
+        AdminLog::log('user.deleted', "Deleted account for **{$name}** ({$user->email})", $user);
 
         NotificationMailer::send(
             $user,
@@ -1233,7 +1233,7 @@ public function suspend(Request $request, User $user)
             'temp_password_expires_at' => now()->addHours(24),
         ]);
 
-        AdminLog::log('user.password_reset', "Reset password for {$user->name} ({$user->email})", $user);
+        AdminLog::log('user.password_reset', "Reset password for **{$user->name}** ({$user->email})", $user);
 
         // If the user has an active session open right now, this kicks them out of it
         // immediately rather than leaving a stale session running on the old password.
@@ -1304,7 +1304,7 @@ public function suspend(Request $request, User $user)
 
         AdminLog::log(
             'appeal.responded',
-            "Left a note on {$appeal->user?->name}'s suspension appeal",
+            "Left a note on **{$appeal->user?->name}**'s suspension appeal",
             $appeal,
             $validated['message']
         );
@@ -1365,7 +1365,7 @@ public function suspend(Request $request, User $user)
 
             AdminLog::log(
                 $request->outcome === 'approved' ? 'appeal.reviewed' : 'appeal.dismissed',
-                ($request->outcome === 'approved' ? 'Approved' : 'Rejected') . " {$appeal->user?->name}'s suspension appeal",
+                ($request->outcome === 'approved' ? 'Approved' : 'Rejected') . " **{$appeal->user?->name}**'s suspension appeal",
                 $appeal,
                 $request->reason
             );
@@ -1383,7 +1383,7 @@ public function suspend(Request $request, User $user)
                     'lifted_by' => auth()->id(),
                 ]);
 
-                AdminLog::log('user.suspension_lifted', "Lifted suspension for {$appeal->user->name} ({$appeal->user->email})", $appeal->user, $request->reason);
+                AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$appeal->user->name}** ({$appeal->user->email})", $appeal->user, $request->reason);
             }
 
             // A user can end up with more than one pending appeal — e.g. an earlier

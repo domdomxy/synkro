@@ -48,7 +48,7 @@ class AccountDeletion
                             'user_id' => $recipient->id,
                             'type' => 'owner_account_deleted',
                             'causer_id' => $user->id,
-                            'message' => "Owner account deleted\n**{$user->name}**, the owner of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ', it and everything in it will be gone for good.',
+                            'message' => "Owner account deleted\n**{$user->name}**, the **owner** of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . '**, it and everything in it will be gone for good.',
                             'url' => route('projects.show', $project->id, false),
                         ]);
 
@@ -64,8 +64,8 @@ class AccountDeletion
                         'project.owner_account_deleted',
                         "{$project->name}'s owner deleted their account",
                         [
-                            "**{$user->name}**, the owner of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
-                            "The project stays exactly as it is for now. If they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ", the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
+                            "**{$user->name}**, the **owner** of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
+                            "The project stays exactly as it is for now. If they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
                             'If they log back in and restore their account before then, nothing changes and this notice can be ignored.',
                         ],
                         route('projects.show', $project->id),
@@ -117,7 +117,7 @@ class AccountDeletion
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Account deletion requested\n**{$user->name}** ({$role}) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now — if they don't restore their account by the end of " . $graceEndsAt->format('M j, Y') . ", they'll be removed from the project automatically.",
+                        'message' => "Account deletion requested\n**{$user->name}** (**{$role}**) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now — if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, they'll be removed from the project automatically.",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -246,7 +246,7 @@ class AccountDeletion
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good — {$count} {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
+                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good — **{$count}** {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 

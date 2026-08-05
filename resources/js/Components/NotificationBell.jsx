@@ -78,14 +78,14 @@ export default function NotificationBell() {
             let type = payload.type;
 
             if (payload.type === 'member_left') {
-                message = `Member left\n**${payload.member_name}** (${payload.role}) left "**${payload.project_name}**"`;
+                message = `Member left\n**${payload.member_name}** (**${payload.role}**) left "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'owner_account_deleted') {
                 const restoreBy = new Date(payload.restore_by).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                message = `Owner account deleted\n**${payload.owner_name}**, the owner of "**${payload.project_name}**", deleted their account. Restorable until the end of ${restoreBy}.`;
+                message = `Owner account deleted\n**${payload.owner_name}**, the **owner** of "**${payload.project_name}**", deleted their account. Restorable until the end of **${restoreBy}**.`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_invitation') {
-                message = `Project invitation\n**${payload.inviter_name}** invited you to join "**${payload.project_name}**" as ${payload.role}`;
+                message = `Project invitation\n**${payload.inviter_name}** invited you to join "**${payload.project_name}**" as **${payload.role}**`;
                 url = `/invitations/${payload.token}`;
             } else if (payload.type === 'invitation_accepted') {
                 message = `Invitation accepted\n**${payload.accepted_by}** accepted your invitation to "**${payload.project_name}**"`;
@@ -94,10 +94,10 @@ export default function NotificationBell() {
                 message = `Invitation declined\n**${payload.denied_by}** declined your invitation to "**${payload.project_name}**"`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_role_changed') {
-                message = `Role changed\nYour role in "**${payload.project_name}**" changed from ${payload.old_role} to ${payload.new_role}`;
+                message = `Role changed\nYour role in "**${payload.project_name}**" changed from **${payload.old_role}** to **${payload.new_role}**`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_member_added') {
-                message = `New member\n**${payload.member_name ?? 'Someone'}** joined "**${payload.project_name}**" as ${payload.role}`;
+                message = `New member\n**${payload.member_name ?? 'Someone'}** joined "**${payload.project_name}**" as **${payload.role}**`;
                 url = `/projects/${payload.project_id}`;
             } else if (payload.type === 'project_updated') {
                 message = `Project updated\n"**${payload.project_name}**" was edited`;
@@ -179,10 +179,10 @@ export default function NotificationBell() {
                 url = '/admin/feedbacks';
             } else if (payload.type === 'admin_status_changed') {
                 message = payload.new_role === 'admin'
-                    ? 'Promoted to admin\nYou were granted administrator access on Synkro.'
+                    ? 'Promoted to admin\nYou were granted **administrator** access on Synkro.'
                     : payload.new_role === 'superadmin'
-                        ? 'Promoted to superadmin\nYou were granted superadmin access on Synkro.'
-                        : 'Removed from admin\nYour administrator access on Synkro was removed.';
+                        ? 'Promoted to superadmin\nYou were granted **superadmin** access on Synkro.'
+                        : 'Removed from admin\nYour **administrator** access on Synkro was removed.';
                 url = payload.new_role === 'admin' || payload.new_role === 'superadmin' ? '/admin' : '/dashboard';
             } else if (payload.type === 'ticket_created') {
                 message = `New ticket submitted\n**${payload.submitter_name}** submitted a new ticket "**${payload.subject}**"`;

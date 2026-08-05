@@ -151,7 +151,7 @@ class AccountController extends Controller
                         'user_id' => $recipient->id,
                         'type' => 'member_name_changed',
                         'causer_id' => $user->id,
-                        'message' => "Member changed their name\n**{$oldName}** ({$role}) is now **{$newName}** in \"**{$project->name}**\"",
+                        'message' => "Member changed their name\n**{$oldName}** (**{$role}**) is now **{$newName}** in \"**{$project->name}**\"",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -167,7 +167,7 @@ class AccountController extends Controller
                     'project.member_name_changed',
                     "{$oldName} changed their name in {$project->name}",
                     [
-                        "**{$oldName}** ({$role}) in the project \"**{$project->name}**\" (#{$project->id}) is now going by **{$newName}**.",
+                        "**{$oldName}** (**{$role}**) in the project \"**{$project->name}**\" (#{$project->id}) is now going by **{$newName}**.",
                     ],
                     url(route('projects.show', $project->id, false)),
                     'View Project'
@@ -250,7 +250,7 @@ class AccountController extends Controller
             'Your account has been deleted',
             [
                 "Your Synkro account has been deleted and is no longer accessible.",
-                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
+                "It will be kept for **{$graceDays}** more day(s) (until the end of **" . $graceEndsAt->format('M j, Y') . '**) in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
                 "After that, it will be permanently deleted and can't be recovered.",
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
@@ -493,7 +493,7 @@ class AccountController extends Controller
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Member left\n**{$user->name}** ({$role}) deactivated their account; their tasks in \"**{$project->name}**\" may need attention",
+                        'message' => "Member left\n**{$user->name}** (**{$role}**) deactivated their account; their tasks in \"**{$project->name}**\" may need attention",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 

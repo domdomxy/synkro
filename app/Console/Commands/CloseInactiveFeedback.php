@@ -117,7 +117,7 @@ class CloseInactiveFeedback extends Command
         $notification = UserNotification::create([
             'user_id' => $user->id,
             'type' => 'ticket_status_changed',
-            'message' => "Ticket auto-closed\nYour ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id}) was automatically closed after 24h of inactivity.",
+            'message' => "Ticket auto-closed\nYour ticket \"**{$feedback->subject}**\" ({$feedback->tracking_id}) was automatically closed after **24h** of inactivity.",
             'url' => route('feedback.page', [], false),
         ]);
 

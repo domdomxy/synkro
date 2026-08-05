@@ -2,6 +2,7 @@ import Avatar from '@/Components/Avatar';
 import Linkify from '@/Components/Linkify';
 import RichTextContent from '@/Components/RichTextContent';
 import { describeLog, getLogDetails, ICON_PATHS, actionIconConfig } from '@/utils/activityLog';
+import { noteBoldSegments } from '@/utils/noteFormat';
 import { useState } from 'react';
 
 function Icon({ path, className }) {
@@ -59,10 +60,14 @@ export default function LogEntryRow({ log, dense = false }) {
                     </span>
                 </span>
                 <div className="min-w-0 flex-1">
-                    <p className={dense ? 'text-sm text-gray-700 dark:text-gray-300' : 'text-sm text-gray-800 dark:text-gray-200'}>{describeLog(log)}</p>
+                    <p className={dense ? 'text-sm text-gray-700 dark:text-gray-300' : 'text-sm text-gray-800 dark:text-gray-200'}>
+                        {noteBoldSegments(describeLog(log), 'font-semibold text-gray-900 dark:text-white')}
+                    </p>
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                        {relative && <span className="ml-1.5 text-gray-300 dark:text-gray-600">· {relative}</span>}
+                        <span className="font-semibold text-gray-500 dark:text-gray-400">
+                            {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                        </span>
+                        {relative && <span className="ml-1.5 font-semibold text-gray-400 dark:text-gray-500">· {relative}</span>}
                     </p>
                 </div>
                 {hasDetails && (

@@ -110,7 +110,7 @@ class InvitationController extends Controller
                     'user_id' => $recipient->id,
                     'type' => 'project_member_added',
                     'causer_id' => Auth::id(),
-                    'message' => "New member\n" . '**' . Auth::user()->name . '**' . " joined \"**{$invitation->project->name}**\" as {$invitation->role}",
+                    'message' => "New member\n" . '**' . Auth::user()->name . '**' . " joined \"**{$invitation->project->name}**\" as **{$invitation->role}**",
                     'url' => $projectUrl,
                 ]);
 
@@ -125,7 +125,7 @@ class InvitationController extends Controller
                 $recipient,
                 'project.member_added',
                 Auth::user()->name . " joined {$invitation->project->name}",
-                ['**' . Auth::user()->name . '**' . " joined the project \"**{$invitation->project->name}**\" (#{$invitation->project_id}) as {$invitation->role}."],
+                ['**' . Auth::user()->name . '**' . " joined the project \"**{$invitation->project->name}**\" (#{$invitation->project_id}) as **{$invitation->role}**."],
                 url($projectUrl),
                 'View Project'
             );
