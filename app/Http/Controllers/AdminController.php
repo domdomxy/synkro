@@ -257,6 +257,7 @@ class AdminController extends Controller
         $websiteSessionRange = \App\Support\SessionActivity::monthPairRange($websiteSessionOffset);
         $websiteSessionActivity = \App\Support\SessionActivity::countsByDay(null, $websiteSessionRange['start'], $websiteSessionRange['end']);
         $websiteSessionUserBreakdown = \App\Support\SessionActivity::userBreakdownByDay($websiteSessionRange['start'], $websiteSessionRange['end']);
+        $websiteSessionDuration = \App\Support\SessionActivity::durationStatsByDay(null, $websiteSessionRange['start'], $websiteSessionRange['end']);
 
         return Inertia::render('Admin/Dashboard', [
             'range' => $range,
@@ -287,6 +288,7 @@ class AdminController extends Controller
                 'websiteSessionActivity' => $websiteSessionActivity,
                 'websiteSessionOffset' => $websiteSessionOffset,
                 'websiteSessionUserBreakdown' => $websiteSessionUserBreakdown,
+                'websiteSessionDuration' => $websiteSessionDuration,
             ],
         ]);
     }

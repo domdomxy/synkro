@@ -73,9 +73,9 @@ function AttentionPanel({ items }) {
 
 function TasksByStatusCard({ tasksByStatus, total }) {
     return (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
+        <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
             <SectionHeader title="Tasks by Status" icon={statIcons.donut} />
-            <div className="mt-1 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-center">
+            <div className="mt-1 flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row sm:items-center sm:justify-center">
                 <StatusDonut tasksByStatus={tasksByStatus} total={total} />
                 <ul className="w-full max-w-xs divide-y divide-gray-100 dark:divide-gray-700">
                     {Object.entries(statusLabels).map(([key, label]) => {
@@ -229,7 +229,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                         />
                     </div>
 
-                    <div className="grid items-start gap-6 lg:grid-cols-2">
+                    <div className="grid items-stretch gap-6 lg:grid-cols-2">
                         <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
 
                         <SessionActivityCalendar
@@ -238,6 +238,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             offset={stats.websiteSessionOffset}
                             onNavigate={navigateWebsiteSessions}
                             userBreakdownByDay={stats.websiteSessionUserBreakdown}
+                            durationByDay={stats.websiteSessionDuration}
                         />
                     </div>
 

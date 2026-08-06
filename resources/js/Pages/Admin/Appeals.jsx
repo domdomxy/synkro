@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
+import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import { Head, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -94,7 +95,7 @@ function AppealItem({ appeal }) {
                     </div>
                     <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500">
                         <span>{appeal.user?.email}</span>
-                        <span>{new Date(appeal.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                        <span>{new Date(appeal.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     </div>
                 </div>
                 <svg className={`h-4 w-4 shrink-0 text-gray-400 transition-transform mt-1 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -254,6 +255,9 @@ function AppealItem({ appeal }) {
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                 {appeal.admin_reason ? <Linkify text={appeal.admin_reason} /> : 'No reason was given.'}
                             </p>
+                            <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                                {new Date(appeal.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </p>
                         </div>
                     )}
                 </div>
@@ -303,18 +307,26 @@ export default function Appeals({ appeals, filters }) {
                         <button onClick={applySearch} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
                             Filter
                         </button>
-                        <FilterSelect
-                            value={statusFilter}
-                            onChange={setStatusFilter}
-                            className="w-44"
-                            options={[
-                                { value: 'all', label: 'All Statuses' },
-                                { value: 'pending', label: 'Pending' },
-                                { value: 'approved', label: 'Approved' },
-                                { value: 'rejected', label: 'Rejected' },
-                                { value: 'closed', label: 'Closed (inactive)' },
-                            ]}
-                        />
+                        <FiltersMenu
+                            activeCount={statusFilter !== 'all' ? 1 : 0}
+                            hasActiveFilters={statusFilter !== 'all'}
+                            onClear={() => setStatusFilter('all')}
+                        >
+                            <FiltersMenu.Row label="Status">
+                                <FilterSelect
+                                    value={statusFilter}
+                                    onChange={setStatusFilter}
+                                    className="w-full"
+                                    options={[
+                                        { value: 'all', label: 'All Statuses' },
+                                        { value: 'pending', label: 'Pending' },
+                                        { value: 'approved', label: 'Approved' },
+                                        { value: 'rejected', label: 'Rejected' },
+                                        { value: 'closed', label: 'Closed (inactive)' },
+                                    ]}
+                                />
+                            </FiltersMenu.Row>
+                        </FiltersMenu>
                         {pendingCount > 0 && (
                             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                                 {pendingCount} pending

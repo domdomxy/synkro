@@ -932,6 +932,8 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                             sessionsByDay={stats.sessionActivity}
                             offset={stats.sessionOffset}
                             onNavigate={navigateSessionActivity}
+                            userBreakdownByDay={stats.sessionDeviceBreakdown}
+                            durationByDay={stats.sessionDuration}
                         />
 
                         <DueSoonPanel dueSoon={stats.dueSoon} />

@@ -243,6 +243,8 @@ class DashboardController extends Controller
         $sessionOffset = max(0, (int) request('session_offset', 0));
         $sessionRange = \App\Support\SessionActivity::monthPairRange($sessionOffset);
         $sessionActivity = \App\Support\SessionActivity::countsByDay($user->id, $sessionRange['start'], $sessionRange['end']);
+        $sessionDeviceBreakdown = \App\Support\SessionActivity::deviceBreakdownByDay($user->id, $sessionRange['start'], $sessionRange['end']);
+        $sessionDuration = \App\Support\SessionActivity::durationStatsByDay($user->id, $sessionRange['start'], $sessionRange['end']);
 
         $reminders = Reminder::where('user_id', $user->id)
             ->where('dismissed', false)
@@ -291,6 +293,8 @@ class DashboardController extends Controller
                 'calendarTasks' => $calendarTasks,
                 'sessionActivity' => $sessionActivity,
                 'sessionOffset' => $sessionOffset,
+                'sessionDeviceBreakdown' => $sessionDeviceBreakdown,
+                'sessionDuration' => $sessionDuration,
                 'reminders' => $reminders,
             ],
             'myNotes' => $myNotesByProject,
