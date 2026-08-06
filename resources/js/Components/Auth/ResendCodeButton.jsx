@@ -39,7 +39,7 @@ export default function ResendCodeButton({ onResend, cooldownSeconds = 20, disab
                 type="button"
                 onClick={handleClick}
                 disabled={isDisabled}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-700 focus:outline-none disabled:cursor-not-allowed disabled:text-gray-400 dark:text-indigo-400 dark:hover:text-indigo-300 dark:disabled:text-gray-500"
+                className="-mx-2 -my-2.5 inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2 py-2.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-700 focus:outline-none disabled:cursor-not-allowed disabled:text-gray-400 dark:text-indigo-400 dark:hover:text-indigo-300 dark:disabled:text-gray-500"
             >
                 {sending && <Spinner className="h-3.5 w-3.5" />}
                 {sending ? 'Sending...' : cooldown > 0 ? `Resend code (${cooldown}s)` : label}

@@ -13,6 +13,12 @@
         .email-outer-pad { padding: 24px 12px !important; }
         .email-card { border-radius: 16px !important; width: 100% !important; }
         .email-pad-lg { padding-left: 24px !important; padding-right: 24px !important; }
+        /* Widen the CTA to a full-width, thumb-sized tap target instead of a
+           narrow auto-width pill - easier to hit accurately on a phone and
+           gives short labels ("Save", "View") the same generous hit area as
+           longer ones. */
+        .email-btn-table { width: 100% !important; }
+        .email-btn-link { display: block !important; width: 100% !important; padding: 17px 24px !important; font-size: 15px !important; box-sizing: border-box !important; }
     }
 
     /* Without this, clients that auto-invert colors for dark mode (Gmail in particular)
@@ -160,10 +166,10 @@
         @if ($actionUrl && $actionText)
         <tr>
             <td align="center" class="email-pad-lg" style="padding:16px 40px 8px;">
-                <table role="presentation" cellpadding="0" cellspacing="0">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-btn-table" style="max-width:320px;">
                     <tr>
-                        <td class="email-btn-cell" style="border-radius:999px; background-color:#111827;">
-                            <a href="{{ $actionUrl }}" target="_blank" style="display:inline-block; padding:15px 36px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:999px;">
+                        <td class="email-btn-cell" align="center" style="border-radius:14px; background-color:#111827;">
+                            <a href="{{ $actionUrl }}" target="_blank" class="email-btn-link" style="display:block; padding:16px 32px; font-size:14px; font-weight:600; letter-spacing:.01em; color:#ffffff; text-decoration:none; border-radius:14px; text-align:center;">
                                 {{ $actionText }}
                             </a>
                         </td>
@@ -183,8 +189,8 @@
                         </p>
                     @else
                         <p class="email-footer-text" style="margin:0; font-size:12.5px; color:#9ca3af; line-height:1.6; text-align:center;">
-                            You're receiving this because you have this email type enabled.
-                            Manage your preferences in your
+                            You're getting this because this notification type is turned on for your account.
+                            You can turn it off anytime in your
                             <a href="{{ route('settings.edit') }}" style="color:#4f46e5; text-decoration:underline;">notification settings</a>.
                         </p>
                     @endif
