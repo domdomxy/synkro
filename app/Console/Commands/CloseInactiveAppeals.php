@@ -79,13 +79,22 @@ class CloseInactiveAppeals extends Command
             return;
         }
 
+        // Signed rather than a plain login link: closing doesn't necessarily mean
+        // the suspension itself was lifted, so "Log In" could easily be a dead
+        // end - same reasoning as AdminController::respondAppeal().
+        $historyUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'appeal.history',
+            now()->addDays(30),
+            ['user' => $appeal->user->id, 'note' => "appeal:{$appeal->id}"]
+        );
+
         \App\Support\NotificationMailer::send(
             $appeal->user,
             'account.appeal_auto_closed',
             'Your suspension appeal was closed',
             ['Your suspension appeal was automatically closed after 24 hours of inactivity following a note from our support team.'],
-            url(route('login', [], false)),
-            'Log In',
+            $historyUrl,
+            'View Details',
             highlight: [
                 'label' => 'Reason',
                 'content' => NoteFormatter::toHtml(self::REASON),
@@ -101,7 +110,7 @@ class CloseInactiveAppeals extends Command
             'user_id' => $appeal->user->id,
             'type' => 'appeal_auto_closed',
             'message' => "Appeal closed\nYour suspension appeal was automatically closed after **24h** of inactivity.",
-            'url' => route('login', [], false),
+            'url' => $historyUrl,
         ]);
 
         try {

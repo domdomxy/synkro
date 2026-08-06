@@ -11,6 +11,7 @@ use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Inertia;
 
 class SuspensionAppealController extends Controller
 {
@@ -119,6 +120,38 @@ class SuspensionAppealController extends Controller
                 report($e);
             }
         }
+    }
+
+    /**
+     * Read-only history of this account's suspensions and appeals (messages,
+     * interim notes, and final outcomes) - what the "note left on your
+     * appeal" / "appeal auto-closed" notifications link to, since neither of
+     * those includes the note itself and a still-suspended user can't log in
+     * to find it any other way. Two ways in: a signed link (email, or the
+     * in-app notification while still suspended and thus never actually
+     * authenticated - see AuthenticatedSessionController::store), or being
+     * logged in as this exact user (the in-app notification bell, once
+     * they're no longer suspended). Anything else is refused - this is
+     * someone's suspension history, not public.
+     */
+    public function history(Request $request, User $user)
+    {
+        $isSelf = auth()->check() && auth()->id() === $user->id;
+
+        abort_unless($isSelf || $request->hasValidSignature(), 403);
+
+        $appeals = $user->appeals()->with(['admin', 'responses.admin'])->latest()->get();
+        $suspensionLogs = SuspensionLog::where('user_id', $user->id)->with(['suspendedBy', 'liftedBy'])->latest()->get();
+
+        return Inertia::render('Auth/AppealHistory', [
+            'subjectName' => $user->name,
+            'appeals' => $appeals,
+            'suspensionLogs' => $suspensionLogs,
+            // e.g. "response:42" or "appeal:7" - which single note the link that
+            // brought them here was actually about, so the page can scroll to
+            // and highlight it rather than leaving them to hunt through the list.
+            'highlight' => $request->query('note'),
+        ]);
     }
 
     /**

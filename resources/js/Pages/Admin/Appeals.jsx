@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Avatar from '@/Components/Avatar';
 import TextInput from '@/Components/TextInput';
 import FilterSelect from '@/Components/FilterSelect';
 import FiltersMenu from '@/Components/FiltersMenu';
@@ -147,10 +148,13 @@ function AppealItem({ appeal }) {
                                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                         <Linkify text={r.message} />
                                     </p>
-                                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-                                        {r.admin?.name ?? 'Admin'} ·{' '}
-                                        {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                    </p>
+                                    <div className="mt-1.5 flex items-center gap-1.5">
+                                        <Avatar user={r.admin} size="h-4 w-4" rounded="rounded-full" className="text-[8px]" />
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                                            {r.admin?.name ?? 'Deleted admin'} ·{' '}
+                                            {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -255,9 +259,21 @@ function AppealItem({ appeal }) {
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                 {appeal.admin_reason ? <Linkify text={appeal.admin_reason} /> : 'No reason was given.'}
                             </p>
-                            <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-                                {new Date(appeal.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                            </p>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                                <Avatar
+                                    user={appeal.admin}
+                                    system={appeal.auto_resolved && !appeal.admin}
+                                    size="h-4 w-4"
+                                    rounded="rounded-full"
+                                    className="text-[8px]"
+                                />
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                    {appeal.auto_resolved && !appeal.admin
+                                        ? 'Synkro (automated)'
+                                        : (appeal.admin?.name ?? 'Deleted admin')} ·{' '}
+                                    {new Date(appeal.updated_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -304,9 +320,6 @@ export default function Appeals({ appeals, filters }) {
                                 className="w-64 pl-9"
                             />
                         </div>
-                        <button onClick={applySearch} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-                            Filter
-                        </button>
                         <FiltersMenu
                             activeCount={statusFilter !== 'all' ? 1 : 0}
                             hasActiveFilters={statusFilter !== 'all'}

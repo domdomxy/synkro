@@ -11,7 +11,29 @@ function initials(name) {
     return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-export default function Avatar({ user, size = 'h-8 w-8', rounded = 'rounded-lg', className = '' }) {
+// `system` renders the app's own mark instead of a person's initials — for
+// actions nothing human did (a scheduled job, not a since-deleted admin).
+// Callers are responsible for telling the two apart (see e.g. Logs.jsx's
+// AUTOMATED_ACTIONS) since a missing user/admin relation alone can't say
+// which one it was.
+//
+// Uses the same two theme-matched SVGs as the browser tab favicon (see
+// theme.js's FAVICON_BY_THEME) instead of ApplicationLogo - that component
+// is a plain currentColor line-mark meant to sit directly on the page
+// background at nav-bar size, not a filled badge shrunk down to avatar
+// size, so it read as a generic squiggle rather than the actual logo once
+// this small. The favicon SVGs are the real mark at a size this is already
+// designed to work at.
+export default function Avatar({ user, system = false, size = 'h-8 w-8', rounded = 'rounded-lg', className = '' }) {
+    if (system) {
+        return (
+            <div className={`${size} flex items-center justify-center overflow-hidden ${rounded} bg-white ring-1 ring-inset ring-gray-200 dark:bg-gray-900 dark:ring-gray-700 ${className}`}>
+                <img src="/favicon-light.svg" alt="Synkro" className="h-[70%] w-[70%] object-contain dark:hidden" />
+                <img src="/favicon-dark.svg" alt="Synkro" className="hidden h-[70%] w-[70%] object-contain dark:block" />
+            </div>
+        );
+    }
+
     if (user?.avatar_path) {
         return <img src={`/storage/${user.avatar_path}`} alt={user.name} className={`${size} ${rounded} object-cover ${className}`} />;
     }

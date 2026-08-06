@@ -67,6 +67,17 @@ Route::get('/appeal', function () {
     return Inertia::render('Auth/Appeal');
 })->name('appeal.page');
 
+// Reached from the "note left on your appeal" / "appeal auto-closed" email and
+// in-app notification. A still-suspended user has no session to view this as
+// (see the auth-controller comment on suspended logins never actually
+// authenticating), so it's verified by signature like account.destroy.confirm
+// below - except a since-unsuspended user who's now logged in can also open
+// it straight from the notification bell without a signature, since they're
+// already provably themselves.
+Route::get('/appeal/history/{user}', [SuspensionAppealController::class, 'history'])
+    ->middleware(['throttle:30,1'])
+    ->name('appeal.history');
+
 // Public: reached from the account-deletion confirmation email, which may be
 // opened from a different browser/device than the one that requested it, or
 // after the requesting session has already expired.

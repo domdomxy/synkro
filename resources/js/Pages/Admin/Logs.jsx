@@ -120,7 +120,7 @@ function AdminLogRow({ log, actionCatalog }) {
                 className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasReason ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
                 <span className="relative mt-0.5 h-8 w-8 shrink-0">
-                    <Avatar user={log.admin} size="h-8 w-8" rounded="rounded-full" />
+                    <Avatar user={log.admin} system={!log.admin && AUTOMATED_ACTIONS.has(log.action)} size="h-8 w-8" rounded="rounded-full" />
                     <span
                         className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
                     >

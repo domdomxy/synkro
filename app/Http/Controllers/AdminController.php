@@ -732,6 +732,7 @@ public function suspend(Request $request, User $user)
                     'status' => 'reviewed',
                     'outcome' => 'approved',
                     'admin_reason' => $request->reason,
+                    'admin_id' => auth()->id(),
                 ]);
                 AdminLog::log('appeal.reviewed', "Reviewed **{$user->name}**'s suspension appeal", $appeal, $request->reason);
             }
@@ -1297,7 +1298,7 @@ public function suspend(Request $request, User $user)
 
     public function appeals(Request $request)
     {
-        $query = SuspensionAppeal::with(['user', 'responses.admin']);
+        $query = SuspensionAppeal::with(['user', 'admin', 'responses.admin']);
 
         if ($request->search) {
             $query->whereHas('user', function ($q) use ($request) {
@@ -1331,7 +1332,7 @@ public function suspend(Request $request, User $user)
             'message' => 'required|string|max:2000',
         ]);
 
-        $appeal->responses()->create([
+        $response = $appeal->responses()->create([
             'admin_id' => auth()->id(),
             'message' => $validated['message'],
         ]);
@@ -1344,13 +1345,23 @@ public function suspend(Request $request, User $user)
         );
 
         if ($appeal->user) {
+            // Signed rather than a plain login link: a still-suspended user has
+            // no session to view an authenticated page with (see
+            // SuspensionAppealController::history), and this way the note is
+            // actually reachable instead of just described in the email.
+            $historyUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                'appeal.history',
+                now()->addDays(30),
+                ['user' => $appeal->user->id, 'note' => "response:{$response->id}"]
+            );
+
             NotificationMailer::send(
                 $appeal->user,
                 'account.appeal_responded',
                 'An update on your suspension appeal',
                 ['A member of our support team left a note on your suspension appeal:'],
-                url(route('login', [], false)),
-                'View Details',
+                $historyUrl,
+                'View Note',
                 highlight: [
                     'label' => 'Note from support',
                     'content' => \App\Support\NoteFormatter::toHtml($validated['message']),
@@ -1363,7 +1374,7 @@ public function suspend(Request $request, User $user)
                 'type' => 'appeal_responded',
                 'causer_id' => auth()->id(),
                 'message' => "Update on your appeal\nA member of our support team left a note on your suspension appeal.",
-                'url' => route('login', [], false),
+                'url' => $historyUrl,
             ]);
 
             try {
@@ -1395,6 +1406,7 @@ public function suspend(Request $request, User $user)
                 'status' => 'reviewed',
                 'outcome' => $request->outcome,
                 'admin_reason' => $request->reason,
+                'admin_id' => auth()->id(),
             ]);
 
             AdminLog::log(
