@@ -18,7 +18,7 @@ class AdminLog extends Model
     /**
      * Record an administration action for the audit log.
      * $target is any Eloquent model the action was performed on (user, feedback, appeal, etc).
-     * $reason is optional, admin-supplied free text (e.g. why a suspension was lifted) — kept
+     * $reason is optional, admin-supplied free text (e.g. why a suspension was lifted) - kept
      * separate from $description so the UI can always show the summary while hiding the
      * (potentially long, sensitive, or user-quoted) reason until the log entry is expanded.
      */

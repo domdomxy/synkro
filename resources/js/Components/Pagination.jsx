@@ -36,7 +36,7 @@ function ChevronDoubleRightIcon() {
 
 /**
  * Pagination for Laravel's paginate()->withQueryString() response shape.
- * Pass the whole paginator object (e.g. `users`, `projects`, `logs`) as `meta` —
+ * Pass the whole paginator object (e.g. `users`, `projects`, `logs`) as `meta` -
  * it needs `from`, `to`, `total`, `current_page`, `last_page`.
  *
  * Page numbers/URLs are built client-side (see utils/paginationRange) rather

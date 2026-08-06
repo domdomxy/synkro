@@ -345,7 +345,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
                                 {hasEmail ? (
                                     <Toggle enabled={!!emailPreferences[key]} onClick={() => onToggleEmail(key, !emailPreferences[key])} />
                                 ) : (
-                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="This event doesn't send an email, only an in-app notification">—</span>
+                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="This event doesn't send an email, only an in-app notification">-</span>
                                 )}
                             </div>
                             <div className="flex justify-center">
@@ -355,7 +355,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
                                         onClick={() => onToggleNotification(key, !notificationPreferences[key])}
                                     />
                                 ) : (
-                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="No in-app equivalent for this event">—</span>
+                                    <span className="text-sm text-gray-300 dark:text-gray-600" title="No in-app equivalent for this event">-</span>
                                 )}
                             </div>
                         </div>
@@ -420,7 +420,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
     };
 
     // activeSection now drives which single settings panel is shown (tab switching),
-    // not a scroll position — set directly by clicking a sidebar/pill item below.
+    // not a scroll position - set directly by clicking a sidebar/pill item below.
 
     const handleThemeChange = (value) => {
         setStoredTheme(value);

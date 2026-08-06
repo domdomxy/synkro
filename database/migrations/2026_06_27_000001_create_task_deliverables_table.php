@@ -12,6 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['file', 'link']);
+
+            // Optional, user-supplied label for link deliverables (e.g. "Staging build",
+            // "Design mockup"), shown instead of the raw URL wherever the link is listed.
+            $table->string('title')->nullable();
+
             $table->string('path')->nullable();
             $table->unsignedBigInteger('size')->nullable(); // file size in bytes, null for links
             $table->string('url')->nullable();

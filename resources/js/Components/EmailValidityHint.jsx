@@ -2,7 +2,7 @@ import { emailValidity } from '@/utils/email';
 
 /**
  * Live "does this look like an email address" hint, shown under an email
- * input as the person types — green check once it's well-formed, amber
+ * input as the person types - green check once it's well-formed, amber
  * "did you mean…" if it's a likely typo of a well-known domain (gamil.com,
  * gmial.com, etc.), red warning if it isn't a valid address shape at all.
  * Purely a client-side format check (see utils/email); the server's own

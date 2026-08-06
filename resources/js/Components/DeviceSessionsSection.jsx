@@ -31,7 +31,7 @@ function timeAgo(dateString) {
 function DeviceRow({ device, onDisconnect }) {
     const isMobileDevice = device.device === 'Mobile' || device.device === 'Tablet';
     const deviceLabel = [device.model ? `${device.device} (${device.model})` : device.device, device.os].filter(Boolean).join(' · ');
-    const detailLine = [device.location, device.ip].filter(Boolean).join(' — ');
+    const detailLine = [device.location, device.ip].filter(Boolean).join(' - ');
 
     return (
         <div className="flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 hover:bg-gray-50/80 dark:border-gray-700 dark:hover:bg-gray-700/20 sm:gap-3 sm:px-4 sm:py-3.5">

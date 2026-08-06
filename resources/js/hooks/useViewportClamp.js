@@ -7,13 +7,13 @@ import { useLayoutEffect, useRef, useState } from 'react';
  * Anchoring a panel to its trigger's left or right edge only works for one
  * screen width and one trigger position. A "Filters" button sitting in the
  * middle of a toolbar, for instance, can still open a panel that runs off
- * either edge once the viewport narrows enough — flipping which corner it's
+ * either edge once the viewport narrows enough - flipping which corner it's
  * anchored to just moves the same problem to the other side. Instead, this
  * measures the panel after it renders and nudges it back on screen with a
  * transform, the same corrective behavior a native <select> gets for free.
  *
  * Re-measures on window resize AND whenever the panel's own size changes
- * (via ResizeObserver) — a panel can grow after it's already open and
+ * (via ResizeObserver) - a panel can grow after it's already open and
  * already positioned, e.g. a "Custom" toggle inside it revealing date
  * inputs, and that growth needs to re-trigger the same clamping, not just
  * the initial open.

@@ -84,7 +84,7 @@ class TaskController extends Controller
         // Description comes from RichTextEditor (contenteditable), so it's an HTML string.
         // Allow-list matches ProjectController's project-description sanitization for consistency.
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
-        // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
+        // allow-list <a>) can't destroy a link that was already there - see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
         $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
@@ -162,7 +162,7 @@ class TaskController extends Controller
 
         // Same rich-text allow-list as store() above; keep both in sync if the editor's toolbar changes.
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
-        // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
+        // allow-list <a>) can't destroy a link that was already there - see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
         $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
@@ -556,7 +556,7 @@ class TaskController extends Controller
 
     /**
      * Multi-select bulk actions from the project task list. Owner/manager only (same
-     * gate as the project's own "manage" permission) — this is a power-user tool for
+     * gate as the project's own "manage" permission) - this is a power-user tool for
      * whoever's running the project, not something an individual assignee needs.
      */
     public function bulkUpdate(Request $request, Project $project)
@@ -593,8 +593,8 @@ class TaskController extends Controller
 
             $affected = []; // assignee_id => [changed task titles]
 
-            // Bypasses the normal start/submit/review workflow — this is a manager
-            // override for administrative cleanup (e.g. closing out stale tasks) — but
+            // Bypasses the normal start/submit/review workflow - this is a manager
+            // override for administrative cleanup (e.g. closing out stale tasks) - but
             // it still needs to keep submitted_at/review_started_at consistent with what
             // the guided flow would do, or the Testing Queue's "Waiting" column ends up
             // wrong (blank on entry, or stale on exit) for any task touched this way.
@@ -670,7 +670,7 @@ class TaskController extends Controller
             $changedCount = 0;
             $unassignedTitles = []; // previous_assignee_id => [task titles taken away]
             $newAssigneeTitles = []; // task titles newly assigned to $newAssigneeId
-            // Fetched once, fresh, rather than reading $task->assignee after update() —
+            // Fetched once, fresh, rather than reading $task->assignee after update() -
             // that property is a cached relation loaded (as null) when we read the *old*
             // assignee's name a few lines below, and Eloquent won't silently re-query it
             // just because assigned_to changed. Using the stale cache there was producing
@@ -792,7 +792,7 @@ class TaskController extends Controller
      * all of them. Without this, a task forced into the queue skips its "waiting"
      * timestamp entirely (Testing Queue just shows nothing), and a task forced back
      * out keeps a stale timestamp that a later normal submit()/startReview() would
-     * incorrectly inherit — the same bug class fixed elsewhere in this controller.
+     * incorrectly inherit - the same bug class fixed elsewhere in this controller.
      *
      * @return array<string,mixed>
      */
@@ -808,7 +808,7 @@ class TaskController extends Controller
 
         if ($new === 'in_review') {
             // Starting review without having gone through submit() first still needs
-            // a submitted_at for the queue to sort/display correctly — backfill it if
+            // a submitted_at for the queue to sort/display correctly - backfill it if
             // missing, but don't disturb it if a submission timestamp already exists.
             return ['submitted_at' => $task->submitted_at ?? now(), 'review_started_at' => now()];
         }
@@ -820,7 +820,7 @@ class TaskController extends Controller
         }
 
         if ($wasInQueue) {
-            // Forced out to todo/in_progress: same as reject/reopen — clear both so a
+            // Forced out to todo/in_progress: same as reject/reopen - clear both so a
             // future resubmission doesn't inherit this cycle's timestamps.
             return ['submitted_at' => null, 'review_started_at' => null];
         }
@@ -830,7 +830,7 @@ class TaskController extends Controller
 
     /**
      * Sends one grouped in-app + email notification per assignee affected by a bulk
-     * status/priority change, listing the actual task titles (not just a count) —
+     * status/priority change, listing the actual task titles (not just a count) -
      * mirrors the "N task(s)" grouping used for bulk reassignment above, so a manager
      * updating 20 tasks still gets one ping per person, just with the task names
      * attached. Intentionally skips the live websocket push (no clean single-task
@@ -1141,7 +1141,7 @@ class TaskController extends Controller
         $decisionType = $validated['decision'] === 'approve' ? 'task_approved' : 'task_rejected';
 
         // A task assigned to a member who has since been removed/left stays assigned (frozen for
-        // review, not unassigned) so its history is preserved — but that person shouldn't be
+        // review, not unassigned) so its history is preserved - but that person shouldn't be
         // notified or emailed about a review decision on a project they're no longer part of.
         $assigneeStillMember = $task->assignee && $task->project->isMember($task->assignee);
 

@@ -163,7 +163,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     useEffect(() => {
         document.execCommand('styleWithCSS', false, true);
         // Same reasoning, for line breaks: without this, most browsers wrap each Enter press in a
-        // <div> (Chrome/Edge) — which the backend's strip_tags allow-list doesn't include, since it
+        // <div> (Chrome/Edge) - which the backend's strip_tags allow-list doesn't include, since it
         // only allows <br>/<p> for block content. That was silently deleting every line break on
         // save (strip_tags removes disallowed tags but doesn't replace them with anything), making
         // multi-line descriptions collapse into one run-on line. Forcing <br> for Enter keeps output
@@ -211,7 +211,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     // Re-adding the *same* saved Range on every single toolbar click (which is what unconditionally
     // calling restoreSelection() used to do) resets the browser's internal "pending typing style"
     // tracking each time. That's harmless for a single toggle, but it's exactly why clicking Bold
-    // then Italic on an empty/collapsed cursor used to leave only the second one active — the second
+    // then Italic on an empty/collapsed cursor used to leave only the second one active - the second
     // restoreSelection() call wiped out the first command's pending state. Only recreate the Range
     // when the live selection has actually left the editor (e.g. after focusing a popover input).
     const ensureSelection = () => {
@@ -350,7 +350,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
         const range = sel.getRangeAt(0);
 
         if (sel.isCollapsed) {
-            // Unlike Bold/Italic, font size isn't a native execCommand with "typing state" — there's
+            // Unlike Bold/Italic, font size isn't a native execCommand with "typing state" - there's
             // nothing to select yet, so wrapping a selection doesn't apply. Instead, plant an empty
             // styled span at the cursor (held open by a zero-width space) and move the cursor inside
             // it, so whatever gets typed next lands inside the span and inherits its size. Leftover
@@ -386,7 +386,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
 
     // Lets someone type an exact size (e.g. 21px) instead of picking from the four presets.
     // Reuses applyFontSize for the actual DOM work, then remembers the value as a chip so it
-    // doesn't have to be retyped next time — same pattern as the custom color swatches above.
+    // doesn't have to be retyped next time - same pattern as the custom color swatches above.
     const MIN_FONT_SIZE = 8;
     const MAX_FONT_SIZE = 96;
     const MAX_CUSTOM_SIZES = 5;

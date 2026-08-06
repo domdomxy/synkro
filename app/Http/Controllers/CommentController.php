@@ -358,7 +358,7 @@ class CommentController extends Controller
                 'new_preview' => Str::limit($validated['body'], 200),
             ], $task);
 
-            // Only notify people newly swept in by the edit — anyone already mentioned
+            // Only notify people newly swept in by the edit - anyone already mentioned
             // (or resolved via a role they already held) before the edit was made has
             // presumably already seen the original comment, so re-notifying them here
             // would just be noise.

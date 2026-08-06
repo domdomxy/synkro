@@ -320,7 +320,7 @@ function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
 
     // A deep-linked reminder (from a notification/email) should open its note
     // expanded, not just scroll into view collapsed. The scroll has to happen
-    // *after* the expand has actually painted — otherwise it centers on the
+    // *after* the expand has actually painted - otherwise it centers on the
     // shorter, collapsed card and the now-taller expanded one ends up with its
     // bottom (ring included) pushed outside the visible frame.
     useEffect(() => {

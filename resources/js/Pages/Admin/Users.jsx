@@ -105,7 +105,7 @@ function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onToggleSup
     const MENU_WIDTH = 200;
     const isDeleted = !!user.deleted_at;
     const isTargetSuperAdmin = user.role === 'superadmin';
-    // Deleted accounts are gone from the app's own perspective — role, password,
+    // Deleted accounts are gone from the app's own perspective - role, password,
     // and suspension no longer mean anything for them, so those actions are
     // disabled rather than hidden (keeps the menu's shape consistent).
     const disabled = isSelf || isDeleted;
@@ -122,7 +122,7 @@ function UserActionsMenu({ user, isSelf, isSuperAdmin, onToggleRole, onToggleSup
 
     // Once the menu has actually rendered we know its real height, so flip it to
     // open upward from the button instead of downward whenever there isn't
-    // enough room below — this is what keeps it from spilling past the last
+    // enough room below - this is what keeps it from spilling past the last
     // row in the table (or off the bottom of the viewport).
     useLayoutEffect(() => {
         if (!open || !menuRef.current || !btnRef.current) return;
@@ -340,7 +340,7 @@ export default function Users({ users, stats, filters }) {
         {
             value: 'permanent',
             label: 'Delete permanently',
-            description: `Immediate and unrecoverable — no grace period, no restore. ${count === 1 ? 'Only' : count} ${count === 1 ? 'use this if you\'re certain.' : 'accounts, gone for good.'}`,
+            description: `Immediate and unrecoverable - no grace period, no restore. ${count === 1 ? 'Only' : count} ${count === 1 ? 'use this if you\'re certain.' : 'accounts, gone for good.'}`,
             icon: 'trash',
             danger: true,
             confirmLabel: 'Delete Permanently',
@@ -380,7 +380,7 @@ export default function Users({ users, stats, filters }) {
         });
     };
 
-    // Called by AdminConfirmationModal once a 6-digit code has been entered — the
+    // Called by AdminConfirmationModal once a 6-digit code has been entered - the
     // code is what actually authorizes the permanent delete server-side; this just
     // submits it alongside the original target(s) and surfaces any rejection back
     // into the modal (wrong/expired code, too many attempts, etc).
@@ -614,8 +614,8 @@ export default function Users({ users, stats, filters }) {
                 title={permanentDeleteTarget?.type === 'single' ? `Confirm Permanent Deletion` : `Confirm Permanent Deletion of ${permanentDeleteTarget?.count} Accounts`}
                 description={
                     permanentDeleteTarget?.type === 'single'
-                        ? `This will immediately and permanently delete ${permanentDeleteTarget?.user?.name}'s account — no grace period, no restore.`
-                        : `This will immediately and permanently delete ${permanentDeleteTarget?.count} account${permanentDeleteTarget?.count !== 1 ? 's' : ''} — no grace period, no restore.`
+                        ? `This will immediately and permanently delete ${permanentDeleteTarget?.user?.name}'s account - no grace period, no restore.`
+                        : `This will immediately and permanently delete ${permanentDeleteTarget?.count} account${permanentDeleteTarget?.count !== 1 ? 's' : ''} - no grace period, no restore.`
                 }
                 confirmLabel="Delete Permanently"
                 onVerify={verifyAndDeletePermanently}

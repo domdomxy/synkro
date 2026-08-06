@@ -202,8 +202,8 @@ class FeedbackController extends Controller
 
     /**
      * Confirms receipt to the person who submitted the ticket, with their tracking ID.
-     * Guests aren't registered users (no email_preferences row to check), so — same as
-     * FeedbackAdminController::notifySubmitter() for status-change/reply emails — this
+     * Guests aren't registered users (no email_preferences row to check), so - same as
+     * FeedbackAdminController::notifySubmitter() for status-change/reply emails - this
      * always sends unconditionally rather than going through EmailPreferences::wants(),
      * which would incorrectly return false for an email with no matching User account.
      */
@@ -215,7 +215,7 @@ class FeedbackController extends Controller
                 "We've received your ticket ({$feedback->tracking_id})",
                 [
                     "Thanks for reaching out! We've received your {$feedback->category} ticket \"**{$feedback->subject}**\" and will get back to you soon.",
-                    "Your tracking ID is **{$feedback->tracking_id}** — use it on the tracking page to follow this ticket's status or add replies.",
+                    "Your tracking ID is **{$feedback->tracking_id}** - use it on the tracking page to follow this ticket's status or add replies.",
                 ],
                 url(route('feedback.page', ['tracking' => $feedback->tracking_id], false)),
                 'Track Your Ticket',
@@ -269,10 +269,10 @@ class FeedbackController extends Controller
 
     /**
      * When a user replies, only notify admins who have already responded on THIS ticket,
-     * not every admin platform-wide — once an admin has replied, they're effectively the
+     * not every admin platform-wide - once an admin has replied, they're effectively the
      * one handling the conversation, and follow-ups should go back to them, not the whole
      * team. (A brand-new ticket with no admin response yet still goes to every admin via
-     * notifyAdminsNewTicket() above — nobody is "handling" it yet at that point.)
+     * notifyAdminsNewTicket() above - nobody is "handling" it yet at that point.)
      */
     private function notifyAdmins(Feedback $feedback, string $message): void
     {

@@ -178,7 +178,7 @@ class AccountController extends Controller
 
     /**
      * Step 1 of account deletion: verify the password and email a signed
-     * confirmation link. Nothing about the account is deleted here — the
+     * confirmation link. Nothing about the account is deleted here - the
      * account only actually gets deleted once that link is clicked (see
      * confirmDeletion below). This means a compromised or shared session
      * can't destroy the account by itself; the owner's inbox has to agree too.
@@ -250,7 +250,7 @@ class AccountController extends Controller
             'Your account has been deleted',
             [
                 "Your Synkro account has been deleted and is no longer accessible.",
-                "It will be kept for **{$graceDays}** more day(s) (until the end of **" . $graceEndsAt->format('M j, Y') . '**) in case you change your mind — simply log back in with your usual email and password before then to restore it yourself.',
+                "It will be kept for **{$graceDays}** more day(s) (until the end of **" . $graceEndsAt->format('M j, Y') . '**) in case you change your mind - simply log back in with your usual email and password before then to restore it yourself.',
                 "After that, it will be permanently deleted and can't be recovered.",
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]
@@ -274,7 +274,7 @@ class AccountController extends Controller
 
         return Redirect::route('login')->with(
             'status',
-            "Your account has been deleted. You can restore it by logging back in within {$graceDays} day(s) — after that it's gone for good."
+            "Your account has been deleted. You can restore it by logging back in within {$graceDays} day(s) - after that it's gone for good."
         );
     }
 
@@ -327,7 +327,7 @@ class AccountController extends Controller
 
     /**
      * Step 2: verify the emailed code and restore the account. Deliberately
-     * unauthenticated, same reasoning as sendRestoreCode() above — the code
+     * unauthenticated, same reasoning as sendRestoreCode() above - the code
      * itself (proving inbox access) is what authorizes the restore, not
      * anything carried over from the login attempt that got redirected here.
      */

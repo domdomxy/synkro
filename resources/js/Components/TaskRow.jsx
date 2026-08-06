@@ -880,7 +880,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         setIsDescriptionTruncated(el.scrollHeight > el.clientHeight + 1);
     }, [task.description, showFullDescription]);
 
-    // Comments / Checklist share one expandable area below the task — only one is
+    // Comments / Checklist share one expandable area below the task - only one is
     // shown at a time so the row doesn't stack multiple open panels.
     const [activeSection, setActiveSection] = useState(null);
     const toggleSection = (section) => setActiveSection((v) => (v === section ? null : section));
@@ -1212,7 +1212,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     // reply) when replyingTo is set.
     const commentComposer = isTrashed ? (
         <p className="px-1 text-sm text-gray-400 dark:text-gray-500">
-            This project is in the trash — comments are read-only until it's restored.
+            This project is in the trash - comments are read-only until it's restored.
         </p>
     ) : (
         <form onSubmit={submitComment} className="flex items-start gap-2.5">
@@ -1346,7 +1346,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 ...(!assigneeStillMember && task.assigned_to != null
                                     ? [{
                                         value: task.assigned_to,
-                                        label: `${task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member — pick someone else or Unassigned)`,
+                                        label: `${task.assignee_name ?? task.assignee?.name ?? 'Former member'} (no longer a member - pick someone else or Unassigned)`,
                                         disabled: true,
                                         avatar: task.assignee ?? { name: task.assignee_name },
                                     }]
@@ -2105,7 +2105,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         >
             <div className="p-6">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">History — {task.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">History - {task.title}</h3>
                     <button
                         onClick={() => setShowHistory(false)}
                         aria-label="Close"

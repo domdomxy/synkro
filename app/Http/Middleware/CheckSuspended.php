@@ -28,7 +28,7 @@ class CheckSuspended
                         'lifted_by' => null,
                     ]);
 
-                    // Same as the suspensions:lift-expired scheduled job — a pending
+                    // Same as the suspensions:lift-expired scheduled job - a pending
                     // appeal shouldn't sit there forever once the suspension it's
                     // appealing has already run out on its own.
                     \App\Models\SuspensionAppeal::where('user_id', $user->id)

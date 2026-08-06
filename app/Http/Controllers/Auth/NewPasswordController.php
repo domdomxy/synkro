@@ -20,7 +20,7 @@ class NewPasswordController extends Controller
 {
     /**
      * Display the code-entry + new-password view. Reached by redirect from
-     * PasswordResetLinkController with only the email in the query string —
+     * PasswordResetLinkController with only the email in the query string -
      * no token, since the code itself (emailed separately) is what proves
      * the person owns the inbox.
      */

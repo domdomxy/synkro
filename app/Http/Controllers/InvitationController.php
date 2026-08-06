@@ -39,7 +39,7 @@ class InvitationController extends Controller
         abort_unless($invitation->invited_user_id === Auth::id(), 403);
 
         if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
-            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation - you've since left or been removed. Ask the project owner or a manager to invite you again."]);
         }
 
         if ($invitation->status === 'revoked') {
@@ -140,7 +140,7 @@ class InvitationController extends Controller
         abort_unless($invitation->invited_user_id === Auth::id(), 403);
 
         if ($invitation->status === 'accepted' && ! $invitation->project->isMember(Auth::user())) {
-            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation — you've since left or been removed. Ask the project owner or a manager to invite you again."]);
+            return back()->withErrors(['error' => "You can't rejoin \"{$invitation->project->name}\" using this invitation - you've since left or been removed. Ask the project owner or a manager to invite you again."]);
         }
 
         if ($invitation->status === 'revoked') {

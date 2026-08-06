@@ -17,7 +17,7 @@ class MentionParser
     /**
      * Matches the mention token inserted by MentionTextarea.jsx: @[Label](user:ID)
      * or @[Label](role:token). The label is display-only (kept in sync with the
-     * user's name / role at insert time) — resolution below is always driven by
+     * user's name / role at insert time) - resolution below is always driven by
      * the id/token in parens, never the label text, so a stale label after a
      * rename can't point at the wrong person.
      */
@@ -56,7 +56,7 @@ class MentionParser
      * Resolves a parsed mention set into actual recipient Users for the given
      * project: mentioned users (if still members) plus members matching any
      * mentioned role (or every member, for 'everyone'). The comment's own
-     * author is excluded — mentioning yourself shouldn't notify yourself.
+     * author is excluded - mentioning yourself shouldn't notify yourself.
      *
      * @param array{userIds: array<int>, roles: array<string>} $mentions
      * @return Collection<int, User>

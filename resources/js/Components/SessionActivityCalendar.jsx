@@ -64,7 +64,7 @@ function toDateKey(date) {
 // length pills - seconds are the unit coming out of the backend, but nobody
 // wants to read "3845s".
 function formatDuration(seconds) {
-    if (seconds == null) return '—';
+    if (seconds == null) return '-';
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.round(seconds / 60);
     if (minutes < 60) return `${minutes}m`;

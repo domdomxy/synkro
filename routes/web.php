@@ -97,7 +97,7 @@ Route::post('/account/restore/send-code', [AccountController::class, 'sendRestor
 
 // Everything a logged-in user can actually do with the app (projects, tasks,
 // account, settings, invitations, etc.) requires a verified email, same as
-// /dashboard — otherwise a freshly-registered, unverified account (which is
+// /dashboard - otherwise a freshly-registered, unverified account (which is
 // auto-logged-in at registration) could reach all of this directly, e.g. via
 // the "View Your Projects" link in the welcome email, bypassing verification
 // entirely. It also requires an admin-issued temporary password to have

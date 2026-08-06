@@ -20,7 +20,7 @@ class PurgeDeletedAccounts extends Command
             ->get();
 
         foreach ($expired as $user) {
-            // Only pending_resolution tasks remain to release here — everything else was
+            // Only pending_resolution tasks remain to release here - everything else was
             // already reset back when the account was first soft-deleted (see
             // AccountDeletion::unwindProjectsAndDelete()).
             AccountDeletion::purgeNow($user, onlyPendingTasks: true);

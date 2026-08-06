@@ -92,7 +92,7 @@ export default function OtpInput({ length = 6, value = '', onChange, error, auto
             const text = await navigator.clipboard.readText();
             applyCode(text);
         } catch {
-            // Permission denied or unavailable — native Ctrl/Cmd+V paste into
+            // Permission denied or unavailable - native Ctrl/Cmd+V paste into
             // any box above still works as a fallback.
         }
     };

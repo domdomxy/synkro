@@ -11,7 +11,7 @@ class AdminAlerts
 {
     /**
      * Same counts used to share the initial adminAlerts Inertia prop and the
-     * dashboard's "Needs Attention" panel — kept in one place so the broadcast
+     * dashboard's "Needs Attention" panel - kept in one place so the broadcast
      * and the page-load values can never drift apart. pendingResolution
      * (tasks with pending submission decisions) is included alongside the
      * appeal/feedback counts so the whole panel stays live, not just two

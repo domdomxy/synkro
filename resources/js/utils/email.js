@@ -1,12 +1,12 @@
 // Deliberately simple: this is a UX-layer sanity check to catch obvious typos
 // (missing "@", no domain, stray spaces) the instant someone types them,
-// not a replacement for Laravel's own 'email' validation rule server-side —
+// not a replacement for Laravel's own 'email' validation rule server-side -
 // that one remains the authoritative check (it also verifies uniqueness,
 // which this obviously can't).
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // The handful of providers people type into this app most often, and so the
-// ones worth catching a near-miss on (transposed/missing/extra letter —
+// ones worth catching a near-miss on (transposed/missing/extra letter -
 // "gamil.com", "gimal.com", "gmial.com", "yahooo.com", etc.). A typo'd
 // domain like this still satisfies EMAIL_PATTERN above (it has an "@" and a
 // dot), so the person would otherwise only find out it's wrong once the
@@ -36,7 +36,7 @@ function levenshtein(a, b) {
 /**
  * If the domain half of `value` is a near-miss (edit distance 1-2, and not
  * itself already a popular domain or something wildly different) of a
- * well-known provider, returns the corrected full address to suggest —
+ * well-known provider, returns the corrected full address to suggest -
  * otherwise null. Distance threshold scales down for short domains so e.g.
  * "aol.com" typos don't over-match unrelated short domains.
  */
@@ -79,7 +79,7 @@ export function isValidEmail(value) {
  * there's been any input at all, whether that input currently looks valid,
  * and a likely-typo domain correction to suggest if there is one. Meant to
  * back a red "enter a valid email" message, a green checkmark once the
- * address is well-formed, or an amber "did you mean…" nudge — see
+ * address is well-formed, or an amber "did you mean…" nudge - see
  * EmailValidityHint.
  */
 export function emailValidity(value) {

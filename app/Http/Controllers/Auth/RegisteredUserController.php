@@ -48,7 +48,7 @@ class RegisteredUserController extends Controller
         // which would additionally trigger the framework's built-in Registered
         // listener and send a second code/email) so it's guaranteed to be sent
         // exactly once, synchronously, before the user is redirected to the
-        // verify-email screen — see AppServiceProvider for why.
+        // verify-email screen - see AppServiceProvider for why.
         $user->sendEmailVerificationNotification();
 
         NotificationMailer::send(

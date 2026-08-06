@@ -113,7 +113,7 @@ class Task extends Model
         return $this->dependencies()->where('status', '!=', 'done')->exists();
     }
 
-    /** Titles of dependencies that aren't done yet — what's actually blocking this task from starting. */
+    /** Titles of dependencies that aren't done yet - what's actually blocking this task from starting. */
     public function blockingDependencyTitles()
     {
         return $this->dependencies()->where('status', '!=', 'done')->pluck('title');

@@ -59,7 +59,7 @@ class ProjectController extends Controller
         ]);
 
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
-        // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
+        // allow-list <a>) can't destroy a link that was already there - see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
         $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);
@@ -88,7 +88,7 @@ class ProjectController extends Controller
 
         $project->load([
             // withTrashed() so an owner who's mid-deletion (still inside the
-            // grace period) doesn't just vanish from the member list — see
+            // grace period) doesn't just vanish from the member list - see
             // Project::owner() for the same reasoning.
             'members' => fn ($q) => $q->withTrashed(),
             'tasks' => fn ($q) => $trashed ? $q->withTrashed() : $q,
@@ -141,7 +141,7 @@ class ProjectController extends Controller
                 $task->mute_email = (bool) $taskMute?->pivot->mute_email;
 
                 // History can reveal feedback, reassignment, and other detail that isn't
-                // any bystander's business — only the assignee living the task and the
+                // any bystander's business - only the assignee living the task and the
                 // owner/manager/tester who can act on it get to see it.
                 $canViewHistory = $canViewAllHistory || $task->assigned_to === Auth::id();
                 $task->can_view_history = $canViewHistory;
@@ -203,7 +203,7 @@ class ProjectController extends Controller
         ]);
 
         // Reverse any anchors from a previous save first, so strip_tags() (which doesn't
-        // allow-list <a>) can't destroy a link that was already there — see Linkifier::unlinkify().
+        // allow-list <a>) can't destroy a link that was already there - see Linkifier::unlinkify().
         $validated['description'] = Linkifier::unlinkify($validated['description'] ?? '');
         $validated['description'] = strip_tags($validated['description'], '<b><strong><i><em><u><span><br><p><div><ul><ol><li>');
         $validated['description'] = Linkifier::linkify($validated['description']);

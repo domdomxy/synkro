@@ -27,7 +27,7 @@ class ProjectActivityLog extends Model
     }
 
     /**
-     * $task is optional — pass it for any action that's about a specific task so it
+     * $task is optional - pass it for any action that's about a specific task so it
      * shows up in that task's own history panel, not just the project-wide log.
      */
     public static function log(Project $project, string $action, array $details = [], ?Task $task = null): self

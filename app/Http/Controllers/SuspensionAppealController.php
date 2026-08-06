@@ -17,8 +17,8 @@ class SuspensionAppealController extends Controller
 {
     public function store(Request $request)
     {
-        // Keyed by email, not IP. An appeal is inherently tied to one specific account —
-        // one email maps to exactly one account — so limiting by IP was both too loose
+        // Keyed by email, not IP. An appeal is inherently tied to one specific account -
+        // one email maps to exactly one account - so limiting by IP was both too loose
         // (shared networks/VPNs let the same person route around it) and too strict
         // (two different suspended accounts appealing from the same connection would
         // wrongly block each other). Checked before validation, same as the old IP
@@ -43,14 +43,14 @@ class SuspensionAppealController extends Controller
             return back()->withErrors(['email' => 'This account is not currently suspended.']);
         }
 
-        // Scoped to this specific suspension (see AppealRateLimiter) — always non-null
+        // Scoped to this specific suspension (see AppealRateLimiter) - always non-null
         // here since $user->is_suspended is true, so there's an open suspension_logs row.
         if ($limiterKey = AppealRateLimiter::key($email)) {
             RateLimiter::hit($limiterKey, 6 * 3600);
         }
 
         // "First appeal for this suspension" means no prior appeal exists since the current
-        // (still-open) suspension started — checked against suspension_logs rather than just
+        // (still-open) suspension started - checked against suspension_logs rather than just
         // counting the user's all-time appeals, so a brand new suspension always gets the
         // fuller first-time message again even if the account had appealed a past suspension.
         $currentSuspensionLog = SuspensionLog::where('user_id', $user->id)
@@ -72,7 +72,7 @@ class SuspensionAppealController extends Controller
         \App\Support\AdminAlerts::broadcastRefresh();
 
         $successMessage = $isFirstAppealForThisSuspension
-            ? 'Your suspension appeal was sent to our admins. Please be patient and wait until they are available to respond — we review every appeal as soon as we can.'
+            ? 'Your suspension appeal was sent to our admins. Please be patient and wait until they are available to respond - we review every appeal as soon as we can.'
             : 'Your appeal has been submitted. We will review it as soon as possible.';
 
         return back()

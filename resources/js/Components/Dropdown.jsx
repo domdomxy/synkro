@@ -59,7 +59,7 @@ const Content = ({
     const { open, triggerRef } = useContext(DropDownContext);
 
     // align="auto" picks the side with more room instead of a side that's
-    // fixed regardless of where the trigger happens to sit — a trigger
+    // fixed regardless of where the trigger happens to sit - a trigger
     // living in the right half of a toolbar (e.g. a "Filters" button) opens
     // toward the left, one in the left half opens toward the right. Falls
     // back to "left" until the trigger's position has been measured.

@@ -99,7 +99,7 @@ const actionColors = {
 };
 
 // AdminLog.admin_id is null for both "the admin who did this was later deleted"
-// and "nothing did this, a scheduled job did" — these two are indistinguishable
+// and "nothing did this, a scheduled job did" - these two are indistinguishable
 // from the foreign key alone, so we disambiguate by action: only the actions a
 // human never performs (both currently: the 24h-inactivity auto-close jobs)
 // get the "automated" label instead of "Deleted admin".

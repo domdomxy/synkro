@@ -11,7 +11,7 @@ html.dark:not(.theme-black) {
 /* Every rule below deliberately uses the background-color longhand, not the
    background shorthand. The shorthand resets background-image too, which
    silently strips the checkmark @tailwindcss/forms draws via background-image
-   on checked checkboxes (any dark:bg-gray-900 checkbox included) — the
+   on checked checkboxes (any dark:bg-gray-900 checkbox included) - the
    checkbox still looked checked (indigo/gray fill) but with no visible tick,
    in dark mode only, since this file doesn't apply outside it. Same trap for
    anything else styled with a background-image. Keep this longhand. */

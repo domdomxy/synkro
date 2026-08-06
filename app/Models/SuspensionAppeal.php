@@ -19,13 +19,13 @@ class SuspensionAppeal extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** The admin who manually decided this appeal via reviewAppeal() — null if still pending or auto-resolved. */
+    /** The admin who manually decided this appeal via reviewAppeal() - null if still pending or auto-resolved. */
     public function admin(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** Oldest-first, same reasoning as Feedback::responses() — reads top-to-bottom chronologically. */
+    /** Oldest-first, same reasoning as Feedback::responses() - reads top-to-bottom chronologically. */
     public function responses(): HasMany
     {
         return $this->hasMany(AppealResponse::class, 'appeal_id')->oldest();

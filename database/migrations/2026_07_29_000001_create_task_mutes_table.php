@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 // comment_replied) - both the in-app bell notification and the email. Mirrors
 // pinned_tasks: a simple pivot rather than a column on tasks, since "muted" is
 // a relationship between a user and a task, not a property of the task itself.
+// The two channels are split so a person can mute the bell, the email, or both.
 return new class extends Migration
 {
     public function up(): void
@@ -16,6 +17,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('task_id')->constrained()->cascadeOnDelete();
+            $table->boolean('mute_in_app')->default(true);
+            $table->boolean('mute_email')->default(true);
             $table->timestamps();
             $table->unique(['user_id', 'task_id']);
         });

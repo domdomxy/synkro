@@ -19,7 +19,7 @@ function GridIcon({ className }) {
 
 /**
  * List/card view switcher. `value` is 'list' | 'grid'; `onChange` receives the new value.
- * Persists nothing itself — the page decides whether/how to remember the choice.
+ * Persists nothing itself - the page decides whether/how to remember the choice.
  */
 export default function ViewToggle({ value, onChange, className = '' }) {
     const base = 'flex h-7 w-7 items-center justify-center rounded transition';

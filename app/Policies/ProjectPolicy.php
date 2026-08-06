@@ -23,7 +23,7 @@ class ProjectPolicy
     {
         return $project->isMember($user)
             ? true
-            : Response::deny('You no longer have access to that — you may have left or been removed from the project.');
+            : Response::deny('You no longer have access to that - you may have left or been removed from the project.');
     }
 
     public function create(User $user): bool

@@ -52,7 +52,7 @@ function AppealItem({ appeal }) {
 
     const decide = async (outcome) => {
         if (!reason.trim()) {
-            await confirm('Please add a reason before continuing — it will be included in the email sent to the user.', {
+            await confirm('Please add a reason before continuing - it will be included in the email sent to the user.', {
                 title: 'Reason required',
                 hideCancel: true,
                 confirmLabel: 'OK',
@@ -186,7 +186,7 @@ function AppealItem({ appeal }) {
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 rows={2}
-                                placeholder="e.g. Thanks for reaching out — we're looking into this and will follow up soon."
+                                placeholder="e.g. Thanks for reaching out - we're looking into this and will follow up soon."
                                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
                             />
                             <div className="mt-2 flex justify-end">
@@ -214,7 +214,7 @@ function AppealItem({ appeal }) {
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     rows={2}
-                                    placeholder="e.g. Thanks for the clarification — we've lifted the suspension."
+                                    placeholder="e.g. Thanks for the clarification - we've lifted the suspension."
                                     className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
                                 />
                             </div>
@@ -267,7 +267,7 @@ function AppealItem({ appeal }) {
                                 {appeal.outcome === 'closed'
                                     ? 'Closed automatically (inactive 24h)'
                                     : appeal.outcome === 'approved'
-                                        ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted — suspension lifted')
+                                        ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted - suspension lifted')
                                         : (appeal.auto_resolved ? 'Rejected automatically' : 'Rejected')}
                             </p>
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">

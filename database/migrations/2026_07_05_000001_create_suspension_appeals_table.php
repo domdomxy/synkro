@@ -11,6 +11,15 @@ return new class extends Migration
         Schema::create('suspension_appeals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            // Which admin manually decided this appeal (reviewAppeal()) - left null
+            // while pending, and left null when nobody decided it: auto-resolved
+            // (lift-expired/newer-appeal-supersedes) or auto-closed for inactivity.
+            // nullOnDelete so a reviewer who's later permanently purged doesn't take
+            // the appeal's own history with them - see admin_logs for the same
+            // reasoning.
+            $table->foreignId('admin_id')->nullable()->constrained('users')->nullOnDelete();
+
             $table->text('message');
             $table->enum('status', ['pending', 'reviewed', 'dismissed'])->default('pending');
             // 'approved' | 'rejected' | null (null while pending).

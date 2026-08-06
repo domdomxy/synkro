@@ -15,7 +15,7 @@ const ICON_TONES = {
 const HIGHLIGHTS = [
     {
         title: 'Role-based collaboration',
-        description: 'Owners, managers, members, and testers — each scoped per project.',
+        description: 'Owners, managers, members, and testers - each scoped per project.',
         icon: <path d="M9 11a4 4 0 100-8 4 4 0 000 8zm-7 9a7 7 0 0114 0H2z" />,
     },
     {
@@ -51,7 +51,7 @@ function RadarRings() {
  * app's light/dark/black theme (a common pattern for auth screens), paired
  * with the form on a panel that follows the app's normal theme.
  *
- * `icon`/`iconTone` are optional — pass them for the account-access states
+ * `icon`/`iconTone` are optional - pass them for the account-access states
  * that need a status badge above the title (suspended, appeal); sign in and
  * sign up omit them and render exactly as before.
  */
@@ -71,7 +71,7 @@ export default function AuthSplitLayout({ icon: Icon, iconTone = 'indigo', eyebr
                 }
             `}</style>
 
-            {/* Brand panel — hidden below lg, always dark regardless of theme */}
+            {/* Brand panel - hidden below lg, always dark regardless of theme */}
             <div className="relative hidden w-[42%] shrink-0 flex-col justify-between overflow-hidden bg-gray-900 px-10 py-12 text-white lg:flex">
                 <RadarRings />
 

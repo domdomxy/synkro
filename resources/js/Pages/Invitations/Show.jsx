@@ -86,7 +86,7 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
                 }
             >
                 <p className="text-gray-600 dark:text-gray-300">
-                    You can't rejoin <span className="font-medium text-gray-900 dark:text-gray-100">{invitation.project.name}</span> using this invitation —
+                    You can't rejoin <span className="font-medium text-gray-900 dark:text-gray-100">{invitation.project.name}</span> using this invitation -
                     you've since left or been removed from the project.
                 </p>
                 <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">

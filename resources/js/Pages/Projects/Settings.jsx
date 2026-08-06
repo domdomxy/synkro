@@ -247,7 +247,7 @@ export default function Settings({ project, role }) {
                             {project.deletion_requested_at ? (
                                 <div className="space-y-3">
                                     <p className="text-sm text-red-600 dark:text-red-400">
-                                        Deletion requested — check your email for the confirmation link. Nothing has been deleted yet.
+                                        Deletion requested - check your email for the confirmation link. Nothing has been deleted yet.
                                     </p>
                                     <div className="flex flex-wrap items-center gap-3">
                                         <SecondaryButton onClick={cancelDeletion}>Cancel Deletion Request</SecondaryButton>

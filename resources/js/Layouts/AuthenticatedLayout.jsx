@@ -35,7 +35,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     const user = usePage().props.auth.user;
     // Superadmins carry every admin permission plus a few of their own (see
     // User::isAdmin() on the backend), so anywhere "is this user an admin"
-    // gates something in the UI, superadmin must count too — otherwise a
+    // gates something in the UI, superadmin must count too - otherwise a
     // superadmin loses access to admin-only nav/UI just because their role
     // string is 'superadmin' rather than literally 'admin'.
     const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
@@ -112,7 +112,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7x
     }, [testing]);
 
     // Private per-user channel, always valid here since AuthenticatedLayout only
-    // renders for a logged-in user — unlike admin-alerts below, no fallback needed.
+    // renders for a logged-in user - unlike admin-alerts below, no fallback needed.
     useEcho(
         `user.${user.id}`,
         ['.testing.queue-updated'],

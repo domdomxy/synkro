@@ -229,7 +229,7 @@ function describeLog(log, actorName = null) {
         case 'account_deactivated': return `${actor} deactivated **${possessive} account**`;
         case 'account_deletion_requested': return actorName
             ? `${actor} requested account deletion`
-            : `${actor} requested account deletion — check your email to confirm`;
+            : `${actor} requested account deletion - check your email to confirm`;
         case 'account_deletion_cancelled': return `**${actor} cancelled the pending account deletion**`;
         case 'account_deleted': return `${actor} deleted **${possessive} account**`;
         case 'account_restored': return `${actor} restored **${possessive} account**`;

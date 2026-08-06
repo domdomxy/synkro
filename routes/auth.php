@@ -30,7 +30,7 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:6,1')
         ->name('password.email');
 
-    // No token in the URL anymore — the email carries a 6-digit code, and
+    // No token in the URL anymore - the email carries a 6-digit code, and
     // this page is reached by redirect with only the email address in the
     // query string, e.g. /reset-password?email=jane@example.com.
     Route::get('reset-password', [NewPasswordController::class, 'create'])

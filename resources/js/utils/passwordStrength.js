@@ -1,6 +1,6 @@
 // Small set of the most common weak passwords worth calling out explicitly.
 // Not meant to be exhaustive (that's what Laravel's own uncompromised-password
-// check is for server-side) — just enough to catch the obvious ones instantly
+// check is for server-side) - just enough to catch the obvious ones instantly
 // in the UI as the person types.
 const COMMON_PASSWORDS = new Set([
     'password', 'password1', '12345678', '123456789', '1234567890',
@@ -54,7 +54,7 @@ export const MIN_ACCEPTABLE_SCORE = 3;
 
 /**
  * Scores a candidate password from 0 (very weak) to 4 (strong).
- * Used both for the live UI meter and to gate form submission — passwords
+ * Used both for the live UI meter and to gate form submission - passwords
  * scoring below MIN_ACCEPTABLE_SCORE ("Good") are rejected before the
  * request is ever sent. This is still just a UX-layer check: Laravel's
  * Password::defaults() rule remains the authoritative server-side guard.

@@ -607,7 +607,7 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
                     Leave "{project.name}"?
                 </h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Let the project owner and managers know why you're leaving — it helps them plan around it.
+                    Let the project owner and managers know why you're leaving - it helps them plan around it.
                 </p>
 
                 <div className="mt-4">
@@ -1076,7 +1076,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
                             <span>
                                 {isOwner
-                                    ? 'You requested to delete this project. Check your email for the confirmation link — nothing has been deleted yet.'
+                                    ? 'You requested to delete this project. Check your email for the confirmation link - nothing has been deleted yet.'
                                     : "The project owner has requested to delete this project. It will move to trash once they confirm by email, and can still be restored for a few days after that."}
                             </span>
                             {isOwner && (
@@ -1107,7 +1107,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     </div>
                     <div className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
 
-                        {/* LEFT: Team — Invite, Members, and Pending Invitations grouped together */}
+                        {/* LEFT: Team - Invite, Members, and Pending Invitations grouped together */}
                         <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && !isTrashed && (
                                 <div className="rounded-lg bg-white shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
@@ -1428,7 +1428,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
 
-                        {/* RIGHT: My Notes — personal scratchpad, decoupled from team management */}
+                        {/* RIGHT: My Notes - personal scratchpad, decoupled from team management */}
                         <div ref={notesPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             <NotesPanel project={project} myNotes={myNotes} />
                         </div>

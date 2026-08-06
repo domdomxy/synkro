@@ -326,7 +326,7 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
                                             <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                                             <p className="text-xs text-red-700 dark:text-red-300">
                                                 We'll email you a confirmation link first. Your account isn't deleted until you click it.
-                                                Even after that, it's kept for {deletionGraceDays} days before permanent erasure — plenty of time to log back in and restore it.
+                                                Even after that, it's kept for {deletionGraceDays} days before permanent erasure - plenty of time to log back in and restore it.
                                             </p>
                                         </div>
                                         <DeleteUserForm className="max-w-xl" deletionRequestedAt={deletionRequestedAt} deletionGraceDays={deletionGraceDays} />

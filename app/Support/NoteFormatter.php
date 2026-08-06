@@ -55,7 +55,7 @@ class NoteFormatter
     /**
      * Turn markdown-style [label](https://url) and bare https:// URLs into
      * anchor tags, and @[Label](user:ID) / @[Label](role:token) mention tokens
-     * into a styled chip — the email equivalent of the chip Linkify.jsx renders
+     * into a styled chip - the email equivalent of the chip Linkify.jsx renders
      * client-side, so a comment with a mention doesn't show raw markup in the
      * notification email. Runs on already-HTML-escaped text, so it's safe to
      * call after formatLine's escaping step; the single regex pass (mention,

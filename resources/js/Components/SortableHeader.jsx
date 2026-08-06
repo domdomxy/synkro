@@ -1,6 +1,6 @@
 function SortIcon({ active, direction }) {
     if (!active) {
-        // Both arrows, muted — column is sortable but not the current sort.
+        // Both arrows, muted - column is sortable but not the current sort.
         return (
             <svg className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />

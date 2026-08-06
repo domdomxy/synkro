@@ -14,7 +14,7 @@ watchSystemTheme();
  * Let the backend know the device's local timezone so any server-rendered,
  * user-facing timestamps (e.g. "you can try again at ...") reflect the
  * viewer's actual local time instead of the server's fixed timezone. This
- * never affects how timestamps are stored — only how a few flash messages
+ * never affects how timestamps are stored - only how a few flash messages
  * are formatted before being sent back to this same device.
  */
 function syncDeviceTimezone() {
@@ -31,7 +31,7 @@ function syncDeviceTimezone() {
             document.cookie = `device_timezone=${timezone}; path=/; max-age=31536000; SameSite=Lax`;
         }
     } catch {
-        // Intl unsupported or blocked — server just falls back to its own timezone.
+        // Intl unsupported or blocked - server just falls back to its own timezone.
     }
 }
 

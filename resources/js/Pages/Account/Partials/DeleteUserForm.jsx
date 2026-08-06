@@ -66,7 +66,7 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
                         </p>
                         <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
                             We've emailed you a link to confirm deleting your account. Your account
-                            stays exactly as it is unless you click that link — confirming starts the {deletionGraceDays}-day
+                            stays exactly as it is unless you click that link - confirming starts the {deletionGraceDays}-day
                             grace period, it doesn't delete anything immediately.
                         </p>
                     </div>
@@ -99,7 +99,7 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
 
                     <p className="mt-2.5 text-[15px] leading-relaxed text-red-600 dark:text-red-400">
                         Once deleted, your account is kept for {deletionGraceDays} days before it's permanently
-                        erased — plenty of time to change your mind. Just log back in with your usual email and
+                        erased - plenty of time to change your mind. Just log back in with your usual email and
                         password within that window to restore everything yourself.
                     </p>
                     <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">

@@ -36,7 +36,7 @@ class LiftExpiredSuspensions extends Command
                 ]);
 
             // A pending appeal shouldn't sit there forever waiting on an admin once
-            // the suspension it's appealing has already run out on its own — resolve
+            // the suspension it's appealing has already run out on its own - resolve
             // it automatically so the appeals queue stays accurate.
             SuspensionAppeal::where('user_id', $user->id)
                 ->where('status', 'pending')

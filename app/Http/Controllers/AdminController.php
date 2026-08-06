@@ -49,7 +49,7 @@ class AdminController extends Controller
     private function monthOverMonthChange($query, string $column): array
     {
         $startOfMonth = now()->startOfMonth();
-        // Clone before each count — the same builder can't be reused across two different
+        // Clone before each count - the same builder can't be reused across two different
         // where() calls without the second corrupting the first's conditions.
         $before = (clone $query)->where($column, '<', $startOfMonth)->count();
         $thisMonth = (clone $query)->where($column, '>=', $startOfMonth)->count();
@@ -185,17 +185,17 @@ class AdminController extends Controller
         // already store, so these are real numbers, not fabricated trend data. We only have
         // creation dates, not historical snapshots of is_active/is_suspended/role/etc, so a
         // trend % is only honest for counts that are purely additive over time (users,
-        // projects, tasks) — not for the active/inactive/suspended/admin breakdowns.
+        // projects, tasks) - not for the active/inactive/suspended/admin breakdowns.
         $startOfMonth = now()->startOfMonth();
 
         // Deletions this month, read off whichever rows still show a deleted_at right now.
         // Once something's been soft-deleted *and* since purged past its grace period, its
-        // deleted_at becomes unqueryable (the row's gone for good) — so a deletion from
+        // deleted_at becomes unqueryable (the row's gone for good) - so a deletion from
         // early this month that's already been purged quietly stops counting here. An
         // accepted, honest gap given grace periods (a handful of days) are short relative
         // to a month; a fully gapless count would need a permanent deletion-events log this
         // app doesn't have. Accounts an admin deleted *permanently* (skips the grace period
-        // and soft-delete step entirely — see AdminController::destroy()) leave no deleted_at
+        // and soft-delete step entirely - see AdminController::destroy()) leave no deleted_at
         // at all, so those are added back in separately from the admin log below.
         $deletionsThisMonth = fn (string $model) => $model::onlyTrashed()->whereBetween('deleted_at', [$startOfMonth, now()])->count();
 
@@ -204,20 +204,20 @@ class AdminController extends Controller
             ->count();
 
         // Net change (creations minus departures) as a % of where the count stood at the
-        // start of the month — unlike a pure creation-count trend, this can go negative
+        // start of the month - unlike a pure creation-count trend, this can go negative
         // when deletions outpace new signups/projects/tasks in a given month.
         //
         // The baseline ("how many existed at the start of this month") deliberately uses
         // withTrashed(): a plain where(created_at < startOfMonth) count would shrink every
         // time something soft-deleted this month gets purged out of the table, or the moment
-        // an admin permanently deletes it — both make the row disappear from that count too,
+        // an admin permanently deletes it - both make the row disappear from that count too,
         // on top of it already being subtracted as a departure, silently exaggerating the
         // negative rate (9 members, 2 permanently deleted, 0 new => a naive count-based
         // baseline drops to 7 and reports -2/7 = -29%, when the real answer against last
         // month's actual 9 is -2/9 = -22%). $extraBaseline adds back anyone who existed at
         // the start of the month but has since been forceDelete()'d with literally no row
         // left at all (only relevant for users right now, via permanentUserDeletionsThisMonth
-        // above — accepted approximation: assumes they were around before this month, which
+        // above - accepted approximation: assumes they were around before this month, which
         // is true except in the rare case of a same-month signup immediately followed by an
         // admin permanently deleting them).
         $netGrowthRate = function (string $model, int $removedThisMonth = 0, int $extraBaseline = 0) use ($startOfMonth) {
@@ -296,7 +296,7 @@ class AdminController extends Controller
     public function users(Request $request)
     {
         // Soft-deleted users are excluded by the model's default scope, same as any
-        // other query — so deleted accounts now stay visible in the table (and every
+        // other query - so deleted accounts now stay visible in the table (and every
         // other status filter has to explicitly exclude them, since e.g. a deleted
         // user's is_active flag doesn't change when they're soft-deleted).
         $query = User::withTrashed();
@@ -344,7 +344,7 @@ class AdminController extends Controller
 
         // Real month-over-month trends. Total is purely additive (created_at). Active/inactive
         // and admin role now have their own change timestamps (active_status_changed_at,
-        // role_changed_at — see the 2026_07_18 migration), suspensions already had real
+        // role_changed_at - see the 2026_07_18 migration), suspensions already had real
         // timestamps via suspension_logs (created_at/lifted_at), and verification already had
         // email_verified_at. Unverified has no "became unverified" event to track (verification
         // isn't revocable here), so it stays a plain composition ratio rather than a fabricated
@@ -405,12 +405,12 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'stats' => $stats,
-            // Explicit keys with defaults, not $request->only([...]) — when no query params are
+            // Explicit keys with defaults, not $request->only([...]) - when no query params are
             // present, only() returns an empty PHP array, which json_encode serializes as a JSON
             // array ([]) rather than an object ({}), since PHP can't tell the two apart when empty.
             // On the frontend that made `filters.sort` resolve to the inherited Array.prototype.sort
             // *function* instead of undefined, which useState() treats as a lazy initializer and
-            // calls with no valid `this` — throwing "Cannot convert undefined or null to object".
+            // calls with no valid `this` - throwing "Cannot convert undefined or null to object".
             // Always including every key guarantees a non-empty associative array, which always
             // encodes as a real JSON object.
             'filters' => [
@@ -427,7 +427,7 @@ class AdminController extends Controller
 
     /**
      * Raw DB::table() rows come back with created_at as a bare "Y-m-d H:i:s" string with no
-     * timezone marker. Same fix as DashboardController::toIsoUtc() — kept as a separate copy
+     * timezone marker. Same fix as DashboardController::toIsoUtc() - kept as a separate copy
      * here rather than a shared trait since these two controllers don't otherwise share state,
      * and the fix is a single line.
      */
@@ -594,7 +594,7 @@ class AdminController extends Controller
     public function projects(Request $request)
     {
         // 'members' count needs withTrashed() too, same reasoning as
-        // Project::owner() — an owner mid-deletion is still a member of
+        // Project::owner() - an owner mid-deletion is still a member of
         // their own project for the length of the grace period.
         $query = Project::with('owner')->withCount(['members' => fn ($q) => $q->withTrashed(), 'tasks']);
 
@@ -617,7 +617,7 @@ class AdminController extends Controller
 
         return Inertia::render('Admin/Projects', [
             'projects' => $projects,
-            // See users() above for why this must be explicit keys, not $request->only([...]) —
+            // See users() above for why this must be explicit keys, not $request->only([...]) -
             // an empty array serializes as JSON [] instead of {}, which broke `filters.sort` on
             // the frontend (it resolved to the inherited Array.prototype.sort function).
             'filters' => [
@@ -711,7 +711,7 @@ public function suspend(Request $request, User $user)
             AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$user->name}** (**{$user->email}**)", $user, $request->reason);
 
             // Resolve any pending appeal(s) tied to this account, same as reviewAppeal()
-            // does when an appeal is approved from the Appeals page — so lifting a
+            // does when an appeal is approved from the Appeals page - so lifting a
             // suspension from Manage Users doesn't leave an appeal the user submitted
             // stuck showing "Pending" forever. $request->appeal_id is honored first for
             // callers that already know the specific appeal; otherwise every appeal
@@ -816,7 +816,7 @@ public function suspend(Request $request, User $user)
     /**
      * Administration Logs page (general audit trail).
      * Distinct from suspensionLogs() above (user-suspension-specific) and
-     * projectLogs() below (per-project member activity) — this one covers
+     * projectLogs() below (per-project member activity) - this one covers
      * every AdminLog::log() call across the app (see AdminLog::actionCatalog()
      * for the full list of tracked action types).
      */
@@ -861,7 +861,7 @@ public function suspend(Request $request, User $user)
         $logs = $query->latest()->paginate($this->perPage($request, 10))->withQueryString();
 
         // Distinct admins who have ever produced a log entry, for the "who did this"
-        // filter — not all users, since most users are never admins/never act.
+        // filter - not all users, since most users are never admins/never act.
         $admins = User::whereIn('id', AdminLog::query()->whereNotNull('admin_id')->distinct()->pluck('admin_id'))
             ->orderBy('name')
             ->get(['id', 'name', 'avatar_path']);
@@ -872,7 +872,7 @@ public function suspend(Request $request, User $user)
             'actionCatalog' => AdminLog::actionCatalog(),
             'admins' => $admins,
             'hasDeletedAdminLogs' => $hasDeletedAdminLogs,
-            // Explicit keys, not $request->only([...]) — see users() above. No key here collides
+            // Explicit keys, not $request->only([...]) - see users() above. No key here collides
             // with an Array.prototype method today, but this avoids the landmine entirely.
             'filters' => [
                 'search' => $request->input('search', ''),
@@ -955,7 +955,7 @@ public function suspend(Request $request, User $user)
     /**
      * Superadmin-only: promote an existing admin to superadmin, or demote a superadmin
      * back down to a regular admin. Unlike toggleRole() above (plain user <-> admin),
-     * this never touches a 'user' role directly — someone has to already be an admin
+     * this never touches a 'user' role directly - someone has to already be an admin
      * before they can be trusted with superadmin.
      */
     public function toggleSuperAdmin(User $user)
@@ -1010,9 +1010,9 @@ public function suspend(Request $request, User $user)
     /**
      * Superadmin-only: edit a user's name and/or email. Mirrors the security
      * notifications AccountController::update() sends for a self-service email
-     * change — the OLD address always gets a direct alert regardless of email
+     * change - the OLD address always gets a direct alert regardless of email
      * preference (that's the account that might be compromised), while the new
-     * address and in-app bell go through the normal preference-gated channel —
+     * address and in-app bell go through the normal preference-gated channel -
      * just phrased for an admin-initiated change instead of a self-service one.
      */
     public function updateUser(Request $request, User $user)
@@ -1114,7 +1114,7 @@ public function suspend(Request $request, User $user)
                 'Your account has been permanently deleted',
                 [
                     'Your Synkro account was permanently deleted by an administrator.',
-                    'This was immediate — there is no grace period, and the account cannot be restored.',
+                    'This was immediate - there is no grace period, and the account cannot be restored.',
                     "If you believe this was done in error, please [contact support](" . url(route('feedback.page', [], false)) . ') as soon as possible.',
                 ]
             );
@@ -1143,7 +1143,7 @@ public function suspend(Request $request, User $user)
             'Your account has been deleted',
             [
                 'Your Synkro account was deleted by an administrator.',
-                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case this was a mistake — log back in with your usual email and password before then to restore it.',
+                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case this was a mistake - log back in with your usual email and password before then to restore it.',
                 "If you believe this was done in error, please [contact support](" . url(route('feedback.page', [], false)) . ').',
             ]
         );
@@ -1158,7 +1158,7 @@ public function suspend(Request $request, User $user)
     /**
      * Superadmin-only: emails a fresh step-up confirmation code to the current
      * admin's own address. Required before an irreversible action is allowed
-     * to proceed — currently just permanently deleting user accounts, see
+     * to proceed - currently just permanently deleting user accounts, see
      * destroy()/destroyBulk() below, which verify it via
      * User::verifyAdminConfirmationCode().
      */
@@ -1212,7 +1212,7 @@ public function suspend(Request $request, User $user)
     /**
      * Superadmin-only: delete several user accounts at once, either gracefully or
      * permanently. Skips (rather than fails) any target that can't be deleted this
-     * way — your own account, a superadmin, or one already deleted — so one bad id in
+     * way - your own account, a superadmin, or one already deleted - so one bad id in
      * the selection doesn't block the rest, and reports how many actually went through.
      */
     public function destroyBulk(Request $request)
@@ -1316,7 +1316,7 @@ public function suspend(Request $request, User $user)
     }
 
     /**
-     * Superadmin/admin: leave a note on a pending appeal without deciding it yet —
+     * Superadmin/admin: leave a note on a pending appeal without deciding it yet -
      * e.g. asking a follow-up question, or acknowledging it's being looked into.
      * Unlike reviewAppeal() this doesn't touch status/outcome, so the appeal stays
      * pending; it exists mainly so "a supporter has responded" becomes something
@@ -1325,7 +1325,7 @@ public function suspend(Request $request, User $user)
     public function respondAppeal(Request $request, SuspensionAppeal $appeal)
     {
         if ($appeal->status !== 'pending') {
-            return back()->withErrors(['error' => "This appeal has already been decided — there's nothing to add a note to."]);
+            return back()->withErrors(['error' => "This appeal has already been decided - there's nothing to add a note to."]);
         }
 
         $validated = $request->validate([
@@ -1432,7 +1432,7 @@ public function suspend(Request $request, User $user)
                 AdminLog::log('user.suspension_lifted', "Lifted suspension for **{$appeal->user->name}** (**{$appeal->user->email}**)", $appeal->user, $request->reason);
             }
 
-            // A user can end up with more than one pending appeal — e.g. an earlier
+            // A user can end up with more than one pending appeal - e.g. an earlier
             // suspension auto-expired (or was lifted some other way) without that
             // appeal ever going through this review flow. Deciding this appeal
             // effectively decides those too, so resolve them here instead of leaving

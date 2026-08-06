@@ -4,7 +4,7 @@
  * - `sub` is a plain description line (e.g. "Assigned to you, not yet done"),
  *   optionally including a composition ratio like "18% of all users" as text.
  * - `pct` is an optional signed number representing a REAL period-over-period
- *   change (e.g. 12, -4.5) — pass it only when it's backed by real historical
+ *   change (e.g. 12, -4.5) - pass it only when it's backed by real historical
  *   data (created_at timestamps etc). It renders on its own line below `sub`
  *   as "▲ +12% vs last month" (green/red/gray for up/down/flat), kept visually
  *   separate from `sub` so a composition ratio like "8% of all users" is never

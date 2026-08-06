@@ -9,7 +9,7 @@ export default function Modal({
     overlayClassName = 'bg-gray-500/75 dark:bg-gray-900/75',
     panelClassName = 'bg-white dark:bg-gray-800',
     // Panel clips to its rounded corners by default (overflow-hidden), which also
-    // clips any absolutely-positioned floating content inside it — e.g. a
+    // clips any absolutely-positioned floating content inside it - e.g. a
     // FilterSelect's open options list gets cut off instead of extending past the
     // panel edge the way it would outside a modal. Pass true for modals that host
     // this kind of floating content so it can render in full.

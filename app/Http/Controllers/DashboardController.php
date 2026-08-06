@@ -15,11 +15,11 @@ class DashboardController extends Controller
     /**
      * Real period-over-period change for a count that has a genuine "when did
      * this happen" timestamp column (created_at, submitted_at, etc). Mirrors
-     * AdminController::monthOverMonthChange — real historical data, never a
+     * AdminController::monthOverMonthChange - real historical data, never a
      * fabricated/hardcoded percentage.
      *
      * `$removedThisMonth` is subtracted from this month's count before the ratio is
-     * taken, so — unlike a plain creation-count trend — the result can go negative
+     * taken, so - unlike a plain creation-count trend - the result can go negative
      * when more of whatever this is tracking disappeared this month than newly
      * appeared. Defaults to 0 (the original creation-only behavior) for callers that
      * don't have a departure count to feed in.
@@ -183,25 +183,25 @@ class DashboardController extends Controller
         // period-over-period "trend" (colored +/-%) when it's backed by a genuine "when did
         // this happen" timestamp. Project membership (project_user.created_at) and task
         // submission (submitted_at) both have one. "Done" doesn't have a dedicated
-        // completion timestamp, so — consistent with how the activity chart above already
-        // treats it — updated_at is used as the completion-time proxy. "Active" tasks have
+        // completion timestamp, so - consistent with how the activity chart above already
+        // treats it - updated_at is used as the completion-time proxy. "Active" tasks have
         // no such timestamp at all (a task drifts in and out of "active" with every status
         // change), so instead of a fake trend it gets an honest composition ratio.
         //
         // Both Task queries below use withTrashed(): tasks are soft-deletable now, and
         // without it a task that was done/submitted before this month but got deleted since
-        // would silently vanish from the "before" count too — shrinking the baseline right
+        // would silently vanish from the "before" count too - shrinking the baseline right
         // along with the numerator and exaggerating whichever direction the trend already
         // leans, the same baseline bug the admin dashboard's growth rates had. doneTasksTrend
         // goes one step further and can go genuinely negative: it subtracts this month's
         // deletions of the user's own done tasks from this month's count, so losing more
         // completed work to deletion than you complete anew reads as a real decline, not 0%.
         // pendingReviewTrend stays a plain (non-negative) count-ratio, since leaving the
-        // review queue normally means a task got approved/rejected, not deleted — a
+        // review queue normally means a task got approved/rejected, not deleted - a
         // deletion-based negative there would rarely reflect what actually happened. Project
         // membership doesn't get the same treatment either: leaving a project hard-deletes
         // the project_user pivot row with no historical trace at all (no soft-delete on
-        // pivot tables), so that trend can still understate a departure-heavy month — an
+        // pivot tables), so that trend can still understate a departure-heavy month - an
         // accepted, pre-existing gap that would need real membership-history tracking to close.
         $projectsTrend = $this->monthOverMonthChange($user->projects(), 'project_user.created_at');
         $doneTasksDeletedThisMonth = Task::onlyTrashed()
@@ -341,7 +341,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Personal activity feed: everything this user has done — both their
+     * Personal activity feed: everything this user has done - both their
      * project activity (ProjectActivityLog, across every project they're in)
      * and their account activity (AccountActivityLog: logins, profile edits,
      * password changes, etc). The two live in separate tables, so they're

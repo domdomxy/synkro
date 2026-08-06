@@ -65,7 +65,7 @@ const priorityStyles = {
 // What the board is willing to do when a card is dropped on another column, keyed by
 // "fromStatus->toStatus". Anything not listed here isn't a single, unambiguous action
 // (or needs input the board can't collect in a drag, like uploaded deliverables), so it's
-// left out on purpose rather than falling back to the raw admin status override — that's
+// left out on purpose rather than falling back to the raw admin status override - that's
 // what was letting a drag-and-drop turn into an unreviewed, unannounced status jump.
 const TRANSITIONS = {
     'todo->in_progress': { type: 'start', requires: 'start' },
@@ -83,15 +83,15 @@ const TRANSITION_DETAILS = {
 };
 
 const BLOCKED_MESSAGES = {
-    'in_progress->submitted': 'Submitting needs a file or link attached — do that from the task card.',
+    'in_progress->submitted': 'Submitting needs a file or link attached - do that from the task card.',
     'in_progress->todo': "Moving a task back to To Do isn't supported from the board.",
     'submitted->todo': "Moving a task back to To Do isn't supported from the board.",
     'submitted->in_progress': 'Withdraw a submission from the task card instead.',
     'in_review->submitted': "That move isn't supported from the board.",
-    'done->todo': 'Reopen a completed task from its card — reopening needs a reason.',
-    'done->in_progress': 'Reopen a completed task from its card — reopening needs a reason.',
-    'done->submitted': 'Reopen a completed task from its card — reopening needs a reason.',
-    'done->in_review': 'Reopen a completed task from its card — reopening needs a reason.',
+    'done->todo': 'Reopen a completed task from its card - reopening needs a reason.',
+    'done->in_progress': 'Reopen a completed task from its card - reopening needs a reason.',
+    'done->submitted': 'Reopen a completed task from its card - reopening needs a reason.',
+    'done->in_review': 'Reopen a completed task from its card - reopening needs a reason.',
 };
 
 const LONG_PRESS_MS = 500;
@@ -274,7 +274,7 @@ export function BoardLegendModal({ show, onClose }) {
                         })}
                     </div>
                     <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
-                        Any other move — submitting work, reopening a completed task, or moving something back to To Do —
+                        Any other move - submitting work, reopening a completed task, or moving something back to To Do -
                         isn't available from the board. Open the task card for those.
                     </p>
                 </div>

@@ -11,7 +11,7 @@ function initials(name) {
     return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-// `system` renders the app's own mark instead of a person's initials — for
+// `system` renders the app's own mark instead of a person's initials - for
 // actions nothing human did (a scheduled job, not a since-deleted admin).
 // Callers are responsible for telling the two apart (see e.g. Logs.jsx's
 // AUTOMATED_ACTIONS) since a missing user/admin relation alone can't say

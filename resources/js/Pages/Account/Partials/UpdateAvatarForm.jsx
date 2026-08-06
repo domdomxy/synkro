@@ -115,7 +115,7 @@ export default function UpdateAvatarForm({ className = '' }) {
 
                     {!preview && (
                         <p className="text-xs text-gray-400 dark:text-gray-500">
-                            Any photo works — you'll be able to crop and zoom it next.
+                            Any photo works - you'll be able to crop and zoom it next.
                         </p>
                     )}
                 </div>

@@ -12,13 +12,13 @@ const RESEND_COOLDOWN_SECONDS = 20;
  * opens, it emails a fresh 6-digit code to the acting superadmin's own
  * address (proving continued inbox access, on top of the session they're
  * already authenticated with) via admin.users.send-confirmation-code. Once
- * they enter it, the code — not this component — is what actually authorizes
+ * they enter it, the code - not this component - is what actually authorizes
  * anything: `onVerify(code)` is responsible for performing the real action
  * server-side and should resolve on success, or reject with an error string
  * (e.g. "The code you entered is incorrect.") to show under the code boxes.
  *
  * `purpose` must match a value AdminController::sendConfirmationCode() and
- * User::verifyAdminConfirmationCode() both accept — it scopes the code
+ * User::verifyAdminConfirmationCode() both accept - it scopes the code
  * server-side so one issued here can't be replayed for a different action.
  */
 export default function AdminConfirmationModal({ show, purpose, title, description, confirmLabel = 'Confirm', danger = true, onVerify, onClose }) {

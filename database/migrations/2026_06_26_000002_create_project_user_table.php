@@ -15,6 +15,15 @@ return new class extends Migration
             $table->string('role'); // owner | manager | member | tester
             $table->boolean('pinned')->default(false); // per-user "pin this project" flag
             $table->boolean('archived')->default(false); // per-user archive, not a project-wide state
+
+            // Per-user "mute this project's comment notifications" flags, split by channel
+            // so a person can mute the in-app bell, the email, or both. Muting a project
+            // suppresses task_commented/task_mentioned/comment_replied for every task in
+            // it, for this user only - same effect as muting each task individually,
+            // without having to do it one at a time.
+            $table->boolean('mute_in_app')->default(false);
+            $table->boolean('mute_email')->default(false);
+
             $table->timestamps();
             $table->unique(['project_id', 'user_id']);
         });

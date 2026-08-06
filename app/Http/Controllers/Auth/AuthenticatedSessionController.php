@@ -112,7 +112,7 @@ class AuthenticatedSessionController extends Controller
                     'lifted_by' => null,
                 ]);
 
-                // Same as the suspensions:lift-expired scheduled job — a pending appeal
+                // Same as the suspensions:lift-expired scheduled job - a pending appeal
                 // shouldn't sit there forever once the suspension it's appealing has
                 // already run out on its own.
                 \App\Models\SuspensionAppeal::where('user_id', $user->id)
@@ -204,7 +204,7 @@ class AuthenticatedSessionController extends Controller
         AccountActivityLog::log('logged_out', [
             // Carbon 3 changed diffInSeconds() to return a *signed* difference by default (Carbon
             // 2 always returned an absolute value). Since session_started_at is always earlier than
-            // now(), this was silently coming back negative — and the frontend's `seconds < 60`
+            // now(), this was silently coming back negative - and the frontend's `seconds < 60`
             // check treats any negative number as "less than a minute", no matter the real duration.
             'duration_seconds' => $sessionStartedAt
                 ? now()->diffInSeconds(\Carbon\Carbon::parse($sessionStartedAt), absolute: true)

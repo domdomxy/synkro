@@ -18,14 +18,14 @@ class AccountDeletion
      * Unwinds a user's project involvement (freezing in-review/done tasks pending
      * resolution, resetting the rest, notifying owners/managers) and soft-deletes the
      * account. Deliberately does NOT remove the user's project memberships yet, whether
-     * they own a project or are just a member of one — membership only actually goes
+     * they own a project or are just a member of one - membership only actually goes
      * away once the post-deletion grace period ends without a restore (owned projects
      * are deleted outright by PurgeDeletedAccounts; memberships in other projects are
      * cascade-detached automatically when forceDelete() removes the users row for real,
      * via project_user's onDelete('cascade') FK). Until then, the account being
      * soft-deleted already hides it from every ordinary member query (User uses
      * SoftDeletes, which applies its own "not trashed" global scope), so nothing shows
-     * a ghost member in the meantime — and a restore within the grace period puts
+     * a ghost member in the meantime - and a restore within the grace period puts
      * everything back exactly as it was, with no membership to re-add. Shared by the
      * self-service deletion flow (AccountController::confirmDeletion, reached via a
      * signed email link) and admin-forced deletion (AdminController::destroy/
@@ -48,7 +48,7 @@ class AccountDeletion
                             'user_id' => $recipient->id,
                             'type' => 'owner_account_deleted',
                             'causer_id' => $user->id,
-                            'message' => "Owner account deleted\n**{$user->name}**, the **owner** of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need — if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . '**, it and everything in it will be gone for good.',
+                            'message' => "Owner account deleted\n**{$user->name}**, the **owner** of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need - if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . '**, it and everything in it will be gone for good.',
                             'url' => route('projects.show', $project->id, false),
                         ]);
 
@@ -65,7 +65,7 @@ class AccountDeletion
                         "{$project->name}'s owner deleted their account",
                         [
                             "**{$user->name}**, the **owner** of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
-                            "The project stays exactly as it is for now. If they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, the project and everything in it will be permanently deleted along with it — you may want to export anything you need before then.",
+                            "The project stays exactly as it is for now. If they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, the project and everything in it will be permanently deleted along with it - you may want to export anything you need before then.",
                             'If they log back in and restore their account before then, nothing changes and this notice can be ignored.',
                         ],
                         route('projects.show', $project->id),
@@ -107,8 +107,8 @@ class AccountDeletion
             $frozenCount = $frozen->count();
             $frozenNote = $frozenCount > 0
                 ? ($frozenCount === 1
-                    ? ' 1 of their tasks is frozen pending your decision — resolve it from the project page before it can move again.'
-                    : " {$frozenCount} of their tasks are frozen pending your decision — resolve them from the project page before they can move again.")
+                    ? ' 1 of their tasks is frozen pending your decision - resolve it from the project page before it can move again.'
+                    : " {$frozenCount} of their tasks are frozen pending your decision - resolve them from the project page before they can move again.")
                 : '';
 
             foreach ($recipients as $recipient) {
@@ -117,7 +117,7 @@ class AccountDeletion
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Account deletion requested\n**{$user->name}** (**{$role}**) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now — if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, they'll be removed from the project automatically.",
+                        'message' => "Account deletion requested\n**{$user->name}** (**{$role}**) requested to delete their account.{$frozenNote} They'll remain a member of \"**{$project->name}**\" for now - if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, they'll be removed from the project automatically.",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 
@@ -146,10 +146,10 @@ class AccountDeletion
      *  - The scheduled `accounts:purge-deleted` sweep, for accounts whose grace period
      *    already ran out. These were already unwound via unwindProjectsAndDelete() when
      *    first soft-deleted, so only $onlyPendingTasks-scoped (frozen) tasks remain to
-     *    release — pass $onlyPendingTasks: true (the default).
+     *    release - pass $onlyPendingTasks: true (the default).
      *  - An admin choosing "delete permanently" on a still-active account, which skips
      *    the grace period entirely. Nothing has been unwound yet, so every task assigned
-     *    to the user needs releasing in one pass — pass $onlyPendingTasks: false.
+     *    to the user needs releasing in one pass - pass $onlyPendingTasks: false.
      */
     public static function purgeNow(User $user, bool $onlyPendingTasks = true): void
     {
@@ -160,7 +160,7 @@ class AccountDeletion
 
     /**
      * Projects this user owned are about to cascade-delete along with them (see
-     * purgeNow() above) — give their remaining members a heads-up before that happens,
+     * purgeNow() above) - give their remaining members a heads-up before that happens,
      * not after, since there's nothing left to query once forceDelete() runs.
      */
     private static function notifyOwnedProjectMembers(User $user): void
@@ -175,7 +175,7 @@ class AccountDeletion
                     $notification = UserNotification::create([
                         'user_id' => $recipient->id,
                         'type' => 'project_deleted',
-                        'message' => "Project deleted\n\"**{$project->name}**\" was permanently deleted — its owner's account was permanently deleted",
+                        'message' => "Project deleted\n\"**{$project->name}**\" was permanently deleted - its owner's account was permanently deleted",
                         'url' => route('projects.index', [], false),
                     ]);
 
@@ -248,7 +248,7 @@ class AccountDeletion
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good — **{$count}** {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
+                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good - **{$count}** {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 

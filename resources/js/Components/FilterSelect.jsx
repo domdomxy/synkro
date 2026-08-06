@@ -92,7 +92,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
 
 // min-w-[11rem] below means, for a narrow trigger (e.g. inside a compact
 // filter panel), the options list can be wider than the trigger it's
-// anchored to and run past the right edge of the screen — the same class of
+// anchored to and run past the right edge of the screen - the same class of
 // bug as the "Filters" panel itself. useViewportClamp nudges it back on
 // screen the same way, kept in its own component so the hook has a proper
 // place to live (Listbox's children-as-function callback isn't a valid spot
@@ -100,7 +100,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
 //
 // Wrapped in forwardRef because it sits directly inside <Transition
 // as={Fragment}>, which attaches a ref straight to its child to track the
-// DOM node for the transition — a plain function component can't receive
+// DOM node for the transition - a plain function component can't receive
 // that ref. The forwarded ref and the clamp hook's own ref both need the
 // same DOM node, so they're merged in setRefs below.
 const ClampedOptions = forwardRef(function ClampedOptions({ open, children }, forwardedRef) {

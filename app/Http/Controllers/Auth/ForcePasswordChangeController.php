@@ -14,7 +14,7 @@ class ForcePasswordChangeController extends Controller
      * Show the "set a new password" prompt landed on right after signing in
      * with a temporary password an admin issued. Also re-shown on every
      * subsequent request to the protected app area (see
-     * EnsurePasswordIsChanged) — there's no way past this until the user
+     * EnsurePasswordIsChanged) - there's no way past this until the user
      * actually sets a new password.
      */
     public function edit(Request $request): Response|RedirectResponse

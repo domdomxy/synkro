@@ -15,7 +15,7 @@ class TaskPolicy
     }
 
     /**
-     * General "you may act on this task" gate — used by start(), submit(), and
+     * General "you may act on this task" gate - used by start(), submit(), and
      * destroyDeliverable(). Deliberately stays open to the assignee: those routes
      * are how an assignee progresses their own work and manages their own
      * submitted files/links before review, and must keep working for them.
@@ -41,7 +41,7 @@ class TaskPolicy
      * PATCH /tasks/{task} directly and rewrite the title/description or reassign the
      * task to someone else, even though the UI never gave them that form. In a solo
      * project the same user simply holds the owner role, so this adds no friction for
-     * single-person use — they always pass this check on their own tasks.
+     * single-person use - they always pass this check on their own tasks.
      */
     public function edit(User $user, Task $task): bool
     {

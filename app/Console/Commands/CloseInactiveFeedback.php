@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Mail;
  * than something a person triggers. A ticket only qualifies once support has
  * actually weighed in at least once (a never-answered ticket sitting for 24h
  * is a support backlog problem, not something that should vanish on the
- * submitter) — see the whereHas() below.
+ * submitter) - see the whereHas() below.
  */
 class CloseInactiveFeedback extends Command
 {
@@ -81,7 +81,7 @@ class CloseInactiveFeedback extends Command
         return self::SUCCESS;
     }
 
-    /** Feedback submitters are guests by default — this always sends, same as FeedbackAdminController::notifySubmitter. */
+    /** Feedback submitters are guests by default - this always sends, same as FeedbackAdminController::notifySubmitter. */
     private function notifyEmail(Feedback $feedback): void
     {
         try {

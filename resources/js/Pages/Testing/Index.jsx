@@ -40,7 +40,7 @@ function formatWait(dateString) {
 
 // "submitted" tasks are waiting on submitted_at (time since the assignee handed it
 // off); "in_review" tasks are waiting on review_started_at (time since the current
-// reviewer picked it up) — these are two different clocks, not one continuous wait.
+// reviewer picked it up) - these are two different clocks, not one continuous wait.
 function waitTimestamp(task) {
     return task.status === 'in_review' ? task.review_started_at : task.submitted_at;
 }

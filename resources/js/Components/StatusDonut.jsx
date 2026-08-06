@@ -15,7 +15,7 @@ export default function StatusDonut({ tasksByStatus, total, size = 160, strokeWi
     const circumference = 2 * Math.PI * radius;
 
     // Start every mount at zero so the ring animates in, then flip to the
-    // real values a tick later — the CSS transition below does the rest.
+    // real values a tick later - the CSS transition below does the rest.
     const [drawn, setDrawn] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setDrawn(true));

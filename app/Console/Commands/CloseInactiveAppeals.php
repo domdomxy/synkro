@@ -14,10 +14,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Appeal counterpart to CloseInactiveFeedback. Appeals don't have a two-way
  * response thread the way tickets do (the appellant only ever sends one
- * message — the original appeal), so "a supporter has responded" here means
+ * message - the original appeal), so "a supporter has responded" here means
  * an admin used respondAppeal() to leave an interim note without deciding
  * it yet. An appeal nobody has looked at is a support backlog problem, not
- * something that should silently vanish on the person waiting on it — same
+ * something that should silently vanish on the person waiting on it - same
  * reasoning as CloseInactiveFeedback's whereHas('responses') guard.
  */
 class CloseInactiveAppeals extends Command

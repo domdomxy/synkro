@@ -1,5 +1,5 @@
 // Matches, in order: an @mention token (@[Label](user:ID) or @[Label](role:token)),
-// a markdown-style link [label](url), or a bare http(s)/www URL. Order matters —
+// a markdown-style link [label](url), or a bare http(s)/www URL. Order matters -
 // the mention form is tried first since it also uses [label](...) syntax, and the
 // markdown link form is tried before the bare-URL branch so its URL (inside parens)
 // doesn't also get caught there.
@@ -14,17 +14,17 @@ function toHref(url) {
 
 /**
  * Renders `text` with links and @mentions turned into styled elements. Supports:
- *   - @mentions: @[Alex Chen](user:12) or @[managers](role:manager) — shown as a chip
- *   - Markdown-style: [Open a ticket](https://example.com/feedback) — shows custom label text
- *   - Bare URLs: https://example.com or www.example.com — shown as-is
+ *   - @mentions: @[Alex Chen](user:12) or @[managers](role:manager) - shown as a chip
+ *   - Markdown-style: [Open a ticket](https://example.com/feedback) - shows custom label text
+ *   - Bare URLs: https://example.com or www.example.com - shown as-is
  *
  * Safe against XSS by construction: React escapes all text nodes, and we never
  * use dangerouslySetInnerHTML. The URL portion of both forms excludes quotes,
  * angle brackets, and (for the markdown form) parens, so a match can never
  * break out of the href="..." attribute or the surrounding (...) syntax, and
- * only ever produces http(s):// URLs — never javascript: or similar. The mention
+ * only ever produces http(s):// URLs - never javascript: or similar. The mention
  * form's target is restricted to `user:<digits>` or `role:<lowercase letters>`,
- * so it never becomes a clickable link at all — just a plain styled span.
+ * so it never becomes a clickable link at all - just a plain styled span.
  *
  * Pair with a `whitespace-pre-wrap` container to also preserve line breaks.
  */

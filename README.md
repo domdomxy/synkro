@@ -9,7 +9,7 @@ Built with Laravel 13, Inertia.js, and React.
 ## Features
 
 **Projects & tasks**
-- Role-based project membership — Owner, Manager, Member, Tester — with per-project permissions
+- Role-based project membership - Owner, Manager, Member, Tester - with per-project permissions
 - Task lifecycle: To Do → In Progress → Submitted → In Review → Done, with reopen/reject flow
 - File and link deliverables per task, with ZIP export of a project's submitted work
 - Per-project notes/checklists, comments, pinning, and archiving
@@ -18,7 +18,7 @@ Built with Laravel 13, Inertia.js, and React.
 **Notifications & activity**
 - In-app notification bell plus emailed notifications (queued), with per-notification-type
   preferences
-- Optional real-time updates over WebSockets (Laravel Reverb) — live notifications, project
+- Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, project
   updates, and admin alerts
 - Personal activity feed, login history, and account activity log
 - Personal dashboard with task/project stats and an activity chart (day/week/month/custom range)
@@ -76,7 +76,7 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
 ### Notes on configuration
 
 - **Queue worker:** notification emails are queued (`QUEUE_CONNECTION=database` by default), so
-  a queue worker must be running for emails to actually send — `composer run dev` already
+  a queue worker must be running for emails to actually send - `composer run dev` already
   includes one.
 - **Mail:** defaults to the `log` driver, so outgoing emails are written to the log instead of
   sent. Configure a real mail driver in `.env` to send actual emails.

@@ -60,7 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // with project membership. The "you may have left or been removed" wording only shows
             // up when a policy attaches it explicitly - see ProjectPolicy::view().
             $defaultMessage = $status === 404
-                ? "That no longer exists — it may have been deleted."
+                ? "That no longer exists - it may have been deleted."
                 : "You don't have permission to do that.";
 
             $message = $status === 404

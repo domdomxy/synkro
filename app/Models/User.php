@@ -199,7 +199,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'account.deletion_requested',
             'Confirm account deletion',
             [
-                'We received a request to delete your Synkro account. Nothing has been deleted yet — confirming starts a grace period during which you can still restore it by logging back in.',
+                'We received a request to delete your Synkro account. Nothing has been deleted yet - confirming starts a grace period during which you can still restore it by logging back in.',
                 "This link expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email and your account will stay exactly as it is.",
             ],
             $confirmUrl,
@@ -212,7 +212,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * account is scheduled for deletion" screen, store it (hashed, like a
      * password) with a 10-minute expiry, and email it. Replaces re-entering
      * the account password there, since the login attempt that landed the
-     * person on that screen already proved password knowledge — this step
+     * person on that screen already proved password knowledge - this step
      * instead proves they still control the inbox.
      */
     public function sendAccountRestoreCodeNotification(): void
@@ -232,7 +232,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Your account restore code',
             [
                 'Enter the code below to restore your Synkro account and everything in it, exactly as it was.',
-                "This code expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email — your account will stay scheduled for deletion.",
+                "This code expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email - your account will stay scheduled for deletion.",
             ],
             null,
             null,
@@ -266,7 +266,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * to perform an irreversible admin action, and email it to their own
      * address (proving continued access to the inbox, on top of the session
      * they're already authenticated with). $purpose scopes the code to a
-     * specific action — see verifyAdminConfirmationCode() below.
+     * specific action - see verifyAdminConfirmationCode() below.
      */
     public function sendAdminConfirmationCodeNotification(string $purpose): void
     {
@@ -287,7 +287,7 @@ class User extends Authenticatable implements MustVerifyEmail
             [
                 'You (or someone signed into your admin account) requested a permanent, unrecoverable action on Synkro.',
                 "Enter the code below to confirm it. This code expires in {$expireMinutes} minutes.",
-                "If you didn't request this, secure your account immediately — change your password and review your active sessions.",
+                "If you didn't request this, secure your account immediately - change your password and review your active sessions.",
             ],
             null,
             null,
@@ -347,7 +347,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * Email a 6-digit password reset code, styled the same as every other
      * branded Synkro email. Called directly with a plaintext code by
      * PasswordResetLinkController (the code itself is hashed before it's
-     * ever persisted) — this bypasses Laravel's link-based password broker
+     * ever persisted) - this bypasses Laravel's link-based password broker
      * entirely, so unlike the old sendPasswordResetNotification() this isn't
      * invoked automatically by the framework.
      */

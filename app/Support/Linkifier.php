@@ -6,8 +6,8 @@ class Linkifier
 {
     /**
      * Turns links in $html into real, clickable <a> tags. Supports two forms:
-     *   - Markdown-style: [Open a ticket](https://example.com/feedback) — custom label text
-     *   - Bare URLs: https://example.com or www.example.com — shown as-is
+     *   - Markdown-style: [Open a ticket](https://example.com/feedback) - custom label text
+     *   - Bare URLs: https://example.com or www.example.com - shown as-is
      *
      * Safe by construction:
      * - Splits on tags first and only touches text nodes, so existing markup
@@ -22,7 +22,7 @@ class Linkifier
      *   https:// prefix), so a javascript: or data: URL can't be produced.
      *
      * Intended to run once, server-side, right after the existing strip_tags
-     * allow-list sanitization and before saving — the stored HTML then already
+     * allow-list sanitization and before saving - the stored HTML then already
      * contains real anchors, so nothing extra is needed on the display side.
      */
     public static function linkify(?string $html): ?string
@@ -44,7 +44,7 @@ class Linkifier
 
         foreach ($parts as &$part) {
             if ($part === '' || $part[0] === '<') {
-                continue; // an existing tag — leave it untouched
+                continue; // an existing tag - leave it untouched
             }
 
             $part = preg_replace_callback($linkPattern, function ($m) use ($class) {
@@ -82,12 +82,12 @@ class Linkifier
      * attributes through unsanitized would be an XSS hole) every time they're saved,
      * including on an edit of content that was already linkified on a previous save.
      * Without this step, strip_tags() would delete the <a> wrapper but leave the
-     * inert label text behind — silently turning a working link back into plain text
+     * inert label text behind - silently turning a working link back into plain text
      * on every subsequent edit. Calling this first converts any existing anchors back
      * into plain markdown text, so strip_tags() has nothing to strip and linkify()
      * re-creates the exact same anchor afterward.
      *
-     * Any markup nested inside the label is stripped in the process — linkify() only
+     * Any markup nested inside the label is stripped in the process - linkify() only
      * ever produces plain-text link bodies, so there's normally nothing nested there,
      * but this keeps a stray tag from leaking into the markdown form either way.
      */

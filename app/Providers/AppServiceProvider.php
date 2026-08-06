@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         // implements ShouldQueue, so with the default QUEUE_CONNECTION=database and
         // no queue worker running, a brand-new user could land on the verify-email
         // code screen with no code ever generated or emailed until a worker picked
-        // the job up (if one ever did) — they'd never actually encounter the code
+        // the job up (if one ever did) - they'd never actually encounter the code
         // flow on signup. Sending it directly guarantees the email goes out before
         // the redirect happens.
 

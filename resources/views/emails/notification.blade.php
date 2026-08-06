@@ -25,7 +25,7 @@
        darken the page background (#f3f4f6) and the card (#ffffff) into two different dark
        grays. Worse: Gmail's own Android/iOS app already wraps every message in its own dark
        card chrome, so giving our own outer wrapper a *third* distinct dark fill just creates
-       another visible seam one layer further out — a card inside a card inside Gmail's own
+       another visible seam one layer further out - a card inside a card inside Gmail's own
        card. Making the outer background transparent lets it inherit whatever surface color
        the client is already using, and defining the card with a thin border instead of a
        background-color difference (the same approach Google's own emails use) gives it
@@ -51,7 +51,7 @@
 
     /* Gmail's own dark-mode rewriting doesn't reliably honor prefers-color-scheme in every
        client (notably some Gmail Android/iOS versions), but it does tag elements it has
-       auto-darkened with a data-ogsc attribute that CSS can target — so the same overrides
+       auto-darkened with a data-ogsc attribute that CSS can target - so the same overrides
        are duplicated against that selector as a second line of defense. */
     [data-ogsc] .email-bg { background-color:transparent !important; }
     [data-ogsc] .email-card { background-color:transparent !important; border:1px solid #374151 !important; }
