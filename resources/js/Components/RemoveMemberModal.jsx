@@ -1,5 +1,6 @@
 import Modal from '@/Components/Modal';
 import InputError from '@/Components/InputError';
+import Spinner from '@/Components/Spinner';
 import { useForm } from '@inertiajs/react';
 
 export default function RemoveMemberModal({ project, member, show, onClose }) {
@@ -51,8 +52,9 @@ export default function RemoveMemberModal({ project, member, show, onClose }) {
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                     >
+                        {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         Remove Member
                     </button>
                 </div>

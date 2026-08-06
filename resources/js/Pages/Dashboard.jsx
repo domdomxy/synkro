@@ -6,6 +6,7 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import { NoteList, notePreview } from '@/utils/noteFormat';
 import useConfirm from '@/hooks/useConfirm';
 import StatCard from '@/Components/StatCard';
+import Spinner from '@/Components/Spinner';
 import FilterSelect from '@/Components/FilterSelect';
 import StatusDonut from '@/Components/StatusDonut';
 import ChartControlsMenu from '@/Components/ChartControlsMenu';
@@ -390,7 +391,8 @@ function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
                     </div>
                     {editForm.errors.remind_at && <p className="text-xs text-red-500">{editForm.errors.remind_at}</p>}
                     <div className="flex gap-2">
-                        <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                        <button type="submit" disabled={editForm.processing} className="flex flex-1 items-center justify-center rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                            {editForm.processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
                             Save
                         </button>
                         <button
@@ -615,7 +617,10 @@ function RemindersPanel({ reminders, highlightedReminderId }) {
                         <FilterSelect className="w-36 shrink-0" value={data.repeat_interval} onChange={(v) => setData('repeat_interval', v)} options={REPEAT_OPTIONS} />
                     </div>
                     {errors.remind_at && <p className="text-xs text-red-500">{errors.remind_at}</p>}
-                    <button type="submit" disabled={processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Set Reminder</button>
+                    <button type="submit" disabled={processing} className="flex w-full items-center justify-center rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                        {processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
+                        Set Reminder
+                    </button>
                 </form>
             )}
 

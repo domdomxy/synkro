@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import SavedIndicator from '@/Components/SavedIndicator';
+import Spinner from '@/Components/Spinner';
 import EmailValidityHint from '@/Components/EmailValidityHint';
 import { isValidEmail } from '@/utils/email';
 import { silentSubmit } from '@/utils/silentSubmit';
@@ -144,7 +145,10 @@ export default function UpdateAccountInformation({
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing || !hasChanges}>{processing ? 'Saving…' : 'Save'}</PrimaryButton>
+                    <PrimaryButton disabled={processing || !hasChanges}>
+                        {processing && <Spinner className="mr-2 h-4 w-4" />}
+                        {processing ? 'Saving…' : 'Save'}
+                    </PrimaryButton>
 
                     <SavedIndicator show={recentlySuccessful} />
                 </div>

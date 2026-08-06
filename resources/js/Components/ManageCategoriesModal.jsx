@@ -1,6 +1,7 @@
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Spinner from '@/Components/Spinner';
 import InputError from '@/Components/InputError';
 import CategoryIcon, { ICON_OPTIONS } from '@/Components/CategoryIcon';
 import { useForm, usePage } from '@inertiajs/react';
@@ -66,7 +67,10 @@ function CategoryRow({ category, confirm }) {
                 <IconPicker value={form.data.icon} onChange={(icon) => form.setData('icon', icon)} />
                 <div className="flex justify-end gap-2 pt-1">
                     <SecondaryButton type="button" onClick={() => { setEditing(false); form.reset(); }}>Cancel</SecondaryButton>
-                    <PrimaryButton disabled={form.processing || !form.data.label.trim()}>Save</PrimaryButton>
+                    <PrimaryButton disabled={form.processing || !form.data.label.trim()}>
+                        {form.processing && <Spinner className="mr-2 h-4 w-4" />}
+                        Save
+                    </PrimaryButton>
                 </div>
             </form>
         );
@@ -168,7 +172,10 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
                     <InputError message={addForm.errors.label} />
                     <IconPicker value={addForm.data.icon} onChange={(icon) => addForm.setData('icon', icon)} />
                     <div className="flex justify-end pt-1">
-                        <PrimaryButton disabled={addForm.processing || !addForm.data.label.trim()}>Add Category</PrimaryButton>
+                        <PrimaryButton disabled={addForm.processing || !addForm.data.label.trim()}>
+                        {addForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                        Add Category
+                    </PrimaryButton>
                     </div>
                 </form>
 

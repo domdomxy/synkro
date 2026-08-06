@@ -3,6 +3,7 @@ import AvatarCropperModal from '@/Components/AvatarCropperModal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
+import Spinner from '@/Components/Spinner';
 import InputError from '@/Components/InputError';
 import { silentSubmit } from '@/utils/silentSubmit';
 import { useForm, usePage, router } from '@inertiajs/react';
@@ -16,6 +17,7 @@ export default function UpdateAvatarForm({ className = '' }) {
     const [preview, setPreview] = useState(null); // object URL of the cropped result
     const { data, setData, errors, setError, reset } = useForm({ avatar: null });
     const [processing, setProcessing] = useState(false);
+    const [removing, setRemoving] = useState(false);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const pickFile = () => fileInput.current.click();
@@ -65,10 +67,12 @@ export default function UpdateAvatarForm({ className = '' }) {
 
     const removeAvatar = async () => {
         if (await confirm('This cannot be undone.', { title: 'Remove Avatar?', danger: true, confirmLabel: 'Remove' })) {
+            setRemoving(true);
             const result = await silentSubmit(route('account.avatar.destroy'), { method: 'DELETE' });
             if (result.ok) {
                 router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
             }
+            setRemoving(false);
         }
     };
 
@@ -91,7 +95,10 @@ export default function UpdateAvatarForm({ className = '' }) {
 
                         {preview && (
                             <>
-                                <PrimaryButton disabled={processing}>{processing ? 'Saving…' : 'Save Avatar'}</PrimaryButton>
+                                <PrimaryButton disabled={processing}>
+                                    {processing && <Spinner className="mr-2 h-4 w-4" />}
+                                    {processing ? 'Saving…' : 'Save Avatar'}
+                                </PrimaryButton>
                                 <button type="button" onClick={cancelPreview} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                     Cancel
                                 </button>
@@ -99,8 +106,9 @@ export default function UpdateAvatarForm({ className = '' }) {
                         )}
 
                         {!preview && user.avatar_path && (
-                            <DangerButton type="button" onClick={removeAvatar}>
-                                Remove Avatar
+                            <DangerButton type="button" onClick={removeAvatar} disabled={removing}>
+                                {removing && <Spinner className="mr-2 h-4 w-4" />}
+                                {removing ? 'Removing…' : 'Remove Avatar'}
                             </DangerButton>
                         )}
                     </div>

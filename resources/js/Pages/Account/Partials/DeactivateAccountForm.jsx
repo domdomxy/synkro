@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import PasswordInput from '@/Components/PasswordInput';
+import Spinner from '@/Components/Spinner';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -76,8 +77,9 @@ export default function DeactivateAccountForm({ className = '' }) {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                            className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                         >
+                            {processing && <Spinner className="mr-2 h-4 w-4" />}
                             Deactivate Account
                         </button>
                     </div>

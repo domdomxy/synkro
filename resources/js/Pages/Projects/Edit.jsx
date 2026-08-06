@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Spinner from '@/Components/Spinner';
 import { Head, useForm } from '@inertiajs/react';
 import BackButton from '@/Components/BackButton';
 import useConfirm from '@/hooks/useConfirm';
@@ -41,7 +42,10 @@ export default function Edit({ project }) {
                             <textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" rows={4} />
                             <InputError message={errors.description} className="mt-2" />
                         </div>
-                        <PrimaryButton disabled={processing}>Save Changes</PrimaryButton>
+                        <PrimaryButton disabled={processing}>
+                            {processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Save Changes
+                        </PrimaryButton>
                     </form>
                 </div>
             </div>

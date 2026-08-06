@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import PasswordInput from '@/Components/PasswordInput';
+import Spinner from '@/Components/Spinner';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -75,8 +76,9 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
                     type="button"
                     onClick={cancelDeletion}
                     disabled={cancelForm.processing}
-                    className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                    className="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 >
+                    {cancelForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                     Cancel Deletion Request
                 </button>
             </section>
@@ -144,8 +146,9 @@ export default function DeleteUserForm({ className = '', deletionRequestedAt = n
                         <button
                             type="submit"
                             disabled={processing}
-                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                            className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                         >
+                            {processing && <Spinner className="mr-2 h-4 w-4" />}
                             Send Confirmation Email
                         </button>
                     </div>

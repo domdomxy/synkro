@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
+import Spinner from '@/Components/Spinner';
 import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import TaskBoard from '@/Components/TaskBoard';
@@ -319,7 +320,10 @@ function NoteEditForm({ editForm, onSubmit, onCancel }) {
                 <button type="button" onClick={addBlankItem} className="text-xs font-medium text-indigo-500 hover:underline">+ Add item</button>
                 <InputError message={editForm.errors.items} />
                 <div className="flex gap-2 pt-1">
-                    <button type="submit" disabled={editForm.processing} className="flex-1 rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save</button>
+                    <button type="submit" disabled={editForm.processing} className="flex flex-1 items-center justify-center rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                        {editForm.processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
+                        Save
+                    </button>
                     <button type="button" onClick={onCancel} className="flex-1 rounded-md bg-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Cancel</button>
                 </div>
             </form>
@@ -492,7 +496,10 @@ function NotesPanel({ project, myNotes }) {
                     <input type="text" placeholder="Title (e.g. Authentication)" value={newForm.data.title} onChange={(e) => newForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
                     <textarea placeholder="One checklist item per line" value={newForm.data.itemsText} onChange={(e) => newForm.setData('itemsText', e.target.value)} rows={3} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
                     <InputError message={newForm.errors.items} />
-                    <button type="submit" disabled={newForm.processing} className="w-full rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">Save Checklist</button>
+                    <button type="submit" disabled={newForm.processing} className="flex w-full items-center justify-center rounded-md bg-indigo-600 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                        {newForm.processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
+                        Save Checklist
+                    </button>
                 </form>
             )}
 
@@ -622,8 +629,9 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                        className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
                     >
+                        {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         {form.processing ? 'Leaving...' : 'Leave Project'}
                     </button>
                 </div>
@@ -1129,7 +1137,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                 <InputLabel htmlFor="role" value="Role" />
                                                 <FilterSelect id="role" className="mt-1" value={memberForm.data.role} onChange={(v) => memberForm.setData('role', v)} options={ROLE_OPTIONS} />
                                             </div>
-                                            <button type="submit" disabled={memberForm.processing} className="rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                            <button type="submit" disabled={memberForm.processing} className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                                {memberForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                                                 Send Invitation
                                             </button>
                                         </form>
@@ -1293,7 +1302,10 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <PrimaryButton disabled={taskForm.processing}>Create Task</PrimaryButton>
+                                                    <PrimaryButton disabled={taskForm.processing}>
+                                                        {taskForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                                                        Create Task
+                                                    </PrimaryButton>
                                                     <SecondaryButton type="button" onClick={() => setShowNewTaskForm(false)}>Cancel</SecondaryButton>
                                                 </div>
                                             </form>

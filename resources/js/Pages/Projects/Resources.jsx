@@ -4,6 +4,7 @@ import Modal from '@/Components/Modal';
 import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
+import Spinner from '@/Components/Spinner';
 import useConfirm from '@/hooks/useConfirm';
 import { Head, useForm, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -133,13 +134,14 @@ function DialogCancelButton({ onClick, disabled, children = 'Cancel' }) {
     );
 }
 
-function DialogSubmitButton({ disabled, children }) {
+function DialogSubmitButton({ disabled, loading, children }) {
     return (
         <button
             type="submit"
             disabled={disabled}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
         >
+            {loading && <Spinner className="mr-2 h-4 w-4" />}
             {children}
         </button>
     );
@@ -356,7 +358,7 @@ function AddResourcesModal({ show, onClose, project }) {
 
                 <DialogActions>
                     <DialogCancelButton onClick={close} disabled={processing} />
-                    <DialogSubmitButton disabled={processing || totalCount === 0}>
+                    <DialogSubmitButton disabled={processing || totalCount === 0} loading={processing}>
                         {processing
                             ? 'Adding...'
                             : totalCount > 0
@@ -526,7 +528,7 @@ function EditResourceModal({ resource, onClose }) {
 
                 <DialogActions>
                     <DialogCancelButton onClick={close} disabled={processing} />
-                    <DialogSubmitButton disabled={processing}>{processing ? 'Saving...' : 'Save Changes'}</DialogSubmitButton>
+                    <DialogSubmitButton disabled={processing} loading={processing}>{processing ? 'Saving...' : 'Save Changes'}</DialogSubmitButton>
                 </DialogActions>
             </form>
         </Modal>

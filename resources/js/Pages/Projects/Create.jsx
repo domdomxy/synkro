@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Spinner from '@/Components/Spinner';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { Head, useForm } from '@inertiajs/react';
 
@@ -33,7 +34,10 @@ export default function Create() {
                             />
                             <InputError message={errors.description} className="mt-2" />
                         </div>
-                        <PrimaryButton disabled={processing}>Create Project</PrimaryButton>
+                        <PrimaryButton disabled={processing}>
+                            {processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Create Project
+                        </PrimaryButton>
                     </form>
                 </div>
             </div>

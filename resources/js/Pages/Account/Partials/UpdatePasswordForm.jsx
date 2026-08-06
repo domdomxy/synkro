@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import PasswordInput from '@/Components/PasswordInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import SavedIndicator from '@/Components/SavedIndicator';
+import Spinner from '@/Components/Spinner';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { silentSubmit } from '@/utils/silentSubmit';
 import { useForm } from '@inertiajs/react';
@@ -135,7 +136,10 @@ export default function UpdatePasswordForm({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing || !hasChanges}>{processing ? 'Saving…' : 'Save'}</PrimaryButton>
+                    <PrimaryButton disabled={processing || !hasChanges}>
+                        {processing && <Spinner className="mr-2 h-4 w-4" />}
+                        {processing ? 'Saving…' : 'Save'}
+                    </PrimaryButton>
 
                     <SavedIndicator show={recentlySuccessful} />
                 </div>

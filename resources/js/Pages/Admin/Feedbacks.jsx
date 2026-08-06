@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BackButton from '@/Components/BackButton';
+import Spinner from '@/Components/Spinner';
 import Linkify from '@/Components/Linkify';
 import FilterSelect from '@/Components/FilterSelect';
 import FiltersMenu from '@/Components/FiltersMenu';
@@ -201,8 +202,9 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
                             <button
                                 type="submit"
                                 disabled={updateForm.processing || !updateForm.data.message.trim()}
-                                className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                             >
+                                {updateForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                                 {updateForm.data.status !== feedback.status ? 'Update Status & Send' : 'Send Message'}
                             </button>
                         </form>

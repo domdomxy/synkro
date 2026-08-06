@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Spinner from '@/Components/Spinner';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
@@ -552,7 +553,10 @@ export default function Index({ projects, showingArchived }) {
                     </div>
                     <div className="mt-6 flex justify-end gap-2">
                         <SecondaryButton onClick={closeCreateModal}>Cancel</SecondaryButton>
-                        <PrimaryButton disabled={createForm.processing}>Create Project</PrimaryButton>
+                        <PrimaryButton disabled={createForm.processing}>
+                            {createForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Create Project
+                        </PrimaryButton>
                     </div>
                 </form>
             </Modal>

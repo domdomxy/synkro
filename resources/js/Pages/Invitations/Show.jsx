@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import Spinner from '@/Components/Spinner';
 import useConfirm from '@/hooks/useConfirm';
 
 function StateCard({ iconBg, iconColor, icon, children }) {
@@ -162,15 +163,23 @@ export default function Show({ invitation, rejoinBlocked, revoked }) {
 
                 <div className="mt-8 flex gap-3">
                     <button onClick={deny} disabled={denyForm.processing} className={`flex-1 ${secondaryBtn}`}>
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        {denyForm.processing ? (
+                            <Spinner className="h-4 w-4" />
+                        ) : (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        )}
                         {denyForm.processing ? 'Declining…' : 'Decline'}
                     </button>
                     <button onClick={accept} disabled={acceptForm.processing} className={`flex-1 ${primaryBtn}`}>
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                        {acceptForm.processing ? (
+                            <Spinner className="h-4 w-4" />
+                        ) : (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        )}
                         {acceptForm.processing ? 'Accepting…' : 'Accept'}
                     </button>
                 </div>

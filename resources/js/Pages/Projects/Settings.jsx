@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
+import Spinner from '@/Components/Spinner';
 import BackButton from '@/Components/BackButton';
 import Avatar from '@/Components/Avatar';
 import FilterSelect from '@/Components/FilterSelect';
@@ -177,7 +178,10 @@ export default function Settings({ project, role }) {
                             </div>
                             {!isTrashed && (
                                 <div className="flex items-center gap-3">
-                                    <PrimaryButton disabled={editForm.processing || !hasUnsavedChanges}>Save Changes</PrimaryButton>
+                                    <PrimaryButton disabled={editForm.processing || !hasUnsavedChanges}>
+                                        {editForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                                        Save Changes
+                                    </PrimaryButton>
                                     {hasUnsavedChanges && (
                                         <span className="text-sm text-amber-600 dark:text-amber-400">You have unsaved changes</span>
                                     )}
@@ -221,6 +225,7 @@ export default function Settings({ project, role }) {
                                     )}
 
                                     <SecondaryButton type="submit" disabled={!transferForm.data.user_id || transferForm.processing}>
+                                        {transferForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                                         Transfer
                                     </SecondaryButton>
                                 </form>
@@ -247,6 +252,7 @@ export default function Settings({ project, role }) {
                                     <div className="flex flex-wrap items-center gap-3">
                                         <SecondaryButton onClick={cancelDeletion}>Cancel Deletion Request</SecondaryButton>
                                         <SecondaryButton onClick={resendDeletionEmail} disabled={resending || cooldown > 0}>
+                                            {resending && <Spinner className="mr-2 h-4 w-4" />}
                                             {cooldown > 0 ? `Resend Confirmation Email (${cooldown}s)` : 'Resend Confirmation Email'}
                                         </SecondaryButton>
                                     </div>

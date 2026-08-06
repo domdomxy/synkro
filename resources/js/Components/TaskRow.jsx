@@ -4,6 +4,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import Spinner from '@/Components/Spinner';
 import TextInput from '@/Components/TextInput';
 import RichTextEditor from '@/Components/RichTextEditor';
 import RichTextContent from '@/Components/RichTextContent';
@@ -546,8 +547,9 @@ function CommentEntry({
                             <button
                                 type="submit"
                                 disabled={editCommentForm.processing}
-                                className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
                             >
+                                {editCommentForm.processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
                                 Save
                             </button>
                             <button
@@ -1253,9 +1255,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                 disabled={commentForm.processing || !commentForm.data.body.trim()}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
             >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                {commentForm.processing ? (
+                    <Spinner className="h-4 w-4" />
+                ) : (
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                )}
             </button>
         </form>
     );
@@ -1292,6 +1298,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 });
                             }}
                         >
+                            {resolveKeepForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                             Keep Submission
                         </SecondaryButton>
                         <DangerButton
@@ -1305,6 +1312,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 }
                             }}
                         >
+                            {resolveResetForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                             Reset Task
                         </DangerButton>
                     </div>
@@ -1410,7 +1418,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>Save Changes</PrimaryButton>
+                        <PrimaryButton disabled={editForm.processing || !editForm.isDirty} title={!editForm.isDirty ? 'No changes to save' : undefined}>
+                            {editForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Save Changes
+                        </PrimaryButton>
                         <button type="button" onClick={() => { editForm.reset(); setIsEditing(false); }} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
                     </div>
                 </form>
@@ -1685,8 +1696,9 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 <button
                                     type="submit"
                                     disabled={submitForm.processing}
-                                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40"
                                 >
+                                    {submitForm.processing && <Spinner className="mr-1.5 h-4 w-4" />}
                                     {submitForm.progress ? `Uploading ${submitForm.progress.percentage}%` : task.status === 'submitted' ? 'Add More' : 'Submit Work'}
                                 </button>
                                 <button type="button" disabled={submitForm.processing} onClick={() => { setShowAddPanel(false); submitForm.reset(); }} className="text-sm text-gray-500 hover:underline disabled:opacity-50 dark:text-gray-400">Cancel</button>
@@ -1776,8 +1788,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     />
                     <InputError message={reviewForm.errors.feedback} className="mt-1" />
                     <div className="flex gap-2">
-                        <PrimaryButton disabled={reviewForm.processing} onClick={() => sendReview('approve')}>Approve</PrimaryButton>
-                        <DangerButton disabled={reviewForm.processing} onClick={() => sendReview('reject')}>Reject</DangerButton>
+                        <PrimaryButton disabled={reviewForm.processing} onClick={() => sendReview('approve')}>
+                            {reviewForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Approve
+                        </PrimaryButton>
+                        <DangerButton disabled={reviewForm.processing} onClick={() => sendReview('reject')}>
+                            {reviewForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                            Reject
+                        </DangerButton>
                     </div>
                 </div>
             )}
@@ -1796,7 +1814,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         />
                         <InputError message={reopenForm.errors.feedback} className="mt-1" />
                         <div className="flex gap-2">
-                            <PrimaryButton disabled={reopenForm.processing}>Send Back for Changes</PrimaryButton>
+                            <PrimaryButton disabled={reopenForm.processing}>
+                                {reopenForm.processing && <Spinner className="mr-2 h-4 w-4" />}
+                                Send Back for Changes
+                            </PrimaryButton>
                             <button type="button" onClick={() => setShowReopenPanel(false)} className="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancel</button>
                         </div>
                     </form>
@@ -1913,9 +1934,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                         title="Save"
                                                         className="mt-0.5 shrink-0 text-gray-400 hover:text-green-500 disabled:opacity-50 dark:text-gray-500"
                                                     >
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
+                                                        {editChecklistItemForm.processing ? (
+                                                            <Spinner className="h-3.5 w-3.5" />
+                                                        ) : (
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -2020,7 +2045,10 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     placeholder="Add a checklist item…"
                                     className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
-                                <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>Add</SecondaryButton>
+                                <SecondaryButton type="submit" disabled={checklistForm.processing || !checklistForm.data.title.trim()}>
+                                    {checklistForm.processing && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
+                                    Add
+                                </SecondaryButton>
                             </div>
                             <p className={`text-right text-xs ${checklistForm.data.title.length >= CHECKLIST_ITEM_MAX_LENGTH ? 'text-red-500' : checklistForm.data.title.length >= CHECKLIST_ITEM_MAX_LENGTH - 20 ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500'}`}>
                                 {checklistForm.data.title.length}/{CHECKLIST_ITEM_MAX_LENGTH}

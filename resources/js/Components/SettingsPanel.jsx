@@ -3,6 +3,7 @@ import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
 import TrashSection from '@/Components/TrashSection';
 import DeviceSessionsSection from '@/Components/DeviceSessionsSection';
+import Spinner from '@/Components/Spinner';
 import { Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
 import { silentSubmit } from '@/utils/silentSubmit';
@@ -834,8 +835,9 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                                 <button
                                     type="submit"
                                     disabled={notificationSettingsProcessing || !notificationSettingsHasChanges}
-                                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50 sm:px-4 sm:py-2 sm:text-sm"
+                                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50 sm:px-4 sm:py-2 sm:text-sm"
                                 >
+                                    {notificationSettingsProcessing && <Spinner className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                                     Save Preferences
                                 </button>
                             </div>

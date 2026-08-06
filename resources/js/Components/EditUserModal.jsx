@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import EmailValidityHint from '@/Components/EmailValidityHint';
+import Spinner from '@/Components/Spinner';
 import { isValidEmail } from '@/utils/email';
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
@@ -80,8 +81,9 @@ export default function EditUserModal({ user, show, onClose }) {
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                     >
+                        {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         Save Changes
                     </button>
                 </div>
