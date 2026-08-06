@@ -127,18 +127,21 @@ class SuspensionAppealController extends Controller
      * interim notes, and final outcomes) - what the "note left on your
      * appeal" / "appeal auto-closed" notifications link to, since neither of
      * those includes the note itself and a still-suspended user can't log in
-     * to find it any other way. Two ways in: a signed link (email, or the
+     * to find it any other way. Three ways in: a signed link (email, or the
      * in-app notification while still suspended and thus never actually
-     * authenticated - see AuthenticatedSessionController::store), or being
+     * authenticated - see AuthenticatedSessionController::store), being
      * logged in as this exact user (the in-app notification bell, once
-     * they're no longer suspended). Anything else is refused - this is
-     * someone's suspension history, not public.
+     * they're no longer suspended), or being logged in as an admin looking
+     * up a user's record (e.g. from Admin/Appeals or Admin/SuspensionLogs).
+     * Anything else is refused - this is someone's suspension history, not
+     * public.
      */
     public function history(Request $request, User $user)
     {
         $isSelf = auth()->check() && auth()->id() === $user->id;
+        $isAdmin = auth()->check() && auth()->user()->isAdmin();
 
-        abort_unless($isSelf || $request->hasValidSignature(), 403);
+        abort_unless($isSelf || $isAdmin || $request->hasValidSignature(), 403);
 
         $appeals = $user->appeals()->with(['admin', 'responses.admin'])->latest()->get();
         $suspensionLogs = SuspensionLog::where('user_id', $user->id)->with(['suspendedBy', 'liftedBy'])->latest()->get();
@@ -151,6 +154,15 @@ class SuspensionAppealController extends Controller
             // brought them here was actually about, so the page can scroll to
             // and highlight it rather than leaving them to hunt through the list.
             'highlight' => $request->query('note'),
+            // Current status, so the page can lead with "where things stand"
+            // instead of making the reader infer it from the log below.
+            'isSuspended' => $user->is_suspended,
+            'suspendedUntil' => $user->suspended_until?->toIso8601String(),
+            'suspensionReason' => $user->suspension_reason,
+            // Lets the page show an "Admin view" indicator and a way back to
+            // the admin tools, without treating an admin looking up their
+            // own account as a special case.
+            'viewingAsAdmin' => $isAdmin && ! $isSelf,
         ]);
     }
 

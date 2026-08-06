@@ -10,7 +10,7 @@ import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
 import { cleanParams } from '@/utils/queryParams';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 function SearchIcon() {
@@ -50,36 +50,47 @@ function SuspensionLogRow({ log }) {
 
     return (
         <li className="border-b dark:border-gray-700 last:border-0">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-start gap-3 px-6 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            >
-                <span className="relative mt-0.5 h-8 w-8 shrink-0">
-                    <Avatar user={log.user} size="h-8 w-8" rounded="rounded-full" />
-                    <span
-                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${lifted ? 'text-green-500' : 'text-red-500'}`}
-                    >
-                        <StatusIcon lifted={lifted} className="h-2.5 w-2.5" />
-                    </span>
-                </span>
-                <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.user?.name ?? 'Deleted user'}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${
-                            lifted
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                        }`}>
-                            {lifted ? 'Lifted' : 'Active'}
+            <div className="flex w-full items-start gap-3 px-6 py-3 transition hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <button onClick={() => setOpen((v) => !v)} className="flex flex-1 items-start gap-3 text-left">
+                    <span className="relative mt-0.5 h-8 w-8 shrink-0">
+                        <Avatar user={log.user} size="h-8 w-8" rounded="rounded-full" />
+                        <span
+                            className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${lifted ? 'text-green-500' : 'text-red-500'}`}
+                        >
+                            <StatusIcon lifted={lifted} className="h-2.5 w-2.5" />
                         </span>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.user?.name ?? 'Deleted user'}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs ${
+                                lifted
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                            }`}>
+                                {lifted ? 'Lifted' : 'Active'}
+                            </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                            Suspended {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            {log.suspended_by?.name && <span> by {log.suspended_by.name}</span>}
+                        </p>
                     </div>
-                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                        Suspended {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                        {log.suspended_by?.name && <span> by {log.suspended_by.name}</span>}
-                    </p>
-                </div>
-                <ChevronIcon open={open} />
-            </button>
+                    <ChevronIcon open={open} />
+                </button>
+                {log.user?.id && (
+                    <Link
+                        href={route('appeal.history', log.user.id)}
+                        target="_blank"
+                        title="View full suspension & appeal history"
+                        className="mt-0.5 shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-600 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </Link>
+                )}
+            </div>
 
             {open && (
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">

@@ -79,30 +79,44 @@ function AppealItem({ appeal }) {
 
     return (
         <div className="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <button onClick={() => setOpen((v) => !v)} className="flex w-full items-start gap-3 p-4 text-left">
-                <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {appeal.user?.name ?? 'Unknown user'}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${badgeStyle}`}>
-                            {badgeLabel}
-                        </span>
-                        {!appeal.user?.is_suspended && (
-                            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                                No longer suspended
+            <div className="flex w-full items-start gap-3 p-4">
+                <button onClick={() => setOpen((v) => !v)} className="flex flex-1 items-start gap-3 text-left">
+                    <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {appeal.user?.name ?? 'Unknown user'}
                             </span>
-                        )}
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${badgeStyle}`}>
+                                {badgeLabel}
+                            </span>
+                            {!appeal.user?.is_suspended && (
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                                    No longer suspended
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500">
+                            <span>{appeal.user?.email}</span>
+                            <span>{new Date(appeal.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        </div>
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500">
-                        <span>{appeal.user?.email}</span>
-                        <span>{new Date(appeal.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                    </div>
-                </div>
-                <svg className={`h-4 w-4 shrink-0 text-gray-400 transition-transform mt-1 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
+                    <svg className={`h-4 w-4 shrink-0 text-gray-400 transition-transform mt-1 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                {appeal.user?.id && (
+                    <Link
+                        href={route('appeal.history', appeal.user.id)}
+                        target="_blank"
+                        title="View full suspension & appeal history"
+                        className="mt-0.5 shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </Link>
+                )}
+            </div>
 
             {open && (
                 <div className="border-t border-gray-100 p-4 space-y-4 dark:border-gray-700">
@@ -179,7 +193,7 @@ function AppealItem({ appeal }) {
                                 <button
                                     onClick={sendNote}
                                     disabled={!note.trim() || sendingNote}
-                                    className="shrink-0 rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="w-full shrink-0 rounded-md bg-gray-600 px-3 py-2 text-xs font-medium text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
                                 >
                                     Send
                                 </button>
@@ -205,22 +219,22 @@ function AppealItem({ appeal }) {
                                 />
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                                 <button
                                     onClick={() => decide('approved')}
-                                    className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500"
+                                    className="rounded-md bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-500 sm:py-1.5"
                                 >
                                     Lift Suspension
                                 </button>
                                 <button
                                     onClick={() => decide('rejected')}
-                                    className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500"
+                                    className="rounded-md bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-500 sm:py-1.5"
                                 >
                                     Rejected
                                 </button>
                                 <button
                                     onClick={() => setShowNote((v) => !v)}
-                                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 sm:py-1.5"
                                 >
                                     {showNote ? 'Hide Note' : 'Leave a Note'}
                                 </button>
@@ -308,7 +322,7 @@ export default function Appeals({ appeals, filters }) {
             <div className="py-12">
                 <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                     <div ref={toolbarRef} className="flex flex-wrap items-center gap-3">
-                        <div className="relative">
+                        <div className="relative w-full sm:w-64">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon />
                             </div>
@@ -317,7 +331,7 @@ export default function Appeals({ appeals, filters }) {
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && applySearch()}
                                 placeholder="Search by user name or email..."
-                                className="w-64 pl-9"
+                                className="w-full pl-9"
                             />
                         </div>
                         <FiltersMenu
@@ -345,11 +359,12 @@ export default function Appeals({ appeals, filters }) {
                                 {pendingCount} pending
                             </span>
                         )}
-                        <Link href={route('admin.suspension-logs')} className="ml-auto flex items-center gap-1.5 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <Link href={route('admin.suspension-logs')} className="ml-auto flex items-center gap-1.5 rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 sm:px-4">
+                            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
-                            Suspension Logs
+                            <span className="hidden sm:inline">Suspension Logs</span>
+                            <span className="sm:hidden">Logs</span>
                         </Link>
                     </div>
 
