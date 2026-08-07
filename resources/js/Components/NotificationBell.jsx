@@ -302,7 +302,7 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="absolute -right-10 z-50 mt-2 w-96 max-w-[calc(100vw-1rem)] rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:right-0">
+                <div className="fixed left-2 right-2 top-16 z-50 rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96">
                     <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</p>
                         <div className="flex gap-3">
@@ -372,7 +372,7 @@ export default function NotificationBell() {
                                     <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-3 text-left">
                                         <NotificationIcon causer={note.causer} style={style} size="h-8 w-8" />
                                         <span className="min-w-0 flex-1">
-                                            <span className={`block truncate text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                                            <span className={`block break-words text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                                                 {title}
                                             </span>
                                             {description && (
