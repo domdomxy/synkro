@@ -11,23 +11,40 @@ Built with Laravel 13, Inertia.js, and React.
 **Projects & tasks**
 - Role-based project membership - Owner, Manager, Member, Tester - with per-project permissions
 - Task lifecycle: To Do → In Progress → Submitted → In Review → Done, with reopen/reject flow
-- File and link deliverables per task, with ZIP export of a project's submitted work
-- Per-project notes/checklists, comments, pinning, and archiving
+- Kanban board with drag-and-drop, restricted to the status transitions your workflow allows,
+  plus a list view - pick whichever you prefer, per project, and it's remembered
+- Task dependencies with cycle detection and "blocked by" indicators on the list view
+- File and link deliverables per task, with type-aware icons and ZIP export of a project's
+  submitted work
+- A dedicated resources hub per project: files and links organized into folders, added one at a
+  time or as a drag-and-drop batch
+- Per-project notes and checklists, with checklist items that can sync live, two-way, into a
+  member's personal Notes; comments support @mentions, bare-URL and markdown-style links, rich
+  text with lists, and threaded replies
+- Reminders with countdown display, and a personal dashboard for setting them
+- Pinning and archiving at both the project and note level
 - Member invitations and ownership transfer
 
 **Notifications & activity**
 - In-app notification bell plus emailed notifications (queued), with per-notification-type
   preferences
-- Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, project
-  updates, and admin alerts
-- Personal activity feed, login history, and account activity log
-- Personal dashboard with task/project stats and an activity chart (day/week/month/custom range)
+- Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, checklist and
+  note sync, project updates, and admin alerts
+- Personal activity feed, login history with device/browser/location, and account activity log
+- Personal dashboard with task/project stats, an activity chart (day/week/month/custom range),
+  and a deadline calendar
 
 **Support & moderation**
-- Help & Feedback center: submit tickets, track status by ID, threaded replies
+- Help & Feedback center: submit categorized tickets, track status by ID, threaded replies
 - Suspension system with a user-facing appeal flow and admin review
 - Admin console: manage users, feedback tickets, project logs, suspension logs, and
   platform-wide analytics
+
+**Everywhere else**
+- Light, dark, and true-black themes, switchable anytime
+- Responsive layouts with touch-friendly interactions on mobile, including a swipe carousel on
+  the project page and touch drag-and-drop on the kanban board
+- Trusted-device session management, so you can see and revoke where you're signed in
 
 ## Tech stack
 
@@ -81,7 +98,8 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
 - **Mail:** defaults to the `log` driver, so outgoing emails are written to the log instead of
   sent. Configure a real mail driver in `.env` to send actual emails.
 - **Real-time features:** `BROADCAST_CONNECTION` defaults to `log` (no live updates). To enable
-  real-time notifications and project updates, configure Reverb credentials in `.env` and run:
+  real-time notifications, live note/checklist sync, and project updates, configure Reverb
+  credentials in `.env` and run:
 
   ```bash
   php artisan reverb:start
@@ -97,7 +115,3 @@ composer run test
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for an overview of the role/permission model,
 task lifecycle, suspension/appeal flow, and notification system.
-
-## License
-
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

@@ -52,6 +52,24 @@ const features = [
         icon: <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4zm0 4.2L7 8.5v3.7c0 3.4 2.3 6.1 5 7.2 2.7-1.1 5-3.8 5-7.2V8.5l-5-2.3z" />,
         accent: 'teal',
     },
+    {
+        title: 'Kanban board & dependencies',
+        description: 'Drag tasks across a live-updating board that only allows the status transitions your workflow supports. Chain tasks together as dependencies with automatic cycle detection, and any blocked task shows exactly what it is waiting on.',
+        icon: <path d="M4 4h4v16H4V4zm6 0h4v11h-4V4zm6 0h4v14h-4V4z" />,
+        accent: 'amber',
+    },
+    {
+        title: 'Resources hub',
+        description: 'A dedicated space for every file and link a project needs, organized into folders with type-aware icons. Add resources one at a time or drag a whole batch in at once, with previews before anything uploads.',
+        icon: <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />,
+        accent: 'pink',
+    },
+    {
+        title: 'Notes that stay in sync',
+        description: 'Turn any checklist item into a personal note in one click, and edits flow live in both directions from then on. Rich text, reminders, and due dates keep the small stuff from slipping through.',
+        icon: <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.83 2.83L11 19l-4 1 1-4 9.6-9.6z" />,
+        accent: 'indigo',
+    },
 ];
 
 // A genuine sequence, not a decorative one: this is the actual path a task takes through

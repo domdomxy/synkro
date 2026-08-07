@@ -123,8 +123,8 @@ class DatabaseSeeder extends Seeder
             'owner_id' => $ben->id,
         ]);
         $mobile->members()->attach([
-            $ben->id => ['role' => 'owner'],
-            $dev->id => ['role' => 'member'],
+            $ben->id => ['role' => 'owner', 'pinned' => false],
+            $dev->id => ['role' => 'member', 'pinned' => false],
             $erin->id => ['role' => 'tester', 'pinned' => true],
         ]);
 
@@ -174,7 +174,7 @@ class DatabaseSeeder extends Seeder
             'is_archived' => true,
         ]);
         $internal->members()->attach([
-            $chloe->id => ['role' => 'owner'],
+            $chloe->id => ['role' => 'owner', 'archived' => false],
             $alice->id => ['role' => 'member', 'archived' => true],
         ]);
         Task::create([
