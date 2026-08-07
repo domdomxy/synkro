@@ -11,9 +11,12 @@ Built with Laravel 13, Inertia.js, and React.
 **Projects & tasks**
 - Role-based project membership - Owner, Manager, Member, Tester - with per-project permissions
 - Task lifecycle: To Do → In Progress → Submitted → In Review → Done, with reopen/reject flow
-- Kanban board with drag-and-drop, restricted to the status transitions your workflow allows,
-  plus a list view - pick whichever you prefer, per project, and it's remembered
+- Kanban board with drag-and-drop (touch-friendly on mobile, with edge auto-scroll), restricted
+  to the status transitions your workflow allows, plus a list view - pick whichever you prefer,
+  per project, and it's remembered
 - Task dependencies with cycle detection and "blocked by" indicators on the list view
+- Per-task checklists with role-scoped permissions (who can add, remove, and check off items),
+  separate from comments
 - File and link deliverables per task, with type-aware icons and ZIP export of a project's
   submitted work
 - A dedicated resources hub per project: files and links organized into folders, added one at a
@@ -21,30 +24,37 @@ Built with Laravel 13, Inertia.js, and React.
 - Per-project notes and checklists, with checklist items that can sync live, two-way, into a
   member's personal Notes; comments support @mentions, bare-URL and markdown-style links, rich
   text with lists, and threaded replies
-- Reminders with countdown display, and a personal dashboard for setting them
+- Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
 - Pinning and archiving at both the project and note level
 - Member invitations and ownership transfer
+- Soft-deleted projects and tasks land in a recoverable Trash (in Settings) for a grace period
+  before permanent deletion, with restore available the whole time
 
 **Notifications & activity**
 - In-app notification bell plus emailed notifications (queued), with per-notification-type
   preferences
 - Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, checklist and
   note sync, project updates, and admin alerts
-- Personal activity feed, login history with device/browser/location, and account activity log
-- Personal dashboard with task/project stats, an activity chart (day/week/month/custom range),
-  and a deadline calendar
+- Personal activity feed and account activity log
+- Logged-in devices panel: see every active session (browser, device, approximate location) and
+  disconnect any of them remotely, or log out of all other devices at once
+- Personal dashboard with task/project stats, an activity chart (day/week/month/custom range,
+  switchable between area/bar/combo views), a session activity calendar, and a deadline calendar
 
 **Support & moderation**
 - Help & Feedback center: submit categorized tickets, track status by ID, threaded replies
 - Suspension system with a user-facing appeal flow and admin review
-- Admin console: manage users, feedback tickets, project logs, suspension logs, and
-  platform-wide analytics
+- Admin console: manage users, feedback tickets, project logs, suspension logs, platform-wide
+  analytics (including site-wide session activity), and read-only access to a user's own
+  activity/login history for support investigations - every admin lookup and action is written
+  to a permanent audit log
 
 **Everywhere else**
 - Light, dark, and true-black themes, switchable anytime
 - Responsive layouts with touch-friendly interactions on mobile, including a swipe carousel on
   the project page and touch drag-and-drop on the kanban board
-- Trusted-device session management, so you can see and revoke where you're signed in
+- Trusted-site external link confirmation: a warning before you leave Synkro through a link
+  someone posted, remembered per host so you're only asked once
 
 ## Tech stack
 
@@ -104,6 +114,21 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
   ```bash
   php artisan reverb:start
   ```
+- **Trash and deletion grace periods:** how long a deleted account, project, or task stays
+  recoverable before a scheduled command purges it for good is configurable via
+  `ACCOUNT_DELETION_GRACE_DAYS`, `PROJECT_DELETION_GRACE_DAYS`, and `TASK_DELETION_GRACE_DAYS`
+  (all default to 7 days) - see `config/synkro.php`.
+
+### Troubleshooting
+
+- **`npm install`/`npm run dev` fails with a Vite/plugin version mismatch:** this project pins
+  `@vitejs/plugin-react` to a version compatible with Vite 8. If your local `node_modules` ends
+  up with an older `@vitejs/plugin-react` (for example after a partial install or a stale lockfile),
+  reinstall it explicitly:
+
+  ```bash
+  npm install @vitejs/plugin-react@latest --save-dev
+  ```
 
 ## Testing
 
@@ -114,4 +139,4 @@ composer run test
 ## Architecture
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for an overview of the role/permission model,
-task lifecycle, suspension/appeal flow, and notification system.
+task lifecycle, trash/soft-delete system, suspension/appeal flow, and notification system.

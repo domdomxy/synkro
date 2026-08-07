@@ -23,9 +23,9 @@ const features = [
         accent: 'indigo',
     },
     {
-        title: 'Full task lifecycle',
-        description: 'Tasks move from todo → in progress → submitted → in review → done. Attach files or links as deliverables, discuss them in threaded comments with @mentions, and get a full tester approval gate before anything is marked complete.',
-        icon: <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.4-1.4z" />,
+        title: 'Task lifecycle & board',
+        description: 'Tasks move from todo → in progress → submitted → in review → done, with a reject/reopen loop and a full tester approval gate before anything counts as complete. Track it all on a live kanban board (drag-and-drop, touch-friendly) restricted to the transitions your workflow allows, chain tasks together as dependencies with cycle detection, and see exactly what a blocked task is waiting on.',
+        icon: <path d="M4 4h4v16H4V4zm6 0h4v11h-4V4zm6 0h4v14h-4V4z" />,
         accent: 'teal',
     },
     {
@@ -35,40 +35,34 @@ const features = [
         accent: 'amber',
     },
     {
-        title: 'Activity logs',
-        description: 'Every action on a project is logged: member changes, role updates, task edits, and ownership transfers. Sign-ins get their own dedicated history too, with device, browser, and location on every login, plus an instant email alert you can turn off anytime.',
-        icon: <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 14l2 2 4-4" />,
+        title: 'Accountability & recovery',
+        description: 'Every action on a project is logged, and your own logged-in devices are always visible - browser, location, last activity, one click to disconnect any of them remotely. And if a project, task, or even your account gets deleted, nothing disappears right away: everything sits in a recoverable trash for a grace period before it is gone for good.',
+        icon: <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
         accent: 'pink',
     },
     {
         title: 'Personal dashboard',
-        description: 'A full activity chart, deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay on top of your work.',
+        description: 'A full activity chart with switchable area/bar/combo views, a session activity calendar, a deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay on top of your work.',
         icon: <path d="M16 8v8m-4-5v5m-4-2v2M4 20h16a1 1 0 001-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v13a1 1 0 001 1z" />,
         accent: 'indigo',
     },
     {
         title: 'Platform admin',
-        description: 'A dedicated admin panel for managing users and overseeing platform activity: suspend or reinstate accounts through a built-in appeals process, reset passwords, triage support tickets, change global roles, and review a full audit log of every admin action, separate from project-level permissions.',
+        description: 'A dedicated admin panel for managing users and overseeing platform activity: suspend or reinstate accounts through a built-in appeals process, reset passwords, triage support tickets, change global roles, look up a user\'s activity for support investigations, and review a full audit log of every admin action, separate from project-level permissions.',
         icon: <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4zm0 4.2L7 8.5v3.7c0 3.4 2.3 6.1 5 7.2 2.7-1.1 5-3.8 5-7.2V8.5l-5-2.3z" />,
         accent: 'teal',
-    },
-    {
-        title: 'Kanban board & dependencies',
-        description: 'Drag tasks across a live-updating board that only allows the status transitions your workflow supports. Chain tasks together as dependencies with automatic cycle detection, and any blocked task shows exactly what it is waiting on.',
-        icon: <path d="M4 4h4v16H4V4zm6 0h4v11h-4V4zm6 0h4v14h-4V4z" />,
-        accent: 'amber',
     },
     {
         title: 'Resources hub',
         description: 'A dedicated space for every file and link a project needs, organized into folders with type-aware icons. Add resources one at a time or drag a whole batch in at once, with previews before anything uploads.',
         icon: <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />,
-        accent: 'pink',
+        accent: 'amber',
     },
     {
         title: 'Notes that stay in sync',
         description: 'Turn any checklist item into a personal note in one click, and edits flow live in both directions from then on. Rich text, reminders, and due dates keep the small stuff from slipping through.',
         icon: <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.83 2.83L11 19l-4 1 1-4 9.6-9.6z" />,
-        accent: 'indigo',
+        accent: 'pink',
     },
 ];
 
@@ -100,8 +94,8 @@ const steps = [
 
 const securityPoints = [
     {
-        title: 'Instant session termination',
-        description: 'Suspensions, admin password resets, and account deletions broadcast in real time, logging out every open tab immediately.',
+        title: 'Full session control',
+        description: 'Suspensions, admin password resets, and account deletions log out every open tab instantly. You can also see every device currently signed into your account, with browser and approximate location, and disconnect any one of them yourself.',
     },
     {
         title: 'Password protection',
@@ -561,7 +555,7 @@ export default function Welcome({ auth, stats }) {
                         </div>
                     </section>
 
-                    <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+                    <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-6 pb-20">
                         <div className="mx-auto max-w-2xl text-center">
                             <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-500 dark:text-indigo-400">
                                 What's inside
@@ -573,7 +567,7 @@ export default function Welcome({ auth, stats }) {
                                 No plugins to configure and no separate tools to stitch together, it's all here by default.
                             </p>
                         </div>
-                        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                             {features.map((feature, i) => (
                                 <FeatureCard key={feature.title} feature={feature} index={i} />
                             ))}
