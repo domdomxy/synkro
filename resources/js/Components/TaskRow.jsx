@@ -357,8 +357,8 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
     }, [open]);
 
     return (
-        <div className="relative" ref={ref}>
-            <button onClick={() => setOpen((v) => !v)} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+        <div className="relative shrink-0" ref={ref}>
+            <button onClick={() => setOpen((v) => !v)} aria-label="Task options" className="-m-1.5 rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300 sm:-m-1 sm:p-1">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
                 </svg>
@@ -1427,20 +1427,24 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                 </form>
             ) : (
                 <>
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2.5">
                         {selectable && (
                             <input
                                 type="checkbox"
                                 checked={selected}
                                 onChange={() => onToggleSelect?.(task.id)}
                                 aria-label={`Select "${task.title}"`}
-                                className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
+                                className="mt-1.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
                             />
                         )}
-                        <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" />}
+                        <div className="min-w-0 flex-1">
+                            {/* Title row: name stays with the kebab menu so both are always
+                                reachable together, on a phone screen or a wide one. Badges
+                                and metadata live on their own row below instead of competing
+                                for space here. */}
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                    {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" className="shrink-0" />}
                                     <p className="min-w-0 break-words font-semibold text-gray-900 dark:text-gray-100">
                                         {task.title}
                                         {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
@@ -1454,28 +1458,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                         </svg>
                                     )}
                                 </div>
-                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                    {!task.assignee && <span>Unassigned</span>}
-                                    {task.assignee && <span>{task.assignee.name}</span>}
-                                    {task.due_date && (
-                                        <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
-                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            {formatDue(task.due_date)}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                                {task.priority && task.priority !== 'medium' && (
-                                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
-                                        {priorityLabels[task.priority] ?? task.priority}
-                                    </span>
-                                )}
-                                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                    {task.status.replace('_', ' ')}
-                                </span>
                                 <KebabMenu
                                     canManage={canManage}
                                     canViewHistory={!!task.can_view_history}
@@ -1490,6 +1472,33 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     onRequestChanges={() => setShowReopenPanel(true)}
                                     onShowHistory={() => setShowHistory(true)}
                                 />
+                            </div>
+                            {/* Meta row: assignee/due date on the left, badges on the right
+                                when there's room (desktop), wrapping to their own line when
+                                there isn't (mobile) - so neither ever gets squeezed. */}
+                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                    {!task.assignee && <span>Unassigned</span>}
+                                    {task.assignee && <span>{task.assignee.name}</span>}
+                                    {task.due_date && (
+                                        <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
+                                            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {formatDue(task.due_date)}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+                                    {task.priority && task.priority !== 'medium' && (
+                                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                            {priorityLabels[task.priority] ?? task.priority}
+                                        </span>
+                                    )}
+                                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                        {task.status.replace('_', ' ')}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1787,15 +1796,25 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     />
                     <InputError message={reviewForm.errors.feedback} className="mt-1" />
-                    <div className="flex gap-2">
-                        <PrimaryButton disabled={reviewForm.processing} onClick={() => sendReview('approve')}>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                            type="button"
+                            disabled={reviewForm.processing}
+                            onClick={() => sendReview('approve')}
+                            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-transparent bg-green-600 px-5 py-2 text-sm font-semibold tracking-wide text-white transition duration-150 ease-in-out hover:bg-green-700 focus:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:bg-green-800 dark:bg-green-600 dark:text-white dark:hover:bg-green-500 dark:focus:bg-green-500 dark:focus:ring-offset-gray-800 dark:active:bg-green-700 sm:w-auto sm:text-xs sm:uppercase sm:tracking-widest ${reviewForm.processing ? 'opacity-25' : ''}`}
+                        >
                             {reviewForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                             Approve
-                        </PrimaryButton>
-                        <DangerButton disabled={reviewForm.processing} onClick={() => sendReview('reject')}>
+                        </button>
+                        <button
+                            type="button"
+                            disabled={reviewForm.processing}
+                            onClick={() => sendReview('reject')}
+                            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-transparent bg-red-600 px-5 py-2 text-sm font-semibold tracking-wide text-white transition duration-150 ease-in-out hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-700 dark:focus:ring-offset-gray-800 sm:w-auto sm:text-xs sm:uppercase sm:tracking-widest ${reviewForm.processing ? 'opacity-25' : ''}`}
+                        >
                             {reviewForm.processing && <Spinner className="mr-2 h-4 w-4" />}
                             Reject
-                        </DangerButton>
+                        </button>
                     </div>
                 </div>
             )}

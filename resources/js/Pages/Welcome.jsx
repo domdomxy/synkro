@@ -9,10 +9,10 @@ import FeedbackPanel from '@/Components/FeedbackPanel';
 const MONO = { fontFamily: "'JetBrains Mono', ui-monospace, monospace" };
 
 const ACCENTS = {
-    indigo: { bar: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-50 dark:bg-indigo-950/40', iconText: 'text-indigo-600 dark:text-indigo-400', dot: 'bg-indigo-500' },
-    teal: { bar: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400', iconBg: 'bg-teal-50 dark:bg-teal-950/40', iconText: 'text-teal-600 dark:text-teal-400', dot: 'bg-teal-500' },
-    amber: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-50 dark:bg-amber-950/40', iconText: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
-    pink: { bar: 'bg-pink-500', text: 'text-pink-600 dark:text-pink-400', iconBg: 'bg-pink-50 dark:bg-pink-950/40', iconText: 'text-pink-600 dark:text-pink-400', dot: 'bg-pink-500' },
+    indigo: { bar: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-50 dark:bg-indigo-950/40', iconBgHover: 'group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60', iconText: 'text-indigo-600 dark:text-indigo-400', dot: 'bg-indigo-500' },
+    teal: { bar: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400', iconBg: 'bg-teal-50 dark:bg-teal-950/40', iconBgHover: 'group-hover:bg-teal-100 dark:group-hover:bg-teal-900/60', iconText: 'text-teal-600 dark:text-teal-400', dot: 'bg-teal-500' },
+    amber: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-50 dark:bg-amber-950/40', iconBgHover: 'group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60', iconText: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+    pink: { bar: 'bg-pink-500', text: 'text-pink-600 dark:text-pink-400', iconBg: 'bg-pink-50 dark:bg-pink-950/40', iconBgHover: 'group-hover:bg-pink-100 dark:group-hover:bg-pink-900/60', iconText: 'text-pink-600 dark:text-pink-400', dot: 'bg-pink-500' },
 };
 
 const features = [
@@ -294,22 +294,31 @@ function StatStrip({ stats }) {
 function FeatureCard({ feature, index }) {
     const [ref, visible] = useFadeInOnScroll();
     const accent = ACCENTS[feature.accent];
+    const number = String(index + 1).padStart(2, '0');
     return (
         <div
             ref={ref}
             style={{ transitionDelay: `${index * 60}ms` }}
-            className={`group relative overflow-hidden rounded-lg bg-white p-4 pt-5 ring-1 ring-gray-100 transition-all duration-500 hover:-translate-y-1 hover:ring-gray-200 dark:bg-gray-800 dark:ring-gray-700 dark:hover:ring-gray-600 sm:p-6 sm:pt-7 ${
+            className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-500 hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600 ${
                 visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             }`}
         >
-            <span className={`absolute inset-x-0 top-0 h-1 ${accent.bar} opacity-70 transition-opacity group-hover:opacity-100`} />
-            <div className={`flex h-11 w-11 items-center justify-center rounded-lg transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110 ${accent.iconBg} ${accent.iconText}`}>
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
+            <div className={`flex w-16 shrink-0 items-center justify-center transition-colors duration-300 sm:w-20 ${accent.iconBg} ${accent.iconBgHover}`}>
+                <svg
+                    viewBox="0 0 24 24"
+                    className={`h-6 w-6 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110 ${accent.iconText}`}
+                    fill="currentColor"
+                >
                     {feature.icon}
                 </svg>
             </div>
-            <h3 className="mt-4 font-semibold text-gray-900 dark:text-gray-100">{feature.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{feature.description}</p>
+            <div className="relative min-w-0 flex-1 p-4 pt-5 sm:p-6 sm:pt-7">
+                <span style={MONO} className="pointer-events-none absolute right-4 top-3 text-3xl font-bold text-black/5 dark:text-white/5 sm:right-6 sm:top-4 sm:text-4xl">
+                    {number}
+                </span>
+                <h3 className="relative font-semibold text-gray-900 dark:text-gray-100">{feature.title}</h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{feature.description}</p>
+            </div>
         </div>
     );
 }
@@ -458,7 +467,7 @@ export default function Welcome({ auth, stats }) {
                 </header>
 
                 <main>
-                    <section className="relative mx-auto max-w-4xl px-6 py-20 text-center">
+                    <section className="relative mx-auto max-w-4xl overflow-hidden px-6 py-20 text-center">
                         <RadarRings />
                         <HeroSpotlight />
 
@@ -567,7 +576,7 @@ export default function Welcome({ auth, stats }) {
                                 No plugins to configure and no separate tools to stitch together, it's all here by default.
                             </p>
                         </div>
-                        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
                             {features.map((feature, i) => (
                                 <FeatureCard key={feature.title} feature={feature} index={i} />
                             ))}
