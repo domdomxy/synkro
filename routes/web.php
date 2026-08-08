@@ -124,6 +124,9 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->name('projects.members.destroy')->withTrashed();
     Route::delete('/projects/{project}/leave', [ProjectMemberController::class, 'leave'])->name('projects.leave');
     Route::patch('/projects/{project}/transfer-ownership', [ProjectController::class, 'transferOwnership'])->name('projects.transfer-ownership');
+    Route::post('/projects/{project}/send-transfer-confirmation-code', [ProjectController::class, 'sendTransferConfirmationCode'])
+        ->name('projects.send-transfer-confirmation-code')
+        ->middleware('throttle:6,1');
     Route::get('/projects/{project}/confirm-deletion', [ProjectController::class, 'confirmDeletion'])
         ->middleware(['signed', 'throttle:6,1'])
         ->name('projects.deletion.confirm');

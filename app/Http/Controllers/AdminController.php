@@ -885,7 +885,7 @@ public function suspend(Request $request, User $user)
         ]);
     }
 
-    public function toggleRole(User $user)
+    public function toggleRole(Request $request, User $user)
     {
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => "You can't change your own role."]);
@@ -893,6 +893,13 @@ public function suspend(Request $request, User $user)
         if ($user->isSuperAdmin()) {
             return back()->withErrors(['error' => "Superadmin status isn't managed from here."]);
         }
+
+        $validated = $request->validate(['confirmation_code' => ['required', 'string']]);
+        $error = $request->user()->verifyAdminConfirmationCode('users.role_change', $validated['confirmation_code']);
+        if ($error) {
+            return back()->withErrors(['confirmation_code' => $error]);
+        }
+
         $newRole = $user->role === 'admin' ? 'user' : 'admin';
         $user->update(['role' => $newRole, 'role_changed_at' => now()]);
         AdminLog::log('user.role_changed', "Changed **{$user->name}**'s role to **{$newRole}**", $user);
@@ -958,13 +965,19 @@ public function suspend(Request $request, User $user)
      * this never touches a 'user' role directly - someone has to already be an admin
      * before they can be trusted with superadmin.
      */
-    public function toggleSuperAdmin(User $user)
+    public function toggleSuperAdmin(Request $request, User $user)
     {
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => "You can't change your own role."]);
         }
         if ($user->role === 'user') {
             return back()->withErrors(['error' => 'Only admins can be promoted to superadmin.']);
+        }
+
+        $validated = $request->validate(['confirmation_code' => ['required', 'string']]);
+        $error = $request->user()->verifyAdminConfirmationCode('users.role_change', $validated['confirmation_code']);
+        if ($error) {
+            return back()->withErrors(['confirmation_code' => $error]);
         }
 
         $newRole = $user->isSuperAdmin() ? 'admin' : 'superadmin';
@@ -1157,15 +1170,16 @@ public function suspend(Request $request, User $user)
 
     /**
      * Superadmin-only: emails a fresh step-up confirmation code to the current
-     * admin's own address. Required before an irreversible action is allowed
-     * to proceed - currently just permanently deleting user accounts, see
-     * destroy()/destroyBulk() below, which verify it via
+     * admin's own address. Required before a high-impact action is allowed to
+     * proceed - permanently deleting user accounts (see destroy()/destroyBulk()
+     * below) and changing someone's admin/superadmin standing (see
+     * toggleRole()/toggleSuperAdmin() below), both of which verify it via
      * User::verifyAdminConfirmationCode().
      */
     public function sendConfirmationCode(Request $request)
     {
         $validated = $request->validate([
-            'purpose' => ['required', 'string', Rule::in(['users.delete_permanent'])],
+            'purpose' => ['required', 'string', Rule::in(['users.delete_permanent', 'users.role_change'])],
         ]);
 
         $request->user()->sendAdminConfirmationCodeNotification($validated['purpose']);

@@ -160,6 +160,18 @@ html.theme-black .dark\:border-sky-900 { border-color: #0a2233 !important; }
 html.theme-black .dark\:bg-teal-900 { background-color: #0a2b26 !important; }
 html.theme-black .dark\:bg-teal-950\/40 { background-color: rgba(4, 18, 16, 0.65) !important; }
 
+/* Welcome page FeatureCard icon boxes (indigo/teal/amber/pink) - the box sits
+   at dark:bg-*-950/40 at rest and is meant to "light up" to dark:group-hover:
+   bg-*-900/60 on hover. The plain-important overrides above (dark:bg-indigo-
+   950/40 etc.) beat that hover class on specificity ties since group-hover
+   isn't marked important itself, so the lighten-on-hover effect silently did
+   nothing in black mode even though it worked in regular dark mode. Give the
+   hover state its own important, black-tuned value so it can win again. */
+html.theme-black .group:hover .dark\:group-hover\:bg-indigo-900\/60 { background-color: rgba(22, 18, 58, 0.75) !important; }
+html.theme-black .group:hover .dark\:group-hover\:bg-teal-900\/60 { background-color: rgba(10, 43, 38, 0.75) !important; }
+html.theme-black .group:hover .dark\:group-hover\:bg-amber-900\/60 { background-color: rgba(51, 35, 10, 0.75) !important; }
+html.theme-black .group:hover .dark\:group-hover\:bg-pink-900\/60 { background-color: rgba(60, 12, 31, 0.75) !important; }
+
 html.theme-black .dark\:bg-yellow-900 { background-color: #332a06 !important; }
 html.theme-black .dark\:bg-yellow-950\/20 { background-color: rgba(26, 21, 4, 0.35) !important; }
 html.theme-black .dark\:bg-yellow-950\/30 { background-color: rgba(26, 21, 4, 0.5) !important; }

@@ -265,6 +265,7 @@ export default function Users({ users, stats, filters }) {
     const [editTarget, setEditTarget] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
+    const [roleChangeTarget, setRoleChangeTarget] = useState(null);
     const { confirm, ConfirmDialog } = useConfirm();
 
     // Only accounts a superadmin could actually select for bulk delete: not
@@ -308,18 +309,37 @@ export default function Users({ users, stats, filters }) {
 
     const hasActiveFilters = search !== '' || roleFilter !== 'all' || statusFilter !== 'all' || verifiedFilter !== 'all';
 
+    // Confirm first (cheap, no email sent yet), then stage the target - the actual
+    // promotion/demotion only happens once the step-up code in AdminConfirmationModal
+    // is verified, same pattern as permanent deletion below. Role changes are
+    // sensitive enough (they're what hands out admin/superadmin access) that a plain
+    // "are you sure" isn't enough on its own, but there's no reason to send a code
+    // before the admin has even confirmed they want to do this.
     const toggleRole = async (user) => {
-        const action = user.role === 'admin' ? 'demote to a regular user' : 'promote to admin';
-        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: user.role === 'admin' ? 'Demote User?' : 'Promote to Admin?' }))) return;
-        router.patch(route('admin.users.toggle-role', user.id), {}, { preserveScroll: true });
+        const isPromotion = user.role !== 'admin';
+        const action = isPromotion ? 'promote to admin' : 'demote to a regular user';
+        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: isPromotion ? 'Promote to Admin?' : 'Demote User?' }))) return;
+        setRoleChangeTarget({ route: 'admin.users.toggle-role', user, isPromotion, kind: 'admin' });
     };
 
     const toggleSuperAdmin = async (user) => {
         const isTargetSuperAdmin = user.role === 'superadmin';
-        const action = isTargetSuperAdmin ? 'demote to a regular admin' : 'promote to superadmin';
-        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: isTargetSuperAdmin ? 'Demote to Admin?' : 'Promote to Superadmin?' }))) return;
-        router.patch(route('admin.users.toggle-superadmin', user.id), {}, { preserveScroll: true });
+        const isPromotion = !isTargetSuperAdmin;
+        const action = isPromotion ? 'promote to superadmin' : 'demote to a regular admin';
+        if (!(await confirm(`Are you sure you want to ${action} ${user.name}?`, { title: isPromotion ? 'Promote to Superadmin?' : 'Demote to Admin?' }))) return;
+        setRoleChangeTarget({ route: 'admin.users.toggle-superadmin', user, isPromotion, kind: 'superadmin' });
     };
+
+    const verifyAndChangeRole = (code) =>
+        new Promise((resolve, reject) => {
+            if (!roleChangeTarget) return reject();
+
+            router.patch(route(roleChangeTarget.route, roleChangeTarget.user.id), { confirmation_code: code }, {
+                preserveScroll: true,
+                onSuccess: () => { setRoleChangeTarget(null); resolve(); },
+                onError: (errors) => reject(errors.confirmation_code || errors.error || ''),
+            });
+        });
 
     const liftSuspension = (user) => setLiftTarget(user);
 
@@ -620,6 +640,24 @@ export default function Users({ users, stats, filters }) {
                 confirmLabel="Delete Permanently"
                 onVerify={verifyAndDeletePermanently}
                 onClose={() => setPermanentDeleteTarget(null)}
+            />
+            <AdminConfirmationModal
+                show={roleChangeTarget !== null}
+                purpose="users.role_change"
+                title={
+                    roleChangeTarget?.kind === 'superadmin'
+                        ? (roleChangeTarget?.isPromotion ? 'Promote to Superadmin?' : 'Demote to Admin?')
+                        : (roleChangeTarget?.isPromotion ? 'Promote to Admin?' : 'Demote User?')
+                }
+                description={
+                    roleChangeTarget?.kind === 'superadmin'
+                        ? `This will ${roleChangeTarget?.isPromotion ? 'grant' : 'remove'} superadmin access ${roleChangeTarget?.isPromotion ? 'to' : 'from'} ${roleChangeTarget?.user?.name}.`
+                        : `This will ${roleChangeTarget?.isPromotion ? 'grant' : 'remove'} admin access ${roleChangeTarget?.isPromotion ? 'to' : 'from'} ${roleChangeTarget?.user?.name}.`
+                }
+                confirmLabel={roleChangeTarget?.isPromotion ? 'Promote' : 'Demote'}
+                danger={!roleChangeTarget?.isPromotion}
+                onVerify={verifyAndChangeRole}
+                onClose={() => setRoleChangeTarget(null)}
             />
             <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>

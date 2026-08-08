@@ -8,20 +8,22 @@ import { router, usePage } from '@inertiajs/react';
 const RESEND_COOLDOWN_SECONDS = 20;
 
 /**
- * Step-up confirmation modal for irreversible admin actions. The moment it
- * opens, it emails a fresh 6-digit code to the acting superadmin's own
- * address (proving continued inbox access, on top of the session they're
- * already authenticated with) via admin.users.send-confirmation-code. Once
- * they enter it, the code - not this component - is what actually authorizes
- * anything: `onVerify(code)` is responsible for performing the real action
- * server-side and should resolve on success, or reject with an error string
- * (e.g. "The code you entered is incorrect.") to show under the code boxes.
+ * Step-up confirmation modal for high-impact actions. The moment it opens, it
+ * emails a fresh 6-digit code to the current user's own address (proving
+ * continued inbox access, on top of the session they're already authenticated
+ * with) - by default via admin.users.send-confirmation-code, or via
+ * `sendCodeUrl` when a non-admin action (e.g. project ownership transfer)
+ * needs its own send-code endpoint. Once they enter it, the code - not this
+ * component - is what actually authorizes anything: `onVerify(code)` is
+ * responsible for performing the real action server-side and should resolve
+ * on success, or reject with an error string (e.g. "The code you entered is
+ * incorrect.") to show under the code boxes.
  *
- * `purpose` must match a value AdminController::sendConfirmationCode() and
+ * `purpose` must match a value the corresponding send-code endpoint and
  * User::verifyAdminConfirmationCode() both accept - it scopes the code
  * server-side so one issued here can't be replayed for a different action.
  */
-export default function AdminConfirmationModal({ show, purpose, title, description, confirmLabel = 'Confirm', danger = true, onVerify, onClose }) {
+export default function AdminConfirmationModal({ show, purpose, sendCodeUrl, title, description, confirmLabel = 'Confirm', danger = true, onVerify, onClose }) {
     const { auth } = usePage().props;
     const [code, setCode] = useState('');
     const [error, setError] = useState('');
@@ -31,8 +33,8 @@ export default function AdminConfirmationModal({ show, purpose, title, descripti
     const sendCode = () =>
         new Promise((resolve, reject) => {
             router.post(
-                route('admin.users.send-confirmation-code'),
-                { purpose },
+                sendCodeUrl ?? route('admin.users.send-confirmation-code'),
+                sendCodeUrl ? {} : { purpose },
                 {
                     preserveScroll: true,
                     preserveState: true,

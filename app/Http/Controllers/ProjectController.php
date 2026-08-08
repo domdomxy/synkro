@@ -664,6 +664,26 @@ class ProjectController extends Controller
         return back()->with('success', 'Deletion request cancelled.');
     }
 
+    /**
+     * Emails the current owner a fresh 6-digit step-up code before they can transfer
+     * ownership away - same code-based mechanism AdminController::sendConfirmationCode()
+     * uses for its irreversible actions (User::sendAdminConfirmationCodeNotification()/
+     * verifyAdminConfirmationCode() aren't actually admin-only, just named for their
+     * first use case), reused here since handing off a project is just as hard to
+     * undo as anything superadmin-gated.
+     */
+    public function sendTransferConfirmationCode(Project $project)
+    {
+        if ($project->owner_id !== Auth::id()) {
+            abort(403);
+        }
+        abort_if($project->trashed(), 403, 'This project is in the trash and read-only.');
+
+        Auth::user()->sendAdminConfirmationCodeNotification('projects.transfer_ownership');
+
+        return back()->with('success', 'A confirmation code has been sent to your email.');
+    }
+
     public function transferOwnership(Request $request, Project $project)
     {
         if ($project->owner_id !== Auth::id()) {
@@ -676,7 +696,13 @@ class ProjectController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
+            'confirmation_code' => ['required', 'string'],
         ]);
+
+        $error = Auth::user()->verifyAdminConfirmationCode('projects.transfer_ownership', $validated['confirmation_code']);
+        if ($error) {
+            return back()->withErrors(['confirmation_code' => $error]);
+        }
 
         if (! $project->members()->where('user_id', $validated['user_id'])->exists()) {
             return back()->withErrors(['user_id' => 'That user is not a member of this project.']);

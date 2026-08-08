@@ -262,11 +262,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Generate a fresh 6-digit step-up confirmation code for a superadmin about
-     * to perform an irreversible admin action, and email it to their own
-     * address (proving continued access to the inbox, on top of the session
-     * they're already authenticated with). $purpose scopes the code to a
-     * specific action - see verifyAdminConfirmationCode() below.
+     * Generate a fresh 6-digit step-up confirmation code before this user performs
+     * a high-impact action (originally just superadmin actions, now also used for
+     * user-level ones like project ownership transfer - see $purpose), and email
+     * it to their own address (proving continued access to the inbox, on top of
+     * the session they're already authenticated with). $purpose scopes the code
+     * to a specific action - see verifyAdminConfirmationCode() below.
      */
     public function sendAdminConfirmationCodeNotification(string $purpose): void
     {
@@ -285,7 +286,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'account.admin_confirmation_code',
             'Your confirmation code',
             [
-                'You (or someone signed into your admin account) requested a permanent, unrecoverable action on Synkro.',
+                'You (or someone signed into your account) requested a sensitive, hard-to-reverse action on Synkro.',
                 "Enter the code below to confirm it. This code expires in {$expireMinutes} minutes.",
                 "If you didn't request this, secure your account immediately - change your password and review your active sessions.",
             ],

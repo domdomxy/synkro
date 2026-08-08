@@ -12,6 +12,7 @@ import FilterSelect from '@/Components/FilterSelect';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
 import RichTextEditor from '@/Components/RichTextEditor';
+import AdminConfirmationModal from '@/Components/AdminConfirmationModal';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useState } from 'react';
 
@@ -59,6 +60,7 @@ export default function Settings({ project, role }) {
     const editForm = useForm({ name: project.name, description: project.description ?? '' });
     const transferForm = useForm({ user_id: '' });
     const { confirm, ConfirmDialog } = useConfirm();
+    const [transferTarget, setTransferTarget] = useState(null);
 
     const hasUnsavedChanges =
         editForm.data.name !== project.name ||
@@ -74,8 +76,19 @@ export default function Settings({ project, role }) {
         e.preventDefault();
         const member = project.members.find((m) => m.id === Number(transferForm.data.user_id));
         if (!(await confirm(`Transfer ownership of "${project.name}" to ${member?.name}? You will become a manager.`, { title: 'Transfer Ownership?' }))) return;
-        transferForm.patch(route('projects.transfer-ownership', project.id));
+        setTransferTarget(member);
     };
+
+    const verifyAndTransfer = (code) =>
+        new Promise((resolve, reject) => {
+            if (!transferTarget) return reject();
+
+            router.patch(route('projects.transfer-ownership', project.id), { user_id: transferTarget.id, confirmation_code: code }, {
+                preserveScroll: true,
+                onSuccess: () => { setTransferTarget(null); resolve(); },
+                onError: (errors) => reject(errors.confirmation_code || errors.error || ''),
+            });
+        });
 
     const deleteProject = async () => {
         if (await confirm(`A confirmation link will be emailed to you. Once you click it, "${project.name}" moves to trash, where you can still restore it before it's gone for good.`, { title: 'Request Deletion?', danger: true, confirmLabel: 'Send Confirmation Email' })) {
@@ -265,6 +278,17 @@ export default function Settings({ project, role }) {
                 </div>
             </div>
             {ConfirmDialog}
+            <AdminConfirmationModal
+                show={transferTarget !== null}
+                purpose="projects.transfer_ownership"
+                sendCodeUrl={route('projects.send-transfer-confirmation-code', project.id)}
+                title="Confirm Ownership Transfer"
+                description={`This will immediately hand "${project.name}" over to ${transferTarget?.name}. You'll become a manager.`}
+                confirmLabel="Transfer"
+                danger={false}
+                onVerify={verifyAndTransfer}
+                onClose={() => setTransferTarget(null)}
+            />
         </AuthenticatedLayout>
     );
 }
