@@ -12,7 +12,7 @@ import { EyeIcon, EyeOffIcon } from '@/Components/Auth/icons';
  *   - a show/hide toggle when type="password"
  */
 const AuthField = forwardRef(function AuthField(
-    { id, label, type = 'text', icon: Icon, error, containerClassName = '', className = '', ...props },
+    { id, label, type = 'text', icon: Icon, error, hint, containerClassName = '', className = '', ...props },
     ref,
 ) {
     const [visible, setVisible] = useState(false);
@@ -47,6 +47,7 @@ const AuthField = forwardRef(function AuthField(
                     </button>
                 )}
             </div>
+            {hint}
             <InputError message={error} className="mt-1.5" />
         </div>
     );

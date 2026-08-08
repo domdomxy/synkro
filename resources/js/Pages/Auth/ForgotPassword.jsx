@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
+import EmailValidityHint from '@/Components/EmailValidityHint';
 import { MailIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -46,6 +47,7 @@ export default function ForgotPassword({ status }) {
                     isFocused={true}
                     onChange={(e) => setData('email', e.target.value)}
                     error={errors.email}
+                    hint={<EmailValidityHint value={data.email} onChange={(value) => setData('email', value)} />}
                 />
 
                 <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>

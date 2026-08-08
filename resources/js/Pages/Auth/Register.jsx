@@ -2,6 +2,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import EmailValidityHint from '@/Components/EmailValidityHint';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { UserIcon, MailIcon, LockIcon } from '@/Components/Auth/icons';
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
@@ -61,6 +62,7 @@ export default function Register() {
                     autoComplete="username"
                     onChange={(e) => setData('email', e.target.value)}
                     error={errors.email}
+                    hint={<EmailValidityHint value={data.email} onChange={(value) => setData('email', value)} />}
                     required
                 />
 

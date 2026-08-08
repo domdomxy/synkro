@@ -2,6 +2,7 @@
 
 import AuthSplitLayout from '@/Layouts/AuthSplitLayout';
 import AuthField from '@/Components/Auth/AuthField';
+import EmailValidityHint from '@/Components/EmailValidityHint';
 import { MailIcon, ScaleIcon } from '@/Components/Auth/icons';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
@@ -80,6 +81,7 @@ export default function Appeal() {
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
                                 error={errors.email}
+                                hint={<EmailValidityHint value={data.email} onChange={(value) => setData('email', value)} />}
                                 autoFocus
                             />
                             <div>
