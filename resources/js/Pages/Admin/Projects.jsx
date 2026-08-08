@@ -58,7 +58,7 @@ export default function Projects({ projects, filters }) {
         }>
             <Head title="Admin - Projects" />
             <div className="py-12">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <div className="relative w-full sm:w-72">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">

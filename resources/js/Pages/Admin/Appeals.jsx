@@ -320,7 +320,7 @@ export default function Appeals({ appeals, filters }) {
         }>
             <Head title="Admin - Appeals" />
             <div className="py-12">
-                <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     <div ref={toolbarRef} className="flex flex-wrap items-center gap-3">
                         <div className="relative w-full sm:w-64">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">

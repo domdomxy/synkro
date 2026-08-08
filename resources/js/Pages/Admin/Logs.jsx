@@ -176,7 +176,7 @@ function AdminLogRow({ log, actionCatalog }) {
 const DEFAULT_PER_PAGE = 10;
 const FILTER_DEFAULTS = { action: 'all', admin: 'all', per_page: DEFAULT_PER_PAGE };
 
-export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs, filters }) {
+export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs, hasAutomatedLogs, filters }) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [action, setAction] = useState(filters?.action ?? 'all');
     const [admin, setAdmin] = useState(filters?.admin ?? 'all');
@@ -188,6 +188,7 @@ export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs,
     const adminOptions = [
         { value: 'all', label: 'All Admins' },
         ...admins.map((a) => ({ value: String(a.id), label: a.name, avatar: a })),
+        ...(hasAutomatedLogs ? [{ value: 'automated', label: 'Synkro (automated)' }] : []),
         ...(hasDeletedAdminLogs ? [{ value: 'deleted', label: 'Deleted admin' }] : []),
     ];
 
@@ -227,7 +228,7 @@ export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs,
         }>
             <Head title="Administration Logs" />
             <div className="py-12">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-end gap-3">
                         <div className="relative">

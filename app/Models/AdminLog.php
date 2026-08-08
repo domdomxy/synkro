@@ -10,6 +10,15 @@ class AdminLog extends Model
 {
     protected $fillable = ['admin_id', 'action', 'description', 'reason', 'target_type', 'target_id'];
 
+    /**
+     * Actions a human admin never performs - only the 24h-inactivity auto-close
+     * jobs, currently. AdminLog.admin_id is null for both these and for "the
+     * admin who did this was later deleted", which are otherwise indistinguishable
+     * from the foreign key alone, so any query that means "genuinely deleted admin"
+     * must exclude these. Mirrors AUTOMATED_ACTIONS in Pages/Admin/Logs.jsx.
+     */
+    public const AUTOMATED_ACTIONS = ['ticket.auto_closed', 'appeal.auto_closed'];
+
     public function admin(): BelongsTo
     {
         return $this->belongsTo(User::class, 'admin_id');

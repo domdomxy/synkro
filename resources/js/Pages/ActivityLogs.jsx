@@ -586,7 +586,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
         }>
             <Head title={viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'} />
             <div className="py-12">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {viewingUser && (
                         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
                             <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

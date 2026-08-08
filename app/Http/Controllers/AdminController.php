@@ -340,7 +340,18 @@ class AdminController extends Controller
         $sortable = ['id' => 'id', 'name' => 'name', 'email' => 'email', 'role' => 'role', 'joined' => 'created_at', 'verified' => 'email_verified_at'];
         $sort = $sortable[$request->sort] ?? 'name';
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
-        $users = $query->orderBy($sort, $direction)->paginate($this->perPage($request, 10))->withQueryString();
+
+        // A plain ORDER BY role sorts alphabetically ('admin' < 'superadmin' < 'user'),
+        // which doesn't match the actual privilege ladder (user < admin < superadmin) -
+        // ascending would show Admin, then Super Admin, then every plain User. Rank the
+        // roles explicitly instead so "ascending" reads as "least to most privileged".
+        if ($sort === 'role') {
+            $query->orderByRaw("CASE role WHEN 'user' THEN 1 WHEN 'admin' THEN 2 WHEN 'superadmin' THEN 3 ELSE 4 END {$direction}");
+        } else {
+            $query->orderBy($sort, $direction);
+        }
+
+        $users = $query->paginate($this->perPage($request, 10))->withQueryString();
 
         // Real month-over-month trends. Total is purely additive (created_at). Active/inactive
         // and admin role now have their own change timestamps (active_status_changed_at,
@@ -839,12 +850,18 @@ public function suspend(Request $request, User $user)
             $query->where('action', $request->action);
         }
 
-        // 'deleted' is a synthetic value (no admin_id in the DB is ever literally
-        // "deleted") standing in for admin_id IS NULL, i.e. the admin who performed
-        // the action no longer has an account. Real admins are filtered by id.
+        // 'deleted' and 'automated' are both synthetic values standing in for
+        // admin_id IS NULL, which alone doesn't say whether the acting admin's
+        // account was later deleted or nothing acted at all (a scheduled job).
+        // We disambiguate by action, same as the row label in Logs.jsx - only
+        // AUTOMATED_ACTIONS (the 24h-inactivity auto-close jobs) count as
+        // "automated"; every other null-admin_id row is a genuinely deleted
+        // admin. Real admins are filtered by id.
         if ($request->admin && $request->admin !== 'all') {
             if ($request->admin === 'deleted') {
-                $query->whereNull('admin_id');
+                $query->whereNull('admin_id')->whereNotIn('action', AdminLog::AUTOMATED_ACTIONS);
+            } elseif ($request->admin === 'automated') {
+                $query->whereNull('admin_id')->whereIn('action', AdminLog::AUTOMATED_ACTIONS);
             } else {
                 $query->where('admin_id', $request->admin);
             }
@@ -865,13 +882,15 @@ public function suspend(Request $request, User $user)
         $admins = User::whereIn('id', AdminLog::query()->whereNotNull('admin_id')->distinct()->pluck('admin_id'))
             ->orderBy('name')
             ->get(['id', 'name', 'avatar_path']);
-        $hasDeletedAdminLogs = AdminLog::whereNull('admin_id')->exists();
+        $hasDeletedAdminLogs = AdminLog::whereNull('admin_id')->whereNotIn('action', AdminLog::AUTOMATED_ACTIONS)->exists();
+        $hasAutomatedLogs = AdminLog::whereNull('admin_id')->whereIn('action', AdminLog::AUTOMATED_ACTIONS)->exists();
 
         return Inertia::render('Admin/Logs', [
             'logs' => $logs,
             'actionCatalog' => AdminLog::actionCatalog(),
             'admins' => $admins,
             'hasDeletedAdminLogs' => $hasDeletedAdminLogs,
+            'hasAutomatedLogs' => $hasAutomatedLogs,
             // Explicit keys, not $request->only([...]) - see users() above. No key here collides
             // with an Array.prototype method today, but this avoids the landmine entirely.
             'filters' => [
