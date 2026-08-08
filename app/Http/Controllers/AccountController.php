@@ -250,7 +250,7 @@ class AccountController extends Controller
             'Your account has been deleted',
             [
                 "Your Synkro account has been deleted and is no longer accessible.",
-                "It will be kept for **{$graceDays}** more day(s) (until the end of **" . $graceEndsAt->format('M j, Y') . '**) in case you change your mind - simply log back in with your usual email and password before then to restore it yourself.',
+                "It will be kept for **{$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ')** in case you change your mind - simply log back in with your usual email and password before then to restore it yourself.',
                 "After that, it will be permanently deleted and can't be recovered.",
                 "If you didn't request this, please [contact support](" . url(route('feedback.page', [], false)) . ') immediately.',
             ]

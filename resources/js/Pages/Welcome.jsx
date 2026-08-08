@@ -60,7 +60,7 @@ const features = [
     },
     {
         title: 'Notes that stay in sync',
-        description: 'Turn any checklist item into a personal note in one click, and edits flow live in both directions from then on. Rich text, reminders, and due dates keep the small stuff from slipping through.',
+        description: 'Turn any checklist item into a personal note in one click, and edits flow live in both directions from then on. Rich text, reminders, and due dates keep every detail from slipping through.',
         icon: <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.83 2.83L11 19l-4 1 1-4 9.6-9.6z" />,
         accent: 'pink',
     },
@@ -498,7 +498,7 @@ export default function Welcome({ auth, stats }) {
                             }`}
                         >
                             Real review workflows, live notifications, and deadline calendars, with account security built in from the start,
-                            for teams that actually want to ship.
+                            built for teams that need to ship.
                         </p>
                         <div
                             className={`mt-10 flex flex-wrap items-center justify-center gap-4 transition-all delay-200 duration-700 ${
@@ -573,7 +573,7 @@ export default function Welcome({ auth, stats }) {
                                 Everything your team needs, in one place
                             </h2>
                             <p className="mt-3 text-gray-500 dark:text-gray-400">
-                                No plugins to configure and no separate tools to stitch together, it's all here by default.
+                                No plugins to configure, no separate tools to stitch together, everything you need is included by default.
                             </p>
                         </div>
                         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">

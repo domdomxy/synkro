@@ -890,7 +890,7 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                             data={stats.chartData}
                             series={activitySeries}
                             height={240}
-                            emptySubtitle="Nothing was created or completed here yet. Try a wider range, or check back once things start moving."
+                            emptySubtitle="Nothing was created or completed in this range. Try widening it, or check back once activity picks up."
                         />
                     </div>
 

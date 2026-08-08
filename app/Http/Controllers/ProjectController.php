@@ -384,8 +384,8 @@ class ProjectController extends Controller
                     Auth::user()->name,
                     "Confirm deletion of {$project->name}",
                     [
-                        "You requested to delete the project \"**{$project->name}**\" (#{$project->id}). Confirming moves it to trash, where you'll have {$graceDays} day(s) to restore it before it's gone for good.",
-                        'This link expires in 24 hours. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
+                        "You requested to delete the project \"**{$project->name}**\" (#{$project->id}). Confirming moves it to trash, where you'll have **{$graceDays} day(s)** to restore it before it's gone for good.",
+                        'This link expires **in 24 hours**. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
                     ],
                     $confirmUrl,
                     'Confirm Deletion'
@@ -422,8 +422,8 @@ class ProjectController extends Controller
                     Auth::user()->name,
                     $projects->count() === 1 ? "Confirm deletion of {$projects->first()->name}" : 'Confirm deletion of ' . $projects->count() . ' projects',
                     [
-                        "You requested to delete {$names}. Confirming moves all of them to trash at once, where you'll have {$graceDays} day(s) to restore each before it's gone for good.",
-                        'This link expires in 24 hours. If you didn\'t request this, open the trash page and cancel the pending deletion(s) instead.',
+                        "You requested to delete {$names}. Confirming moves all of them to trash at once, where you'll have **{$graceDays} day(s)** to restore each before it's gone for good.",
+                        'This link expires **in 24 hours**. If you didn\'t request this, open the trash page and cancel the pending deletion(s) instead.',
                     ],
                     $confirmUrl,
                     'Confirm Deletion'
@@ -541,7 +541,7 @@ class ProjectController extends Controller
                 "{$projectName} was deleted",
                 [
                     "The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted.",
-                    "It's still viewable for {$graceDays} more day(s) while it sits in the trash - open it to grab anything you need before it's gone for good.",
+                    "It's still viewable for **{$graceDays} more day(s)** while it sits in the trash - open it to grab anything you need before it's gone for good.",
                 ],
                 url(route('projects.show', $projectId, false)),
                 'View Project'

@@ -173,7 +173,7 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
                                 rows={3}
                                 maxLength={2000}
                                 className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                placeholder="Give us some context..."
+                                placeholder="Describe the situation..."
                             />
                             <InputError message={appealForm.errors.message} className="mt-1" />
                         </div>

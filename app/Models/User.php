@@ -131,7 +131,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Verify your email address',
             [
                 'Thanks for signing up for Synkro! Enter the code below to confirm this is your email address and unlock full access to your account.',
-                "This code expires in {$expireMinutes} minutes. If you didn't create a Synkro account, you can safely ignore this email.",
+                "This code expires **in {$expireMinutes} minutes**. If you didn't create a Synkro account, you can safely ignore this email.",
             ],
             null,
             null,
@@ -200,7 +200,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Confirm account deletion',
             [
                 'We received a request to delete your Synkro account. Nothing has been deleted yet - confirming starts a grace period during which you can still restore it by logging back in.',
-                "This link expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email and your account will stay exactly as it is.",
+                "This link expires **in {$expireMinutes} minutes**. If you didn't request this, you can safely ignore this email and your account will stay exactly as it is.",
             ],
             $confirmUrl,
             'Confirm Account Deletion'
@@ -232,7 +232,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Your account restore code',
             [
                 'Enter the code below to restore your Synkro account and everything in it, exactly as it was.',
-                "This code expires in {$expireMinutes} minutes. If you didn't request this, you can safely ignore this email - your account will stay scheduled for deletion.",
+                "This code expires **in {$expireMinutes} minutes**. If you didn't request this, you can safely ignore this email - your account will stay scheduled for deletion.",
             ],
             null,
             null,
@@ -287,7 +287,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Your confirmation code',
             [
                 'You (or someone signed into your account) requested a sensitive, hard-to-reverse action on Synkro.',
-                "Enter the code below to confirm it. This code expires in {$expireMinutes} minutes.",
+                "Enter the code below to confirm it. This code expires **in {$expireMinutes} minutes**.",
                 "If you didn't request this, secure your account immediately - change your password and review your active sessions.",
             ],
             null,
@@ -362,7 +362,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'Reset your password',
             [
                 'You are receiving this email because we received a password reset request for your account.',
-                "This code will expire in {$expireMinutes} minutes.",
+                "This code will expire **in {$expireMinutes} minutes**.",
                 'If you did not request a password reset, no further action is required.',
             ],
             null,

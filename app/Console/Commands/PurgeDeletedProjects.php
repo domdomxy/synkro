@@ -34,7 +34,7 @@ class PurgeDeletedProjects extends Command
                     $recipient,
                     'project.deleted',
                     "{$projectName} was permanently deleted",
-                    ["The project \"**{$projectName}**\" (#{$projectId}) you were a member of has passed its {$graceDays}-day trash grace period and been permanently deleted."],
+                    ["The project \"**{$projectName}**\" (#{$projectId}) you were a member of has passed its **{$graceDays}-day** trash grace period and been permanently deleted."],
                 );
             }
 

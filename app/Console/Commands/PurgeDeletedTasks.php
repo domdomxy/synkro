@@ -37,7 +37,7 @@ class PurgeDeletedTasks extends Command
                     $task->assignee,
                     'task.deleted',
                     "Task permanently deleted: {$taskTitle}",
-                    ["The task \"**{$taskTitle}**\" you were assigned to in \"**{$task->project->name}**\" (#{$task->project_id}) has passed its {$graceDays}-day trash grace period and been permanently deleted."],
+                    ["The task \"**{$taskTitle}**\" you were assigned to in \"**{$task->project->name}**\" (#{$task->project_id}) has passed its **{$graceDays}-day** trash grace period and been permanently deleted."],
                 );
             }
 

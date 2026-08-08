@@ -65,7 +65,7 @@ class AccountDeletion
                         "{$project->name}'s owner deleted their account",
                         [
                             "**{$user->name}**, the **owner** of \"**{$project->name}**\" (#{$project->id}), deleted their account.",
-                            "The project stays exactly as it is for now. If they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . "**, the project and everything in it will be permanently deleted along with it - you may want to export anything you need before then.",
+                            "The project stays exactly as it is for now. If they don't restore their account **by the end of " . $graceEndsAt->format('M j, Y') . "**, the project and everything in it will be permanently deleted along with it - you may want to export anything you need before then.",
                             'If they log back in and restore their account before then, nothing changes and this notice can be ignored.',
                         ],
                         route('projects.show', $project->id),

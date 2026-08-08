@@ -27,7 +27,7 @@ class CloseInactiveFeedback extends Command
 
     protected $description = 'Auto-close feedback tickets that have had no activity for 24h following a support reply';
 
-    private const REASON = 'This ticket was automatically closed after 24 hours of inactivity following a response '
+    private const REASON = 'This ticket was automatically closed **after 24 hours of inactivity** following a response '
         .'from our support team. If you still need help, you can reopen it from the tracking page or start a new ticket.';
 
     public function handle(): int
@@ -89,7 +89,7 @@ class CloseInactiveFeedback extends Command
                 new SynkroNotificationMail(
                     $feedback->name,
                     "Ticket closed due to inactivity ({$feedback->tracking_id})",
-                    ["Your ticket \"**{$feedback->subject}**\" has been automatically closed after 24 hours of inactivity following our last reply."],
+                    ["Your ticket \"**{$feedback->subject}**\" has been automatically closed **after 24 hours of inactivity** following our last reply."],
                     url(route('feedback.page', [], false)),
                     'Track Your Ticket',
                     [

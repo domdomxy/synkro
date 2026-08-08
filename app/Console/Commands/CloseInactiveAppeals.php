@@ -26,7 +26,7 @@ class CloseInactiveAppeals extends Command
 
     protected $description = 'Auto-close pending suspension appeals inactive for 24h following a note from support';
 
-    private const REASON = 'This appeal was automatically closed after 24 hours of inactivity following a note '
+    private const REASON = 'This appeal was automatically closed **after 24 hours of inactivity** following a note '
         .'from our support team. If you still need help, you can submit a new appeal from the login screen.';
 
     public function handle(): int
@@ -92,7 +92,7 @@ class CloseInactiveAppeals extends Command
             $appeal->user,
             'account.appeal_auto_closed',
             'Your suspension appeal was closed',
-            ['Your suspension appeal was automatically closed after 24 hours of inactivity following a note from our support team.'],
+            ['Your suspension appeal was automatically closed **after 24 hours of inactivity** following a note from our support team.'],
             $historyUrl,
             'View Details',
             highlight: [

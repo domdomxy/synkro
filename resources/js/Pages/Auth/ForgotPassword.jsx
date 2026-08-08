@@ -21,7 +21,7 @@ export default function ForgotPassword({ status }) {
             icon={MailIcon}
             eyebrow="Password reset"
             title="Forgot your password?"
-            subtitle="No problem. Enter your email and we'll send you a 6-digit code to choose a new one."
+            subtitle="Enter your email address and we'll send you a 6-digit code to choose a new password."
             align="center"
         >
             <Head title="Forgot Password" />

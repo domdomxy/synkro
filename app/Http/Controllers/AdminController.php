@@ -672,8 +672,8 @@ public function suspend(Request $request, User $user)
         'Your account has been suspended',
         [
             $suspendedUntil
-                ? "Your account has been suspended until {$suspendedUntil->format('M j, Y g:i A')}."
-                : 'Your account has been suspended indefinitely.',
+                ? "Your account has been suspended **until {$suspendedUntil->format('M j, Y g:i A')}**."
+                : 'Your account has been suspended **indefinitely**.',
             "If you believe this was a mistake, you can submit an appeal using the button below.",
         ],
         url(route('appeal.page', [], false)),
@@ -1156,7 +1156,7 @@ public function suspend(Request $request, User $user)
             'Your account has been deleted',
             [
                 'Your Synkro account was deleted by an administrator.',
-                "It will be kept for {$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ') in case this was a mistake - log back in with your usual email and password before then to restore it.',
+                "It will be kept for **{$graceDays} more day(s) (until the end of " . $graceEndsAt->format('M j, Y') . ')** in case this was a mistake - log back in with your usual email and password before then to restore it.',
                 "If you believe this was done in error, please [contact support](" . url(route('feedback.page', [], false)) . ').',
             ]
         );
@@ -1296,7 +1296,7 @@ public function suspend(Request $request, User $user)
             'Your password has been reset',
             [
                 'An administrator has reset your Synkro password.',
-                'This password expires in 24 hours. Please log in and set a new password as soon as possible.',
+                'This password expires **in 24 hours**. Please log in and set a new password as soon as possible.',
             ],
             url(route('login', [], false)),
             'Log In Now',

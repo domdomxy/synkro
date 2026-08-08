@@ -95,7 +95,7 @@ export default function Appeal() {
                                     onChange={(e) => setData('message', e.target.value)}
                                     rows={5}
                                     maxLength={MESSAGE_MAX}
-                                    placeholder="Give us some context..."
+                                    placeholder="Describe the situation..."
                                     className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 />
                                 <InputError message={errors.message} className="mt-2" />
