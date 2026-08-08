@@ -688,7 +688,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                 {view === 'trash' && (
                 <div className="space-y-4 sm:space-y-6">
                     <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                        Deleted projects and tasks sit here before they're gone for good. Only projects you own and tasks in projects you manage show up here.
+                        Deleted projects and tasks sit here before they're permanently deleted. Only projects you own and tasks in projects you manage show up here.
                     </p>
 
                     <div className="space-y-3">

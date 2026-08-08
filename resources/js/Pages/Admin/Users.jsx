@@ -360,7 +360,7 @@ export default function Users({ users, stats, filters }) {
         {
             value: 'permanent',
             label: 'Delete permanently',
-            description: `Immediate and unrecoverable - no grace period, no restore. ${count === 1 ? 'Only' : count} ${count === 1 ? 'use this if you\'re certain.' : 'accounts, gone for good.'}`,
+            description: `Immediate and unrecoverable - no grace period, no restore. ${count === 1 ? 'Only' : count} ${count === 1 ? 'use this if you\'re certain.' : 'accounts, permanently deleted.'}`,
             icon: 'trash',
             danger: true,
             confirmLabel: 'Delete Permanently',

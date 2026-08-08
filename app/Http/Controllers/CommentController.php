@@ -279,7 +279,7 @@ class CommentController extends Controller
         ], $task);
 
         // An owner/manager deleting a comment is a moderation action - it and
-        // every reply underneath it are gone for good, no tombstone. Anyone
+        // every reply underneath it are permanently removed, no tombstone. Anyone
         // else (deleting their own comment) still can't blow away replies
         // that don't belong to them, so that path tombstones instead: the
         // body is cleared and deleted_at is stamped, and the frontend renders

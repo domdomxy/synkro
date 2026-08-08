@@ -413,7 +413,7 @@ class TaskController extends Controller
      * Moves a task to the trash. $task->delete() below soft-deletes (Task uses
      * SoftDeletes) rather than removing the row, so owner/manager can restore it or
      * permanently delete it from the Trash page during the grace period - see
-     * tasks:purge-deleted for when it's actually gone for good.
+     * tasks:purge-deleted for when it's actually permanently deleted.
      */
     public function destroy(Task $task)
     {

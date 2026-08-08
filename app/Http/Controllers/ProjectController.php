@@ -106,7 +106,7 @@ class ProjectController extends Controller
         // flags are available below, not just whether a mute row exists at all.
         $mutedTasks = Auth::user()->mutedTasks()->get()->keyBy('id');
         // Only meaningful (non-null) while the project is actually trashed - lets
-        // the read-only banner tell a member exactly when it'll be gone for good.
+        // the read-only banner tell a member exactly when it'll be permanently deleted.
         $project->grace_ends_at = $project->deletionGraceEndsAt();
         $project->is_muted = $project->isMutedBy(Auth::user());
         $project->mute_in_app = $project->inAppMutedBy(Auth::user());
@@ -384,7 +384,7 @@ class ProjectController extends Controller
                     Auth::user()->name,
                     "Confirm deletion of {$project->name}",
                     [
-                        "You requested to delete the project \"**{$project->name}**\" (#{$project->id}). Confirming moves it to trash, where you'll have **{$graceDays} day(s)** to restore it before it's gone for good.",
+                        "You requested to delete the project \"**{$project->name}**\" (#{$project->id}). Confirming moves it to trash, where you'll have **{$graceDays} day(s)** to restore it before it is permanently deleted.",
                         'This link expires **in 24 hours**. If you didn\'t request this, open the project settings and cancel the pending deletion instead.',
                     ],
                     $confirmUrl,
@@ -422,7 +422,7 @@ class ProjectController extends Controller
                     Auth::user()->name,
                     $projects->count() === 1 ? "Confirm deletion of {$projects->first()->name}" : 'Confirm deletion of ' . $projects->count() . ' projects',
                     [
-                        "You requested to delete {$names}. Confirming moves all of them to trash at once, where you'll have **{$graceDays} day(s)** to restore each before it's gone for good.",
+                        "You requested to delete {$names}. Confirming moves all of them to trash at once, where you'll have **{$graceDays} day(s)** to restore each before it is permanently deleted.",
                         'This link expires **in 24 hours**. If you didn\'t request this, open the trash page and cancel the pending deletion(s) instead.',
                     ],
                     $confirmUrl,
@@ -541,7 +541,7 @@ class ProjectController extends Controller
                 "{$projectName} was deleted",
                 [
                     "The project \"**{$projectName}**\" (#{$projectId}) you were a member of has been deleted.",
-                    "It's still viewable for **{$graceDays} more day(s)** while it sits in the trash - open it to grab anything you need before it's gone for good.",
+                    "It's still viewable for **{$graceDays} more day(s)** while it sits in the trash - open it to grab anything you need before it is permanently deleted.",
                 ],
                 url(route('projects.show', $projectId, false)),
                 'View Project'

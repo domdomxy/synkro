@@ -48,7 +48,7 @@ class AccountDeletion
                             'user_id' => $recipient->id,
                             'type' => 'owner_account_deleted',
                             'causer_id' => $user->id,
-                            'message' => "Owner account deleted\n**{$user->name}**, the **owner** of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need - if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . '**, it and everything in it will be gone for good.',
+                            'message' => "Owner account deleted\n**{$user->name}**, the **owner** of \"**{$project->name}**\", deleted their account. The project itself is unaffected for now, but it's worth exporting anything you need - if they don't restore their account by the end of **" . $graceEndsAt->format('M j, Y') . '**, it and everything in it will be permanently deleted.',
                             'url' => route('projects.show', $project->id, false),
                         ]);
 
@@ -248,7 +248,7 @@ class AccountDeletion
                         'user_id' => $recipient->id,
                         'type' => 'member_left',
                         'causer_id' => $user->id,
-                        'message' => "Account permanently deleted\n**{$user->name}**'s account is now gone for good - **{$count}** {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
+                        'message' => "Account permanently deleted\n**{$user->name}**'s account has now been permanently deleted - **{$count}** {$taskWord} in \"**{$project->name}**\" that were assigned to them have been released back to Todo, unassigned",
                         'url' => route('projects.show', $project->id, false),
                     ]);
 

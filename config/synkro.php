@@ -11,7 +11,7 @@ return [
     | rather than removed outright. It can be self-restored (by logging
     | back in with the same credentials) for this many days afterwards.
     | Once the window passes, the accounts:purge-deleted scheduled command
-    | permanently deletes it and everything is gone for good.
+    | permanently deletes it, and it cannot be recovered.
     |
     */
 
@@ -27,7 +27,7 @@ return [
     | outright. Owners/managers can restore it or permanently delete it
     | from the Trash page during this window. Once it passes, the
     | projects:purge-deleted / tasks:purge-deleted scheduled commands
-    | permanently delete it and everything is gone for good.
+    | permanently delete it, and it cannot be recovered.
     |
     */
 

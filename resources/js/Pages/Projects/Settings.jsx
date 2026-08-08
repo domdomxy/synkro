@@ -91,7 +91,7 @@ export default function Settings({ project, role }) {
         });
 
     const deleteProject = async () => {
-        if (await confirm(`A confirmation link will be emailed to you. Once you click it, "${project.name}" moves to trash, where you can still restore it before it's gone for good.`, { title: 'Request Deletion?', danger: true, confirmLabel: 'Send Confirmation Email' })) {
+        if (await confirm(`A confirmation link will be emailed to you. Once you click it, "${project.name}" moves to trash, where you can still restore it before it is permanently deleted.`, { title: 'Request Deletion?', danger: true, confirmLabel: 'Send Confirmation Email' })) {
             router.delete(route('projects.destroy', project.id));
         }
     };
@@ -249,7 +249,7 @@ export default function Settings({ project, role }) {
                     {isOwner && !isTrashed && (
                         <SectionCard
                             title="Danger Zone"
-                            description="Deleting a project moves it to trash, where it can still be restored for a few days before it's gone for good."
+                            description="Deleting a project moves it to trash, where it can still be restored for a few days before it is permanently deleted."
                             danger
                             icon={
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

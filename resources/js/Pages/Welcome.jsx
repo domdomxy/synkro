@@ -36,7 +36,7 @@ const features = [
     },
     {
         title: 'Accountability & recovery',
-        description: 'Every action on a project is logged, and your own logged-in devices are always visible - browser, location, last activity, one click to disconnect any of them remotely. And if a project, task, or even your account gets deleted, nothing disappears right away: everything sits in a recoverable trash for a grace period before it is gone for good.',
+        description: 'Every action on a project is logged, and your own logged-in devices are always visible - browser, location, last activity, one click to disconnect any of them remotely. And if a project, task, or even your account gets deleted, nothing disappears right away: everything sits in a recoverable trash for a grace period before it is permanently deleted.',
         icon: <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
         accent: 'pink',
     },

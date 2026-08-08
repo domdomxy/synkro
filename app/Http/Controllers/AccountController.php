@@ -274,7 +274,7 @@ class AccountController extends Controller
 
         return Redirect::route('login')->with(
             'status',
-            "Your account has been deleted. You can restore it by logging back in within {$graceDays} day(s) - after that it's gone for good."
+            "Your account has been deleted. You can restore it by logging back in within {$graceDays} day(s) - after that it is permanently deleted."
         );
     }
 

@@ -190,7 +190,7 @@ class AdminController extends Controller
 
         // Deletions this month, read off whichever rows still show a deleted_at right now.
         // Once something's been soft-deleted *and* since purged past its grace period, its
-        // deleted_at becomes unqueryable (the row's gone for good) - so a deletion from
+        // deleted_at becomes unqueryable (the row's permanently gone) - so a deletion from
         // early this month that's already been purged quietly stops counting here. An
         // accepted, honest gap given grace periods (a handful of days) are short relative
         // to a month; a fully gapless count would need a permanent deletion-events log this

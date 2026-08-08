@@ -201,7 +201,7 @@ const SECTION_META = {
     appearance: { title: 'Appearance', description: 'Choose how Synkro looks on this device' },
     'trusted-sites': { title: 'Trusted Sites', description: 'Manage links you\'ve told Synkro to trust' },
     notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
-    trash: { title: 'Trash', description: 'Review deleted projects and tasks before they\'re gone for good' },
+    trash: { title: 'Trash', description: 'Review deleted projects and tasks before they\'re permanently deleted' },
     devices: { title: 'Logged in devices', description: 'See where you\'re signed in and disconnect devices you don\'t recognize' },
     support: { title: 'Support', description: 'Get help, report a bug, or send us feedback' },
 };
