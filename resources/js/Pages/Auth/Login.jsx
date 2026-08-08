@@ -66,7 +66,7 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
     return (
         <div className="space-y-4">
             <div
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 ${
+                className={`flex flex-wrap items-center gap-3 rounded-lg px-4 py-3 ${
                     suspension.permanent ? 'bg-red-50 dark:bg-red-950/30' : 'bg-amber-50 dark:bg-amber-950/30'
                 }`}
             >
@@ -79,7 +79,7 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
                 >
                     {suspension.permanent ? <BanIcon className="h-5 w-5" /> : <ClockIcon className="h-5 w-5" />}
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                         {suspension.permanent ? 'Permanent suspension' : 'Temporary suspension'}
                     </p>
@@ -177,7 +177,7 @@ function SuspensionNotice({ suspension, appealLimitMessage }) {
                             />
                             <InputError message={appealForm.errors.message} className="mt-1" />
                         </div>
-                        <div className="flex items-center gap-3 pt-1">
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
                             <PrimaryButton
                                 disabled={appealForm.processing || !appealForm.data.message.trim()}
                             >

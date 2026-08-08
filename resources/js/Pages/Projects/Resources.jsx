@@ -79,6 +79,22 @@ function KebabIcon({ className = 'h-5 w-5' }) {
     );
 }
 
+function SearchIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+    );
+}
+
+function BoxIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+    );
+}
+
 function RemoveButton({ onClick, title = 'Remove' }) {
     return (
         <button
@@ -94,6 +110,78 @@ function RemoveButton({ onClick, title = 'Remove' }) {
 
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString(undefined, { dateStyle: 'medium' });
+}
+
+function SearchInput({ value, onChange, placeholder }) {
+    return (
+        <div className="relative flex-1 sm:max-w-xs">
+            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500">
+                <SearchIcon />
+            </div>
+            <input
+                type="text"
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full rounded-lg border-gray-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500"
+            />
+        </div>
+    );
+}
+
+/** Small pill segmented control used to filter the resource list by type. */
+function FilterTabs({ value, onChange, options }) {
+    return (
+        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
+            {options.map((opt) => (
+                <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => onChange(opt.key)}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                        value === opt.key
+                            ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    }`}
+                >
+                    {opt.label}
+                    <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                            value === opt.key
+                                ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300'
+                                : 'bg-gray-200/70 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}
+                    >
+                        {opt.count}
+                    </span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+/** Compact summary strip - a quick at-a-glance read on what's in the project's resource library, before scanning the list itself. */
+function SummaryStrip({ total, files, links, totalSize }) {
+    const stats = [
+        { label: 'Total', value: total },
+        { label: 'Files', value: files },
+        { label: 'Links', value: links },
+        ...(totalSize ? [{ label: 'Storage used', value: totalSize }] : []),
+    ];
+
+    return (
+        <div className="flex flex-wrap gap-2">
+            {stats.map((s) => (
+                <div
+                    key={s.label}
+                    className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                >
+                    <span className="text-base font-semibold text-gray-800 dark:text-gray-100">{s.value}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{s.label}</span>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 /* ---------- Shared dialog chrome (matches ConfirmDialog's visual language) ---------- */
@@ -604,12 +692,12 @@ function ResourceRow({ resource, canManage, isFirst, isLast, onPreview, onEdit, 
 
     return (
         <div
-            className={`flex items-start gap-3 border-b border-gray-100 px-4 py-3.5 last:border-0 dark:border-gray-700 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''}`}
+            className={`group flex items-start gap-3 border-b border-gray-100 px-4 py-3.5 transition-colors last:border-0 hover:bg-gray-50/70 dark:border-gray-700 dark:hover:bg-gray-700/20 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''}`}
         >
             <button
                 type="button"
                 onClick={() => onPreview(resource)}
-                className="mt-0.5 shrink-0 rounded-md bg-gray-50 p-2 text-gray-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:bg-gray-900 dark:text-gray-500 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300"
+                className="mt-0.5 shrink-0 rounded-lg bg-gray-50 p-2 text-gray-400 transition group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:bg-gray-900 dark:text-gray-500 dark:group-hover:bg-indigo-900/40 dark:group-hover:text-indigo-300"
                 title="Preview"
             >
                 {isLink ? <LinkTypeIcon className="h-5 w-5" /> : <FileTypeIcon name={resource.original_name} className="h-5 w-5" />}
@@ -659,6 +747,8 @@ export default function Resources({ project, resources, canManage }) {
     const [showAdd, setShowAdd] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
     const [previewingResource, setPreviewingResource] = useState(null);
+    const [search, setSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'file' | 'link'
     const { confirm, ConfirmDialog } = useConfirm();
     const toolbarRef = useRef(null);
 
@@ -678,6 +768,26 @@ export default function Resources({ project, resources, canManage }) {
             : { type: 'file', path: previewingResource.path, original_name: previewingResource.original_name })
         : null;
 
+    const fileCount = resources.filter((r) => r.type !== 'link').length;
+    const linkCount = resources.filter((r) => r.type === 'link').length;
+    const totalBytes = resources.reduce((sum, r) => sum + (r.type !== 'link' ? (r.size ?? 0) : 0), 0);
+
+    const filterOptions = [
+        { key: 'all', label: 'All', count: resources.length },
+        { key: 'file', label: 'Files', count: fileCount },
+        { key: 'link', label: 'Links', count: linkCount },
+    ];
+
+    const query = search.trim().toLowerCase();
+    const visibleResources = resources.filter((r) => {
+        if (typeFilter === 'file' && r.type === 'link') return false;
+        if (typeFilter === 'link' && r.type !== 'link') return false;
+        if (!query) return true;
+        return r.name.toLowerCase().includes(query) || (r.description ?? '').toLowerCase().includes(query);
+    });
+
+    const isFiltering = query.length > 0 || typeFilter !== 'all';
+
     return (
         <AuthenticatedLayout header={
             <div className="flex items-center gap-4">
@@ -689,12 +799,14 @@ export default function Resources({ project, resources, canManage }) {
         }>
             <Head title={`Resources - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl space-y-5 px-4 sm:px-6 lg:px-8">
 
-                    <div ref={toolbarRef} className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-gray-400 dark:text-gray-500">
-                            Packages, sources, and references shared by the project's owner and managers
-                        </p>
+                    <div ref={toolbarRef} className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p className="text-sm text-gray-400 dark:text-gray-500">
+                                Packages, sources, and references shared by the project's owner and managers
+                            </p>
+                        </div>
                         {canManage && (
                             <button
                                 type="button"
@@ -707,6 +819,15 @@ export default function Resources({ project, resources, canManage }) {
                         )}
                     </div>
 
+                    {resources.length > 0 && <SummaryStrip total={resources.length} files={fileCount} links={linkCount} totalSize={formatSize(totalBytes)} />}
+
+                    {resources.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search resources..." />
+                            <FilterTabs value={typeFilter} onChange={setTypeFilter} options={filterOptions} />
+                        </div>
+                    )}
+
                     {/*
                         No overflow-hidden here on purpose: the row-level kebab
                         menu is an absolutely-positioned dropdown, and an
@@ -717,21 +838,38 @@ export default function Resources({ project, resources, canManage }) {
                     */}
                     <div className="rounded-lg bg-white shadow dark:bg-gray-800">
                         {resources.length === 0 ? (
-                            <div className="rounded-lg px-6 py-10 text-center">
+                            <div className="flex flex-col items-center rounded-lg px-6 py-14 text-center">
+                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
+                                    <BoxIcon className="h-6 w-6" />
+                                </div>
                                 <p className="text-sm text-gray-400 dark:text-gray-500">
                                     {canManage
                                         ? 'No resources yet. Add a package, source, or reference for members to use.'
                                         : "No resources here yet. The project's owner or managers can add some."}
                                 </p>
                             </div>
+                        ) : visibleResources.length === 0 ? (
+                            <div className="flex flex-col items-center rounded-lg px-6 py-14 text-center">
+                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
+                                    <SearchIcon className="h-5 w-5" />
+                                </div>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No resources match your search.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => { setSearch(''); setTypeFilter('all'); }}
+                                    className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
                         ) : (
-                            resources.map((resource, index) => (
+                            visibleResources.map((resource, index) => (
                                 <ResourceRow
                                     key={resource.id}
                                     resource={resource}
                                     canManage={canManage}
                                     isFirst={index === 0}
-                                    isLast={index === resources.length - 1}
+                                    isLast={index === visibleResources.length - 1}
                                     onPreview={setPreviewingResource}
                                     onEdit={setEditingResource}
                                     onDelete={deleteResource}
@@ -739,6 +877,11 @@ export default function Resources({ project, resources, canManage }) {
                             ))
                         )}
                     </div>
+                    {isFiltering && visibleResources.length > 0 && (
+                        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+                            Showing {visibleResources.length} of {resources.length} resources
+                        </p>
+                    )}
                 </div>
             </div>
 

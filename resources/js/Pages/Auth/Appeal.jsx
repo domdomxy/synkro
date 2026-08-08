@@ -102,7 +102,7 @@ export default function Appeal() {
                                 />
                                 <InputError message={errors.message} className="mt-2" />
                             </div>
-                            <div className="flex items-center justify-between pt-1">
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                                 <Link href={route('login')} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
                                     ← Back to login
                                 </Link>

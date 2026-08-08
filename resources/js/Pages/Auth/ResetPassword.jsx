@@ -4,6 +4,7 @@ import AuthField from '@/Components/Auth/AuthField';
 import OtpInput from '@/Components/Auth/OtpInput';
 import ResendCodeButton from '@/Components/Auth/ResendCodeButton';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import PasswordMatchHint from '@/Components/PasswordMatchHint';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { MailIcon, LockIcon } from '@/Components/Auth/icons';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -113,6 +114,7 @@ export default function ResetPassword({ email, status }) {
                     autoComplete="new-password"
                     onChange={(e) => setData('password_confirmation', e.target.value)}
                     error={errors.password_confirmation}
+                    hint={<PasswordMatchHint password={data.password} confirmation={data.password_confirmation} />}
                 />
 
                 <PrimaryButton className="w-full justify-center py-2.5" disabled={processing || data.code.length !== 6}>

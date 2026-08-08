@@ -99,8 +99,8 @@ export default function OtpInput({ length = 6, value = '', onChange, error, auto
 
     return (
         <div>
-            <div className="flex items-center gap-2">
-                <div className="grid flex-1 grid-cols-6 gap-2" onPaste={handlePaste}>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="grid flex-1 grid-cols-6 gap-1.5 sm:gap-2" onPaste={handlePaste}>
                     {digits.map((digit, index) => (
                         <input
                             key={index}
@@ -114,7 +114,7 @@ export default function OtpInput({ length = 6, value = '', onChange, error, auto
                             onChange={(e) => handleChange(index, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(index, e)}
                             aria-label={`Digit ${index + 1} of ${length}`}
-                            className={`h-12 w-full min-w-0 rounded-lg border bg-white text-center text-lg font-semibold tabular-nums text-gray-900 shadow-sm transition focus:outline-none focus:ring-2 disabled:opacity-60 dark:bg-gray-900 dark:text-gray-100 ${
+                            className={`h-11 w-full min-w-0 rounded-lg border bg-white text-center text-base font-semibold tabular-nums text-gray-900 shadow-sm transition focus:outline-none focus:ring-2 disabled:opacity-60 sm:h-12 sm:text-lg dark:bg-gray-900 dark:text-gray-100 ${
                                 error
                                     ? 'border-red-400 focus:border-red-400 focus:ring-red-200 dark:border-red-500/60 dark:focus:ring-red-500/30'
                                     : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200 dark:border-gray-600 dark:focus:ring-indigo-500/30'
@@ -130,9 +130,9 @@ export default function OtpInput({ length = 6, value = '', onChange, error, auto
                         disabled={disabled}
                         title="Paste code from clipboard"
                         aria-label="Paste code from clipboard"
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition hover:border-indigo-400 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 transition hover:border-indigo-400 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-50 sm:h-12 sm:w-12 dark:border-gray-600 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
                     >
-                        <ClipboardIcon className="h-5 w-5" />
+                        <ClipboardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                 )}
             </div>

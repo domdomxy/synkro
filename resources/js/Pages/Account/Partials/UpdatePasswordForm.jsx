@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import PasswordInput from '@/Components/PasswordInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import PasswordMatchHint from '@/Components/PasswordMatchHint';
 import SavedIndicator from '@/Components/SavedIndicator';
 import Spinner from '@/Components/Spinner';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
@@ -128,6 +129,8 @@ export default function UpdatePasswordForm({ className = '' }) {
                         className="mt-1 w-full"
                         autoComplete="new-password"
                     />
+
+                    <PasswordMatchHint password={data.password} confirmation={data.password_confirmation} />
 
                     <InputError
                         message={errors.password_confirmation}

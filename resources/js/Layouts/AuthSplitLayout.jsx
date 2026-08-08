@@ -107,26 +107,28 @@ export default function AuthSplitLayout({ icon: Icon, iconTone = 'indigo', eyebr
             </div>
 
             {/* Form panel */}
-            <div className="flex w-full flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-20">
-                <Link href="/" className="mb-8 flex items-center gap-2 text-gray-900 lg:hidden dark:text-gray-100">
-                    <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-lg font-bold">Synkro</span>
+            <div className="flex w-full flex-1 flex-col justify-center px-5 py-8 sm:px-12 sm:py-12 lg:px-20">
+                <Link href="/" className="mb-6 flex items-center gap-2 text-gray-900 sm:mb-8 lg:hidden dark:text-gray-100">
+                    <ApplicationLogo className="h-7 w-7 fill-current text-indigo-600 sm:h-8 sm:w-8 dark:text-indigo-400" />
+                    <span className="text-base font-bold sm:text-lg">Synkro</span>
                 </Link>
 
                 <div className="w-full max-w-sm">
                     {Icon && (
-                        <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-full ${ICON_TONES[iconTone]}`}>
-                            <Icon className="h-6 w-6" />
+                        <div
+                            className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full sm:mb-4 sm:h-12 sm:w-12 ${ICON_TONES[iconTone]}`}
+                        >
+                            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                     )}
                     {eyebrow && (
-                        <p style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">
+                        <p style={MONO} className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 sm:text-[11px] dark:text-indigo-400">
                             {eyebrow}
                         </p>
                     )}
-                    {title && <h1 className="mt-1.5 text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>}
-                    {subtitle && <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
-                    <div className="mt-8">{children}</div>
+                    {title && <h1 className="mt-1.5 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">{title}</h1>}
+                    {subtitle && <p className="mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{subtitle}</p>}
+                    <div className="mt-6 sm:mt-8">{children}</div>
                 </div>
             </div>
         </div>

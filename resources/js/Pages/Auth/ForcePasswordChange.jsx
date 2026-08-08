@@ -1,6 +1,7 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import PasswordMatchHint from '@/Components/PasswordMatchHint';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import AuthField from '@/Components/Auth/AuthField';
 import { LockIcon } from '@/Components/Auth/icons';
@@ -84,6 +85,7 @@ export default function ForcePasswordChange() {
                     autoComplete="new-password"
                     onChange={(e) => setData('password_confirmation', e.target.value)}
                     error={errors.password_confirmation}
+                    hint={<PasswordMatchHint password={data.password} confirmation={data.password_confirmation} />}
                 />
 
                 <PrimaryButton className="w-full justify-center py-2.5" disabled={processing}>

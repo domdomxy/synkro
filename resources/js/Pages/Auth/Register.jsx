@@ -2,6 +2,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import AuthField from '@/Components/Auth/AuthField';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import PasswordMatchHint from '@/Components/PasswordMatchHint';
 import EmailValidityHint from '@/Components/EmailValidityHint';
 import { meetsMinimumStrength } from '@/utils/passwordStrength';
 import { UserIcon, MailIcon, LockIcon } from '@/Components/Auth/icons';
@@ -91,6 +92,7 @@ export default function Register() {
                     autoComplete="new-password"
                     onChange={(e) => setData('password_confirmation', e.target.value)}
                     error={errors.password_confirmation}
+                    hint={<PasswordMatchHint password={data.password} confirmation={data.password_confirmation} />}
                     required
                 />
 
