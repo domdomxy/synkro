@@ -157,7 +157,7 @@ export default function Settings({ project, role }) {
         }>
             <Head title={`Settings - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     {isTrashed && (
                         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">

@@ -117,7 +117,7 @@ const Content = ({
                 >
                     <div
                         className={
-                            `rounded-xl ring-1 ring-black ring-opacity-5 dark:ring-white/10 ` +
+                            `overflow-hidden rounded-xl ring-1 ring-black ring-opacity-5 dark:ring-white/10 ` +
                             contentClasses
                         }
                     >

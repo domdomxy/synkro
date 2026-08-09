@@ -28,9 +28,16 @@ class ProjectController extends Controller
             ->sortByDesc(fn ($p) => $p->pivot->pinned)
             ->values();
 
+        // Counted separately (not derived from $projects) so both tab badges
+        // stay accurate regardless of which tab is currently loaded.
+        $activeCount = Auth::user()->projects()->wherePivot('archived', false)->count();
+        $archivedCount = Auth::user()->projects()->wherePivot('archived', true)->count();
+
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
             'showingArchived' => $showArchived,
+            'activeCount' => $activeCount,
+            'archivedCount' => $archivedCount,
         ]);
     }
 

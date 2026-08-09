@@ -159,7 +159,7 @@ function ProjectActionsMenu({ project, showingArchived, onPin, onUnpin, onArchiv
     );
 }
 
-export default function Index({ projects, showingArchived }) {
+export default function Index({ projects, showingArchived, activeCount, archivedCount }) {
     const { auth } = usePage().props;
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -275,6 +275,17 @@ export default function Index({ projects, showingArchived }) {
                             }`}
                         >
                             Active
+                            {typeof activeCount === 'number' && (
+                                <span
+                                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                                        !showingArchived
+                                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    {activeCount}
+                                </span>
+                            )}
                         </button>
                         <button
                             onClick={() => switchTab(true)}
@@ -285,6 +296,17 @@ export default function Index({ projects, showingArchived }) {
                             }`}
                         >
                             Archived
+                            {typeof archivedCount === 'number' && (
+                                <span
+                                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                                        showingArchived
+                                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    {archivedCount}
+                                </span>
+                            )}
                         </button>
                     </div>
 

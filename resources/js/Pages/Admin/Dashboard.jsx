@@ -183,7 +183,7 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
         }>
             <Head title="Admin Dashboard" />
             <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                     <QuickActionsMenu
                         items={[
