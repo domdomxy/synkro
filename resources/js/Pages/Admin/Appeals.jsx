@@ -10,6 +10,69 @@ import BackButton from '@/Components/BackButton';
 import { Link } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
+import AdminGuideDrawer from '@/Components/AdminGuideDrawer';
+
+const APPEAL_GUIDE_SECTIONS = [
+    {
+        heading: 'Before you decide',
+        tone: 'neutral',
+        items: [
+            "Read the suspension reason and the user's appeal message in full before forming an opinion.",
+            'Open the history icon next to the appeal to see prior suspensions and appeals for this user.',
+            'Check whether this is a first appeal or a repeat one with no new information.',
+            'Note how much of the suspension has already passed, it can matter for edge-case decisions.',
+        ],
+    },
+    {
+        heading: 'Writing the reason',
+        tone: 'neutral',
+        items: [
+            'Whatever you type in the reason box is emailed to the user exactly as written. Treat it as the message itself, not an internal note.',
+            'Reference the specific rule or behavior involved rather than a vague reference to "the situation".',
+            'Keep it to a few sentences. A long essay reads as defensive rather than clear.',
+        ],
+    },
+    {
+        heading: 'Good vs. weak reasons',
+        tone: 'example',
+        items: [
+            { label: 'Good (approve)', text: 'Approved, thanks for clarifying that the flagged comment was quoting another user rather than your own words. Your suspension has been lifted.' },
+            { label: 'Weak (approve)', text: '"ok lifted" is too short to explain why and reads as dismissive.' },
+            { label: 'Good (reject)', text: 'Rejected. The screenshots you shared show the message was posted from your account on Aug 3, matching the report we reviewed. If you believe your account was compromised, please contact us separately so we can look into that.' },
+            { label: 'Weak (reject)', text: '"no" gives the user nothing to act on and will likely trigger a repeat appeal.' },
+        ],
+    },
+    {
+        heading: 'Common scenarios',
+        tone: 'scenario',
+        items: [
+            'First-time appeal with a plausible explanation and no prior violations: lean toward approving if the explanation is consistent with the evidence.',
+            "Appeal denies wrongdoing but offers no new evidence beyond what was already reviewed: reject and briefly restate the evidence. This avoids relitigating the same appeal repeatedly.",
+            'Appeal is hostile or uses abusive language: keep your written reason professional regardless. The tone of the appeal should not show up in your reply.',
+            "Appeal raises something outside your authority, like billing or a bug: use \"Leave a Note\" to redirect them, then still decide the appeal itself once you have enough information.",
+        ],
+    },
+    {
+        heading: 'Do',
+        tone: 'do',
+        items: [
+            'Acknowledge what the user actually said before giving the outcome.',
+            'Cite the specific evidence or rule the decision is based on.',
+            'Keep the tone calm and professional even when the appeal is hostile or repetitive.',
+            "Double check the user's current suspension status before deciding, it may have changed since the appeal was submitted.",
+        ],
+    },
+    {
+        heading: "Don't",
+        tone: 'dont',
+        items: [
+            "Don't reference other users, other cases, or internal team discussion in the reason field.",
+            "Don't promise a specific outcome for a future appeal.",
+            "Don't use sarcasm, all caps, or informal language. This goes out under Synkro's name.",
+            'Don\'t leave an appeal pending indefinitely. If you need more time, use "Leave a Note" so the user knows it\'s being looked at.',
+        ],
+    },
+];
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -300,6 +363,7 @@ function AppealItem({ appeal }) {
 export default function Appeals({ appeals, filters }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [search, setSearch] = useState(filters?.search ?? '');
+    const [guideOpen, setGuideOpen] = useState(false);
     const toolbarRef = useRef(null);
 
     const applySearch = () => router.get(route('admin.appeals'), { search, status: statusFilter !== 'all' ? statusFilter : undefined }, { preserveState: true });
@@ -313,9 +377,20 @@ export default function Appeals({ appeals, filters }) {
 
     return (
         <AuthenticatedLayout header={
-            <div className="flex items-center gap-4">
-                <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Suspension Appeals</h2>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Suspension Appeals</h2>
+                </div>
+                <button
+                    onClick={() => setGuideOpen(true)}
+                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    Guide
+                </button>
             </div>
         }>
             <Head title="Admin - Appeals" />
@@ -381,6 +456,14 @@ export default function Appeals({ appeals, filters }) {
             </div>
 
             <ScrollToPaginationButton targetRef={toolbarRef} />
+
+            <AdminGuideDrawer
+                show={guideOpen}
+                onClose={() => setGuideOpen(false)}
+                title="Appeal Review Guide"
+                intro="Reference for keeping suspension-appeal responses consistent."
+                sections={APPEAL_GUIDE_SECTIONS}
+            />
         </AuthenticatedLayout>
     );
 }

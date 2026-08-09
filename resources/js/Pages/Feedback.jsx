@@ -29,7 +29,7 @@ export default function Feedback({ flash, categories, trackingId, from }) {
         <>
             <Head title="Help & Feedback" />
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+                <main className="mx-auto max-w-8xl px-4 py-10 sm:px-6">
                     <FeedbackPanel flash={flash} categories={categories} trackingId={trackingId} from={from} onClose={closeStandalone} standalone />
                 </main>
             </div>

@@ -102,7 +102,7 @@ export default function Notifications({ notificationsList, filters }) {
             <Head title="Notifications" />
             {ConfirmDialog}
             <div className="py-12">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <div className="relative w-full sm:w-64">
                             <svg className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

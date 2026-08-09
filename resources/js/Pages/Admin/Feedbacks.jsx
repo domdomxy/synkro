@@ -10,6 +10,70 @@ import CategoryIcon, { resolveCategory } from '@/Components/CategoryIcon';
 import ManageCategoriesModal from '@/Components/ManageCategoriesModal';
 import ImageLightbox from '@/Components/ImageLightbox';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
+import AdminGuideDrawer from '@/Components/AdminGuideDrawer';
+
+const FEEDBACK_GUIDE_SECTIONS = [
+    {
+        heading: 'Status meanings',
+        tone: 'neutral',
+        items: [
+            'Pending: not yet triaged, this is the default for new tickets.',
+            "Reviewing: set this as soon as you start looking into it, so the user knows it's not stuck.",
+            "Accepted: the report or request is valid and will be acted on, it doesn't require a fix to already exist.",
+            "Rejected: won't be actioned, always include a reason so the user understands why.",
+            'Closed: resolved, or no further action needed. This also happens automatically after 24h of inactivity.',
+        ],
+    },
+    {
+        heading: 'Before you reply',
+        tone: 'neutral',
+        items: [
+            "Read every message in the thread, not just the latest one. The user may have already answered a question you're about to ask.",
+            'Check attached screenshots or files before assuming you understand the issue.',
+            'Search for similar tickets if the description sounds familiar, duplicates should be tied together in your response.',
+        ],
+    },
+    {
+        heading: 'Good vs. weak responses',
+        tone: 'example',
+        items: [
+            { label: 'Good', text: "Thanks for the report. I can reproduce this on the mobile view, the button overlaps the header on smaller screens. I've filed it and will update this ticket when it's fixed." },
+            { label: 'Weak', text: '"will look into it" does not confirm the issue was understood and gives no timeframe.' },
+            { label: 'Good (rejecting)', text: "Appreciate the suggestion. Dark mode isn't on the roadmap right now, we're focused on the mobile app changes first. I'll close this for now, feel free to open a new ticket if priorities change." },
+            { label: 'Weak (rejecting)', text: '"not doing this" is dismissive and does not explain the reasoning or leave the door open.' },
+        ],
+    },
+    {
+        heading: 'Handling different ticket types',
+        tone: 'scenario',
+        items: [
+            "Bug report: confirm you can reproduce it, or explain why you can't, before accepting or rejecting it.",
+            "Feature suggestion: it's fine to reject respectfully, just explain the reasoning (roadmap, scope, etc.) instead of leaving it unexplained.",
+            "Complaint about another user or admin: don't share names or account details in your reply, handle the underlying issue separately if needed.",
+            'Repeat message on a closed ticket: reopen it (change the status) before replying, replying without changing the status can look like the message was ignored.',
+        ],
+    },
+    {
+        heading: 'Do',
+        tone: 'do',
+        items: [
+            'Confirm what you understood the issue to be before answering.',
+            'Give a concrete next step or timeframe when you can.',
+            'Update the status when you reply so the ticket reflects reality.',
+            "Thank the user for reporting or suggesting something, even when you're rejecting it.",
+        ],
+    },
+    {
+        heading: "Don't",
+        tone: 'dont',
+        items: [
+            "Don't share other users' information, even to explain a bug.",
+            "Don't close a ticket without a message explaining why.",
+            "Don't guess at a fix you haven't confirmed, say you're checking instead.",
+            'Don\'t leave a ticket in "reviewing" for days without an update, the user has no way to know it\'s still active.',
+        ],
+    },
+];
 
 const statusStyles = {
     pending: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -221,6 +285,7 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
     const [status, setStatus] = useState(filters.status ?? '');
     const [highlightedTicketId, setHighlightedTicketId] = useState(null);
     const [manageOpen, setManageOpen] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
     const toolbarRef = useRef(null);
 
     useEffect(() => {
@@ -250,16 +315,27 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
                     <BackButton href={route('admin.dashboard')} label="Back to Admin Dashboard" />
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Feedback</h2>
                 </div>
-                <button
-                    onClick={() => setManageOpen(true)}
-                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Manage Categories
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setManageOpen(true)}
+                        className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Manage Categories
+                    </button>
+                    <button
+                        onClick={() => setGuideOpen(true)}
+                        className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        Guide
+                    </button>
+                </div>
             </div>
         }>
             <Head title="Admin - Feedback" />
@@ -335,6 +411,14 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
             </div>
 
             <ManageCategoriesModal show={manageOpen} onClose={() => setManageOpen(false)} categories={categories} />
+
+            <AdminGuideDrawer
+                show={guideOpen}
+                onClose={() => setGuideOpen(false)}
+                title="Ticket Response Guide"
+                intro="Reference for keeping support replies consistent."
+                sections={FEEDBACK_GUIDE_SECTIONS}
+            />
 
             <ScrollToPaginationButton targetRef={toolbarRef} />
         </AuthenticatedLayout>

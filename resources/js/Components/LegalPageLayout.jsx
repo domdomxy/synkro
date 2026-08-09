@@ -15,7 +15,7 @@ import { Link } from '@inertiajs/react';
 export default function LegalPageLayout({ title, updatedAt, icon, intro, sections = [] }) {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+            <header className="mx-auto flex max-w-8xl items-center justify-between px-6 py-6">
                 <Link href="/" className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                     <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
                     <span className="text-xl font-bold">Synkro</span>
@@ -23,7 +23,7 @@ export default function LegalPageLayout({ title, updatedAt, icon, intro, section
                 <BackButton href="/" label="Back to Home" />
             </header>
 
-            <main className="mx-auto max-w-5xl px-6 pb-20 pt-4">
+            <main className="mx-auto max-w-8xl px-6 pb-20 pt-4">
                 <div className="flex items-start gap-4">
                     {icon && (
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">

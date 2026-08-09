@@ -65,7 +65,7 @@ class CloseInactiveFeedback extends Command
 
             AdminLog::log(
                 'ticket.auto_closed',
-                "Auto-closed ticket {$feedback->tracking_id} (\"{$feedback->subject}\") after 24h of inactivity",
+                "Auto-closed ticket **{$feedback->tracking_id}** (\"**{$feedback->subject}**\") after 24h of inactivity",
                 $feedback,
                 self::REASON
             );

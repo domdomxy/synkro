@@ -1,6 +1,11 @@
 // Shared helpers for rendering free-form reminder/notification notes that may
 // contain multiple lines (one point per line) and **bold** segments.
 
+import CopyableId from '@/Components/CopyableId';
+
+// Feedback tracking IDs look like CWK-BOCA-3UF (see Feedback::tracking_id).
+const TRACKING_ID_PATTERN = /^[A-Z0-9]{3}-[A-Z0-9]{4}-[A-Z0-9]{3}$/;
+
 export function noteLines(note) {
     if (!note) return [];
     return note
@@ -17,6 +22,27 @@ export function noteBoldSegments(line, boldClassName = 'font-semibold text-gray-
             return (
                 <strong key={i} className={boldClassName}>
                     {part.slice(2, -2)}
+                </strong>
+            );
+        }
+        return <span key={i}>{part}</span>;
+    });
+}
+
+// Same as noteBoldSegments, but any bold segment that's shaped like a
+// feedback tracking ID also gets a small copy-to-clipboard button next to
+// it, since admins often want to grab the ID straight from a log line.
+export function noteBoldSegmentsWithCopy(line, boldClassName = 'font-semibold text-gray-700 dark:text-gray-200') {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).filter((part) => part !== '');
+    return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            const text = part.slice(2, -2);
+            if (TRACKING_ID_PATTERN.test(text)) {
+                return <CopyableId key={i} id={text} className={boldClassName} />;
+            }
+            return (
+                <strong key={i} className={boldClassName}>
+                    {text}
                 </strong>
             );
         }

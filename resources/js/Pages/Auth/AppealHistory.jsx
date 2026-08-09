@@ -143,7 +143,7 @@ function AppealCard({ appeal, highlight }) {
                         {appeal.outcome === 'closed'
                             ? 'Closed automatically (inactive 24h)'
                             : appeal.outcome === 'approved'
-                                ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted — suspension lifted')
+                                ? (appeal.auto_resolved ? 'Approved automatically' : 'Accepted, suspension lifted')
                                 : (appeal.auto_resolved ? 'Rejected automatically' : 'Rejected')}
                     </p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
@@ -266,7 +266,7 @@ export default function AppealHistory({
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <Head title="Suspension & Appeal History" />
 
-            <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+            <header className="mx-auto flex max-w-8xl items-center justify-between px-6 py-6">
                 <Link href="/" className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                     <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
                     <span className="text-xl font-bold">Synkro</span>
@@ -282,7 +282,7 @@ export default function AppealHistory({
                 )}
             </header>
 
-            <main className="mx-auto max-w-3xl space-y-6 px-6 pb-20 pt-4">
+            <main className="mx-auto max-w-8xl space-y-6 px-6 pb-20 pt-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Suspension &amp; Appeal History</h1>

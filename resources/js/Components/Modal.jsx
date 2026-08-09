@@ -35,7 +35,7 @@ export default function Modal({
 
     return (
         <Transition show={show} leave="duration-200">
-            <Dialog as="div" id="modal" className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0" onClose={close}>
+            <Dialog as="div" id="modal" className="fixed inset-0 z-[60] flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0" onClose={close}>
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"

@@ -9,7 +9,7 @@ import FilterSelect from '@/Components/FilterSelect';
 import FiltersMenu from '@/Components/FiltersMenu';
 import Linkify from '@/Components/Linkify';
 import DateRangeFilter from '@/Components/DateRangeFilter';
-import { noteBoldSegments } from '@/utils/noteFormat';
+import { noteBoldSegmentsWithCopy } from '@/utils/noteFormat';
 import { cleanParams } from '@/utils/queryParams';
 import { Head, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -138,7 +138,7 @@ function AdminLogRow({ log, actionCatalog }) {
                     </div>
                     {description && (
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {noteBoldSegments(description, 'font-bold text-gray-800 dark:text-gray-200')}
+                            {noteBoldSegmentsWithCopy(description, 'font-bold text-gray-800 dark:text-gray-200')}
                         </p>
                     )}
                     {hasReason && open && (
