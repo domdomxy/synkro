@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import Modal from '@/Components/Modal';
 import DeliverableViewer from '@/Components/DeliverableViewer';
-import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
+import FileTypeIcon, { formatSize, getFileTypeMeta, LINK_META } from '@/Components/FileTypeIcon';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import Spinner from '@/Components/Spinner';
 import useConfirm from '@/hooks/useConfirm';
@@ -95,6 +95,15 @@ function BoxIcon({ className = 'h-4 w-4' }) {
     );
 }
 
+function StorageIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7c0-1.66 3.58-3 8-3s8 1.34 8 3-3.58 3-8 3-8-1.34-8-3zm0 0v10c0 1.66 3.58 3 8 3s8-1.34 8-3V7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+        </svg>
+    );
+}
+
 function RemoveButton({ onClick, title = 'Remove' }) {
     return (
         <button
@@ -160,24 +169,29 @@ function FilterTabs({ value, onChange, options }) {
     );
 }
 
-/** Compact summary strip - a quick at-a-glance read on what's in the project's resource library, before scanning the list itself. */
+/** At-a-glance stat cards - each one pairs an icon with a count so the strip reads visually, not just numerically, before scanning the list itself. */
 function SummaryStrip({ total, files, links, totalSize }) {
     const stats = [
-        { label: 'Total', value: total },
-        { label: 'Files', value: files },
-        { label: 'Links', value: links },
-        ...(totalSize ? [{ label: 'Storage used', value: totalSize }] : []),
+        { key: 'total', label: 'Total', value: total, icon: <BoxIcon className="h-4 w-4" />, accent: 'bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400' },
+        { key: 'files', label: 'Files', value: files, icon: <FileTypeIcon name="" className="h-4 w-4" />, accent: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
+        { key: 'links', label: 'Links', value: links, icon: <LinkTypeIcon className="h-4 w-4" />, accent: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' },
+        ...(totalSize ? [{ key: 'storage', label: 'Storage used', value: totalSize, icon: <StorageIcon className="h-4 w-4" />, accent: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' }] : []),
     ];
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {stats.map((s) => (
                 <div
-                    key={s.label}
-                    className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                    key={s.key}
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                 >
-                    <span className="text-base font-semibold text-gray-800 dark:text-gray-100">{s.value}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{s.label}</span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.accent}`}>
+                        {s.icon}
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{s.value}</p>
+                        <p className="truncate text-xs text-gray-400 dark:text-gray-500">{s.label}</p>
+                    </div>
                 </div>
             ))}
         </div>
@@ -687,24 +701,36 @@ function ResourceMenu({ onEdit, onDelete }) {
     );
 }
 
-function ResourceRow({ resource, canManage, isFirst, isLast, onPreview, onEdit, onDelete }) {
+/**
+ * Each resource is its own card now (rather than a divided table row) with a
+ * left accent stripe and a color-coded icon badge, both driven by the same
+ * file-type metadata, so the type of a resource reads at a glance before you
+ * ever read its name.
+ */
+function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
     const isLink = resource.type === 'link';
+    const meta = isLink ? LINK_META : getFileTypeMeta(resource.original_name);
 
     return (
         <div
-            className={`group flex items-start gap-3 border-b border-gray-100 px-4 py-3.5 transition-colors last:border-0 hover:bg-gray-50/70 dark:border-gray-700 dark:hover:bg-gray-700/20 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''}`}
+            className={`group flex items-start gap-3 rounded-xl border border-l-[3px] border-gray-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${meta.border}`}
         >
             <button
                 type="button"
                 onClick={() => onPreview(resource)}
-                className="mt-0.5 shrink-0 rounded-lg bg-gray-50 p-2 text-gray-400 transition group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:bg-gray-900 dark:text-gray-500 dark:group-hover:bg-indigo-900/40 dark:group-hover:text-indigo-300"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105 ${meta.badge}`}
                 title="Preview"
             >
                 {isLink ? <LinkTypeIcon className="h-5 w-5" /> : <FileTypeIcon name={resource.original_name} className="h-5 w-5" />}
             </button>
 
             <button type="button" onClick={() => onPreview(resource)} className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{resource.name}</p>
+                <div className="flex items-center gap-2">
+                    <p className="min-w-0 truncate text-sm font-medium text-gray-800 dark:text-gray-200">{resource.name}</p>
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${meta.badge}`}>
+                        {meta.label}
+                    </span>
+                </div>
                 {resource.description && (
                     <p className="mt-0.5 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{resource.description}</p>
                 )}
@@ -799,7 +825,7 @@ export default function Resources({ project, resources, canManage }) {
         }>
             <Head title={`Resources - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-5 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
 
                     <div ref={toolbarRef} className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -811,7 +837,7 @@ export default function Resources({ project, resources, canManage }) {
                             <button
                                 type="button"
                                 onClick={() => setShowAdd(true)}
-                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                             >
                                 <UploadIcon className="h-4 w-4" />
                                 Add Resources
@@ -828,55 +854,45 @@ export default function Resources({ project, resources, canManage }) {
                         </div>
                     )}
 
-                    {/*
-                        No overflow-hidden here on purpose: the row-level kebab
-                        menu is an absolutely-positioned dropdown, and an
-                        overflow-hidden ancestor would clip it instead of
-                        letting it pop out over the page like every other
-                        dropdown in the app. Rounded corners are applied to
-                        the first/last row instead.
-                    */}
-                    <div className="rounded-lg bg-white shadow dark:bg-gray-800">
-                        {resources.length === 0 ? (
-                            <div className="flex flex-col items-center rounded-lg px-6 py-14 text-center">
-                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
-                                    <BoxIcon className="h-6 w-6" />
-                                </div>
-                                <p className="text-sm text-gray-400 dark:text-gray-500">
-                                    {canManage
-                                        ? 'No resources yet. Add a package, source, or reference for members to use.'
-                                        : "No resources here yet. The project's owner or managers can add some."}
-                                </p>
+                    {resources.length === 0 ? (
+                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                <BoxIcon className="h-7 w-7" />
                             </div>
-                        ) : visibleResources.length === 0 ? (
-                            <div className="flex flex-col items-center rounded-lg px-6 py-14 text-center">
-                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
-                                    <SearchIcon className="h-5 w-5" />
-                                </div>
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No resources match your search.</p>
-                                <button
-                                    type="button"
-                                    onClick={() => { setSearch(''); setTypeFilter('all'); }}
-                                    className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                                >
-                                    Clear filters
-                                </button>
+                            <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+                                {canManage
+                                    ? 'No resources yet. Add a package, source, or reference for members to use.'
+                                    : "No resources here yet. The project's owner or managers can add some."}
+                            </p>
+                        </div>
+                    ) : visibleResources.length === 0 ? (
+                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
+                                <SearchIcon className="h-5 w-5" />
                             </div>
-                        ) : (
-                            visibleResources.map((resource, index) => (
+                            <p className="text-sm text-gray-400 dark:text-gray-500">No resources match your search.</p>
+                            <button
+                                type="button"
+                                onClick={() => { setSearch(''); setTypeFilter('all'); }}
+                                className="mt-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                            >
+                                Clear filters
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleResources.map((resource) => (
                                 <ResourceRow
                                     key={resource.id}
                                     resource={resource}
                                     canManage={canManage}
-                                    isFirst={index === 0}
-                                    isLast={index === visibleResources.length - 1}
                                     onPreview={setPreviewingResource}
                                     onEdit={setEditingResource}
                                     onDelete={deleteResource}
                                 />
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                     {isFiltering && visibleResources.length > 0 && (
                         <p className="text-center text-xs text-gray-400 dark:text-gray-500">
                             Showing {visibleResources.length} of {resources.length} resources

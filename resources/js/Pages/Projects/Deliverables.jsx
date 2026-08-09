@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import BackButton from '@/Components/BackButton';
 import DeliverableViewer from '@/Components/DeliverableViewer';
-import FileTypeIcon, { formatSize } from '@/Components/FileTypeIcon';
+import FileTypeIcon, { formatSize, getFileTypeMeta, LINK_META } from '@/Components/FileTypeIcon';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -71,29 +71,39 @@ function SearchInput({ value, onChange, placeholder }) {
     );
 }
 
-/** Compact summary strip - a quick read on how much has actually come out of the project's tasks. */
+/** At-a-glance stat cards - a quick visual read on how much has actually come out of the project's tasks. */
 function SummaryStrip({ taskCount, fileCount, linkCount }) {
     const stats = [
-        { label: 'Tasks with deliverables', value: taskCount },
-        { label: 'Files', value: fileCount },
-        ...(linkCount ? [{ label: 'Links', value: linkCount }] : []),
+        { key: 'tasks', label: 'Tasks with deliverables', value: taskCount, icon: <FolderIcon className="h-4 w-4" />, accent: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' },
+        { key: 'files', label: 'Files', value: fileCount, icon: <FileTypeIcon name="" className="h-4 w-4" />, accent: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
+        ...(linkCount ? [{ key: 'links', label: 'Links', value: linkCount, icon: <LinkIcon className="h-4 w-4" />, accent: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400' }] : []),
     ];
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {stats.map((s) => (
                 <div
-                    key={s.label}
-                    className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                    key={s.key}
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                 >
-                    <span className="text-base font-semibold text-gray-800 dark:text-gray-100">{s.value}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{s.label}</span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.accent}`}>
+                        {s.icon}
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{s.value}</p>
+                        <p className="truncate text-xs text-gray-400 dark:text-gray-500">{s.label}</p>
+                    </div>
                 </div>
             ))}
         </div>
     );
 }
 
+/**
+ * One card per task, expandable to reveal its files. Each file's icon picks
+ * up the same color-coded badge used on the Resources page, so a glance
+ * down the open list tells you what's in there before you click anything.
+ */
 function TaskFolder({ task, onPreview, forceOpen }) {
     const [open, setOpen] = useState(false);
     const files = task.deliverables.filter((d) => d.type === 'file');
@@ -102,14 +112,14 @@ function TaskFolder({ task, onPreview, forceOpen }) {
     const totalSize = files.reduce((sum, f) => sum + (f.size ?? 0), 0);
 
     return (
-        <div className="border-b border-gray-100 last:border-0 dark:border-gray-700">
-            <div className="flex w-full items-center gap-2.5 px-4 py-2.5 transition hover:bg-gray-50/70 dark:hover:bg-gray-700/20">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex w-full items-center gap-2.5 px-4 py-3">
                 <button
                     onClick={() => setOpen((v) => !v)}
                     className="flex flex-1 items-center gap-2.5 text-left"
                 >
                     <ChevronIcon open={isOpen} />
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
                         <FolderIcon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -130,19 +140,24 @@ function TaskFolder({ task, onPreview, forceOpen }) {
                 </a>
             </div>
             {isOpen && (
-                <div className="pb-1.5 pl-12">
-                    {files.map((f) => (
-                        <button
-                            key={f.id}
-                            type="button"
-                            onClick={() => onPreview(f)}
-                            className="flex w-full items-center gap-2 py-1 text-left text-sm text-gray-600 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-                        >
-                            <FileTypeIcon name={f.original_name} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
-                            <span className="truncate">{f.original_name}</span>
-                            {formatSize(f.size) && <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{formatSize(f.size)}</span>}
-                        </button>
-                    ))}
+                <div className="space-y-1 border-t border-gray-100 bg-gray-50/60 px-4 py-2 pl-[3.25rem] dark:border-gray-700 dark:bg-gray-900/30">
+                    {files.map((f) => {
+                        const meta = getFileTypeMeta(f.original_name);
+                        return (
+                            <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => onPreview(f)}
+                                className="flex w-full items-center gap-2 rounded-md py-1.5 text-left text-sm text-gray-600 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                            >
+                                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${meta.badge}`}>
+                                    <FileTypeIcon name={f.original_name} className="h-3.5 w-3.5" />
+                                </span>
+                                <span className="truncate">{f.original_name}</span>
+                                {formatSize(f.size) && <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{formatSize(f.size)}</span>}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -178,14 +193,14 @@ export default function Deliverables({ project, tasks }) {
         }>
             <Head title={`Deliverables - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-5 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
 
                     <div ref={toolbarRef} className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-gray-400 dark:text-gray-500">Files and links from completed tasks</p>
                         {hasAnyFiles && (
                             <a
                                 href={route('projects.deliverables.download', project.id)}
-                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                             >
                                 <DownloadIcon className="h-4 w-4" />
                                 Download all
@@ -201,32 +216,35 @@ export default function Deliverables({ project, tasks }) {
                         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by task name..." />
                     )}
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-                        {folderTasks.length === 0 ? (
-                            <div className="flex flex-col items-center px-6 py-14 text-center">
-                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
-                                    <BoxIcon className="h-6 w-6" />
-                                </div>
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No files yet. They'll show up here once tasks with attached files are marked done.</p>
+                    {folderTasks.length === 0 ? (
+                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                <BoxIcon className="h-7 w-7" />
                             </div>
-                        ) : visibleFolderTasks.length === 0 ? (
-                            <div className="flex flex-col items-center px-6 py-10 text-center">
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No file deliverables match "{search}".</p>
-                            </div>
-                        ) : (
-                            visibleFolderTasks.map((task) => <TaskFolder key={task.id} task={task} onPreview={setPreviewingDeliverable} forceOpen={isFiltering} />)
-                        )}
-                    </div>
+                            <p className="max-w-xs text-sm text-gray-400 dark:text-gray-500">No files yet. They'll show up here once tasks with attached files are marked done.</p>
+                        </div>
+                    ) : visibleFolderTasks.length === 0 ? (
+                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <p className="text-sm text-gray-400 dark:text-gray-500">No file deliverables match "{search}".</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleFolderTasks.map((task) => <TaskFolder key={task.id} task={task} onPreview={setPreviewingDeliverable} forceOpen={isFiltering} />)}
+                        </div>
+                    )}
 
                     {linkTasks.length > 0 && visibleLinkTasks.length > 0 && (
                         <>
                             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Links and documents</p>
-                            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            <div className="space-y-2">
                                 {visibleLinkTasks.map((task) =>
                                     task.deliverables.filter((d) => d.type === 'link').map((d) => (
-                                        <div key={d.id} className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 transition-colors last:border-0 hover:bg-gray-50/70 dark:border-gray-700 dark:hover:bg-gray-700/20">
-                                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                                <LinkIcon className="h-3.5 w-3.5" />
+                                        <div
+                                            key={d.id}
+                                            className={`flex items-center gap-3 rounded-xl border border-l-[3px] border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${LINK_META.border}`}
+                                        >
+                                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${LINK_META.badge}`}>
+                                                <LinkIcon className="h-4 w-4" />
                                             </span>
                                             <span className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{task.title}</span>
                                             <a
