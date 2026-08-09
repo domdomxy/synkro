@@ -3,6 +3,8 @@ import BackButton from '@/Components/BackButton';
 import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize, getFileTypeMeta, LINK_META } from '@/Components/FileTypeIcon';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
+import ProjectMenu from '@/Components/ProjectMenu';
+import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import { Head } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -164,7 +166,10 @@ function TaskFolder({ task, onPreview, forceOpen }) {
     );
 }
 
-export default function Deliverables({ project, tasks }) {
+export default function Deliverables({ project, tasks, role }) {
+    const isOwner = role === 'owner';
+    const canManage = ['owner', 'manager'].includes(role);
+    const [showInfoModal, setShowInfoModal] = useState(false);
     const folderTasks = tasks.filter((t) => t.deliverables.some((d) => d.type === 'file'));
     const linkTasks = tasks.filter((t) => t.deliverables.some((d) => d.type === 'link'));
     const hasAnyFiles = folderTasks.length > 0;
@@ -184,11 +189,20 @@ export default function Deliverables({ project, tasks }) {
 
     return (
         <AuthenticatedLayout header={
-            <div className="flex items-center gap-4">
-                <BackButton href={route('projects.show', project.id)} label="Back to Project" />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    Deliverables: {project.name}
-                </h2>
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-4">
+                    <BackButton href={route('projects.show', project.id)} label="Back to Project" />
+                    <h2 className="min-w-0 truncate text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        Deliverables: {project.name}
+                    </h2>
+                </div>
+                <ProjectMenu
+                    project={project}
+                    page="deliverables"
+                    isOwner={isOwner}
+                    canManage={canManage}
+                    onShowInfo={() => setShowInfoModal(true)}
+                />
             </div>
         }>
             <Head title={`Deliverables - ${project.name}`} />
@@ -269,6 +283,8 @@ export default function Deliverables({ project, tasks }) {
             <DeliverableViewer deliverable={previewingDeliverable} onClose={() => setPreviewingDeliverable(null)} />
 
             <ScrollToPaginationButton targetRef={toolbarRef} />
+
+            <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
         </AuthenticatedLayout>
     );
 }

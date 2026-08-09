@@ -20,6 +20,7 @@ class ProjectResourceController extends Controller
             'project' => $project,
             'resources' => $project->resources()->with('uploader')->latest()->get(),
             'canManage' => Auth::user()->can('manageResources', $project),
+            'role' => $project->roleFor(Auth::user()),
         ]);
     }
 

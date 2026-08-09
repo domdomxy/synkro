@@ -17,11 +17,11 @@ import UserSearchInput from '@/Components/UserSearchInput';
 import RemoveMemberModal from '@/Components/RemoveMemberModal';
 import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
-import RichTextContent from '@/Components/RichTextContent';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
 import FiltersMenu from '@/Components/FiltersMenu';
-import Dropdown from '@/Components/Dropdown';
+import ProjectMenu from '@/Components/ProjectMenu';
+import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -546,59 +546,6 @@ function HeaderIconButton({ onClick, href, title, children, className: extraClas
     return <button onClick={onClick} title={title} className={className}>{children}</button>;
 }
 
-function ProjectInfoModal({ show, onClose, project }) {
-    const formatTimestamp = (dateString) => {
-        if (!dateString) return null;
-        return new Date(dateString).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    };
-
-    return (
-        <Modal show={show} onClose={onClose} maxWidth="3xl" overlayClassName="bg-black/55 dark:bg-black/70">
-            <div className="flex max-h-[80vh] flex-col">
-                <div className="flex items-start justify-between gap-2 border-b border-gray-100 p-6 pb-4 dark:border-gray-700">
-                    <div className="min-w-0">
-                        <h2 className="break-words text-lg font-semibold text-gray-900 dark:text-gray-100">{project.name}</h2>
-                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Project ID: {project.id}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
-                            <span className="flex items-center gap-1">
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                Created {formatTimestamp(project.created_at)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Last updated {formatTimestamp(project.updated_at)}
-                            </span>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div className="overflow-y-auto p-6 pt-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Description</p>
-                    <RichTextContent
-                        className="mt-2 whitespace-pre-wrap break-words text-base text-gray-900 dark:text-gray-100"
-                        style={{ tabSize: 4 }}
-                        html={project.description}
-                        fallback='<span class="text-gray-400">No description provided.</span>'
-                    />
-                </div>
-
-                <div className="flex justify-end border-t border-gray-100 p-4 dark:border-gray-700">
-                    <SecondaryButton onClick={onClose}>Close</SecondaryButton>
-                </div>
-            </div>
-        </Modal>
-    );
-}
-
 function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     return (
         <Modal show={show} onClose={onClose} maxWidth="md" overlayClassName="bg-black/55 dark:bg-black/70">
@@ -974,79 +921,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         )}
                     </HeaderIconButton>
 
-                    <Dropdown>
-                        <Dropdown.Trigger>
-                            <button
-                                type="button"
-                                title="More options"
-                                className="flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                            >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6h.01M12 12h.01M12 18h.01" />
-                                </svg>
-                            </button>
-                        </Dropdown.Trigger>
-                        <Dropdown.Content align="right" width="56" contentClasses="py-1 bg-white dark:bg-gray-800">
-                            <button
-                                type="button"
-                                onClick={() => setShowInfoModal(true)}
-                                className="flex w-full items-center gap-2.5 px-4 py-2 text-start text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Project Info
-                            </button>
-                            <Link
-                                href={route('projects.deliverables', project.id)}
-                                className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                </svg>
-                                Deliverables
-                            </Link>
-                            <Link
-                                href={route('projects.resources', project.id)}
-                                className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v13" />
-                                </svg>
-                                Resources
-                            </Link>
-                            {canManage && (
-                                <>
-                                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                                    <Link
-                                        href={route('projects.settings', project.id)}
-                                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                    >
-                                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        {isOwner ? 'Owner Settings' : 'Manager Settings'}
-                                    </Link>
-                                </>
-                            )}
-                            {canLeave && (
-                                <>
-                                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                                    <button
-                                        type="button"
-                                        onClick={leaveProject}
-                                        className="flex w-full items-center gap-2.5 px-4 py-2 text-start text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                                    >
-                                        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                        Leave Project
-                                    </button>
-                                </>
-                            )}
-                        </Dropdown.Content>
-                    </Dropdown>
+                    <ProjectMenu
+                        project={project}
+                        page="show"
+                        isOwner={isOwner}
+                        canManage={canManage}
+                        onShowInfo={() => setShowInfoModal(true)}
+                        canLeave={canLeave}
+                        onLeave={leaveProject}
+                    />
                 </div>
             </div>
         }>

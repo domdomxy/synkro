@@ -806,6 +806,7 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Deliverables', [
             'project' => $project,
             'tasks' => $tasks,
+            'role' => $project->roleFor(Auth::user()),
         ]);
     }
 

@@ -45,7 +45,7 @@ export default function Logs({ project, logs, backHref, backLabel }) {
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(10);
     const paginationRef = useRef(null);
 
     const handlePerPageChange = (value) => {

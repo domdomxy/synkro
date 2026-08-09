@@ -5,6 +5,8 @@ import DeliverableViewer from '@/Components/DeliverableViewer';
 import FileTypeIcon, { formatSize, getFileTypeMeta, LINK_META } from '@/Components/FileTypeIcon';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import Spinner from '@/Components/Spinner';
+import ProjectMenu from '@/Components/ProjectMenu';
+import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import useConfirm from '@/hooks/useConfirm';
 import { Head, useForm, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -769,7 +771,9 @@ function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
     );
 }
 
-export default function Resources({ project, resources, canManage }) {
+export default function Resources({ project, resources, canManage, role }) {
+    const isOwner = role === 'owner';
+    const [showInfoModal, setShowInfoModal] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
     const [editingResource, setEditingResource] = useState(null);
     const [previewingResource, setPreviewingResource] = useState(null);
@@ -816,11 +820,20 @@ export default function Resources({ project, resources, canManage }) {
 
     return (
         <AuthenticatedLayout header={
-            <div className="flex items-center gap-4">
-                <BackButton href={route('projects.show', project.id)} label="Back to Project" />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    Resources: {project.name}
-                </h2>
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-4">
+                    <BackButton href={route('projects.show', project.id)} label="Back to Project" />
+                    <h2 className="min-w-0 truncate text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        Resources: {project.name}
+                    </h2>
+                </div>
+                <ProjectMenu
+                    project={project}
+                    page="resources"
+                    isOwner={isOwner}
+                    canManage={canManage}
+                    onShowInfo={() => setShowInfoModal(true)}
+                />
             </div>
         }>
             <Head title={`Resources - ${project.name}`} />
@@ -907,6 +920,8 @@ export default function Resources({ project, resources, canManage }) {
             {ConfirmDialog}
 
             <ScrollToPaginationButton targetRef={toolbarRef} />
+
+            <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
         </AuthenticatedLayout>
     );
 }

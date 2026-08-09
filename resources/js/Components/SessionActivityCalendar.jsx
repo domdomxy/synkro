@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import SectionHeader from '@/Components/SectionHeader';
 import Avatar from '@/Components/Avatar';
-import Dropdown from '@/Components/Dropdown';
 
 /**
  * "Session Activity" widget: two month grids of daily squares shown side by
@@ -367,6 +366,87 @@ function MonthGrid({ monthDate, sessionsByDay, userBreakdownByDay, durationByDay
     );
 }
 
+// "Filters" panel for the Month/Year picker in the card header. Rendered
+// via a portal into document.body with fixed coordinates measured off the
+// trigger button's own rect, the same fix already applied to DayPopover
+// above - the generic <Dropdown> component only positions itself with CSS
+// (absolute + right-anchored to its own trigger) and a transform-based
+// viewport nudge, which isn't enough once the header's "flex flex-wrap"
+// pushes the trigger away from the card's right edge on narrow screens:
+// a right-anchored panel wider than the space to the trigger's left then
+// opens with its left edge past x=0, off-screen and unreachable, rather
+// than clamped back on. Measuring the trigger and the panel directly and
+// positioning with `fixed` sidesteps that instead of trying to patch the
+// shared component's alignment math for this one edge case.
+function FiltersPanel({ anchorEl, onClose, children }) {
+    const ref = useRef(null);
+    const [position, setPosition] = useState({ top: 0, left: 0, ready: false });
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target) && anchorEl && !anchorEl.contains(e.target)) onClose();
+        };
+        const handleKey = (e) => e.key === 'Escape' && onClose();
+        document.addEventListener('mousedown', handleClick);
+        document.addEventListener('keydown', handleKey);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            document.removeEventListener('keydown', handleKey);
+        };
+    }, [onClose, anchorEl]);
+
+    useLayoutEffect(() => {
+        if (!anchorEl) return;
+
+        const recalc = () => {
+            const triggerRect = anchorEl.getBoundingClientRect();
+            const panelWidth = ref.current?.offsetWidth ?? 0;
+            const panelHeight = ref.current?.offsetHeight ?? 0;
+            const margin = 8;
+
+            // Right-align to the trigger like the panel used to, but clamp
+            // between the margins - never let either edge land off-screen,
+            // regardless of where the trigger itself ended up.
+            let left = triggerRect.right - panelWidth;
+            left = Math.max(margin, Math.min(left, window.innerWidth - panelWidth - margin));
+
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+            const openUpward = spaceBelow < panelHeight + 16 && spaceAbove > spaceBelow;
+            const top = openUpward ? triggerRect.top - panelHeight - 8 : triggerRect.bottom + 8;
+
+            setPosition({ top, left, ready: true });
+        };
+
+        recalc();
+        window.addEventListener('resize', recalc);
+        window.addEventListener('scroll', recalc, true);
+
+        let resizeObserver;
+        if (ref.current && typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(recalc);
+            resizeObserver.observe(ref.current);
+        }
+
+        return () => {
+            window.removeEventListener('resize', recalc);
+            window.removeEventListener('scroll', recalc, true);
+            resizeObserver?.disconnect();
+        };
+    }, [anchorEl]);
+
+    return createPortal(
+        <div
+            ref={ref}
+            style={{ position: 'fixed', top: position.top, left: position.left, visibility: position.ready ? 'visible' : 'hidden' }}
+            className="z-50 w-max max-w-[calc(100vw-1rem)] space-y-3 rounded-xl border border-gray-100 bg-white p-3 shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-800 dark:ring-white/10"
+        >
+            {children}
+        </div>,
+        document.body
+    );
+}
+
 export default function SessionActivityCalendar({ title = 'Session Activity', sessionsByDay = {}, offset = 0, onNavigate, userBreakdownByDay, durationByDay }) {
     const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
 
@@ -396,6 +476,9 @@ export default function SessionActivityCalendar({ title = 'Session Activity', se
         const clampedMonth = newYear === today.getFullYear() ? Math.min(selectedMonthIndex, today.getMonth()) : selectedMonthIndex;
         jumpTo(newYear, clampedMonth);
     };
+
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const filtersTriggerRef = useRef(null);
 
     // "Filters" trigger + panel, styled after the Activity chart's
     // ChartControlsMenu (a single button summarizing the current selection
@@ -427,22 +510,22 @@ export default function SessionActivityCalendar({ title = 'Session Activity', se
                     >
                         ←
                     </button>
-                    <Dropdown>
-                        <Dropdown.Trigger>
-                            <button
-                                type="button"
-                                className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-300 dark:hover:bg-gray-800"
-                            >
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12M3 6h18M9 18h6" />
-                                </svg>
-                                Filters
-                                <span className="hidden text-gray-400 dark:text-gray-500 sm:inline">
-                                    · {MONTH_NAMES[selectedMonthIndex]} {selectedYear}
-                                </span>
-                            </button>
-                        </Dropdown.Trigger>
-                        <Dropdown.Content align="right" width="auto" contentClasses="w-max max-w-[calc(100vw-2rem)] space-y-3 bg-white p-3 dark:bg-gray-800">
+                    <button
+                        type="button"
+                        ref={filtersTriggerRef}
+                        onClick={() => setFiltersOpen((v) => !v)}
+                        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12M3 6h18M9 18h6" />
+                        </svg>
+                        Filters
+                        <span className="hidden text-gray-400 dark:text-gray-500 sm:inline">
+                            · {MONTH_NAMES[selectedMonthIndex]} {selectedYear}
+                        </span>
+                    </button>
+                    {filtersOpen && (
+                        <FiltersPanel anchorEl={filtersTriggerRef.current} onClose={() => setFiltersOpen(false)}>
                             <div>
                                 <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Month</p>
                                 <div className="flex max-w-[15rem] flex-wrap items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
@@ -463,8 +546,8 @@ export default function SessionActivityCalendar({ title = 'Session Activity', se
                                     ))}
                                 </div>
                             </div>
-                        </Dropdown.Content>
-                    </Dropdown>
+                        </FiltersPanel>
+                    )}
                     <button
                         onClick={() => onNavigate(Math.max(0, offset - 2))}
                         disabled={offset === 0}

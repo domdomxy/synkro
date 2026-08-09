@@ -169,7 +169,7 @@ export default function Index({ projects, showingArchived }) {
         return localStorage.getItem('synkro:projects-view') ?? 'grid';
     });
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(10);
     const paginationRef = useRef(null);
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();

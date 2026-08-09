@@ -141,7 +141,7 @@ export default function Index({ tasks }) {
         return localStorage.getItem('synkro:tasks-view') ?? 'grid';
     });
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(10);
     const paginationRef = useRef(null);
 
     const changeView = (next) => {

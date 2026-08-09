@@ -9,6 +9,9 @@ import Spinner from '@/Components/Spinner';
 import BackButton from '@/Components/BackButton';
 import Avatar from '@/Components/Avatar';
 import FilterSelect from '@/Components/FilterSelect';
+import ProjectMenu from '@/Components/ProjectMenu';
+import ProjectInfoModal from '@/Components/ProjectInfoModal';
+import { roleStyles } from '@/utils/roleStyles';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import useConfirm from '@/hooks/useConfirm';
 import RichTextEditor from '@/Components/RichTextEditor';
@@ -51,6 +54,8 @@ function SectionCard({ icon, title, description, children, danger }) {
 
 export default function Settings({ project, role }) {
     const isOwner = role === 'owner';
+    const canManage = ['owner', 'manager'].includes(role);
+    const [showInfoModal, setShowInfoModal] = useState(false);
     // A trashed project (soft-deleted, still inside its grace period) is frozen -
     // same read-only rule as Projects/Show.jsx's `isTrashed`, and backed by the
     // same trashed() checks in ProjectPolicy/ProjectController on the server, so
@@ -134,11 +139,20 @@ export default function Settings({ project, role }) {
 
     return (
         <AuthenticatedLayout header={
-            <div className="flex items-center gap-4">
-                <BackButton href={route('projects.show', project.id)} label="Back to Project" />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    {project.name} Settings
-                </h2>
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-4">
+                    <BackButton href={route('projects.show', project.id)} label="Back to Project" />
+                    <h2 className="min-w-0 truncate text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        {project.name} Settings
+                    </h2>
+                </div>
+                <ProjectMenu
+                    project={project}
+                    page="settings"
+                    isOwner={isOwner}
+                    canManage={canManage}
+                    onShowInfo={() => setShowInfoModal(true)}
+                />
             </div>
         }>
             <Head title={`Settings - ${project.name}`} />
@@ -222,7 +236,15 @@ export default function Settings({ project, role }) {
                                         onChange={(v) => transferForm.setData('user_id', v)}
                                         options={[
                                             { value: '', label: 'Choose a member...' },
-                                            ...transferTargets.map((m) => ({ value: m.id, label: m.name })),
+                                            ...transferTargets.map((m) => ({
+                                                value: m.id,
+                                                label: m.name,
+                                                avatar: m,
+                                                badge: {
+                                                    label: m.pivot.role,
+                                                    className: roleStyles[m.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                                                },
+                                            })),
                                         ]}
                                     />
                                     <InputError message={transferForm.errors.user_id} />
@@ -289,6 +311,7 @@ export default function Settings({ project, role }) {
                 onVerify={verifyAndTransfer}
                 onClose={() => setTransferTarget(null)}
             />
+            <ProjectInfoModal show={showInfoModal} onClose={() => setShowInfoModal(false)} project={project} />
         </AuthenticatedLayout>
     );
 }
