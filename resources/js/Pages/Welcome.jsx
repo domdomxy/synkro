@@ -18,7 +18,7 @@ const ACCENTS = {
 const features = [
     {
         title: 'Role-based collaboration',
-        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role, scoped per project rather than global. Change roles on the fly, transfer ownership, or leave a project whenever you need to.',
+        description: 'Owners, managers, members, and testers each get exactly the permissions that fit their role, scoped per project rather than global. Invite your whole team in one go, change roles on the fly, transfer ownership, or leave a project whenever you need to.',
         icon: <path d="M9 11a4 4 0 100-8 4 4 0 000 8zm-7 9a7 7 0 0114 0H2zm15-9a4 4 0 100-8 4 4 0 000 8zm-1.5 1.5c.49-.13 1-.2 1.5-.2a6 6 0 016 6H17a7.97 7.97 0 00-3.5-6.6V12.5z" />,
         accent: 'indigo',
     },

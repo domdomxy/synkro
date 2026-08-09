@@ -25,8 +25,12 @@ Built with Laravel 13, Inertia.js, and React.
   member's personal Notes; comments support @mentions, bare-URL and markdown-style links, rich
   text with lists, and threaded replies
 - Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
-- Pinning and archiving at both the project and note level
-- Member invitations and ownership transfer
+- Pinning and archiving at both the project and note level (Projects list shows Active/Archived
+  tabs with a live count per tab)
+- Invite one or many members at once in a single request, all given the same role, plus
+  ownership transfer - role changes and removal are hierarchy-aware: a manager can act on
+  members and testers, but only the project owner can change or remove a manager (including
+  a manager acting on themselves)
 - Soft-deleted projects and tasks land in a recoverable Trash (in Settings) for a grace period
   before permanent deletion, with restore available the whole time
 

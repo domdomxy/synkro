@@ -33,6 +33,18 @@ the assignee's only checklist permission is toggling an item done, enforced in t
 controller rather than the policy. When adding a new project-scoped action, add a policy
 method rather than inlining the role check in the controller.
 
+Within the `manager` role there's a further hierarchy check that's *not* expressed as a
+policy, since it's about standing over a specific target member rather than gating an
+action on the project as a whole:
+`ProjectMemberController::assertCanActOnMember()` blocks a `manager` from changing the
+role of or removing another `manager` - including themselves. Only the `owner` has that
+authority. `manageMembers` (the policy gate) still applies first to confirm the actor is
+an `owner`/`manager` at all; this second check runs after it, scoped to the specific
+target user, and 403s if the actor doesn't have standing. The member-invite endpoint
+(`ProjectMemberController::store`) accepts a batch of emails in one request rather than
+one per call, sending an invitation to each and skipping (with a message, not a hard
+failure) anyone already a member or already invited.
+
 ## Task lifecycle
 
 ```
