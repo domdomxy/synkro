@@ -69,8 +69,6 @@ export default function NotificationBell() {
             '.email.changed',
             '.ticket.status-changed',
             '.ticket.responded',
-            '.appeal.responded',
-            '.appeal.auto-closed',
         ],
         (payload) => {
             let message;
@@ -202,12 +200,6 @@ export default function NotificationBell() {
             } else if (payload.type === 'ticket_responded') {
                 message = `Support replied\nSupport responded to your ticket "**${payload.subject}**" (${payload.tracking_id})`;
                 url = '/feedback';
-            } else if (payload.type === 'appeal_responded') {
-                message = 'Update on your appeal\nA member of our support team left a note on your suspension appeal.';
-                url = '/login';
-            } else if (payload.type === 'appeal_auto_closed') {
-                message = 'Appeal closed\nYour suspension appeal was automatically closed after 24h of inactivity.';
-                url = '/login';
             } else if (payload.decision) {
                 const decisionTitle = payload.decision === 'approve' ? 'Task approved' : 'Changes requested';
                 message = `${decisionTitle}\n"**${payload.title}**" was ${payload.decision === 'approve' ? 'approved' : 'sent back for changes'}${payload.feedback ? ': ' + payload.feedback : ''}`;

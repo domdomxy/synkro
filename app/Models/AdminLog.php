@@ -17,7 +17,7 @@ class AdminLog extends Model
      * from the foreign key alone, so any query that means "genuinely deleted admin"
      * must exclude these. Mirrors AUTOMATED_ACTIONS in Pages/Admin/Logs.jsx.
      */
-    public const AUTOMATED_ACTIONS = ['ticket.auto_closed', 'appeal.auto_closed'];
+    public const AUTOMATED_ACTIONS = ['ticket.auto_closed'];
 
     public function admin(): BelongsTo
     {
@@ -58,8 +58,6 @@ class AdminLog extends Model
             'user.login_history_viewed' => 'Login history viewed',
             'appeal.reviewed' => 'Appeal reviewed',
             'appeal.dismissed' => 'Appeal dismissed',
-            'appeal.responded' => 'Appeal note added',
-            'appeal.auto_closed' => 'Appeal auto-closed (inactive)',
             'ticket.status_changed' => 'Ticket status changed',
             'ticket.responded' => 'Ticket responded to',
             'ticket.auto_closed' => 'Ticket auto-closed (inactive)',

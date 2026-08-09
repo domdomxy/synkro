@@ -49,7 +49,7 @@ const APPEAL_GUIDE_SECTIONS = [
             'First-time appeal with a plausible explanation and no prior violations: lean toward approving if the explanation is consistent with the evidence.',
             "Appeal denies wrongdoing but offers no new evidence beyond what was already reviewed: reject and briefly restate the evidence. This avoids relitigating the same appeal repeatedly.",
             'Appeal is hostile or uses abusive language: keep your written reason professional regardless. The tone of the appeal should not show up in your reply.',
-            "Appeal raises something outside your authority, like billing or a bug: use \"Leave a Note\" to redirect them, then still decide the appeal itself once you have enough information.",
+            'Appeal raises something outside your authority, like billing or a bug: mention in your reason that they should open a support ticket, then still decide the appeal itself once you have enough information.',
         ],
     },
     {
@@ -69,7 +69,7 @@ const APPEAL_GUIDE_SECTIONS = [
             "Don't reference other users, other cases, or internal team discussion in the reason field.",
             "Don't promise a specific outcome for a future appeal.",
             "Don't use sarcasm, all caps, or informal language. This goes out under Synkro's name.",
-            'Don\'t leave an appeal pending indefinitely. If you need more time, use "Leave a Note" so the user knows it\'s being looked at.',
+            "Don't leave an appeal pending indefinitely. If you need more time to decide, that's fine, but don't let it go stale - the user has no way to follow up other than opening a support ticket.",
         ],
     },
 ];
@@ -92,9 +92,6 @@ function SearchIcon() {
 function AppealItem({ appeal }) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
-    const [note, setNote] = useState('');
-    const [showNote, setShowNote] = useState(false);
-    const [sendingNote, setSendingNote] = useState(false);
     const { confirm, ConfirmDialog } = useConfirm();
 
     const isPending = appeal.status === 'pending';
@@ -128,16 +125,6 @@ function AppealItem({ appeal }) {
             : `Reject this appeal?`;
         if (!(await confirm(confirmText, { title: confirmTitle }))) return;
         router.patch(route('admin.appeals.review', appeal.id), { outcome, reason }, { preserveScroll: true });
-    };
-
-    const sendNote = () => {
-        if (!note.trim()) return;
-        setSendingNote(true);
-        router.patch(route('admin.appeals.respond', appeal.id), { message: note }, {
-            preserveScroll: true,
-            onSuccess: () => { setNote(''); setShowNote(false); },
-            onFinish: () => setSendingNote(false),
-        });
     };
 
     return (
@@ -184,9 +171,14 @@ function AppealItem({ appeal }) {
             {open && (
                 <div className="border-t border-gray-100 p-4 space-y-4 dark:border-gray-700">
                     {appeal.user?.is_suspended && (
-                        <div className="rounded-md bg-red-50 p-3 text-sm dark:bg-red-950/30">
-                            <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs font-medium uppercase tracking-wide text-red-500 dark:text-red-400">Current suspension</p>
+                        <div className="rounded-md border border-red-100 bg-red-50/50 p-3 dark:border-red-900 dark:bg-red-950/20">
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                                <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-red-500 dark:text-red-400">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 11-12.728 0m12.728 0A9 9 0 015.636 5.636m12.728 0L5.636 18.364" />
+                                    </svg>
+                                    Current suspension
+                                </p>
                                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                                     appeal.user.suspended_until
                                         ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
@@ -198,10 +190,7 @@ function AppealItem({ appeal }) {
                                 </span>
                             </div>
                             {appeal.user.suspension_reason && (
-                                <div className="mt-2 rounded-md border-l-2 border-red-300 bg-white/60 px-3 py-2 dark:border-red-700 dark:bg-black/10">
-                                    <p className="text-[10px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">Reason given at the time</p>
-                                    <p className="mt-0.5 whitespace-pre-wrap text-red-700 dark:text-red-300"><Linkify text={appeal.user.suspension_reason} /></p>
-                                </div>
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed text-red-700 dark:text-red-300"><Linkify text={appeal.user.suspension_reason} /></p>
                             )}
                         </div>
                     )}
@@ -217,52 +206,6 @@ function AppealItem({ appeal }) {
                             <Linkify text={appeal.message} />
                         </p>
                     </div>
-
-                    {appeal.responses?.length > 0 && (
-                        <div className="space-y-2">
-                            {appeal.responses.map((r) => (
-                                <div key={r.id} className="rounded-md border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
-                                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                        <Linkify text={r.message} />
-                                    </p>
-                                    <div className="mt-1.5 flex items-center gap-1.5">
-                                        <Avatar user={r.admin} size="h-4 w-4" rounded="rounded-full" className="text-[8px]" />
-                                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                                            {r.admin?.name ?? 'Deleted admin'} ·{' '}
-                                            {new Date(r.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {isPending && showNote && (
-                        <div className="rounded-md border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900/30">
-                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                Leave a note without deciding yet (emailed to {appeal.user?.name ?? 'the user'})
-                            </label>
-                            <textarea
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                rows={2}
-                                placeholder="e.g. Thanks for reaching out - we're looking into this and will follow up soon."
-                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-                            />
-                            <div className="mt-2 flex justify-end">
-                                <button
-                                    onClick={sendNote}
-                                    disabled={!note.trim() || sendingNote}
-                                    className="w-full shrink-0 rounded-md bg-gray-600 px-3 py-2 text-xs font-medium text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
-                                >
-                                    Send
-                                </button>
-                            </div>
-                        </div>
-                    )}
 
                     {isPending ? (
                         <>
@@ -294,12 +237,6 @@ function AppealItem({ appeal }) {
                                     className="rounded-md bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-500 sm:py-1.5"
                                 >
                                     Rejected
-                                </button>
-                                <button
-                                    onClick={() => setShowNote((v) => !v)}
-                                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 sm:py-1.5"
-                                >
-                                    {showNote ? 'Hide Note' : 'Leave a Note'}
                                 </button>
                             </div>
                         </>

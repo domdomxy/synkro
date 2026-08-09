@@ -67,13 +67,12 @@ Route::get('/appeal', function () {
     return Inertia::render('Auth/Appeal');
 })->name('appeal.page');
 
-// Reached from the "note left on your appeal" / "appeal auto-closed" email and
-// in-app notification. A still-suspended user has no session to view this as
-// (see the auth-controller comment on suspended logins never actually
-// authenticating), so it's verified by signature like account.destroy.confirm
-// below - except a since-unsuspended user who's now logged in can also open
-// it straight from the notification bell without a signature, since they're
-// already provably themselves.
+// Read-only suspension/appeal history. A still-suspended user has no session
+// to view this as (see the auth-controller comment on suspended logins never
+// actually authenticating), so it's verified by signature like
+// account.destroy.confirm below - except a since-unsuspended user who's now
+// logged in can also open it straight from the notification bell without a
+// signature, since they're already provably themselves.
 Route::get('/appeal/history/{user}', [SuspensionAppealController::class, 'history'])
     ->middleware(['throttle:30,1'])
     ->name('appeal.history');
@@ -265,7 +264,6 @@ Route::middleware(['auth', 'verified', 'password.change', 'admin'])->prefix('adm
     Route::patch('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'update'])->name('feedback-categories.update');
     Route::delete('/feedback-categories/{feedbackCategory}', [FeedbackCategoryController::class, 'destroy'])->name('feedback-categories.destroy');
     Route::get('/appeals', [AdminController::class, 'appeals'])->name('appeals');
-    Route::patch('/appeals/{appeal}/respond', [AdminController::class, 'respondAppeal'])->name('appeals.respond');
     Route::patch('/appeals/{appeal}', [AdminController::class, 'reviewAppeal'])->name('appeals.review');
     Route::post('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/users/{user}/logs', [AdminController::class, 'userLogs'])->name('users.logs')->withTrashed();

@@ -115,6 +115,16 @@ export default function FilterSelect({ id, value, onChange, options, className =
 // positioning with `fixed` from the trigger's own measured rect, so no
 // ancestor's overflow or stacking context can clip it.
 //
+// Portaling to document.body also means this can end up as a `fixed`
+// sibling of Modal's own Dialog wrapper (z-[60]) when a FilterSelect is
+// used inside a modal (e.g. SuspendModal's duration picker) - two `fixed`
+// elements at the body level stack purely by z-index, not DOM order, so
+// without a higher z-index here the modal painted on top and the open
+// options list was invisible behind it even though it had opened. z-[70]
+// keeps this above Modal/AdminGuideDrawer/ToastLayer (all z-[60]) while
+// staying below full-screen overlays like ImageLightbox and the drag ghost
+// (z-[100]), which never need to coexist with an open dropdown anyway.
+//
 // Wrapped in forwardRef because it sits directly inside <Transition
 // as={Fragment}>, which attaches a ref straight to its child to track the
 // DOM node for the transition - a plain function component can't receive
@@ -170,7 +180,7 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, chi
         <ListboxOptions
             ref={setRefs}
             style={{ position: 'fixed', top: r.bottom + 4, left, width }}
-            className="z-50 max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
+            className="z-[70] max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}
         </ListboxOptions>,

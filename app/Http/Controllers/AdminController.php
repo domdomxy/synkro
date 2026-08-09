@@ -1331,7 +1331,7 @@ public function suspend(Request $request, User $user)
 
     public function appeals(Request $request)
     {
-        $query = SuspensionAppeal::with(['user', 'admin', 'responses.admin']);
+        $query = SuspensionAppeal::with(['user', 'admin']);
 
         if ($request->search) {
             $query->whereHas('user', function ($q) use ($request) {
@@ -1346,78 +1346,6 @@ public function suspend(Request $request, User $user)
             'appeals' => $appeals,
             'filters' => ['search' => $request->input('search', '')],
         ]);
-    }
-
-    /**
-     * Superadmin/admin: leave a note on a pending appeal without deciding it yet -
-     * e.g. asking a follow-up question, or acknowledging it's being looked into.
-     * Unlike reviewAppeal() this doesn't touch status/outcome, so the appeal stays
-     * pending; it exists mainly so "a supporter has responded" becomes something
-     * CloseInactiveAppeals can actually detect (see that command's doc comment).
-     */
-    public function respondAppeal(Request $request, SuspensionAppeal $appeal)
-    {
-        if ($appeal->status !== 'pending') {
-            return back()->withErrors(['error' => "This appeal has already been decided - there's nothing to add a note to."]);
-        }
-
-        $validated = $request->validate([
-            'message' => 'required|string|max:2000',
-        ]);
-
-        $response = $appeal->responses()->create([
-            'admin_id' => auth()->id(),
-            'message' => $validated['message'],
-        ]);
-
-        AdminLog::log(
-            'appeal.responded',
-            "Left a note on **{$appeal->user?->name}**'s suspension appeal",
-            $appeal,
-            $validated['message']
-        );
-
-        if ($appeal->user) {
-            // Signed rather than a plain login link: a still-suspended user has
-            // no session to view an authenticated page with (see
-            // SuspensionAppealController::history), and this way the note is
-            // actually reachable instead of just described in the email.
-            $historyUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-                'appeal.history',
-                now()->addDays(30),
-                ['user' => $appeal->user->id, 'note' => "response:{$response->id}"]
-            );
-
-            NotificationMailer::send(
-                $appeal->user,
-                'account.appeal_responded',
-                'An update on your suspension appeal',
-                ['A member of our support team left a note on your suspension appeal:'],
-                $historyUrl,
-                'View Note',
-                highlight: [
-                    'label' => 'Note from support',
-                    'content' => \App\Support\NoteFormatter::toHtml($validated['message']),
-                    'html' => true,
-                ],
-            );
-
-            $notification = UserNotification::create([
-                'user_id' => $appeal->user->id,
-                'type' => 'appeal_responded',
-                'causer_id' => auth()->id(),
-                'message' => "Update on your appeal\nA member of our support team left a note on your suspension appeal.",
-                'url' => $historyUrl,
-            ]);
-
-            try {
-                broadcast(new \App\Events\AppealResponded($appeal->user->id, $appeal->id, $notification->id))->toOthers();
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
-
-        return back()->with('success', 'Note added.');
     }
 
     public function reviewAppeal(Request $request, SuspensionAppeal $appeal)

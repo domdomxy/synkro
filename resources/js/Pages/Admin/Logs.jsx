@@ -66,8 +66,6 @@ const actionIconConfig = {
     'user.login_history_viewed': { path: ICON_PATHS.eye, color: 'text-sky-500' },
     'appeal.reviewed': { path: ICON_PATHS.check, color: 'text-teal-500' },
     'appeal.dismissed': { path: ICON_PATHS.close_or_x, color: 'text-gray-400' },
-    'appeal.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
-    'appeal.auto_closed': { path: ICON_PATHS.clock, color: 'text-gray-400' },
     'ticket.status_changed': { path: ICON_PATHS.swap, color: 'text-blue-500' },
     'ticket.responded': { path: ICON_PATHS.pencil, color: 'text-indigo-500' },
     'ticket.auto_closed': { path: ICON_PATHS.clock, color: 'text-gray-400' },
@@ -88,8 +86,6 @@ const actionColors = {
     'user.login_history_viewed': 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300',
     'appeal.reviewed': 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
     'appeal.dismissed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-    'appeal.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-    'appeal.auto_closed': 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
     'ticket.status_changed': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     'ticket.responded': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
     'ticket.auto_closed': 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
@@ -101,9 +97,9 @@ const actionColors = {
 // AdminLog.admin_id is null for both "the admin who did this was later deleted"
 // and "nothing did this, a scheduled job did" - these two are indistinguishable
 // from the foreign key alone, so we disambiguate by action: only the actions a
-// human never performs (both currently: the 24h-inactivity auto-close jobs)
+// human never performs (currently: the 24h-inactivity ticket auto-close job)
 // get the "automated" label instead of "Deleted admin".
-const AUTOMATED_ACTIONS = new Set(['ticket.auto_closed', 'appeal.auto_closed']);
+const AUTOMATED_ACTIONS = new Set(['ticket.auto_closed']);
 
 function AdminLogRow({ log, actionCatalog }) {
     const [open, setOpen] = useState(false);

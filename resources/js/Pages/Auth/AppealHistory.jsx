@@ -22,7 +22,7 @@ function fmt(ts) {
     return new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-// Same fade-in ring used to draw the eye to the one note a notification
+// Same fade-in ring used to draw the eye to the one appeal a notification
 // link was actually about, without a jarring permanent highlight once
 // they've seen it.
 function useHighlight(id, highlight) {
@@ -69,26 +69,6 @@ function ReviewerLine({ autoResolved, timestamp }) {
     );
 }
 
-function ResponseNote({ response, highlight }) {
-    const { ref, lit } = useHighlight(`response:${response.id}`, highlight);
-    return (
-        <div
-            ref={ref}
-            className={`rounded-md border p-3 transition-shadow ${
-                lit
-                    ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-300 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-700'
-                    : 'border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/30'
-            }`}
-        >
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Note from support</p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                <Linkify text={response.message} />
-            </p>
-            <ReviewerLine autoResolved={false} timestamp={response.created_at} />
-        </div>
-    );
-}
-
 function AppealCard({ appeal, highlight }) {
     const { ref: appealRef, lit: appealLit } = useHighlight(`appeal:${appeal.id}`, highlight);
     const isPending = appeal.status === 'pending';
@@ -120,10 +100,6 @@ function AppealCard({ appeal, highlight }) {
                     <Linkify text={appeal.message} />
                 </p>
             </div>
-
-            {appeal.responses?.map((r) => (
-                <ResponseNote key={r.id} response={r} highlight={highlight} />
-            ))}
 
             {!isPending && (
                 <div className={`rounded-md border p-3 ${
