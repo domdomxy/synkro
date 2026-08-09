@@ -15,6 +15,17 @@ export default function Modal({
     // this kind of floating content so it can render in full.
     overflowVisible = false,
 }) {
+    // With `items-center` on the wrapping flex container, a panel taller than the
+    // viewport overflows equally above and below center. The container can only
+    // scroll down from 0 (scrollTop can't go negative), so the portion that
+    // overflowed above the top of the screen becomes permanently unreachable -
+    // the modal renders "cut off" at the top with no way to scroll up to it.
+    // Capping the panel's own height to the viewport and scrolling *inside* it
+    // instead keeps centering intact for short content while guaranteeing every
+    // pixel of tall content (long lists, forms, etc.) stays reachable, on both
+    // desktop and short mobile viewports.
+    const overflowClass = overflowVisible ? 'overflow-visible' : 'thin-scrollbar max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden';
+
     const close = () => {
         if (closeable) {
             onClose();
@@ -61,7 +72,7 @@ export default function Modal({
                     leaveFrom="translate-y-0 opacity-100 sm:scale-100"
                     leaveTo="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
                 >
-                    <DialogPanel className={`mb-6 w-full transform ${overflowVisible ? 'overflow-visible' : 'overflow-hidden'} rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
+                    <DialogPanel className={`mb-6 w-full transform ${overflowClass} rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
                         {children}
                     </DialogPanel>
                 </TransitionChild>

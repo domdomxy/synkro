@@ -71,7 +71,7 @@ export default function AdminGuideDrawer({ show, onClose, title, intro, sections
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-gray-500/25 dark:bg-gray-900/40" />
+                    <div className="fixed inset-0 bg-black/55 dark:bg-black/70" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 overflow-hidden">
