@@ -413,7 +413,7 @@ function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
             id={`reminder-${r.id}`}
             onClick={() => r.note && setExpanded((v) => !v)}
             className={`group overflow-hidden rounded-2xl bg-gray-50 px-4 py-3.5 transition dark:bg-gray-900/70 ${r.note ? 'cursor-pointer' : ''} ${
-                isHighlighted ? 'ring-2 ring-indigo-400 dark:ring-indigo-500' : ''
+                isHighlighted ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''
             }`}
         >
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

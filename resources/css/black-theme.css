@@ -143,6 +143,7 @@ html.theme-black .dark\:ring-indigo-500 { --tw-ring-color: rgba(129, 140, 248, 0
 html.theme-black .task-highlight-ring {
     --tw-ring-color: #818cf8 !important;
     --tw-ring-opacity: 1 !important;
+    box-shadow: 0 0 0 2px #818cf8 !important;
 }
 
 html.theme-black .dark\:bg-purple-900 { background-color: #22103a !important; }

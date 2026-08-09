@@ -61,7 +61,7 @@ function FeedbackItem({ feedback, isHighlighted, categories }) {
         <div
             id={`ticket-${feedback.id}`}
             className={`rounded-lg border bg-white shadow-sm transition dark:bg-gray-800 ${
-                isHighlighted ? 'border-indigo-400 ring-2 ring-indigo-400 dark:border-indigo-500 dark:ring-indigo-500' : 'border-gray-200 dark:border-gray-700'
+                isHighlighted ? 'border-indigo-400 ring-2 ring-indigo-400 dark:border-indigo-500 dark:ring-indigo-500 task-highlight-ring' : 'border-gray-200 dark:border-gray-700'
             }`}
         >
             <button onClick={() => setOpen((v) => !v)} className="flex w-full items-start gap-3 p-4 text-left">
