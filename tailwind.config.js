@@ -12,6 +12,9 @@ export default {
     ],
     theme: {
         extend: {
+            maxWidth: {
+                '8xl': '100rem',
+            },
             colors: {
                 gray: {
                     50: '#f8fafc',

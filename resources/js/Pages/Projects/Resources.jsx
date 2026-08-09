@@ -838,7 +838,7 @@ export default function Resources({ project, resources, canManage, role }) {
         }>
             <Head title={`Resources - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl space-y-5 px-4 sm:px-6 lg:px-8">
 
                     <div ref={toolbarRef} className="flex flex-wrap items-start justify-between gap-3">
                         <div>

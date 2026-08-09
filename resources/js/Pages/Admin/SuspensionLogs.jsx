@@ -182,7 +182,7 @@ export default function SuspensionLogs({ logs, filters }) {
         }>
             <Head title="Suspension Logs" />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <div className="relative">

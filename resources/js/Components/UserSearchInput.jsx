@@ -1,7 +1,7 @@
 import Avatar from '@/Components/Avatar';
 import { useEffect, useRef, useState } from 'react';
 
-export default function UserSearchInput({ value, onChange, placeholder = 'Search by name or email...' }) {
+export default function UserSearchInput({ value, onChange, onSelect, onEnter, placeholder = 'Search by name or email...' }) {
     const [results, setResults] = useState([]);
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
@@ -31,7 +31,16 @@ export default function UserSearchInput({ value, onChange, placeholder = 'Search
     }, []);
 
     const pick = (user) => {
-        onChange(user.email);
+        // When onSelect is provided (multi-invite chip flow), report the
+        // whole user and clear the field so the next search starts fresh -
+        // otherwise fall back to the original single-value behavior of just
+        // filling the field with the picked email.
+        if (onSelect) {
+            onSelect(user);
+            onChange('');
+        } else {
+            onChange(user.email);
+        }
         setResults([]);
         setOpen(false);
     };
@@ -46,6 +55,21 @@ export default function UserSearchInput({ value, onChange, placeholder = 'Search
                     setOpen(true);
                 }}
                 onFocus={() => results.length > 0 && setOpen(true)}
+                onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || !onEnter) return;
+                    // If a search result is showing, Enter picks the top
+                    // match rather than submitting whatever's been typed -
+                    // matches the expected behavior of an autocomplete list.
+                    if (open && results.length > 0) {
+                        e.preventDefault();
+                        pick(results[0]);
+                        return;
+                    }
+                    if (value.trim()) {
+                        e.preventDefault();
+                        onEnter(value.trim());
+                    }
+                }}
                 placeholder={placeholder}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600"
             />

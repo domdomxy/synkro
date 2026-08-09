@@ -683,7 +683,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         tasksPaneRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' });
     }, []);
 
-    const memberForm = useForm({ email: '', role: 'member' });
+    const memberForm = useForm({ emails: [], role: 'member' });
+    // Text currently typed in the invite search box, kept separate from
+    // memberForm.data.emails (the committed chip list) so picking a result
+    // or pressing Enter can clear the field without touching what's already
+    // queued to be invited.
+    const [inviteEmailInput, setInviteEmailInput] = useState('');
     const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', dependencies: [] });
     const [newTaskDependencyPick, setNewTaskDependencyPick] = useState('');
     const leaveForm = useForm({ reason: '' });
@@ -769,9 +774,41 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
     }, [url]);
 
+    const addInvitee = (email) => {
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed) return;
+        memberForm.setData((data) => (
+            data.emails.includes(trimmed) ? data : { ...data, emails: [...data.emails, trimmed] }
+        ));
+    };
+
+    const removeInvitee = (email) => {
+        memberForm.setData((data) => ({ ...data, emails: data.emails.filter((e) => e !== email) }));
+    };
+
     const submitMember = (e) => {
         e.preventDefault();
-        memberForm.post(route('projects.members.store', project.id), { onSuccess: () => memberForm.reset() });
+        // Anything still sitting typed in the search box (not yet turned
+        // into a chip) is included too, so hitting "Send Invitations" never
+        // silently drops the last person someone typed but didn't click.
+        const pending = inviteEmailInput.trim().toLowerCase();
+        const emails = pending && !memberForm.data.emails.includes(pending)
+            ? [...memberForm.data.emails, pending]
+            : memberForm.data.emails;
+
+        if (emails.length === 0) return;
+
+        memberForm.transform((data) => ({ ...data, emails }));
+        memberForm.post(route('projects.members.store', project.id), {
+            onSuccess: () => {
+                memberForm.transform((data) => data);
+                memberForm.reset();
+                setInviteEmailInput('');
+            },
+            onError: () => {
+                memberForm.transform((data) => data);
+            },
+        });
     };
 
     const submitTask = (e) => {
@@ -1013,8 +1050,44 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         <form onSubmit={submitMember} className="space-y-3 px-4 pb-4">
                                             <div>
                                                 <InputLabel htmlFor="email" value="Name or Email" />
-                                                <UserSearchInput value={memberForm.data.email} onChange={(val) => memberForm.setData('email', val)} />
-                                                <InputError message={memberForm.errors.email} className="mt-2" />
+                                                <UserSearchInput
+                                                    value={inviteEmailInput}
+                                                    onChange={setInviteEmailInput}
+                                                    onSelect={(user) => addInvitee(user.email)}
+                                                    onEnter={(text) => addInvitee(text)}
+                                                    placeholder={memberForm.data.emails.length > 0 ? 'Add another...' : 'Search by name or email...'}
+                                                />
+                                                {memberForm.data.emails.length > 0 && (
+                                                    <div className="mb-1.5 mt-2 flex flex-wrap gap-1.5">
+                                                        {memberForm.data.emails.map((email) => (
+                                                            <span
+                                                                key={email}
+                                                                className="inline-flex items-center gap-1 rounded-full bg-indigo-50 py-1 pl-2.5 pr-1.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
+                                                            >
+                                                                {email}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeInvitee(email)}
+                                                                    title="Remove"
+                                                                    className="rounded-full p-0.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600 dark:text-indigo-500 dark:hover:bg-indigo-900 dark:hover:text-indigo-300"
+                                                                >
+                                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Pick as many people as you'd like, then send - they'll all get the same role.</p>
+                                                <InputError
+                                                    message={
+                                                        memberForm.errors.email
+                                                        ?? memberForm.errors.emails
+                                                        ?? Object.entries(memberForm.errors).find(([key]) => key.startsWith('emails.'))?.[1]
+                                                    }
+                                                    className="mt-2"
+                                                />
                                             </div>
                                             <div>
                                                 <InputLabel htmlFor="role" value="Role" />
@@ -1022,7 +1095,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                             </div>
                                             <button type="submit" disabled={memberForm.processing} className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                                                 {memberForm.processing && <Spinner className="mr-2 h-4 w-4" />}
-                                                Send Invitation
+                                                {memberForm.data.emails.length > 1 ? `Send ${memberForm.data.emails.length} Invitations` : 'Send Invitation'}
                                             </button>
                                         </form>
                                     )}
@@ -1037,10 +1110,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </span>
                                 </div>
                                 <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
-                                <ul
-                                    className="space-y-1 overflow-y-auto pr-1"
-                                    style={{ maxHeight: filteredMembers.length > 6 ? '18rem' : 'none' }}
-                                >
+                                <ul className="space-y-1 pr-1">
                                     {filteredMembers.map((member) => (
                                         <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
                                             <div className="flex items-start gap-2">
@@ -1066,7 +1136,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                             <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                                 {member.pivot.role}
                                                             </span>
-                                                            {canManage && !isTrashed && member.id !== project.owner_id && (
+                                                            {canManage && !isTrashed && member.id !== project.owner_id && (isOwner || member.pivot.role !== 'manager') && (
                                                                 <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => setMemberToRemove(member)} />
                                                             )}
                                                         </div>

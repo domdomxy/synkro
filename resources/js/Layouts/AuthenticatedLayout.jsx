@@ -31,7 +31,7 @@ const OVERLAY_PANELS = {
     feedback: FeedbackPanel,
 };
 
-export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-7xl', children }) {
+export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8xl', children }) {
     const user = usePage().props.auth.user;
     // Superadmins carry every admin permission plus a few of their own (see
     // User::isAdmin() on the backend), so anywhere "is this user an admin"

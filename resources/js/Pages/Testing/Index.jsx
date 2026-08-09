@@ -166,7 +166,7 @@ export default function Index({ tasks }) {
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Testing Queue</h2>}>
             <Head title="Testing Queue" />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-6 flex flex-wrap items-center gap-3">
                         <div className="relative w-full sm:w-auto">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">

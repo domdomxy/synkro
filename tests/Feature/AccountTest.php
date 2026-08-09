@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AccountTest extends TestCase
@@ -61,7 +62,7 @@ class AccountTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_user_can_request_account_deletion(): void
     {
         $user = User::factory()->create();
 
@@ -71,15 +72,22 @@ class AccountTest extends TestCase
                 'password' => 'password',
             ]);
 
+        // Requesting deletion only starts the process - it emails a
+        // confirmation link (see AccountController::requestDeletion) and
+        // leaves the account and session untouched until that link is
+        // clicked, so nothing here is deleted or logged out yet.
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
+            ->assertRedirect('/account');
 
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertAuthenticatedAs($user);
+
+        $user->refresh();
+        $this->assertNotNull($user->deletion_requested_at);
+        $this->assertFalse($user->trashed());
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_correct_password_must_be_provided_to_request_account_deletion(): void
     {
         $user = User::factory()->create();
 
@@ -90,10 +98,36 @@ class AccountTest extends TestCase
                 'password' => 'wrong-password',
             ]);
 
+        // requestDeletion() validates via validateWithBag('userDeletion', ...),
+        // so the error lands in the "userDeletion" bag rather than the
+        // default one.
         $response
-            ->assertSessionHasErrors('password')
+            ->assertSessionHasErrorsIn('userDeletion', 'password')
             ->assertRedirect('/account');
 
-        $this->assertNotNull($user->fresh());
+        $this->assertNull($user->fresh()->deletion_requested_at);
+    }
+
+    public function test_confirming_deletion_link_soft_deletes_the_account_and_starts_the_grace_period(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['deletion_requested_at' => now()])->save();
+
+        $confirmUrl = URL::temporarySignedRoute(
+            'account.destroy.confirm',
+            now()->addMinutes(60),
+            ['user' => $user->getKey()]
+        );
+
+        $response = $this->actingAs($user)->get($confirmUrl);
+
+        $response->assertRedirect('/login');
+
+        $this->assertGuest();
+
+        $user->refresh();
+        $this->assertTrue($user->trashed());
+        $this->assertNotNull($user->deletionGraceEndsAt());
+        $this->assertTrue($user->deletionGraceEndsAt()->isFuture());
     }
 }

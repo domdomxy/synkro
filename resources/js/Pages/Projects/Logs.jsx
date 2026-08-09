@@ -101,7 +101,7 @@ export default function Logs({ project, logs, backHref, backLabel }) {
         }>
             <Head title={`Logs - ${project.name}`} />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                         <FiltersMenu
                             activeCount={[userFilter !== 'all', actionFilter !== 'all', Boolean(from || to)].filter(Boolean).length}

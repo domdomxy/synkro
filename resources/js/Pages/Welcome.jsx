@@ -564,7 +564,7 @@ export default function Welcome({ auth, stats }) {
                         </div>
                     </section>
 
-                    <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-6 pb-20">
+                    <section id="features" className="mx-auto max-w-8xl scroll-mt-20 px-6 pb-20">
                         <div className="mx-auto max-w-2xl text-center">
                             <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-500 dark:text-indigo-400">
                                 What's inside

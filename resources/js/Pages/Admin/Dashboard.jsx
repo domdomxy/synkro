@@ -230,8 +230,6 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                     </div>
 
                     <div className="grid items-stretch gap-6 lg:grid-cols-2">
-                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
-
                         <SessionActivityCalendar
                             title="Website Sessions"
                             sessionsByDay={stats.websiteSessionActivity}
@@ -240,6 +238,8 @@ export default function Dashboard({ stats, range, customFrom, customTo }) {
                             userBreakdownByDay={stats.websiteSessionUserBreakdown}
                             durationByDay={stats.websiteSessionDuration}
                         />
+
+                        <TasksByStatusCard tasksByStatus={stats.tasksByStatus} total={totalTasks} />
                     </div>
 
                     <div className="grid items-start gap-6 lg:grid-cols-2">

@@ -53,67 +53,103 @@ class ProjectMemberController extends Controller
     {
         $this->authorize('manageMembers', $project);
 
+        // Accepts either a single 'email' (legacy/back-compat) or an
+        // 'emails' array so the invite form can send several people at once
+        // in one request instead of one round-trip per invite.
+        $emails = $request->input('emails');
+        if (! is_array($emails)) {
+            $emails = array_values(array_filter([$request->input('email')]));
+        }
+        $request->merge(['emails' => $emails]);
+
         $validated = $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'emails' => 'required|array|min:1',
+            'emails.*' => 'required|email|distinct:strict|exists:users,email',
             'role' => 'required|in:manager,member,tester',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $sent = [];
+        $skipped = [];
 
-        if ($project->isMember($user)) {
-            return back()->withErrors(['email' => 'This user is already a member.']);
-        }
+        foreach ($validated['emails'] as $email) {
+            $user = User::where('email', $email)->first();
 
-        if (ProjectInvitation::where('project_id', $project->id)->where('invited_user_id', $user->id)->where('status', 'pending')->exists()) {
-            return back()->withErrors(['email' => 'This user already has a pending invitation.']);
-        }
+            if ($project->isMember($user)) {
+                $skipped[] = "{$user->name} (already a member)";
+                continue;
+            }
 
-        $invitation = ProjectInvitation::create([
-            'project_id' => $project->id,
-            'invited_user_id' => $user->id,
-            'invited_by' => Auth::id(),
-            'role' => $validated['role'],
-        ]);
+            if (ProjectInvitation::where('project_id', $project->id)->where('invited_user_id', $user->id)->where('status', 'pending')->exists()) {
+                $skipped[] = "{$user->name} (already invited)";
+                continue;
+            }
 
-        $inviteUrl = route('invitations.show', $invitation->token, false);
-
-        if (NotificationPreferences::wantsType($user, 'project_invitation')) {
-            $notification = UserNotification::create([
-                'user_id' => $user->id,
-                'type' => 'project_invitation',
-                'causer_id' => $request->user()->id,
-                'message' => "Project invitation\n**{$request->user()->name}** invited you to join \"**{$project->name}**\" as **{$validated['role']}**",
-                'url' => $inviteUrl,
+            $invitation = ProjectInvitation::create([
+                'project_id' => $project->id,
+                'invited_user_id' => $user->id,
+                'invited_by' => Auth::id(),
+                'role' => $validated['role'],
             ]);
 
+            $inviteUrl = route('invitations.show', $invitation->token, false);
+
+            if (NotificationPreferences::wantsType($user, 'project_invitation')) {
+                $notification = UserNotification::create([
+                    'user_id' => $user->id,
+                    'type' => 'project_invitation',
+                    'causer_id' => $request->user()->id,
+                    'message' => "Project invitation\n**{$request->user()->name}** invited you to join \"**{$project->name}**\" as **{$validated['role']}**",
+                    'url' => $inviteUrl,
+                ]);
+
+                try {
+                    broadcast(new ProjectInvitationSent($user->id, $project, $validated['role'], $request->user()->name, $invitation->token, $notification->id))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            NotificationMailer::send(
+                $user,
+                'project.invitation_received',
+                "{$request->user()->name} invited you to join {$project->name}",
+                ["**{$request->user()->name}** invited you to join the project \"**{$project->name}**\" (#{$project->id}) as **{$validated['role']}**."],
+                url($inviteUrl),
+                'View Invitation'
+            );
+
+            ProjectActivityLog::log($project, 'invitation_sent', [
+                'target_name' => $user->name,
+                'role' => $validated['role'],
+            ]);
+
+            $sent[] = $user->name;
+        }
+
+        if (count($sent) > 0) {
             try {
-                broadcast(new ProjectInvitationSent($user->id, $project, $validated['role'], $request->user()->name, $invitation->token, $notification->id))->toOthers();
+                broadcast(new ProjectRosterUpdated($project->id, 'invitation_sent'))->toOthers();
             } catch (\Throwable $e) {
                 report($e);
             }
         }
 
-        NotificationMailer::send(
-            $user,
-            'project.invitation_received',
-            "{$request->user()->name} invited you to join {$project->name}",
-            ["**{$request->user()->name}** invited you to join the project \"**{$project->name}**\" (#{$project->id}) as **{$validated['role']}**."],
-            url($inviteUrl),
-            'View Invitation'
-        );
-
-        try {
-            broadcast(new ProjectRosterUpdated($project->id, 'invitation_sent'))->toOthers();
-        } catch (\Throwable $e) {
-            report($e);
+        // No invitations went out at all (everyone was already a member or
+        // already invited) - surface that as a validation error rather than
+        // a misleading "sent" success message.
+        if (count($sent) === 0) {
+            return back()->withErrors(['email' => 'No invitations were sent: ' . implode(', ', $skipped)]);
         }
 
-        ProjectActivityLog::log($project, 'invitation_sent', [
-            'target_name' => $user->name,
-            'role' => $validated['role'],
-        ]);
+        $message = count($sent) === 1
+            ? 'Invitation sent.'
+            : count($sent) . ' invitations sent.';
 
-        return back()->with('success', 'Invitation sent.');
+        if (count($skipped) > 0) {
+            $message .= ' Skipped: ' . implode(', ', $skipped) . '.';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function destroyInvitation(ProjectInvitation $invitation)
@@ -145,9 +181,25 @@ class ProjectMemberController extends Controller
         return back()->with('success', 'Invitation cancelled.');
     }
 
+    /**
+     * A manager has no standing over any manager - including themselves;
+     * only the owner can change a manager's role or remove one. Aborts with
+     * 403 if the actor doesn't have standing over the target.
+     */
+    private function assertCanActOnMember(Project $project, User $target): void
+    {
+        $actorRole = $project->roleFor(Auth::user());
+        $targetRole = $project->members()->where('user_id', $target->id)->first()?->pivot->role;
+
+        if ($actorRole === 'manager' && $targetRole === 'manager') {
+            abort(403, 'Managers cannot change or remove other managers.');
+        }
+    }
+
     public function update(Request $request, Project $project, User $user)
     {
         $this->authorize('manageMembers', $project);
+        $this->assertCanActOnMember($project, $user);
 
         $validated = $request->validate([
             'role' => 'required|in:manager,member,tester',
@@ -206,6 +258,8 @@ class ProjectMemberController extends Controller
         if ($project->owner_id === $user->id) {
             return back()->withErrors(['error' => 'Cannot remove the project owner.']);
         }
+
+        $this->assertCanActOnMember($project, $user);
 
         $validated = $request->validate([
             'reason' => 'required|string|max:1000',
