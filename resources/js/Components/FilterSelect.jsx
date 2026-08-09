@@ -1,6 +1,6 @@
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
-import { Fragment, forwardRef } from 'react';
-import useViewportClamp from '@/hooks/useViewportClamp';
+import { Fragment, forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Avatar from '@/Components/Avatar';
 
 function ChevronIcon() {
@@ -34,11 +34,12 @@ function CheckIcon() {
  */
 export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '' }) {
     const selected = options.find((o) => String(o.value) === String(value)) ?? options[0];
+    const anchorRef = useRef(null);
 
     return (
         <Listbox value={value} onChange={onChange}>
             {({ open }) => (
-                <div className={`relative ${className}`}>
+                <div className={`relative ${className}`} ref={anchorRef}>
                     <ListboxButton
                         id={id}
                         className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${buttonClassName}`}
@@ -60,7 +61,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <ClampedOptions open={open}>
+                        <ClampedOptions open={open} anchorRef={anchorRef}>
                             {options.map((opt) => (
                                 <ListboxOption
                                     key={opt.value}
@@ -102,24 +103,47 @@ export default function FilterSelect({ id, value, onChange, options, className =
     );
 }
 
-// min-w-[11rem] below means, for a narrow trigger (e.g. inside a compact
-// filter panel), the options list can be wider than the trigger it's
-// anchored to and run past the right edge of the screen - the same class of
-// bug as the "Filters" panel itself. useViewportClamp nudges it back on
-// screen the same way, kept in its own component so the hook has a proper
-// place to live (Listbox's children-as-function callback isn't a valid spot
-// to call a hook from directly).
+// The options list used to render as an `absolute`-positioned child right
+// next to its trigger. That works fine standalone, but Dropdown.Content
+// (the "Filters" button's panel, for one) wraps its children in an
+// `overflow-hidden` div to clip rounded corners on normal menu items - and
+// that same overflow-hidden clips this nested popup too, cutting its list
+// short instead of letting it float over the rest of the page. Same class
+// of bug as the dropdown-clipping issues fixed elsewhere (see synkro notes
+// on transform/overflow-hidden ancestors breaking position:fixed/absolute
+// children) - fixed here by portaling straight to document.body and
+// positioning with `fixed` from the trigger's own measured rect, so no
+// ancestor's overflow or stacking context can clip it.
 //
 // Wrapped in forwardRef because it sits directly inside <Transition
 // as={Fragment}>, which attaches a ref straight to its child to track the
 // DOM node for the transition - a plain function component can't receive
-// that ref. The forwarded ref and the clamp hook's own ref both need the
-// same DOM node, so they're merged in setRefs below.
-const ClampedOptions = forwardRef(function ClampedOptions({ open, children }, forwardedRef) {
-    const { ref: clampRef, style } = useViewportClamp(open);
+// that ref.
+const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, children }, forwardedRef) {
+    const [rect, setRect] = useState(null);
+    const localRef = useRef(null);
+
+    useLayoutEffect(() => {
+        // Only measure/track while open. On close, deliberately leave the
+        // last measured rect in place rather than clearing it: the panel
+        // stays mounted during Headless UI's leave/fade-out transition, so
+        // resetting position here would flash it at the fallback (0,0)
+        // top-left corner for that split second before it fully unmounts.
+        if (!open || !anchorRef.current) return;
+
+        const recalc = () => setRect(anchorRef.current?.getBoundingClientRect() ?? null);
+        recalc();
+
+        window.addEventListener('resize', recalc);
+        window.addEventListener('scroll', recalc, true);
+        return () => {
+            window.removeEventListener('resize', recalc);
+            window.removeEventListener('scroll', recalc, true);
+        };
+    }, [open, anchorRef]);
 
     const setRefs = (node) => {
-        clampRef.current = node;
+        localRef.current = node;
         if (typeof forwardedRef === 'function') {
             forwardedRef(node);
         } else if (forwardedRef) {
@@ -127,13 +151,29 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, children }, fo
         }
     };
 
-    return (
+    // ListboxOptions must always render here (never conditionally omitted)
+    // so Headless UI's own open/closed state - not ours - controls its
+    // presence; Transition tracks a stable ref to this node across
+    // open/close, and a component that sometimes returns null breaks that.
+    const r = rect ?? { top: 0, bottom: 0, left: 0, right: 0, width: 0 };
+    const margin = 8;
+    const minWidth = 176; // matches the old min-w-[11rem]
+    const width = Math.max(r.width, minWidth);
+
+    // Right-aligned to the trigger, same as the old `absolute right-0`,
+    // then nudged back on screen if that would run off either edge.
+    let left = r.right - width;
+    left = Math.min(left, window.innerWidth - margin - width);
+    left = Math.max(left, margin);
+
+    return createPortal(
         <ListboxOptions
             ref={setRefs}
-            style={style}
-            className="absolute right-0 z-20 mt-1 max-h-60 w-full min-w-[11rem] overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
+            style={{ position: 'fixed', top: r.bottom + 4, left, width }}
+            className="z-50 max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}
-        </ListboxOptions>
+        </ListboxOptions>,
+        document.body
     );
 });

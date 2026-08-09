@@ -598,7 +598,7 @@ function CommentEntry({
                             title={canCollapse ? (isCollapsed ? 'Expand thread' : 'Collapse thread') : undefined}
                             className={`rounded-2xl px-3.5 py-2 transition ${canCollapse ? 'cursor-pointer hover:brightness-95 dark:hover:brightness-110' : ''} ${
                             highlightedCommentId === comment.id
-                                ? 'ring-2 ring-indigo-400 dark:ring-indigo-500'
+                                ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring'
                                 : ''
                         } ${
                             comment.is_reopened
@@ -1274,7 +1274,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
             id={`task-${task.id}`}
             className={`relative rounded-lg border border-l-4 border-y-gray-200 border-r-gray-200 bg-white shadow-sm transition dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800 ${
                 isHighlighted
-                    ? 'border-l-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500'
+                    ? 'border-l-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring'
                     : task.status === 'todo' ? 'border-l-gray-400 dark:border-l-gray-600'
                     : task.status === 'in_progress' ? 'border-l-blue-500'
                     : task.status === 'submitted' ? 'border-l-yellow-500'

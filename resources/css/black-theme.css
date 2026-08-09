@@ -133,6 +133,18 @@ html.theme-black .dark\:border-indigo-800 { border-color: #211a4d !important; }
 html.theme-black .dark\:border-indigo-900 { border-color: #16123a !important; }
 html.theme-black .dark\:ring-indigo-500 { --tw-ring-color: rgba(129, 140, 248, 0.5) !important; }
 
+/* The deep-linked task/comment highlight ring shares dark:ring-indigo-500
+   with other, more decorative uses that are deliberately dimmed above for
+   the black theme - but that same dimming makes the highlight nearly
+   invisible against this theme's near-black backgrounds, defeating its
+   whole purpose (drawing the eye to a task/comment jumped to via a link).
+   Scoped to its own class so it stays fully visible here without touching
+   the shared ring-indigo-500 dimming used elsewhere. */
+html.theme-black .task-highlight-ring {
+    --tw-ring-color: #818cf8 !important;
+    --tw-ring-opacity: 1 !important;
+}
+
 html.theme-black .dark\:bg-purple-900 { background-color: #22103a !important; }
 html.theme-black .dark\:bg-purple-950,
 html.theme-black .dark\:bg-purple-950\/20 { background-color: rgba(15, 8, 26, 0.4) !important; }

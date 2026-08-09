@@ -107,7 +107,7 @@ const securityPoints = [
     },
     {
         title: 'Full accountability',
-        description: 'Every admin action, from a role change to a password reset, is written to a permanent audit log.',
+        description: 'Every admin and superadmin action, from a role change to promoting another admin, is written to a permanent audit log.',
     },
 ];
 
@@ -434,7 +434,7 @@ export default function Welcome({ auth, stats }) {
                             : 'border-b border-transparent bg-transparent'
                     }`}
                 >
-                    <div className="mx-auto flex max-w-6xl items-center gap-8 px-6 py-4">
+                    <div className="mx-auto flex max-w-8xl items-center gap-8 px-6 py-4">
                         <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                             <ApplicationLogo className="h-8 w-8 fill-current text-indigo-600 dark:text-indigo-400" />
                             <span className="text-xl font-bold">Synkro</span>
@@ -453,11 +453,11 @@ export default function Welcome({ auth, stats }) {
                                     Projects
                                 </Link>
                             ) : (
-                                <div className="flex items-center gap-4">
-                                    <Link href={route('login')} className="text-sm font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
+                                <div className="flex items-center gap-2 sm:gap-4">
+                                    <Link href={route('login')} className="text-xs font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 sm:text-sm">
                                         Log in
                                     </Link>
-                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">
+                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-500 sm:px-4 sm:py-2 sm:text-sm">
                                         Get Started
                                     </Link>
                                 </div>
@@ -538,7 +538,7 @@ export default function Welcome({ auth, stats }) {
                         </div>
                     </section>
 
-                    <section id="how-it-works" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+                    <section id="how-it-works" className="mx-auto max-w-8xl scroll-mt-20 px-6 pb-20">
                         <div className="mx-auto max-w-2xl text-center">
                             <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-500 dark:text-indigo-400">
                                 How it works
@@ -583,7 +583,7 @@ export default function Welcome({ auth, stats }) {
                         </div>
                     </section>
 
-                    <section id="security" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+                    <section id="security" className="mx-auto max-w-8xl scroll-mt-20 px-6 pb-20">
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800 sm:p-10">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
