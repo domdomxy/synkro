@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import Modal from '@/Components/Modal';
-import CodeEditor from '@/Components/CodeEditor';
+
+// CodeMirror + its per-language packages (~1MB) are only needed when a code
+// file is actually previewed. Lazy-loading it here keeps CodeMirror out of
+// every page bundle that renders DeliverableViewer (Deliverables, Resources,
+// TaskRow) and instead fetches it on demand, right before it's first used.
+const CodeEditor = lazy(() => import('@/Components/CodeEditor'));
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif'];
 const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'ogv'];
@@ -226,7 +231,15 @@ export default function DeliverableViewer({ deliverable, onClose }) {
                                 Loading preview…
                             </div>
                         ) : isCode ? (
-                            <CodeEditor value={textContent} onChange={() => {}} extension={ext} readOnly className="h-full" />
+                            <Suspense
+                                fallback={
+                                    <div className="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+                                        Loading preview…
+                                    </div>
+                                }
+                            >
+                                <CodeEditor value={textContent} onChange={() => {}} extension={ext} readOnly className="h-full" />
+                            </Suspense>
                         ) : (
                             <pre className="whitespace-pre-wrap break-words p-4 text-xs text-gray-700 dark:text-gray-300">
                                 {textContent}
