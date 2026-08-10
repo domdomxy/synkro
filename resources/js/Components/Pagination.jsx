@@ -186,7 +186,7 @@ export default function Pagination({ meta }) {
                                 onKeyDown={(e) => e.key === 'Enter' && submitGoTo()}
                                 placeholder="#"
                                 title={`Go to page (1-${last_page})`}
-                                className="w-14 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="w-14 rounded-md border-gray-300 px-2 py-1 text-xs leading-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             />
                             <button
                                 type="button"

@@ -6,10 +6,12 @@ import Modal from '@/Components/Modal';
 // every page bundle that renders DeliverableViewer (Deliverables, Resources,
 // TaskRow) and instead fetches it on demand, right before it's first used.
 const CodeEditor = lazy(() => import('@/Components/CodeEditor'));
+const ZipViewer = lazy(() => import('@/Components/ZipViewer'));
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif'];
 const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'ogv'];
 const AUDIO_EXTS = ['mp3', 'wav', 'm4a', 'flac', 'ogg'];
+const ARCHIVE_EXTS = ['zip'];
 
 // Plain-text / data formats - previewed as raw text.
 const TEXT_EXTS = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'yml', 'yaml', 'xml'];
@@ -133,7 +135,8 @@ export default function DeliverableViewer({ deliverable, onClose }) {
     const isCode = isFile && CODE_EXTS.includes(ext);
     const isText = isFile && (TEXT_EXTS.includes(ext) || isCode);
     const isPdf = isFile && ext === 'pdf';
-    const isPreviewableFile = isImage || isVideo || isAudio || isText || isPdf;
+    const isArchive = isFile && ARCHIVE_EXTS.includes(ext);
+    const isPreviewableFile = isImage || isVideo || isAudio || isText || isPdf || isArchive;
     const officeApp = isFile ? getOfficeApp(ext) : null;
 
     const [textContent, setTextContent] = useState(null);
@@ -163,8 +166,8 @@ export default function DeliverableViewer({ deliverable, onClose }) {
     if (!open) return null;
 
     return (
-        <Modal show={open} onClose={onClose} maxWidth="5xl" overlayClassName="bg-black/55 dark:bg-black/70">
-            <div className="flex h-[80vh] flex-col">
+        <Modal show={open} onClose={onClose} maxWidth="7xl" overlayClassName="bg-black/55 dark:bg-black/70">
+            <div className="flex h-[88vh] flex-col">
                 <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
                     <p className="min-w-0 truncate text-sm font-medium text-gray-800 dark:text-gray-200" title={name}>
                         {name}
@@ -205,7 +208,7 @@ export default function DeliverableViewer({ deliverable, onClose }) {
                     </div>
                 </div>
 
-                <div className={`min-h-0 flex-1 ${isCode && textContent !== null && !textError ? 'overflow-hidden' : 'overflow-auto'} bg-gray-50 dark:bg-gray-900`}>
+                <div className={`min-h-0 flex-1 ${(isCode && textContent !== null && !textError) || isArchive ? 'overflow-hidden' : 'overflow-auto'} bg-gray-50 dark:bg-gray-900`}>
                     {isImage && (
                         <div className="flex h-full items-center justify-center p-4">
                             <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
@@ -245,6 +248,17 @@ export default function DeliverableViewer({ deliverable, onClose }) {
                                 {textContent}
                             </pre>
                         )
+                    )}
+                    {isArchive && (
+                        <Suspense
+                            fallback={
+                                <div className="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+                                    Reading archive…
+                                </div>
+                            }
+                        >
+                            <ZipViewer url={url} name={name} />
+                        </Suspense>
                     )}
                     {!isFile && <NoPreview name={name} url={url} isFile={false} />}
                     {isFile && !isPreviewableFile && <NoPreview name={name} url={url} isFile={isFile} officeApp={officeApp} />}
