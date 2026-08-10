@@ -3,6 +3,7 @@ import SectionSelect from '@/Components/SectionSelect';
 import NavSearchInput from '@/Components/NavSearchInput';
 import TrashSection from '@/Components/TrashSection';
 import DeviceSessionsSection from '@/Components/DeviceSessionsSection';
+import AppealHistoryTimeline from '@/Components/AppealHistoryTimeline';
 import Spinner from '@/Components/Spinner';
 import { Link, router, useForm } from '@inertiajs/react';
 import { getStoredTheme, setStoredTheme } from '@/theme';
@@ -122,6 +123,12 @@ const settingsNavItems = [
         icon: <DevicesIcon className="h-5 w-5" />,
     },
     {
+        id: 'appeal-history',
+        label: 'Appeal History',
+        terms: ['Appeal History', 'Suspension', 'Suspended', 'Account status', 'Appeals'],
+        icon: <span className="h-5 w-5">{categoryIcons.tickets}</span>,
+    },
+    {
         id: 'support',
         label: 'Support',
         terms: ['Support', 'Submit Feedback', 'Track a ticket', 'Report a bug'],
@@ -203,6 +210,7 @@ const SECTION_META = {
     notifications: { title: 'Notifications', description: 'Choose how you hear about activity, by email and in-app' },
     trash: { title: 'Trash', description: 'Review deleted projects and tasks before they\'re permanently deleted' },
     devices: { title: 'Logged in devices', description: 'See where you\'re signed in and disconnect devices you don\'t recognize' },
+    'appeal-history': { title: 'Appeal History', description: 'Your account status and any past suspensions or appeals' },
     support: { title: 'Support', description: 'Get help, report a bug, or send us feedback' },
 };
 
@@ -365,7 +373,7 @@ function NotificationCategoryCard({ groupKey, title, items, emailPreferences, em
         </div>
     );
 }
-export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashedProjects, trashedTasks, deletableProjects, deletableTasks, devices, initialSection, onClose }) {
+export default function SettingsPanel({ emailCatalog, emailPreferences, emailDefaults, notificationCatalog, notificationPreferences, notificationDefaults, trustedLinkHosts, trashedProjects, trashedTasks, deletableProjects, deletableTasks, devices, appeals, suspensionLogs, isSuspended, suspendedUntil, suspensionReason, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     const emailForm = useForm({ preferences: emailPreferences });
     const notificationForm = useForm({ preferences: notificationPreferences });
@@ -856,6 +864,16 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
 
                     {activeSection === 'devices' && (
                         <DeviceSessionsSection devices={devices ?? []} />
+                    )}
+
+                    {activeSection === 'appeal-history' && (
+                        <AppealHistoryTimeline
+                            appeals={appeals ?? []}
+                            suspensionLogs={suspensionLogs ?? []}
+                            isSuspended={isSuspended}
+                            suspendedUntil={suspendedUntil}
+                            suspensionReason={suspensionReason}
+                        />
                     )}
 
                     {activeSection === 'support' && (

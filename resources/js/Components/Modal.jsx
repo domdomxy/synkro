@@ -24,7 +24,30 @@ export default function Modal({
     // instead keeps centering intact for short content while guaranteeing every
     // pixel of tall content (long lists, forms, etc.) stays reachable, on both
     // desktop and short mobile viewports.
-    const overflowClass = overflowVisible ? 'overflow-visible' : 'thin-scrollbar max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden';
+    //
+    // The cap has to match the vertical space actually consumed outside the
+    // panel, or it's wrong in both directions. That space is the Dialog
+    // wrapper's own py-6 (1.5rem top + 1.5rem bottom = 3rem) plus the
+    // DialogPanel's own mb-6 (1.5rem, bottom only) = 4.5rem total - not the
+    // 6rem this used to subtract. That extra 1.5rem of unaccounted-for
+    // "safety margin" made the cap stricter than the panel could ever
+    // actually need, which for a panel that already self-caps its inner
+    // content (e.g. SettingsPanel/AccountPanel/FeedbackPanel's own
+    // `h-[88vh] max-h-[860px]`) meant the outer max-height came in a few
+    // pixels *below* that inner height on plenty of ordinary desktop
+    // viewports - just enough overflow to keep a persistent, mostly-empty
+    // scrollbar on screen with nothing meaningful to scroll to.
+    const overflowClass = overflowVisible ? 'overflow-visible' : 'thin-scrollbar max-h-[calc(100vh-4.5rem)] overflow-y-auto overflow-x-hidden';
+
+    // The outer Dialog wrapper below only needs its own scrollbar when the
+    // panel itself has no height cap (overflowVisible) and so can genuinely
+    // grow taller than the viewport. Every other panel already caps itself
+    // to max-h-[calc(100vh-6rem)] and scrolls internally (see overflowClass
+    // above), so giving the outer wrapper overflow-y-auto too was redundant -
+    // it produced its own empty scrollbar (visible along the very edge of
+    // the screen) even when the panel content fit on screen with nothing to
+    // scroll, since the wrapper is always exactly viewport height.
+    const outerOverflowClass = overflowVisible ? 'overflow-y-auto' : 'overflow-y-hidden';
 
     const close = () => {
         if (closeable) {
@@ -46,7 +69,7 @@ export default function Modal({
 
     return (
         <Transition show={show} leave="duration-200">
-            <Dialog as="div" id="modal" className="fixed inset-0 z-[60] flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0" onClose={close}>
+            <Dialog as="div" id="modal" className={`fixed inset-0 z-[60] flex transform items-center px-4 py-6 transition-all sm:px-0 ${outerOverflowClass}`} onClose={close}>
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"
