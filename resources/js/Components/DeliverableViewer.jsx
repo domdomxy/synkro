@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
 import Modal from '@/Components/Modal';
+import CodeEditor from '@/Components/CodeEditor';
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif'];
 const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'ogv'];
 const AUDIO_EXTS = ['mp3', 'wav', 'm4a', 'flac', 'ogg'];
+
+// Plain-text / data formats - previewed as raw text.
 const TEXT_EXTS = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'yml', 'yaml', 'xml'];
+
+// Source code extensions - previewed with syntax highlighting via CodeEditor
+// (in read-only mode). Kept as a separate list from TEXT_EXTS just so it's
+// easy to tell which files get highlighting vs a plain <pre> dump.
+const CODE_EXTS = [
+    'js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx', 'py', 'php', 'rb', 'go', 'rs',
+    'java', 'c', 'h', 'cpp', 'hpp', 'cc', 'cxx', 'cs', 'css', 'scss', 'less',
+    'html', 'htm', 'vue', 'sql', 'sh', 'bash', 'pl', 'swift', 'kt', 'kts',
+];
 
 // Extensions that desktop Office can open directly from a public HTTPS URL
 // via its registered OS protocol handlers (the same mechanism SharePoint/
@@ -86,11 +98,16 @@ function NoPreview({ name, url, isFile, officeApp }) {
 }
 
 /**
- * In-app preview for a task deliverable (uploaded file or external link).
- * Clicking a deliverable opens this modal instead of navigating away in a
- * new tab. Files hosted on Synkro (images, PDFs, audio/video, plain text)
- * render inline; other file types fall back to a "download" action inside
- * the same modal rather than the browser silently opening a new tab.
+ * In-app preview for a task deliverable or project resource (uploaded file
+ * or external link). Clicking one opens this modal instead of navigating
+ * away in a new tab. Files hosted on Synkro (images, PDFs, audio/video,
+ * plain text, source code) render inline; other file types fall back to a
+ * "download" action inside the same modal rather than the browser silently
+ * opening a new tab.
+ *
+ * Code files (CODE_EXTS) get syntax highlighting via CodeEditor in
+ * read-only mode rather than a flat <pre> dump - this is view-only for now,
+ * no editing/saving.
  *
  * External links are NOT embedded via iframe: most third-party sites send
  * X-Frame-Options/CSP headers that block framing anyway, so attempting it
@@ -108,7 +125,8 @@ export default function DeliverableViewer({ deliverable, onClose }) {
     const isImage = isFile && IMAGE_EXTS.includes(ext);
     const isVideo = isFile && VIDEO_EXTS.includes(ext);
     const isAudio = isFile && AUDIO_EXTS.includes(ext);
-    const isText = isFile && TEXT_EXTS.includes(ext);
+    const isCode = isFile && CODE_EXTS.includes(ext);
+    const isText = isFile && (TEXT_EXTS.includes(ext) || isCode);
     const isPdf = isFile && ext === 'pdf';
     const isPreviewableFile = isImage || isVideo || isAudio || isText || isPdf;
     const officeApp = isFile ? getOfficeApp(ext) : null;
@@ -182,7 +200,7 @@ export default function DeliverableViewer({ deliverable, onClose }) {
                     </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+                <div className={`min-h-0 flex-1 ${isCode && textContent !== null && !textError ? 'overflow-hidden' : 'overflow-auto'} bg-gray-50 dark:bg-gray-900`}>
                     {isImage && (
                         <div className="flex h-full items-center justify-center p-4">
                             <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
@@ -207,6 +225,8 @@ export default function DeliverableViewer({ deliverable, onClose }) {
                             <div className="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
                                 Loading preview…
                             </div>
+                        ) : isCode ? (
+                            <CodeEditor value={textContent} onChange={() => {}} extension={ext} readOnly className="h-full" />
                         ) : (
                             <pre className="whitespace-pre-wrap break-words p-4 text-xs text-gray-700 dark:text-gray-300">
                                 {textContent}

@@ -20,6 +20,7 @@ import LogEntryRow from '@/Components/LogEntryRow';
 import { describeLog } from '@/utils/activityLog';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
+import DeliverableViewer from '@/Components/DeliverableViewer';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -258,7 +259,7 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function DeliverableItem({ d, canRemove, onRemove }) {
+function DeliverableItem({ d, canRemove, onRemove, onPreview }) {
     return (
         <li className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
             {d.type === 'file' ? (
@@ -268,15 +269,14 @@ function DeliverableItem({ d, canRemove, onRemove }) {
             )}
             <div className="min-w-0 flex-1">
                 {d.type === 'file' ? (
-                    <a
-                        href={`/storage/${d.path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                    <button
+                        type="button"
+                        onClick={() => onPreview(d)}
+                        className="block max-w-full truncate text-left text-sm text-indigo-600 hover:underline dark:text-indigo-400"
                         title={d.original_name}
                     >
                         {d.original_name}
-                    </a>
+                    </button>
                 ) : (
                     <a
                         href={d.url}
@@ -850,6 +850,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     const dragCounter = useRef(0);
     const [isDraggingFiles, setIsDraggingFiles] = useState(false);
     const [showDeliverables, setShowDeliverables] = useState(false);
+    const [previewingDeliverable, setPreviewingDeliverable] = useState(null);
     const [showFullDescription, setShowFullDescription] = useState(false);
     const descriptionRef = useRef(null);
     // Whether the description is actually being clipped by line-clamp-2 right now.
@@ -1673,7 +1674,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted &middot; Files</p>
                                             <ul className="space-y-1">
                                                 {deliverableFiles.map((d) => (
-                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
                                                 ))}
                                             </ul>
                                         </div>
@@ -1683,7 +1684,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Already submitted &middot; Links</p>
                                             <ul className="space-y-1">
                                                 {deliverableLinks.map((d) => (
-                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                                    <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
                                                 ))}
                                             </ul>
                                         </div>
@@ -1729,7 +1730,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     )}
                                     <ul className="space-y-1">
                                         {deliverableFiles.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
                                         ))}
                                     </ul>
                                 </div>
@@ -1741,7 +1742,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     )}
                                     <ul className="space-y-1">
                                         {deliverableLinks.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} />
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
                                         ))}
                                     </ul>
                                 </div>
@@ -2175,6 +2176,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                 </div>
             </div>
         </Modal>
+
+        <DeliverableViewer deliverable={previewingDeliverable} onClose={() => setPreviewingDeliverable(null)} />
 
         {ConfirmDialog}
         {MuteScopeDialog}

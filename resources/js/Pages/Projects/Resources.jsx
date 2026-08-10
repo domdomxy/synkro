@@ -125,33 +125,33 @@ function SearchInput({ value, onChange, placeholder }) {
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full rounded-lg border-gray-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500"
+                className="w-full rounded-md border-gray-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500"
             />
         </div>
     );
 }
 
-/** Small pill segmented control used to filter the resource list by type. */
+/** Pill segmented control used to filter the resource list by type (matches the Active/Archived toggle on the Projects page). */
 function FilterTabs({ value, onChange, options }) {
     return (
-        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
+        <div className="inline-flex shrink-0 gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
             {options.map((opt) => (
                 <button
                     key={opt.key}
                     type="button"
                     onClick={() => onChange(opt.key)}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
                         value === opt.key
-                            ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
+                            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                     }`}
                 >
                     {opt.label}
                     <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                        className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                             value === opt.key
-                                ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300'
-                                : 'bg-gray-200/70 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                     >
                         {opt.count}
@@ -175,7 +175,7 @@ function DialogHeader({ title, subtitle, onClose }) {
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="shrink-0 rounded-md p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                className="shrink-0 rounded p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
             >
                 <CloseIcon className="h-5 w-5" />
             </button>
@@ -193,7 +193,7 @@ function DialogCancelButton({ onClick, disabled, children = 'Cancel' }) {
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
         >
             {children}
         </button>
@@ -205,7 +205,7 @@ function DialogSubmitButton({ disabled, loading, children }) {
         <button
             type="submit"
             disabled={disabled}
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
         >
             {loading && <Spinner className="mr-2 h-4 w-4" />}
             {children}
@@ -223,7 +223,7 @@ function FieldError({ message }) {
     return message ? <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{message}</p> : null;
 }
 
-const fieldClass = 'mt-1.5 block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition placeholder:text-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500';
+const fieldClass = 'mt-1.5 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition placeholder:text-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500';
 
 function FieldInput(props) {
     return <input {...props} className={`${fieldClass} ${props.className ?? ''}`} />;
@@ -333,7 +333,7 @@ function AddResourcesModal({ show, onClose, project }) {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`mt-4 rounded-lg border-2 border-dashed p-3 transition ${
+                    className={`mt-4 rounded-md border-2 border-dashed p-3 transition ${
                         isDragging
                             ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-950/30'
                             : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/40'
@@ -344,12 +344,12 @@ function AddResourcesModal({ show, onClose, project }) {
                         <button
                             type="button"
                             onClick={() => fileInputRef.current.click()}
-                            className="flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-600 shadow-sm transition hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                            className="flex items-center gap-1.5 rounded bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-600 shadow-sm transition hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                         >
                             <UploadIcon className="h-3.5 w-3.5" />
                             Browse Files
                         </button>
-                        <div className="flex min-w-[260px] flex-1 items-center gap-1 rounded-md bg-white pl-2.5 pr-1 shadow-sm dark:bg-neutral-800">
+                        <div className="flex min-w-[260px] flex-1 items-center gap-1 rounded bg-white pl-2.5 pr-1 shadow-sm dark:bg-neutral-800">
                             <input
                                 type="text"
                                 value={linkTitle}
@@ -380,7 +380,7 @@ function AddResourcesModal({ show, onClose, project }) {
                     {totalCount > 0 && (
                         <ul className="mt-2.5 max-h-72 space-y-2 overflow-y-auto">
                             {items.map((item) => (
-                                <li key={item.id} className="rounded-lg border border-neutral-200 bg-white p-2.5 dark:border-neutral-700 dark:bg-neutral-800">
+                                <li key={item.id} className="rounded-md border border-neutral-200 bg-white p-2.5 dark:border-neutral-700 dark:bg-neutral-800">
                                     <div className="flex items-center gap-2">
                                         {item.kind === 'file' ? (
                                             <FileTypeIcon name={item.file.name} className="h-4 w-4 shrink-0 text-neutral-400" />
@@ -402,7 +402,7 @@ function AddResourcesModal({ show, onClose, project }) {
                                         value={item.description}
                                         onChange={(e) => updateDescription(item.id, e.target.value)}
                                         placeholder="Add a description (optional)"
-                                        className="mt-2 w-full rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-xs text-neutral-600 placeholder:text-neutral-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:placeholder:text-neutral-500"
+                                        className="mt-2 w-full rounded border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-xs text-neutral-600 placeholder:text-neutral-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:placeholder:text-neutral-500"
                                     />
                                 </li>
                             ))}
@@ -542,14 +542,14 @@ function EditResourceModal({ resource, onClose }) {
                             onDragOver={handleFileDragOver}
                             onDragLeave={handleFileDragLeave}
                             onDrop={handleFileDrop}
-                            className={`mt-1.5 rounded-lg border-2 border-dashed p-2 transition ${
+                            className={`mt-1.5 rounded-md border-2 border-dashed p-2 transition ${
                                 isDraggingFile
                                     ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-950/30'
                                     : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/40'
                             }`}
                         >
                             {data.file ? (
-                                <div className="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/30">
+                                <div className="flex items-center gap-2.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/30">
                                     <FileTypeIcon name={data.file.name} className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-300" />
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm text-indigo-700 dark:text-indigo-300">{data.file.name}</p>
@@ -558,7 +558,7 @@ function EditResourceModal({ resource, onClose }) {
                                     <RemoveButton onClick={() => setData('file', null)} title="Keep current file" />
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/40">
+                                <div className="flex items-center gap-2.5 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/40">
                                     <FileTypeIcon name={resource.original_name} className="h-4 w-4 shrink-0 text-neutral-400" />
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{resource.original_name}</p>
@@ -567,7 +567,7 @@ function EditResourceModal({ resource, onClose }) {
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current.click()}
-                                        className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                                        className="shrink-0 rounded px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
                                     >
                                         Replace
                                     </button>
@@ -634,14 +634,14 @@ function ResourceMenu({ onEdit, onDelete }) {
                 type="button"
                 onClick={() => setOpen((v) => !v)}
                 title="More actions"
-                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                className="rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
             >
                 <KebabIcon className="h-4 w-4" />
             </button>
             {open && (
                 <div
                     ref={menuRef}
-                    className={`absolute right-0 z-20 w-36 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+                    className={`absolute right-0 z-20 w-36 rounded bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
                 >
                     <button
                         type="button"
@@ -677,12 +677,12 @@ function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
 
     return (
         <div
-            className={`group flex items-start gap-3 rounded-xl border border-l-[3px] border-gray-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${meta.border}`}
+            className={`group flex items-start gap-3 rounded-lg border border-l-[3px] border-gray-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${meta.border}`}
         >
             <button
                 type="button"
                 onClick={() => onPreview(resource)}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105 ${meta.badge}`}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition group-hover:scale-105 ${meta.badge}`}
                 title="Preview"
             >
                 {isLink ? <LinkTypeIcon className="h-5 w-5" /> : <FileTypeIcon name={resource.original_name} className="h-5 w-5" />}
@@ -711,7 +711,7 @@ function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Open link"
-                        className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                        className="rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
                     >
                         <ExternalLinkIcon />
                     </a>
@@ -720,7 +720,7 @@ function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
                         href={`/storage/${resource.path}`}
                         download={resource.original_name}
                         title="Download"
-                        className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                        className="rounded p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
                     >
                         <DownloadIcon />
                     </a>
@@ -811,7 +811,7 @@ export default function Resources({ project, resources, canManage, role }) {
                             <button
                                 type="button"
                                 onClick={() => setShowAdd(true)}
-                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                             >
                                 <UploadIcon className="h-4 w-4" />
                                 Add Resources
@@ -827,8 +827,8 @@ export default function Resources({ project, resources, canManage, role }) {
                     )}
 
                     {resources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
-                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
                             <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
@@ -838,7 +838,7 @@ export default function Resources({ project, resources, canManage, role }) {
                             </p>
                         </div>
                     ) : visibleResources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
                                 <SearchIcon className="h-5 w-5" />
                             </div>
