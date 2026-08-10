@@ -1,83 +1,146 @@
-// Ambient background for the Error page (resources/js/Pages/Error.jsx):
-// a faint sketch of a task board - the same card-and-connector language
-// Synkro's own board uses for task dependencies - with one connector
-// snapped right where the error content sits. The idea being sketched:
-// this page exists at the spot where a link in the board broke.
+// Hero illustration for the Error page (resources/js/Pages/Error.jsx): a
+// small "task card" character reacting to whatever went wrong, tucked
+// behind a big bold status number - the numeral-plus-mascot layout common
+// to 404 pages, but the mascot is Synkro's own card, not a generic robot
+// or animal, so it still reads as this app's error page.
 //
-// Two layers: a fine dot grid (blueprint-paper texture, `dotClass`) and
-// the card/connector line art (`lineClass`), plus one connector rendered
-// in the status tone so the background visibly points at the badge above.
-export default function ErrorBackground({ dotClass, lineClass, toneClass }) {
+// Deliberately drawn with fully-opaque fill/stroke utilities (fill-*,
+// stroke-*, not currentColor-through-a-<pattern> or very low opacity
+// washes) so it stays clearly visible on every theme, including the
+// black theme, where anything under ~15% opacity all but disappears
+// against a true #000 background.
+const MOOD = {
+    // 403 - blocked
+    worried: {
+        eyes: (
+            <>
+                <circle cx="62" cy="82" r="5" className="fill-current" />
+                <circle cx="98" cy="82" r="5" className="fill-current" />
+            </>
+        ),
+        brows: (
+            <>
+                <path d="M52 68l16 8" strokeLinecap="round" />
+                <path d="M108 68l-16 8" strokeLinecap="round" />
+            </>
+        ),
+        mouth: <path d="M64 108q16-10 32 0" strokeLinecap="round" />,
+    },
+    // 404 - confused
+    confused: {
+        eyes: (
+            <>
+                <circle cx="62" cy="82" r="5" className="fill-current" />
+                <circle cx="98" cy="82" r="5" className="fill-current" />
+            </>
+        ),
+        brows: (
+            <>
+                <path d="M52 70q10-6 18 0" strokeLinecap="round" />
+                <path d="M90 66q10 4 18 8" strokeLinecap="round" />
+            </>
+        ),
+        mouth: <ellipse cx="80" cy="110" rx="9" ry="7" />,
+    },
+    // 419 - drowsy
+    sleepy: {
+        eyes: (
+            <>
+                <path d="M54 82q8 6 16 0" strokeLinecap="round" />
+                <path d="M90 82q8 6 16 0" strokeLinecap="round" />
+            </>
+        ),
+        brows: null,
+        mouth: <path d="M68 108q12 6 24 0" strokeLinecap="round" />,
+    },
+    // 429 - overwhelmed
+    dizzy: {
+        eyes: (
+            <>
+                <path d="M56 76l12 12M68 76l-12 12" strokeLinecap="round" />
+                <path d="M92 76l12 12M104 76l-12 12" strokeLinecap="round" />
+            </>
+        ),
+        brows: null,
+        mouth: <ellipse cx="80" cy="110" rx="10" ry="6" />,
+    },
+    // 500 - shocked
+    shocked: {
+        eyes: (
+            <>
+                <path d="M56 76l12 12M68 76l-12 12" strokeLinecap="round" />
+                <path d="M92 76l12 12M104 76l-12 12" strokeLinecap="round" />
+            </>
+        ),
+        brows: (
+            <>
+                <path d="M50 66l20 6" strokeLinecap="round" />
+                <path d="M110 66l-20 6" strokeLinecap="round" />
+            </>
+        ),
+        mouth: <path d="M66 104l6 8 6-6 6 8 6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />,
+    },
+    // 503 - asleep
+    sleeping: {
+        eyes: (
+            <>
+                <path d="M54 83q8 5 16 0" strokeLinecap="round" />
+                <path d="M90 83q8 5 16 0" strokeLinecap="round" />
+            </>
+        ),
+        brows: null,
+        mouth: <path d="M70 108q10 4 20 0" strokeLinecap="round" />,
+    },
+};
+
+export default function ErrorMascot({ mood = 'confused', className = '' }) {
+    const face = MOOD[mood] ?? MOOD.confused;
+
     return (
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <svg className="h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                    <pattern id="error-dot-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-                        <circle cx="1.5" cy="1.5" r="1.5" fill="currentColor" />
-                    </pattern>
-                </defs>
-                <rect width="1440" height="900" fill="url(#error-dot-grid)" className={dotClass} />
+        <svg viewBox="0 0 160 190" className={className}>
+            {/* the card's dropped shadow, a second offset copy - the cheap
+                "sticker" trick that gives it a little pop off the page */}
+            <rect
+                x="18" y="26" width="124" height="140" rx="18"
+                transform="rotate(-8 80 96)"
+                className="fill-gray-900/10 dark:fill-black/40"
+            />
 
-                <g className={lineClass} fill="none" stroke="currentColor" strokeWidth="2">
-                    {/* card: top-left */}
-                    <g transform="translate(110,90)">
-                        <rect width="200" height="118" rx="12" />
-                        <line x1="22" y1="30" x2="130" y2="30" strokeWidth="3" strokeLinecap="round" />
-                        <line x1="22" y1="52" x2="160" y2="52" strokeLinecap="round" />
-                        <line x1="22" y1="70" x2="110" y2="70" strokeLinecap="round" />
-                        <rect x="22" y="90" width="14" height="14" rx="4" />
-                    </g>
+            <g transform="rotate(-4 80 92)">
+                <rect
+                    x="14" y="18" width="124" height="140" rx="18"
+                    className="fill-white stroke-gray-700 dark:fill-gray-800 dark:stroke-gray-400"
+                    strokeWidth="3.5"
+                />
 
-                    {/* card: top-right */}
-                    <g transform="translate(1060,60)">
-                        <rect width="210" height="126" rx="12" />
-                        <line x1="22" y1="32" x2="140" y2="32" strokeWidth="3" strokeLinecap="round" />
-                        <line x1="22" y1="55" x2="170" y2="55" strokeLinecap="round" />
-                        <rect x="22" y="78" width="14" height="14" rx="4" />
-                        <line x1="46" y1="85" x2="120" y2="85" strokeLinecap="round" />
-                    </g>
+                {/* peeled corner */}
+                <path
+                    d="M114 18h24v24c-14 1-24-9-24-24z"
+                    className="fill-gray-50 stroke-gray-700 dark:fill-gray-700 dark:stroke-gray-400"
+                    strokeWidth="3"
+                    strokeLinejoin="round"
+                />
 
-                    {/* card: lower-left */}
-                    <g transform="translate(70,600)">
-                        <rect width="190" height="112" rx="12" />
-                        <line x1="20" y1="28" x2="120" y2="28" strokeWidth="3" strokeLinecap="round" />
-                        <line x1="20" y1="50" x2="150" y2="50" strokeLinecap="round" />
-                        <rect x="20" y="72" width="14" height="14" rx="4" />
-                        <line x1="44" y1="79" x2="100" y2="79" strokeLinecap="round" />
-                    </g>
+                {/* a couple lines of "content" so it still reads as a task card */}
+                <line x1="34" y1="130" x2="90" y2="130" strokeWidth="3" strokeLinecap="round" className="stroke-gray-300 dark:stroke-gray-600" />
+                <line x1="34" y1="144" x2="70" y2="144" strokeWidth="3" strokeLinecap="round" className="stroke-gray-300 dark:stroke-gray-600" />
 
-                    {/* card: bottom-right */}
-                    <g transform="translate(1120,660)">
-                        <rect width="200" height="116" rx="12" />
-                        <line x1="22" y1="30" x2="130" y2="30" strokeWidth="3" strokeLinecap="round" />
-                        <line x1="22" y1="52" x2="160" y2="52" strokeLinecap="round" />
-                        <line x1="22" y1="74" x2="100" y2="74" strokeLinecap="round" />
-                    </g>
-
-                    {/* card: far bottom-left, smaller */}
-                    <g transform="translate(260,790)">
-                        <rect width="150" height="88" rx="10" />
-                        <line x1="18" y1="24" x2="95" y2="24" strokeWidth="3" strokeLinecap="round" />
-                        <line x1="18" y1="44" x2="120" y2="44" strokeLinecap="round" />
-                    </g>
-
-                    {/* dependency lines between the intact cards, routed around the
-                        centered content rather than through it */}
-                    <path d="M310,150 C420,140 470,260 460,420" strokeDasharray="2 10" strokeLinecap="round" />
-                    <path d="M1060,130 C900,160 840,300 760,360" strokeDasharray="2 10" strokeLinecap="round" />
-                    <path d="M165,600 C220,500 300,470 380,460" strokeDasharray="2 10" strokeLinecap="round" />
-                    <path d="M1220,660 C1080,600 980,560 900,500" strokeDasharray="2 10" strokeLinecap="round" />
-                    <path d="M335,790 C400,700 460,600 500,540" strokeDasharray="2 10" strokeLinecap="round" />
+                {/* face */}
+                <g strokeWidth="3.5" className="stroke-gray-700 dark:stroke-gray-200" fill="none">
+                    {face.brows}
                 </g>
-
-                {/* the snapped connector: reaches toward the centered card above
-                    and stops mid-air with a small broken-link mark, in the
-                    status tone so it visibly ties the sketch to the badge */}
-                <g className={toneClass} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M700,80 C660,180 640,260 630,330" strokeDasharray="2 10" />
-                    <path d="M622,352 l10,14 l-14,8 l10,14" />
+                {/* both stroke-* (for the X/curve-shaped eyes, which are plain
+                    paths with no color of their own) and text-* (so the
+                    fill-current circles used by a couple of the other moods
+                    pick up the same color via currentColor) - the two moods
+                    use different SVG primitives so both need covering */}
+                <g className="stroke-indigo-500 text-indigo-500 dark:stroke-indigo-400 dark:text-indigo-400" strokeWidth="3.5" fill="none">
+                    {face.eyes}
                 </g>
-            </svg>
-        </div>
+                <g strokeWidth="3.5" className="stroke-gray-700 dark:stroke-gray-200" fill="none" strokeLinejoin="round">
+                    {face.mouth}
+                </g>
+            </g>
+        </svg>
     );
 }
