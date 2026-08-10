@@ -8,21 +8,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserIsAdmin
 {
+    /**
+     * Deliberately a plain abort(403) with no custom message, for anyone who
+     * isn't currently an admin - whether they never were one, or were
+     * promoted and later demoted (e.g. following a stale "Promoted to
+     * admin" notification link). There's no reliable way to tell those
+     * apart that's worth the complexity, and guessing wrong would show a
+     * message implying access they may never have had. See bootstrap/app.php
+     * for the generic 403 copy this falls through to.
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()) {
+        if (! $request->user() || ! $request->user()->isAdmin()) {
             abort(403);
-        }
-
-        if (! $request->user()->isAdmin()) {
-            // Covers stale "Promoted to admin" notifications/links: the user
-            // may have been an admin when the link was generated (e.g. a
-            // notification created at promotion time) but been demoted
-            // since. Send them somewhere useful with an explanation instead
-            // of a raw 403 error page.
-            return redirect()
-                ->route('dashboard')
-                ->withErrors(['error' => 'Your administrator access has changed, so that page is no longer available to you.']);
         }
 
         return $next($request);

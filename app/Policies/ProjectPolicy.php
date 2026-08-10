@@ -15,15 +15,17 @@ class ProjectPolicy
 
     /**
      * This is the check that runs whenever a project (or a task within it) is opened,
-     * including via a notification link. Its denial message is the one place that should
-     * ever say "you may have left or been removed" - see the fallback comment in
-     * bootstrap/app.php for why that message isn't just the generic 403 default anymore.
+     * including via a notification link. Deliberately neutral wording - this fires
+     * identically whether the person was removed, left on their own, or never had
+     * access in the first place (e.g. guessing an ID, or a stale/forwarded link),
+     * and there's no reliable way from here to tell those apart, so the message
+     * never implies a history that might not be true.
      */
     public function view(User $user, Project $project): bool|Response
     {
         return $project->isMember($user)
             ? true
-            : Response::deny('You no longer have access to that - you may have left or been removed from the project.');
+            : Response::deny("You don't have access to this project.");
     }
 
     public function create(User $user): bool

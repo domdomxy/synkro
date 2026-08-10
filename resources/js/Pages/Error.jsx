@@ -5,42 +5,62 @@ import { Head, Link, usePage } from '@inertiajs/react';
 // One entry per status this screen is prepared to explain well. Anything
 // else (see bootstrap/app.php's exceptions->render()) falls back to the
 // 500 entry's tone/mood with whatever message the backend sent.
+// `action` drives the primary button and has to fit what actually went
+// wrong, not just "send them somewhere":
+//   - 'auth'   go to the dashboard if logged in, otherwise log in - only
+//              makes sense when the *app* is up and it's this one page/
+//              permission that's the problem (403, 404).
+//   - 'reload' reload the current URL - the literal fix for a stale CSRF
+//              token (419) or a transient server hiccup (500), and the
+//              only way to tell whether maintenance (503) has lifted.
+//   - 'none'   no primary action - for 429 specifically, since any link
+//              or reload is just another request against the same limit.
+//              Go back is still offered as a no-cost secondary option.
 const STATUS_COPY = {
     403: {
         title: "You don't have access to this",
         defaultMessage: "You don't have permission to view this page.",
         tone: 'amber',
         mood: 'worried',
+        action: 'auth',
     },
     404: {
         title: 'Page not found',
-        defaultMessage: "That page doesn't exist - it may have been moved or deleted.",
+        defaultMessage: "That page doesn't exist - it may have been moved, deleted, or never existed.",
         tone: 'indigo',
         mood: 'confused',
+        action: 'auth',
     },
     419: {
         title: 'Your session expired',
         defaultMessage: 'For your security, this page timed out. Refresh and try again.',
         tone: 'indigo',
         mood: 'sleepy',
+        action: 'reload',
+        actionLabel: 'Refresh',
     },
     429: {
         title: 'Slow down a little',
         defaultMessage: "You've made too many requests in a short time. Give it a minute and try again.",
         tone: 'amber',
         mood: 'dizzy',
+        action: 'none',
     },
     500: {
         title: 'Something went wrong',
         defaultMessage: "That's on us, not you. Our team's already been notified - try again in a moment.",
         tone: 'red',
         mood: 'shocked',
+        action: 'reload',
+        actionLabel: 'Try again',
     },
     503: {
         title: 'Down for maintenance',
         defaultMessage: "Synkro is briefly offline for maintenance. We'll be back shortly.",
         tone: 'red',
         mood: 'sleeping',
+        action: 'reload',
+        actionLabel: 'Check again',
     },
 };
 
@@ -116,21 +136,24 @@ export default function Error({ status, message }) {
                 </p>
 
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                    <Link
-                        href={isAuthed ? route('dashboard') : route('login')}
-                        className="w-full rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 sm:w-auto"
-                    >
-                        {isAuthed ? 'Go to Dashboard' : 'Log in'}
-                    </Link>
-                    {isAuthed && (
+                    {copy.action === 'auth' && (
                         <Link
-                            href={route('projects.index')}
-                            className="w-full rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:w-auto dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                            href={isAuthed ? route('dashboard') : route('login')}
+                            className="w-full rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 sm:w-auto"
                         >
-                            Go to Projects
+                            {isAuthed ? 'Go to Dashboard' : 'Log in'}
                         </Link>
                     )}
-                    {canGoBack && (
+                    {copy.action === 'reload' && (
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="w-full rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 sm:w-auto"
+                        >
+                            {copy.actionLabel}
+                        </button>
+                    )}
+                    {canGoBack ? (
                         <button
                             type="button"
                             onClick={() => window.history.back()}
@@ -138,6 +161,15 @@ export default function Error({ status, message }) {
                         >
                             Go back
                         </button>
+                    ) : (
+                        copy.action === 'none' && (
+                            <Link
+                                href="/"
+                                className="w-full px-5 py-2.5 text-sm font-medium text-gray-500 transition hover:text-gray-700 sm:w-auto dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                Go home
+                            </Link>
+                        )
                     )}
                 </div>
             </div>

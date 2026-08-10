@@ -26,11 +26,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'superadmin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
@@ -58,6 +53,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            // HandleInertiaRequests normally shares 'auth' for every page, but
+            // it sits in the 'web' group *after* SubstituteBindings (route
+            // model binding). A missing/invalid {project} or {task} in the
+            // URL throws its ModelNotFoundException from SubstituteBindings
+            // before HandleInertiaRequests ever gets a turn, so that share
+            // never happens - the Error page would otherwise render with no
+            // 'auth' prop at all, and Error.jsx's `Boolean(auth?.user)` reads
+            // that as signed-out even for a logged-in visitor (wrong "Log in"
+            // button on an otherwise-correct 404/403). Sharing it explicitly
+            // here, right before rendering, makes the Error page correct
+            // regardless of which middleware ran before the exception fired.
+            \Inertia\Inertia::share('auth', [
+                'user' => $request->user(),
+                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            ]);
+
             return \Inertia\Inertia::render('Error', [
                 'status' => $status,
                 'message' => $message,
@@ -71,8 +82,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // calls, or a policy that just returns false/true with no explanation). Deliberately
             // NOT project-specific: this handler runs for every 403 app-wide (comment ownership,
             // reminder ownership, checklist permissions, etc.), most of which have nothing to do
-            // with project membership. The "you may have left or been removed" wording only shows
-            // up when a policy attaches it explicitly - see ProjectPolicy::view().
+            // with project membership. A policy can still attach its own person-facing reason
+            // (see ProjectPolicy::view()) - but every such message, including the default below,
+            // is kept neutral about *why* access is denied, since there's no reliable way to tell
+            // "never had access" apart from "used to, and lost it".
             $defaultMessages = [
                 403 => "You don't have permission to do that.",
                 404 => "That page doesn't exist - it may have been moved, deleted, or never existed.",
