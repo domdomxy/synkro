@@ -74,3 +74,42 @@ export function RestoreIcon(props) {
         </svg>
     );
 }
+
+// Error page icons (bootstrap/app.php's exceptions->render() closure ->
+// resources/js/Pages/Error.jsx). Kept in the same hand-drawn style as the
+// rest of this set rather than pulling in an icon library.
+
+export function CompassIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.5 8.5l-2.2 5.2a1 1 0 01-.6.6L8.5 15.5l2.2-5.2a1 1 0 01.6-.6l4.2-1.2z" />
+        </svg>
+    );
+}
+
+export function AlertTriangleIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01" />
+        </svg>
+    );
+}
+
+export function CloudOffIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.5 5.05A5 5 0 0118.5 8h.25a4.25 4.25 0 01.9 8.4M7 8.16A4.5 4.5 0 006.5 17H16" />
+        </svg>
+    );
+}
+
+export function GaugeIcon(props) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19a7.5 7.5 0 1115 0M12 13l3-3.5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19h.01" />
+        </svg>
+    );
+}
