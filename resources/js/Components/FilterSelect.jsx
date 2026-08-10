@@ -179,6 +179,7 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, chi
     return createPortal(
         <ListboxOptions
             ref={setRefs}
+            data-filter-select-portal
             style={{ position: 'fixed', top: r.bottom + 4, left, width }}
             className="z-[70] max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >

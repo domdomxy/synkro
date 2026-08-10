@@ -32,7 +32,19 @@ const OVERLAY_PANELS = {
 };
 
 export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8xl', children }) {
-    const user = usePage().props.auth.user;
+    const { auth } = usePage().props;
+    // `auth` is shared on every request (see HandleInertiaRequests::share()),
+    // so this layout normally assumes auth.user is always present (see the
+    // note on Error.jsx). The one window that isn't true is the split second
+    // between an Inertia navigation/reload starting and the new page's props
+    // actually landing - React can still be asked to render this tree with
+    // whatever `usePage()` currently holds. Bailing out to nothing for that
+    // one frame is far better than a hard white-screen crash; the real
+    // render follows immediately once the props arrive.
+    if (!auth?.user) {
+        return null;
+    }
+    const user = auth.user;
     // Superadmins carry every admin permission plus a few of their own (see
     // User::isAdmin() on the backend), so anywhere "is this user an admin"
     // gates something in the UI, superadmin must count too - otherwise a

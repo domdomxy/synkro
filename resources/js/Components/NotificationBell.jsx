@@ -233,6 +233,14 @@ export default function NotificationBell() {
 
     useEffect(() => {
         const handleClickOutside = (e) => {
+            // The category FilterSelect's open options list is portaled straight
+            // to document.body (see FilterSelect.jsx/ClampedOptions) so it can
+            // float above this panel's own overflow/stacking context - which
+            // means picking an option is technically a click *outside*
+            // containerRef, not inside it. Without this check, choosing "All",
+            // "Unread", etc. closed the whole notifications panel instead of
+            // just applying the filter.
+            if (e.target.closest('[data-filter-select-portal]')) return;
             if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
         };
         document.addEventListener('click', handleClickOutside);

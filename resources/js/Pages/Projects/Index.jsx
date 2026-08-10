@@ -456,7 +456,7 @@ export default function Index({ projects, showingArchived, activeCount, archived
                                 ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
                                 : 0;
                             const progressColor = progress === 100 ? 'bg-green-500' : 'bg-indigo-500';
-                            const isOwner = project.owner_id === auth.user.id;
+                            const isOwner = !!auth?.user && project.owner_id === auth.user.id;
 
                             return (
                                 <div

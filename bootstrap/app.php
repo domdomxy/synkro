@@ -14,18 +14,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // IMPORTANT: every ->web()/->alias()/etc. call for this app has to
+        // live in this single ->withMiddleware() closure. Laravel wires each
+        // ->withMiddleware() call to its own afterResolving(HttpKernel::class)
+        // listener that builds a *fresh* Middleware instance and then calls
+        // $kernel->setMiddlewareGroups()/setMiddlewareAliases() - which
+        // REPLACES the kernel's groups/aliases rather than merging them. With
+        // this split across three separate calls, the last one (aliases-only,
+        // never touching ->web()) silently wiped out HandleInertiaRequests,
+        // AddLinkHeadersForPreloadedAssets, and CheckSuspended from the web
+        // group on every request - so `auth` (and every other shared Inertia
+        // prop) was never actually shared, and suspended users were never
+        // blocked. Confirmed by inspecting the live kernel's 'web' group,
+        // which contained only Laravel's stock middleware.
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-        $middleware->encryptCookies(except: ['device_timezone']);
-    })
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->web(append: [
             CheckSuspended::class,
         ]);
-    })
-    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->encryptCookies(except: ['device_timezone']);
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'superadmin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
