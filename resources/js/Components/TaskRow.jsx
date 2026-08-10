@@ -2106,7 +2106,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             />
                         ))}
                         {commentCount === 0 && (
-                            <p className="text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                            <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
                         )}
                         {/* The bottom box is for starting a brand-new top-level comment.
                             While replying to an existing comment, the same composer

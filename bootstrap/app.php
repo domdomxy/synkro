@@ -69,7 +69,15 @@ return Application::configure(basePath: dirname(__DIR__))
                     ? $e->getMessage()
                     : $defaultMessage);
 
-            return redirect()->back(fallback: route('projects.index'))
-                ->withErrors(['error' => $message]);
+            // A dedicated page rather than redirect()->back(): back() depends on
+            // the session's previous URL, which for a directly-typed/bookmarked
+            // link (no HTTP referer) can be some unrelated page the person had
+            // open earlier - e.g. Settings - making the "redirect" look random
+            // and disconnected from what they actually tried to open. Rendering
+            // in place always shows the right thing regardless of history.
+            return \Inertia\Inertia::render('Error', [
+                'status' => $status,
+                'message' => $message,
+            ])->toResponse($request)->setStatusCode($status);
         });
     })->create();
