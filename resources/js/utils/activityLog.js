@@ -260,9 +260,9 @@ export function describeLog(log) {
         case 'comment_added': return `${actor} commented on ${taskTitle}`;
         case 'comment_edited': return `${actor} edited a comment on ${taskTitle}`;
         case 'comment_deleted': return `${actor} deleted a comment on ${taskTitle}`;
-        case 'resource_added': return `${actor} added the file ${fileName}`;
-        case 'resource_updated': return `${actor} updated the file ${oldFileName}`;
-        case 'resource_removed': return `${actor} removed the file ${fileName}`;
+        case 'resource_added': return `${actor} added ${fileName} to project resources`;
+        case 'resource_updated': return `${actor} updated ${oldFileName} in project resources`;
+        case 'resource_removed': return `${actor} removed ${fileName} from project resources`;
         default: return `${actor} performed ${formatActionLabel(log.action)}`;
     }
 }

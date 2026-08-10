@@ -677,7 +677,7 @@ function ResourceRow({ resource, canManage, onPreview, onEdit, onDelete }) {
 
     return (
         <div
-            className={`group flex items-start gap-3 rounded-lg border border-l-[3px] border-gray-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${meta.border}`}
+            className={`group flex items-start gap-3 rounded-lg border border-l-[3px] border-y-gray-200 border-r-gray-200 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800 ${meta.border}`}
         >
             <button
                 type="button"

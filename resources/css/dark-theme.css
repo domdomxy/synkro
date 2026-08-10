@@ -79,6 +79,20 @@ html.dark:not(.theme-black) .dark\:border-gray-700\/70{border-color:rgba(51,55,8
 html.dark:not(.theme-black) .dark\:border-gray-600{border-color:#454B69!important;}
 html.dark:not(.theme-black) .dark\:border-gray-500{border-color:#5B6284!important;}
 
+/*
+   The following rules are for the "divide" utility, which applies borders to
+   elements that are direct children of a parent with the divide class. The
+   :not([hidden]) selector is used to avoid applying borders to hidden elements,
+   which can cause layout issues.
+*/
+
+html.dark:not(.theme-black) .dark\:border-y-gray-700 {
+    border-top-color:#333750!important; border-bottom-color:#333750!important;}
+
+html.dark:not(.theme-black) .dark\:border-r-gray-700 {
+    border-right-color:#333750!important;
+}
+
 html.dark:not(.theme-black) .dark\:divide-gray-700>:not([hidden])~:not([hidden]){
     border-color:#333750!important;
 }
