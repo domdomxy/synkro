@@ -67,36 +67,8 @@ function SearchInput({ value, onChange, placeholder }) {
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full rounded-lg border-gray-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500"
+                className="w-full rounded-md border-gray-300 bg-white py-2 pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500"
             />
-        </div>
-    );
-}
-
-/** At-a-glance stat cards - a quick visual read on how much has actually come out of the project's tasks. */
-function SummaryStrip({ taskCount, fileCount, linkCount }) {
-    const stats = [
-        { key: 'tasks', label: 'Tasks with deliverables', value: taskCount, icon: <FolderIcon className="h-4 w-4" />, accent: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' },
-        { key: 'files', label: 'Files', value: fileCount, icon: <FileTypeIcon name="" className="h-4 w-4" />, accent: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
-        ...(linkCount ? [{ key: 'links', label: 'Links', value: linkCount, icon: <LinkIcon className="h-4 w-4" />, accent: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400' }] : []),
-    ];
-
-    return (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {stats.map((s) => (
-                <div
-                    key={s.key}
-                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
-                >
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.accent}`}>
-                        {s.icon}
-                    </span>
-                    <div className="min-w-0">
-                        <p className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{s.value}</p>
-                        <p className="truncate text-xs text-gray-400 dark:text-gray-500">{s.label}</p>
-                    </div>
-                </div>
-            ))}
         </div>
     );
 }
@@ -114,14 +86,14 @@ function TaskFolder({ task, onPreview, forceOpen }) {
     const totalSize = files.reduce((sum, f) => sum + (f.size ?? 0), 0);
 
     return (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
             <div className="flex w-full items-center gap-2.5 px-4 py-3">
                 <button
                     onClick={() => setOpen((v) => !v)}
                     className="flex flex-1 items-center gap-2.5 text-left"
                 >
                     <ChevronIcon open={isOpen} />
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
                         <FolderIcon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -136,7 +108,7 @@ function TaskFolder({ task, onPreview, forceOpen }) {
                     href={route('tasks.download', task.id)}
                     onClick={(e) => e.stopPropagation()}
                     title={`Download ${task.title} deliverables`}
-                    className="flex shrink-0 items-center rounded-md bg-indigo-50 p-1.5 text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/70"
+                    className="flex shrink-0 items-center rounded bg-indigo-50 p-1.5 text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/70"
                 >
                     <DownloadIcon className="h-4 w-4" />
                 </a>
@@ -150,9 +122,9 @@ function TaskFolder({ task, onPreview, forceOpen }) {
                                 key={f.id}
                                 type="button"
                                 onClick={() => onPreview(f)}
-                                className="flex w-full items-center gap-2 rounded-md py-1.5 text-left text-sm text-gray-600 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                                className="flex w-full items-center gap-2 rounded py-1.5 text-left text-sm text-gray-600 transition hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
                             >
-                                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${meta.badge}`}>
+                                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded ${meta.badge}`}>
                                     <FileTypeIcon name={f.original_name} className="h-3.5 w-3.5" />
                                 </span>
                                 <span className="truncate">{f.original_name}</span>
@@ -177,15 +149,10 @@ export default function Deliverables({ project, tasks, role }) {
     const [search, setSearch] = useState('');
     const toolbarRef = useRef(null);
 
-    const totalFileCount = folderTasks.reduce((sum, t) => sum + t.deliverables.filter((d) => d.type === 'file').length, 0);
-    const totalLinkCount = linkTasks.reduce((sum, t) => sum + t.deliverables.filter((d) => d.type === 'link').length, 0);
-    const tasksWithDeliverables = new Set([...folderTasks.map((t) => t.id), ...linkTasks.map((t) => t.id)]).size;
-
     const query = search.trim().toLowerCase();
     const visibleFolderTasks = query ? folderTasks.filter((t) => t.title.toLowerCase().includes(query)) : folderTasks;
     const visibleLinkTasks = query ? linkTasks.filter((t) => t.title.toLowerCase().includes(query)) : linkTasks;
     const isFiltering = query.length > 0;
-    const hasAnyDeliverables = folderTasks.length > 0 || linkTasks.length > 0;
 
     return (
         <AuthenticatedLayout header={
@@ -214,7 +181,7 @@ export default function Deliverables({ project, tasks, role }) {
                         {hasAnyFiles && (
                             <a
                                 href={route('projects.deliverables.download', project.id)}
-                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                             >
                                 <DownloadIcon className="h-4 w-4" />
                                 Download all
@@ -222,23 +189,19 @@ export default function Deliverables({ project, tasks, role }) {
                         )}
                     </div>
 
-                    {hasAnyDeliverables && (
-                        <SummaryStrip taskCount={tasksWithDeliverables} fileCount={totalFileCount} linkCount={totalLinkCount} />
-                    )}
-
                     {(folderTasks.length + linkTasks.length > 1) && (
                         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by task name..." />
                     )}
 
                     {folderTasks.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
-                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
                             <p className="max-w-xs text-sm text-gray-400 dark:text-gray-500">No files yet. They'll show up here once tasks with attached files are marked done.</p>
                         </div>
                     ) : visibleFolderTasks.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <p className="text-sm text-gray-400 dark:text-gray-500">No file deliverables match "{search}".</p>
                         </div>
                     ) : (
@@ -255,9 +218,14 @@ export default function Deliverables({ project, tasks, role }) {
                                     task.deliverables.filter((d) => d.type === 'link').map((d) => (
                                         <div
                                             key={d.id}
-                                            className={`flex items-center gap-3 rounded-xl border border-l-[3px] border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 ${LINK_META.border}`}
+                                            className="group relative flex items-center gap-3 overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                                         >
-                                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${LINK_META.badge}`}>
+                                            {/* A colored accent stripe as a clipped inset element, not an actual
+                                                thicker left border - mixing border-radius with an uneven
+                                                per-side border width made the browser render a stray sliver
+                                                outside the rounded corner instead of following it cleanly. */}
+                                            <span className="absolute inset-y-0 left-0 w-1 bg-indigo-300 dark:bg-indigo-700" />
+                                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${LINK_META.badge}`}>
                                                 <LinkIcon className="h-4 w-4" />
                                             </span>
                                             <span className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{task.title}</span>

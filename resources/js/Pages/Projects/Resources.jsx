@@ -97,15 +97,6 @@ function BoxIcon({ className = 'h-4 w-4' }) {
     );
 }
 
-function StorageIcon({ className = 'h-4 w-4' }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7c0-1.66 3.58-3 8-3s8 1.34 8 3-3.58 3-8 3-8-1.34-8-3zm0 0v10c0 1.66 3.58 3 8 3s8-1.34 8-3V7" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
-        </svg>
-    );
-}
-
 function RemoveButton({ onClick, title = 'Remove' }) {
     return (
         <button
@@ -166,35 +157,6 @@ function FilterTabs({ value, onChange, options }) {
                         {opt.count}
                     </span>
                 </button>
-            ))}
-        </div>
-    );
-}
-
-/** At-a-glance stat cards - each one pairs an icon with a count so the strip reads visually, not just numerically, before scanning the list itself. */
-function SummaryStrip({ total, files, links, totalSize }) {
-    const stats = [
-        { key: 'total', label: 'Total', value: total, icon: <BoxIcon className="h-4 w-4" />, accent: 'bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400' },
-        { key: 'files', label: 'Files', value: files, icon: <FileTypeIcon name="" className="h-4 w-4" />, accent: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
-        { key: 'links', label: 'Links', value: links, icon: <LinkTypeIcon className="h-4 w-4" />, accent: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' },
-        ...(totalSize ? [{ key: 'storage', label: 'Storage used', value: totalSize, icon: <StorageIcon className="h-4 w-4" />, accent: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' }] : []),
-    ];
-
-    return (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {stats.map((s) => (
-                <div
-                    key={s.key}
-                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
-                >
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.accent}`}>
-                        {s.icon}
-                    </span>
-                    <div className="min-w-0">
-                        <p className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{s.value}</p>
-                        <p className="truncate text-xs text-gray-400 dark:text-gray-500">{s.label}</p>
-                    </div>
-                </div>
             ))}
         </div>
     );
@@ -800,7 +762,6 @@ export default function Resources({ project, resources, canManage, role }) {
 
     const fileCount = resources.filter((r) => r.type !== 'link').length;
     const linkCount = resources.filter((r) => r.type === 'link').length;
-    const totalBytes = resources.reduce((sum, r) => sum + (r.type !== 'link' ? (r.size ?? 0) : 0), 0);
 
     const filterOptions = [
         { key: 'all', label: 'All', count: resources.length },
@@ -857,8 +818,6 @@ export default function Resources({ project, resources, canManage, role }) {
                             </button>
                         )}
                     </div>
-
-                    {resources.length > 0 && <SummaryStrip total={resources.length} files={fileCount} links={linkCount} totalSize={formatSize(totalBytes)} />}
 
                     {resources.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2.5">
