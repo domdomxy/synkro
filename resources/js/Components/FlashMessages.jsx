@@ -31,9 +31,9 @@ export default function FlashMessages() {
 
     useEffect(() => {
         if (flash?.success) {
-            push({ type: 'success', text: flash.success });
+            push({ type: 'success', text: flash.success }, { autoDismissMs: 5000 });
         } else if (errors?.error) {
-            push({ type: 'error', text: errors.error });
+            push({ type: 'error', text: errors.error }, { autoDismissMs: 5000 });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flash, errors]);

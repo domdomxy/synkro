@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AccountUpdateRequest;
 use App\Models\AccountActivityLog;
+use App\Models\SuspensionLog;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Events\AccountDeactivated;
@@ -34,12 +35,24 @@ class AccountController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+
         return Inertia::render('Account/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
-            'deletionRequestedAt' => $request->user()->deletion_requested_at,
+            'deletionRequestedAt' => $user->deletion_requested_at,
             'deletionGraceDays' => (int) config('synkro.account_deletion_grace_days', 7),
-            'nameChangeAvailableAt' => $request->user()->nameChangeAvailableAt(),
+            'nameChangeAvailableAt' => $user->nameChangeAvailableAt(),
+            // Own suspension/appeal record, for the "Appeal History" account
+            // section (see AppealHistoryTimeline.jsx). A user reaching Account
+            // is by definition not currently blocked at login, but they may
+            // still carry past suspensions/appeals, or have been suspended
+            // again mid-session (is_suspended reflects that live).
+            'appeals' => $user->appeals()->latest()->get(),
+            'suspensionLogs' => SuspensionLog::where('user_id', $user->id)->with(['suspendedBy', 'liftedBy'])->latest()->get(),
+            'isSuspended' => $user->is_suspended,
+            'suspendedUntil' => $user->suspended_until?->toIso8601String(),
+            'suspensionReason' => $user->suspension_reason,
         ]);
     }
 

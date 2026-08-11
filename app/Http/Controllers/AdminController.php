@@ -751,6 +751,22 @@ public function suspend(Request $request, User $user)
 
         \App\Support\AdminAlerts::broadcastRefresh();
 
+        // No broadcast here (unlike admin_status_changed above): a suspended
+        // user has no active session to receive one on - CheckSuspended logs
+        // them out and login is blocked while is_suspended is true (see
+        // AuthenticatedSessionController). Same reasoning as account_restored
+        // in AccountController::confirmDeletionRestore: the row just needs to
+        // be waiting in the bell for whenever they next log in.
+        if (NotificationPreferences::wantsType($user, 'suspension_lifted')) {
+            UserNotification::create([
+                'user_id' => $user->id,
+                'type' => 'suspension_lifted',
+                'causer_id' => auth()->id(),
+                'message' => "Your suspension has been lifted\nYou can log in again right away. See your Appeal History for the details.",
+                'url' => route('account.edit', ['section' => 'appeal-history'], false),
+            ]);
+        }
+
         NotificationMailer::send(
             $user,
             'account.suspension_lifted',
@@ -1362,6 +1378,11 @@ public function suspend(Request $request, User $user)
         // Accepting an appeal and lifting the underlying suspension are done as one
         // atomic decision here, so the two can never drift apart (e.g. an appeal
         // marked "approved" while the user is still locked out).
+        // Captured before the transaction below actually flips is_suspended, so
+        // the notification block after it can tell "this decision just unblocked
+        // the account" apart from "approved, but they weren't suspended anyway."
+        $suspensionWasLifted = $request->outcome === 'approved' && $appeal->user && $appeal->user->is_suspended;
+
         DB::transaction(function () use ($request, $appeal) {
             $appeal->update([
                 'status' => 'reviewed',
@@ -1412,6 +1433,21 @@ public function suspend(Request $request, User $user)
         \App\Support\AdminAlerts::broadcastRefresh();
 
         if ($appeal->user) {
+            // Same as liftSuspension() above: only fire the in-app notification
+            // when this decision actually unblocked the account (approved +
+            // was suspended) - a rejected appeal leaves the user locked out
+            // with nothing new to react to yet, and everyone still gets the
+            // email either way below.
+            if ($request->outcome === 'approved' && NotificationPreferences::wantsType($appeal->user, 'suspension_lifted') && $suspensionWasLifted) {
+                UserNotification::create([
+                    'user_id' => $appeal->user_id,
+                    'type' => 'suspension_lifted',
+                    'causer_id' => auth()->id(),
+                    'message' => "Your suspension has been lifted\nYour appeal was approved and you can log in again right away. See your Appeal History for the details.",
+                    'url' => route('account.edit', ['section' => 'appeal-history'], false),
+                ]);
+            }
+
             // Mirrors the ticket-reply email's highlight box (see FeedbackAdminController::respond)
             // instead of burying the admin's reason in a plain text line, so the decision reads
             // clearly rather than blending into the surrounding paragraph.

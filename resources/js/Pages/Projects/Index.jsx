@@ -424,6 +424,13 @@ export default function Index({ projects, showingArchived, activeCount, archived
                                                     <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500 sm:hidden">
                                                         {project.owner?.name} · {project.tasks_count} tasks · {progress}% done
                                                     </p>
+                                                    {!!project.description && (
+                                                        <RichTextContent
+                                                            as="p"
+                                                            className="mt-0.5 hidden truncate text-xs text-gray-500 dark:text-gray-400 sm:block [&_*]:inline"
+                                                            html={project.description}
+                                                        />
+                                                    )}
                                                 </div>
                                                 <div className="hidden min-w-0 items-center gap-2 sm:flex">
                                                     <Avatar user={project.owner} size="h-5 w-5" />

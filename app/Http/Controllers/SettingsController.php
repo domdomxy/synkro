@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Events\EmailPreferencesUpdated;
 use App\Events\NotificationPreferencesUpdated;
-use App\Models\SuspensionLog;
 use App\Support\DeviceSessionData;
 use App\Support\EmailPreferences;
 use App\Support\NotificationPreferences;
@@ -32,16 +31,6 @@ class SettingsController extends Controller
             // Full trash listing, not just a summary - the Trash tab now
             // renders the actual restore/delete UI inline (see TrashSection.jsx)
             // instead of linking out to a separate /trash page.
-            // Own suspension/appeal record, for the "Appeal History" settings
-            // section (see AppealHistoryTimeline.jsx). A user reaching Settings
-            // is by definition not currently blocked at login, but they may
-            // still carry past suspensions/appeals, or have been suspended
-            // again mid-session (is_suspended reflects that live).
-            'appeals' => $user->appeals()->latest()->get(),
-            'suspensionLogs' => SuspensionLog::where('user_id', $user->id)->with(['suspendedBy', 'liftedBy'])->latest()->get(),
-            'isSuspended' => $user->is_suspended,
-            'suspendedUntil' => $user->suspended_until?->toIso8601String(),
-            'suspensionReason' => $user->suspension_reason,
         ], TrashData::forUser($user), DeviceSessionData::forUser($user, $request->session()->getId())));
     }
 

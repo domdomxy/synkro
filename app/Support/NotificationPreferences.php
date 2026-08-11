@@ -120,6 +120,8 @@ class NotificationPreferences
             // (account.restored) is in EmailPreferences::alwaysSend() since
             // it's security-relevant, so this is deliberately left unmapped
             // and falls through to wantsType()'s "always true" branch.
+            // 'suspension_lifted' is the same case: its email counterpart
+            // (account.suspension_lifted) is also in alwaysSend().
             // 'admin_status_changed' has no toggle of its own (there's no
             // EmailPreferences equivalent either - the accompanying emails,
             // account.admin_granted/admin_revoked, always send regardless of

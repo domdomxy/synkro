@@ -71,10 +71,10 @@ html.dark:not(.theme-black) .dark\:bg-gray-700\/60{background-color:rgba(29,32,4
 html.dark:not(.theme-black) .dark\:border-gray-800{border-color:#262A3D!important;}
 html.dark:not(.theme-black) .dark\:border-gray-800\/80{border-color:rgba(38,42,61,.85)!important;}
 
-html.dark:not(.theme-black) .dark\:border-gray-700{border-color:#333750!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/50{border-color:rgba(51,55,80,.60)!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/60{border-color:rgba(51,55,80,.70)!important;}
-html.dark:not(.theme-black) .dark\:border-gray-700\/70{border-color:rgba(51,55,80,.80)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700{border-color:#2B2F46!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/50{border-color:rgba(43,47,70,.60)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/60{border-color:rgba(43,47,70,.70)!important;}
+html.dark:not(.theme-black) .dark\:border-gray-700\/70{border-color:rgba(43,47,70,.80)!important;}
 
 html.dark:not(.theme-black) .dark\:border-gray-600{border-color:#454B69!important;}
 html.dark:not(.theme-black) .dark\:border-gray-500{border-color:#5B6284!important;}
@@ -87,22 +87,22 @@ html.dark:not(.theme-black) .dark\:border-gray-500{border-color:#5B6284!importan
 */
 
 html.dark:not(.theme-black) .dark\:border-y-gray-700 {
-    border-top-color:#333750!important; border-bottom-color:#333750!important;}
+    border-top-color:#2B2F46!important; border-bottom-color:#2B2F46!important;}
 
 html.dark:not(.theme-black) .dark\:border-r-gray-700 {
-    border-right-color:#333750!important;
+    border-right-color:#2B2F46!important;
 }
 
 html.dark:not(.theme-black) .dark\:divide-gray-700>:not([hidden])~:not([hidden]){
-    border-color:#333750!important;
+    border-color:#2B2F46!important;
 }
 
 html.dark:not(.theme-black) .dark\:divide-gray-700\/50>:not([hidden])~:not([hidden]){
-    border-color:rgba(51,55,80,.60)!important;
+    border-color:rgba(43,47,70,.60)!important;
 }
 
 html.dark:not(.theme-black) .dark\:ring-gray-700{
-    --tw-ring-color:#333750!important;
+    --tw-ring-color:#2B2F46!important;
 }
 
 html.dark:not(.theme-black) .dark\:ring-gray-800{

@@ -43,10 +43,12 @@ export default function useToastStack(maxToasts = 3) {
         t.exit = setTimeout(() => remove(id), EXIT_DURATION);
     }, [remove]);
 
-    // Toasts stick on every screen size now - they stay put until the user
-    // dismisses them by hand via the close button, or get pushed out once
-    // the stack exceeds maxToasts.
-    const push = useCallback((toast) => {
+    // Toasts stick around until the user dismisses them by hand via the
+    // close button, get pushed out once the stack exceeds maxToasts, or -
+    // when the caller passes `autoDismissMs` - time out on their own after
+    // that many ms. Manual dismiss still wins if it happens first: dismiss()
+    // above clears t.auto, so a toast never double-fires its exit animation.
+    const push = useCallback((toast, { autoDismissMs } = {}) => {
         const id = ++nextToastId;
 
         setToasts((current) => {
@@ -62,8 +64,13 @@ export default function useToastStack(maxToasts = 3) {
             return [{ ...oldest, leaving: true }, ...rest];
         });
 
+        if (autoDismissMs) {
+            const t = timers.current[id] ?? (timers.current[id] = {});
+            t.auto = setTimeout(() => dismiss(id), autoDismissMs);
+        }
+
         return id;
-    }, [maxToasts, remove]);
+    }, [maxToasts, remove, dismiss]);
 
     useEffect(() => () => {
         Object.values(timers.current).forEach((t) => {

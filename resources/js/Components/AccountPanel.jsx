@@ -9,6 +9,7 @@ import UpdatePasswordForm from '@/Pages/Account/Partials/UpdatePasswordForm';
 import UpdateAccountInformationForm from '@/Pages/Account/Partials/UpdateAccountInformationForm';
 import UpdateAvatarForm from '@/Pages/Account/Partials/UpdateAvatarForm';
 import DeactivateAccountForm from '@/Pages/Account/Partials/DeactivateAccountForm';
+import AppealHistoryTimeline from '@/Components/AppealHistoryTimeline';
 import { useRouteOverlayActions } from '@/hooks/useRouteOverlay';
 
 function SettingsIcon({ className }) {
@@ -40,6 +41,18 @@ function WarningIcon({ className }) {
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+    );
+}
+
+// Same glyph as SettingsPanel's own categoryIcons.tickets - kept as a local
+// copy rather than a shared import, same reasoning as the other icon copies
+// in this file (SettingsIcon, LogOutIcon, ...): these two panel modules
+// deliberately don't import from each other.
+function TicketsIcon({ className }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
     );
 }
@@ -80,6 +93,12 @@ const accountNavItems = [
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
         ),
+    },
+    {
+        id: 'appeal-history',
+        label: 'Appeal History',
+        terms: ['Appeal History', 'Suspension', 'Suspended', 'Account status', 'Appeals'],
+        icon: <TicketsIcon className="h-5 w-5" />,
     },
 ];
 
@@ -136,12 +155,13 @@ function buildSectionMeta(deletionGraceDays) {
         avatar: { title: 'Avatar', description: 'Update your account picture' },
         'account-information': { title: 'Account Information', description: "Update your account's name and email address" },
         'update-password': { title: 'Password', description: 'Ensure your account is using a long, random password to stay secure' },
+        'appeal-history': { title: 'Appeal History', description: 'Your account status and any past suspensions or appeals' },
         'deactivate-account': { title: 'Deactivate Account', description: 'Log you out and freeze your active task submissions' },
         'delete-account': { title: 'Delete Account', description: `Removed after a ${deletionGraceDays}-day grace period` },
     };
 }
 
-export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, nameChangeAvailableAt, initialSection, onClose }) {
+export default function AccountPanel({ mustVerifyEmail, status, deletionRequestedAt, deletionGraceDays, nameChangeAvailableAt, appeals, suspensionLogs, isSuspended, suspendedUntil, suspensionReason, initialSection, onClose }) {
     const overlayActions = useRouteOverlayActions();
     // auth.user is a shared prop attached to every page for the logged-in
     // user, so this stays correct whether AccountPanel is the live page
@@ -305,6 +325,16 @@ export default function AccountPanel({ mustVerifyEmail, status, deletionRequeste
 
                                 {activeSection === 'update-password' && (
                                     <UpdatePasswordForm className="max-w-xl" />
+                                )}
+
+                                {activeSection === 'appeal-history' && (
+                                    <AppealHistoryTimeline
+                                        appeals={appeals ?? []}
+                                        suspensionLogs={suspensionLogs ?? []}
+                                        isSuspended={isSuspended}
+                                        suspendedUntil={suspendedUntil}
+                                        suspensionReason={suspensionReason}
+                                    />
                                 )}
 
                                 {activeSection === 'deactivate-account' && (
