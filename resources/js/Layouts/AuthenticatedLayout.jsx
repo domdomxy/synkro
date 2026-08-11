@@ -2,6 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Avatar from '@/Components/Avatar';
 import Dropdown from '@/Components/Dropdown';
 import AccountMenu from '@/Components/AccountMenu';
+import BottomNavBar from '@/Components/BottomNavBar';
 import NavLink from '@/Components/NavLink';
 import NotificationBell from '@/Components/NotificationBell';
 import ToastLayer from '@/Components/ToastLayer';
@@ -152,14 +153,16 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
         isAdminRole ? 'private' : 'public'
     );
 
-    // Previously shown behind a separate hamburger button on mobile; now rendered
-    // inside the account dropdown, which opens from tapping the avatar instead.
+    // Was shown behind a separate hamburger button, then moved inside the
+    // account dropdown; now rendered as an icon-only tab bar fixed to the
+    // bottom of the screen (BottomNavBar) so it's reachable with a thumb
+    // without opening the avatar menu first. `key` selects the icon there.
     const mobileNavLinks = [
-        { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard') },
-        { href: route('projects.index'), label: 'Projects', active: route().current('projects.*') },
-        { href: route('tasks.index'), label: 'Tasks', active: route().current('tasks.index') },
-        ...(testing ? [{ href: route('testing.index'), label: 'Testing', active: route().current('testing.index'), badge: pendingTestCount > 0 ? pendingTestCount : undefined }] : []),
-        ...(isAdminRole ? [{ href: route('admin.dashboard'), label: 'Admin', active: route().current('admin.*'), badge: hasPendingAlert ? 'dot' : undefined }] : []),
+        { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard'), key: 'dashboard' },
+        { href: route('projects.index'), label: 'Projects', active: route().current('projects.*'), key: 'projects' },
+        { href: route('tasks.index'), label: 'Tasks', active: route().current('tasks.index'), key: 'tasks' },
+        ...(testing ? [{ href: route('testing.index'), label: 'Testing', active: route().current('testing.index'), badge: pendingTestCount > 0 ? pendingTestCount : undefined, key: 'testing' }] : []),
+        ...(isAdminRole ? [{ href: route('admin.dashboard'), label: 'Admin', active: route().current('admin.*'), badge: hasPendingAlert ? 'dot' : undefined, key: 'admin' }] : []),
     ];
 
     return (
@@ -254,14 +257,15 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                                         right edge (end-0); the negative margin on the wrapper above
                                         pulls the trigger itself flush with the screen edge, so the
                                         panel opens right at the edge instead of leaving a gap where
-                                        the hamburger used to sit. */}
+                                        the hamburger used to sit. Nav links (Dashboard/Projects/etc.)
+                                        no longer render in here - they moved to BottomNavBar below. */}
                                     <Dropdown.Content align="right" width="72" contentClasses="overflow-hidden bg-white dark:bg-gray-800">
-                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} navLinks={mobileNavLinks} onOpenSettings={openSettings} onOpenAccount={openAccount} onOpenTrash={openTrash} />
+                                        <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} onOpenSettings={openSettings} onOpenAccount={openAccount} onOpenTrash={openTrash} />
                                     </Dropdown.Content>
                                 </Dropdown>
-                                {/* Testing/Admin badges live inside the menu, so surface a plain dot
-                                    on the trigger itself - otherwise there'd be no hint anything
-                                    needs attention until it's opened. */}
+                                {/* Testing/Admin badges now live on BottomNavBar's icons too, but this
+                                    dot stays as a hint on the avatar itself since the bottom bar may be
+                                    scrolled out of view or the user hasn't glanced down yet. */}
                                 {(hasPendingAlert || pendingTestCount > 0) && (
                                     <span className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
                                 )}
@@ -284,9 +288,12 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                 </header>
             )}
 
-            <main>{children}</main>
+            {/* pb-20 keeps content clear of the fixed BottomNavBar on mobile (h-16
+                bar + breathing room); sm:pb-0 drops it once that bar is hidden. */}
+            <main className="pb-20 sm:pb-0">{children}</main>
 
             {OverlayPanel && <OverlayPanel {...overlay.props} onClose={closeOverlay} />}
+            <BottomNavBar links={mobileNavLinks} />
         </div>
         </RouteOverlayActionsContext.Provider>
     );
