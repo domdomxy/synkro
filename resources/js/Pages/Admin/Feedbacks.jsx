@@ -377,8 +377,8 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
             </div>
         }>
             <Head title="Admin - Feedback" />
-            <div className="py-12">
-                <div className="mx-auto max-w-8xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-8xl space-y-6 px-3 sm:px-6 lg:px-8">
                     <div ref={toolbarRef} className="flex flex-wrap items-end gap-3">
                         <input
                             type="text"

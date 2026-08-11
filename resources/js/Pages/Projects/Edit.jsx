@@ -26,11 +26,11 @@ export default function Edit({ project }) {
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Edit Project</h2>}>
             <Head title="Edit Project" />
-            <div className="py-12">
+            <div className="py-6 sm:py-12">
                 <div className="mb-4">
                     <BackButton href={route('projects.show', project.id)} label="Back to Project" />
                 </div>
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl px-3 sm:px-6 lg:px-8">
                     <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-6">
                         <div>
                             <InputLabel htmlFor="name" value="Project Name" />

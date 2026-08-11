@@ -45,11 +45,11 @@ function badgeTintFor(accentColor) {
 
 export default function StatCard({ label, value, sub, pct, accentColor, icon }) {
     return (
-        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 sm:p-6">
+        <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-3 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 sm:p-6">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400 sm:text-sm">{label}</p>
-                    <p className={`mt-1 text-2xl font-semibold sm:text-3xl ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+                    <p className={`mt-1 text-xl font-semibold sm:text-3xl ${accentColor ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
                     {sub && (
                         <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sub}</p>
                     )}
@@ -63,7 +63,7 @@ export default function StatCard({ label, value, sub, pct, accentColor, icon }) 
                     )}
                 </div>
                 {icon && (
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${badgeTintFor(accentColor)} ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${badgeTintFor(accentColor)} ${accentColor ?? 'text-gray-400 dark:text-gray-400'}`}>
                         {icon}
                     </div>
                 )}

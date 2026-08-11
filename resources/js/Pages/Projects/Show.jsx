@@ -981,8 +981,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     }
                 }
             `}</style>
-            <div className="py-12">
-                <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8">
                     {isTrashed && (
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">
                             <span>

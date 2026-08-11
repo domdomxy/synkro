@@ -585,8 +585,8 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
             </div>
         }>
             <Head title={viewingUser ? `${viewingUser.name}'s Activity Logs` : 'Activity Logs'} />
-            <div className="py-12">
-                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
                     {viewingUser && (
                         <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
                             <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -629,7 +629,7 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                         {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2 shadow sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3 dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>

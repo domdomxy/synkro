@@ -223,8 +223,8 @@ export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs,
             </div>
         }>
             <Head title="Administration Logs" />
-            <div className="py-12">
-                <div className="mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
 
                     <div className="mb-2 flex flex-wrap items-end gap-3">
                         <div className="relative">
@@ -272,7 +272,7 @@ export default function Logs({ logs, actionCatalog, admins, hasDeletedAdminLogs,
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters
                     </p>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2 shadow sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3 dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={logs} />
                     </div>

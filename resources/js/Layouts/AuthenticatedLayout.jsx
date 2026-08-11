@@ -169,12 +169,12 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
         <RouteOverlayActionsContext.Provider value={{ openSettings, openAccount, openTrash, switchToSettings, switchToAccount, switchToFeedback }}>
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/50 backdrop-blur dark:border-gray-700 dark:bg-gray-800/50">
-                <div className="mx-auto w-full px-4 sm:px-6 lg:px-10">
-                    <div className="flex h-16 justify-between">
+                <div className="mx-auto w-full px-3 sm:px-6 lg:px-10">
+                    <div className="flex h-14 justify-between sm:h-16">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                                    <ApplicationLogo className="block h-7 w-auto fill-current text-gray-800 dark:text-gray-200 sm:h-9" />
                                 </Link>
                             </div>
 
@@ -213,7 +213,7 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                             <NotificationBell />
 
                             <div className="hidden sm:flex sm:items-center">
@@ -245,11 +245,11 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                                 </div>
                             </div>
 
-                            <div className="relative -me-2 flex items-center sm:hidden">
+                            <div className="relative -me-1.5 flex items-center sm:hidden">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button type="button" className="flex items-center rounded-full p-2">
-                                            <Avatar user={user} size="h-8 w-8" />
+                                        <button type="button" className="flex items-center rounded-full p-1.5">
+                                            <Avatar user={user} size="h-7 w-7" />
                                         </button>
                                     </Dropdown.Trigger>
 
@@ -283,14 +283,15 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
             <PasswordResetListener />
             <ToastLayer />
             {header && (
-                <header className={`sticky top-16 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md transition-transform duration-300 dark:border-gray-700/20 dark:bg-gray-800/20 ${headerVisible ? 'translate-y-0' : '-translate-y-[calc(100%_+_4rem)]'}`}>
-                    <div className={`mx-auto ${headerMaxWidth} px-4 py-6 sm:px-6 lg:px-8`}>{header}</div>
+                <header className={`sticky top-14 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md transition-transform duration-300 dark:border-gray-700/20 dark:bg-gray-800/20 sm:top-16 ${headerVisible ? 'translate-y-0' : '-translate-y-[calc(100%_+_3.5rem)] sm:-translate-y-[calc(100%_+_4rem)]'}`}>
+                    <div className={`mx-auto ${headerMaxWidth} px-3 py-3 sm:px-6 sm:py-6 lg:px-8`}>{header}</div>
                 </header>
             )}
 
-            {/* pb-20 keeps content clear of the fixed BottomNavBar on mobile (h-16
-                bar + breathing room); sm:pb-0 drops it once that bar is hidden. */}
-            <main className="pb-20 sm:pb-0">{children}</main>
+            {/* pb-16 keeps content clear of the fixed BottomNavBar on mobile (h-12
+                bar + safe-area inset + a little breathing room); sm:pb-0 drops it
+                once that bar is hidden. */}
+            <main className="pb-16 sm:pb-0">{children}</main>
 
             {OverlayPanel && <OverlayPanel {...overlay.props} onClose={closeOverlay} />}
             <BottomNavBar links={mobileNavLinks} />

@@ -435,8 +435,8 @@ export default function Users({ users, stats, filters }) {
         </div>
         }>
             <Head title="Admin - Users" />
-            <div className="py-12">
-                <div className="mx-auto max-w-8xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-8xl space-y-6 px-3 sm:px-6 lg:px-8">
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         <StatCard label="Total Users" value={stats.total} sub={`${stats.newUsersThisMonth} new this month`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.total} />
@@ -482,7 +482,7 @@ export default function Users({ users, stats, filters }) {
                         </p>
                     </div>
 
-                    <div ref={paginationRef} className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-800">
+                    <div ref={paginationRef} className="mb-4 flex flex-col gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3 dark:border-gray-700 dark:bg-gray-800">
                         <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                         <Pagination meta={users} />
                     </div>

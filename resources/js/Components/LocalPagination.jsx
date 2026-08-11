@@ -3,7 +3,7 @@ import { buildPageList } from '@/utils/paginationRange';
 
 function ChevronLeftIcon() {
     return (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
     );
@@ -11,7 +11,7 @@ function ChevronLeftIcon() {
 
 function ChevronRightIcon() {
     return (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
     );
@@ -19,7 +19,7 @@ function ChevronRightIcon() {
 
 function ChevronDoubleLeftIcon() {
     return (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M18 19l-7-7 7-7M11 19l-7-7 7-7" />
         </svg>
     );
@@ -27,7 +27,7 @@ function ChevronDoubleLeftIcon() {
 
 function ChevronDoubleRightIcon() {
     return (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 5l7 7-7 7M13 5l7 7-7 7" />
         </svg>
     );
@@ -44,7 +44,9 @@ function ChevronDoubleRightIcon() {
  * inline side-by-side above it. Numbered page pills only render at `sm`+;
  * phones get a compact "Page X of Y" readout plus large tap targets instead,
  * and the go-to-page jump box (redundant with that readout, fiddly to type
- * into on a phone) is reserved for `sm`+ too.
+ * into on a phone) is reserved for `sm`+ too. Everything (text size, button
+ * size, gaps) is deliberately tighter below `sm` so the whole control reads
+ * as a single slim strip on a phone instead of a tall stacked block.
  */
 export default function LocalPagination({ page, totalPages, total, perPage, onPageChange }) {
     if (!total) return null;
@@ -69,11 +71,11 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
     };
 
     const navButtonClass =
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 active:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-30 sm:h-8 sm:w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:active:bg-gray-600';
+        'flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 active:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-30 sm:h-8 sm:w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:active:bg-gray-600';
 
     return (
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-            <p className="text-center text-sm text-gray-500 sm:text-left dark:text-gray-400">
+        <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <p className="text-center text-xs text-gray-500 sm:text-left sm:text-sm dark:text-gray-400">
                 Showing{' '}
                 <span className="font-medium text-gray-700 dark:text-gray-300">{from}</span>
                 {'-'}
@@ -84,7 +86,7 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
 
             {totalPages > 1 && (
                 <nav
-                    className="flex items-center justify-center gap-1 sm:justify-start sm:border-l sm:border-gray-100 sm:pl-4 dark:sm:border-gray-700"
+                    className="flex items-center justify-center gap-0.5 sm:justify-start sm:gap-1 sm:border-l sm:border-gray-100 sm:pl-4 dark:sm:border-gray-700"
                     aria-label="Pagination"
                 >
                     {showJumpButtons && (
@@ -133,7 +135,7 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
                         )}
                     </div>
 
-                    <span className="min-w-[5.5rem] text-center text-sm font-medium text-gray-600 sm:hidden dark:text-gray-300">
+                    <span className="min-w-[4.5rem] text-center text-xs font-medium text-gray-600 sm:hidden dark:text-gray-300">
                         Page {page} of {totalPages}
                     </span>
 

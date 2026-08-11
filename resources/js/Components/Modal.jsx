@@ -27,17 +27,17 @@ export default function Modal({
     //
     // The cap has to match the vertical space actually consumed outside the
     // panel, or it's wrong in both directions. That space is the Dialog
-    // wrapper's own py-6 (1.5rem top + 1.5rem bottom = 3rem) plus the
-    // DialogPanel's own mb-6 (1.5rem, bottom only) = 4.5rem total - not the
-    // 6rem this used to subtract. That extra 1.5rem of unaccounted-for
-    // "safety margin" made the cap stricter than the panel could ever
-    // actually need, which for a panel that already self-caps its inner
-    // content (e.g. SettingsPanel/AccountPanel/FeedbackPanel's own
+    // wrapper's own vertical padding (py-3 on mobile = 1.5rem, py-6 at sm+ =
+    // 3rem) plus the DialogPanel's own bottom margin (mb-3 on mobile = 0.75rem,
+    // mb-6 at sm+ = 1.5rem) - 2.25rem total on mobile, 4.5rem at sm+. That
+    // extra unaccounted-for "safety margin" made the cap stricter than the
+    // panel could ever actually need, which for a panel that already self-caps
+    // its inner content (e.g. SettingsPanel/AccountPanel/FeedbackPanel's own
     // `h-[88vh] max-h-[860px]`) meant the outer max-height came in a few
     // pixels *below* that inner height on plenty of ordinary desktop
     // viewports - just enough overflow to keep a persistent, mostly-empty
     // scrollbar on screen with nothing meaningful to scroll to.
-    const overflowClass = overflowVisible ? 'overflow-visible' : 'thin-scrollbar max-h-[calc(100vh-4.5rem)] overflow-y-auto overflow-x-hidden';
+    const overflowClass = overflowVisible ? 'overflow-visible' : 'thin-scrollbar max-h-[calc(100vh-2.25rem)] overflow-y-auto overflow-x-hidden sm:max-h-[calc(100vh-4.5rem)]';
 
     // The outer Dialog wrapper below only needs its own scrollbar when the
     // panel itself has no height cap (overflowVisible) and so can genuinely
@@ -70,7 +70,7 @@ export default function Modal({
 
     return (
         <Transition show={show} leave="duration-200">
-            <Dialog as="div" id="modal" className={`fixed inset-0 z-[60] flex transform items-center px-4 py-6 transition-all sm:px-0 ${outerOverflowClass}`} onClose={close}>
+            <Dialog as="div" id="modal" className={`fixed inset-0 z-[60] flex transform items-center px-3 py-3 transition-all sm:px-0 sm:py-6 ${outerOverflowClass}`} onClose={close}>
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"
@@ -96,7 +96,7 @@ export default function Modal({
                     leaveFrom="translate-y-0 opacity-100 sm:scale-100"
                     leaveTo="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
                 >
-                    <DialogPanel className={`mb-6 w-full transform ${overflowClass} rounded-lg shadow-xl transition-all sm:mx-auto ${panelClassName} ${maxWidthClass}`}>
+                    <DialogPanel className={`mb-3 w-full transform ${overflowClass} rounded-lg shadow-xl transition-all sm:mx-auto sm:mb-6 ${panelClassName} ${maxWidthClass}`}>
                         {children}
                     </DialogPanel>
                 </TransitionChild>

@@ -323,11 +323,11 @@ export default function NotificationBell() {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className={`relative rounded-md p-2 transition ${
+                className={`relative rounded-md p-1.5 transition sm:p-2 ${
                     unreadCount > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
             >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 {unreadCount > 0 && (
@@ -338,8 +338,8 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="fixed left-2 right-2 top-16 z-50 rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96">
-                    <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+                <div className="fixed left-2 right-2 top-14 z-50 rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96">
+                    <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2 dark:border-gray-700 sm:px-4 sm:py-3">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Notifications</p>
                         <div className="flex gap-3">
                             {unreadCount > 0 && (
@@ -355,7 +355,7 @@ export default function NotificationBell() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1 border-b border-gray-100 px-4 py-2 dark:border-gray-700">
+                    <div className="flex items-center gap-1 border-b border-gray-100 px-3 py-1.5 dark:border-gray-700 sm:px-4 sm:py-2">
                         {['all', 'unread'].map((option) => (
                             <button
                                 key={option}
@@ -401,7 +401,7 @@ export default function NotificationBell() {
                             return (
                                 <div
                                     key={note.id}
-                                    className={`group flex items-start gap-2 border-b border-gray-50 px-4 py-3 transition hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 ${
+                                    className={`group flex items-start gap-2 border-b border-gray-50 px-3 py-2 transition hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 sm:px-4 sm:py-3 ${
                                         !note.read_at ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
                                     }`}
                                 >
