@@ -137,6 +137,16 @@ Two independent channels, both respecting the same per-user preferences
 - **Email:** queued via `NotificationMailer`, only sent if the user hasn't opted out of
   that notification type.
 
+Repeated events on the same target don't flood the bell with near-duplicates -
+`NotificationPiler::pile()` folds a new event into an existing unread row (matched on
+`user_id` + `type` + `group_key`) instead of inserting a new one, bumping `pile_count`
+and rewriting the message (e.g. "You have 5 new comments on ..."). Once a pile is read,
+the group is closed and the next matching event starts a fresh row. For comment-based
+types (`task_commented`, `task_mentioned`, `comment_replied`), each contributing comment
+id is tracked in `source_ids`, so deleting one comment out of several piled together
+(`CommentController::purgeCommentNotifications()`) shrinks the pile by exactly one and
+retargets the message/url, rather than only being able to remove the whole notification.
+
 ## Directory map (non-obvious parts)
 
 - `app/Support/` - small focused helper classes rather than fat traits: `Linkifier`

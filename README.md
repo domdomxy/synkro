@@ -36,7 +36,8 @@ Built with Laravel 13, Inertia.js, and React.
 
 **Notifications & activity**
 - In-app notification bell plus emailed notifications (queued), with per-notification-type
-  preferences
+  preferences; repeated events on the same target (several comments on one task, say) pile
+  into a single row instead of flooding the bell
 - Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, checklist and
   note sync, project updates, and admin alerts
 - Personal activity feed and account activity log

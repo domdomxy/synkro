@@ -30,7 +30,7 @@ const features = [
     },
     {
         title: 'Live notifications',
-        description: 'Task assignments, review decisions, comments and mentions, role changes, member joins and departures: every meaningful event arrives live via WebSocket. A persistent notification center with category filters and per-type email toggles keeps you in control of what reaches your inbox.',
+        description: 'Task assignments, review decisions, comments and mentions, role changes, member joins and departures: every meaningful event arrives live via WebSocket, with repeated events on the same task piling into one entry instead of flooding your bell. A persistent notification center with category filters and per-type email toggles keeps you in control of what reaches your inbox.',
         icon: <path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
         accent: 'amber',
     },

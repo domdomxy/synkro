@@ -34,6 +34,14 @@ return new class extends Migration
             // Null for types that never pile (most of them - see NotificationPiler).
             $table->string('group_key')->nullable();
 
+            // Tracks the individual source record ids (currently: comment ids) folded
+            // into a piled notification, e.g. [12, 15, 19] for a "You have 3 new
+            // comments on ..." row. Lets a single source being deleted (a comment
+            // removed) shrink the pile by exactly one instead of only being able to
+            // delete the whole notification. Null for notification types that don't
+            // track sources (most of them - see NotificationPiler::pile()).
+            $table->json('source_ids')->nullable();
+
             $table->string('url')->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
