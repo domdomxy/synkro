@@ -83,7 +83,7 @@ class SuspensionAppealController extends Controller
     /** Admins can opt out via Settings → both Email Notifications and In-App Notifications → Admin Alerts. */
     private function notifyAdminsNewAppeal(SuspensionAppeal $appeal, User $user): void
     {
-        $admins = User::where('role', 'admin')->get();
+        $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
         $url = url(route('admin.appeals', [], false));
 
         foreach ($admins as $admin) {

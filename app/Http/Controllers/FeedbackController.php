@@ -230,7 +230,7 @@ class FeedbackController extends Controller
     /** Admins can opt out via Settings → both Email Notifications and In-App Notifications → Admin Alerts. */
     private function notifyAdminsNewTicket(Feedback $feedback): void
     {
-        $admins = User::where('role', 'admin')->get();
+        $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
         $url = $this->adminFeedbackUrl($feedback);
 
         foreach ($admins as $admin) {
