@@ -7,40 +7,38 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class TicketCreated implements ShouldBroadcastNow
+class NotificationUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
     public function __construct(
-        public int $adminId,
-        public string $trackingId,
-        public string $subject,
-        public string $submitterName,
+        public int $recipientId,
         public int $notificationId,
-        public int $pileCount = 1,
-        public bool $isNew = true,
+        public string $message,
+        public ?string $url,
+        public int $pileCount,
     ) {}
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('user.'.$this->adminId)];
+        return [new PrivateChannel('user.'.$this->recipientId)];
     }
 
     public function broadcastAs(): string
     {
-        return 'ticket.created';
+        return 'notification.updated';
     }
 
     public function broadcastWith(): array
     {
         return [
+            // Distinguishes this from every other bell payload shape so the
+            // frontend can route it without guessing from field presence.
+            'kind' => 'pile_updated',
             'notification_id' => $this->notificationId,
-            'tracking_id' => $this->trackingId,
-            'subject' => $this->subject,
-            'submitter_name' => $this->submitterName,
+            'message' => $this->message,
+            'url' => $this->url,
             'pile_count' => $this->pileCount,
-            'is_new' => $this->isNew,
-            'type' => 'ticket_created',
         ];
     }
 }

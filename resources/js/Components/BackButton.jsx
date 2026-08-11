@@ -24,7 +24,7 @@ export default function BackButton({ href, label = 'Back' }) {
             onClick={handleClick}
             aria-label={label}
             title={label}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full p-3 text-gray-600 transition hover:bg-gray-100 active:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 sm:min-h-0 sm:min-w-0 sm:justify-start sm:rounded-md sm:bg-gray-800 sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:text-white sm:shadow sm:hover:bg-gray-700 sm:dark:bg-gray-700 sm:dark:hover:bg-gray-600"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full p-3 text-gray-600 transition hover:bg-gray-100 active:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 sm:min-h-0 sm:min-w-0 sm:justify-start sm:rounded-md sm:bg-white sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:text-gray-700 sm:shadow-sm sm:hover:bg-gray-50 sm:dark:bg-gray-700 sm:dark:text-white sm:dark:hover:bg-gray-600"
         >
             <svg className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />

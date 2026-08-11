@@ -69,8 +69,37 @@ export default function NotificationBell() {
             '.email.changed',
             '.ticket.status-changed',
             '.ticket.responded',
+            '.notification.deleted',
+            '.notification.updated',
         ],
         (payload) => {
+            // Fired when a comment backing an unread (or already-seen) bell
+            // entry gets deleted - e.g. a moderator removes the comment a
+            // "New comment on ..." notification was pointing to. Drops it
+            // from the open dropdown immediately instead of leaving a link
+            // to a comment that's gone.
+            if (payload.was_unread !== undefined) {
+                setItems((prev) => prev.filter((n) => n.id !== payload.notification_id));
+                if (payload.was_unread) {
+                    setUnreadCount((c) => Math.max(0, c - 1));
+                }
+                return;
+            }
+
+            // A piled notification (e.g. "You have 3 new comments on ...")
+            // shrank by one because one of the underlying comments was
+            // deleted - update the row in place. The notification itself was
+            // already counted toward unreadCount when it first appeared, so
+            // this never touches the badge.
+            if (payload.kind === 'pile_updated') {
+                setItems((prev) => prev.map((n) => (
+                    n.id === payload.notification_id
+                        ? { ...n, message: payload.message, url: payload.url ?? n.url }
+                        : n
+                )));
+                return;
+            }
+
             let message;
             let url;
             let type = payload.type;
@@ -183,10 +212,16 @@ export default function NotificationBell() {
                         : 'Removed from admin\nYour **administrator** access on Synkro was removed.';
                 url = payload.new_role === 'admin' || payload.new_role === 'superadmin' ? '/admin' : '/dashboard';
             } else if (payload.type === 'ticket_created') {
-                message = `New ticket submitted\n**${payload.submitter_name}** submitted a new ticket "**${payload.subject}**"`;
+                // Piled: once 2+ tickets stack up unread, show the folded count
+                // instead of re-announcing the single latest submitter every time.
+                message = payload.pile_count > 1
+                    ? `New tickets\nYou have **${payload.pile_count}** new tickets waiting`
+                    : `New ticket submitted\n**${payload.submitter_name}** submitted a new ticket "**${payload.subject}**"`;
                 url = '/admin/feedbacks';
             } else if (payload.type === 'appeal_created') {
-                message = `New appeal submitted\n**${payload.user_name}** submitted a suspension appeal`;
+                message = payload.pile_count > 1
+                    ? `New appeals\nYou have **${payload.pile_count}** new appeals waiting`
+                    : `New appeal submitted\n**${payload.user_name}** submitted a suspension appeal`;
                 url = '/admin/appeals';
             } else if (payload.type === 'password_changed') {
                 message = "Password changed\nYour account password was changed. If this wasn't you, contact support immediately.";
@@ -221,7 +256,8 @@ export default function NotificationBell() {
                 ...prev.filter((n) => n.id !== payload.notification_id),
             ].slice(0, 10));
             // payload.is_new is only present on pileable types (task_commented,
-            // task_mentioned, comment_replied). A folded event (is_new === false)
+            // task_mentioned, comment_replied, ticket_created, appeal_created). A
+            // folded event (is_new === false)
             // updates an existing unread row rather than adding one, so it must
             // not bump the badge again - the row was already counted.
             if (payload.is_new !== false) {

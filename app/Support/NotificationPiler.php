@@ -24,12 +24,17 @@ class NotificationPiler
      * $singleMessage is used verbatim the first time (pile_count === 1).
      * $pileMessage is called with the new pile_count (>= 2) to build the
      * folded wording, e.g. fn ($n) => "You have {$n} new comments on ...".
+     * $sourceId, if given, is appended to the row's source_ids array (e.g.
+     * the triggering comment's id) so a caller can later shrink the pile by
+     * exactly one source instead of only being able to delete the whole
+     * notification - see CommentController::purgeOrShrinkCommentNotifications().
+     * Left null for notification types that don't need per-source tracking.
      *
      * Returns ['notification' => UserNotification, 'is_new' => bool] -
      * is_new is false when an existing row was folded into, which callers
      * use to avoid double-counting the unread badge for the same group.
      */
-    public static function pile(array $attributes, string $singleMessage, callable $pileMessage): array
+    public static function pile(array $attributes, string $singleMessage, callable $pileMessage, $sourceId = null): array
     {
         $existing = UserNotification::where('user_id', $attributes['user_id'])
             ->where('type', $attributes['type'])
@@ -42,6 +47,13 @@ class NotificationPiler
             $existing->causer_id = $attributes['causer_id'];
             $existing->url = $attributes['url'];
             $existing->message = $pileMessage($existing->pile_count);
+
+            if ($sourceId !== null) {
+                $ids = $existing->source_ids ?? [];
+                $ids[] = $sourceId;
+                $existing->source_ids = array_values(array_unique($ids));
+            }
+
             $existing->touch();
             $existing->save();
 
@@ -51,6 +63,7 @@ class NotificationPiler
         $notification = UserNotification::create($attributes + [
             'message' => $singleMessage,
             'pile_count' => 1,
+            'source_ids' => $sourceId !== null ? [$sourceId] : null,
         ]);
 
         return ['notification' => $notification, 'is_new' => true];

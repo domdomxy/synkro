@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\SuspensionAppeal;
 use App\Models\SuspensionLog;
 use App\Models\User;
-use App\Models\UserNotification;
 use App\Support\AppealRateLimiter;
 use App\Support\EmailPreferences;
+use App\Support\NotificationPiler;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -88,16 +88,24 @@ class SuspensionAppealController extends Controller
 
         foreach ($admins as $admin) {
             if (NotificationPreferences::wantsType($admin, 'appeal_created')) {
-                $notification = UserNotification::create([
-                    'user_id' => $admin->id,
-                    'type' => 'appeal_created',
-                    'causer_id' => $user->id,
-                    'message' => "New appeal submitted\n**{$user->name}** submitted a suspension appeal",
-                    'url' => $url,
-                ]);
+                // Piled per admin: a burst of appeals arriving unread collapses into
+                // one "You have N new appeals waiting" row instead of N separate
+                // entries, same treatment as task comments (see NotificationPiler).
+                $piled = NotificationPiler::pile(
+                    [
+                        'user_id' => $admin->id,
+                        'type' => 'appeal_created',
+                        'causer_id' => $user->id,
+                        'url' => $url,
+                        'group_key' => 'appeals',
+                    ],
+                    "New appeal submitted\n**{$user->name}** submitted a suspension appeal",
+                    fn ($count) => "New appeals\nYou have **{$count}** new appeals waiting"
+                );
+                $notification = $piled['notification'];
 
                 try {
-                    broadcast(new \App\Events\AppealCreated($admin->id, $appeal->id, $user->name, $notification->id))->toOthers();
+                    broadcast(new \App\Events\AppealCreated($admin->id, $appeal->id, $user->name, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                 } catch (\Throwable $e) {
                     report($e);
                 }

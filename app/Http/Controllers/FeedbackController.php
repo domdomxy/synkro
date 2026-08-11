@@ -10,6 +10,7 @@ use App\Mail\SynkroNotificationMail;
 use App\Models\Feedback;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\NotificationPiler;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -234,15 +235,24 @@ class FeedbackController extends Controller
 
         foreach ($admins as $admin) {
             if (NotificationPreferences::wantsType($admin, 'ticket_created')) {
-                $notification = UserNotification::create([
-                    'user_id' => $admin->id,
-                    'type' => 'ticket_created',
-                    'message' => "New ticket submitted\n**{$feedback->name}** submitted a new {$feedback->category} ticket: \"**{$feedback->subject}**\"",
-                    'url' => $url,
-                ]);
+                // Piled per admin: a burst of new tickets arriving unread collapses
+                // into one "You have N new tickets waiting" row instead of N separate
+                // entries, same treatment as task comments (see NotificationPiler).
+                $piled = NotificationPiler::pile(
+                    [
+                        'user_id' => $admin->id,
+                        'type' => 'ticket_created',
+                        'causer_id' => null,
+                        'url' => $url,
+                        'group_key' => 'tickets',
+                    ],
+                    "New ticket submitted\n**{$feedback->name}** submitted a new {$feedback->category} ticket: \"**{$feedback->subject}**\"",
+                    fn ($count) => "New tickets\nYou have **{$count}** new tickets waiting"
+                );
+                $notification = $piled['notification'];
 
                 try {
-                    broadcast(new \App\Events\TicketCreated($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id))->toOthers();
+                    broadcast(new \App\Events\TicketCreated($admin->id, $feedback->tracking_id, $feedback->subject, $feedback->name, $notification->id, $notification->pile_count, $piled['is_new']))->toOthers();
                 } catch (\Throwable $e) {
                     report($e);
                 }

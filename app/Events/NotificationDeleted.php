@@ -7,38 +7,31 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class AppealCreated implements ShouldBroadcastNow
+class NotificationDeleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets;
 
     public function __construct(
-        public int $adminId,
-        public int $appealId,
-        public string $userName,
+        public int $recipientId,
         public int $notificationId,
-        public int $pileCount = 1,
-        public bool $isNew = true,
+        public bool $wasUnread,
     ) {}
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('user.'.$this->adminId)];
+        return [new PrivateChannel('user.'.$this->recipientId)];
     }
 
     public function broadcastAs(): string
     {
-        return 'appeal.created';
+        return 'notification.deleted';
     }
 
     public function broadcastWith(): array
     {
         return [
             'notification_id' => $this->notificationId,
-            'appeal_id' => $this->appealId,
-            'user_name' => $this->userName,
-            'pile_count' => $this->pileCount,
-            'is_new' => $this->isNew,
-            'type' => 'appeal_created',
+            'was_unread' => $this->wasUnread,
         ];
     }
 }

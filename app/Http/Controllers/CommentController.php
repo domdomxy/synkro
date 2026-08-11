@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 use App\Events\CommentPosted;
 use App\Events\CommentDeleted;
 use App\Events\CommentUpdated;
+use App\Events\NotificationDeleted;
+use App\Events\NotificationUpdated;
 use App\Events\TaskCommented;
 use App\Events\TaskMentioned;
 use App\Events\CommentReplied;
@@ -130,7 +132,8 @@ class CommentController extends Controller
                         'group_key' => "task:{$task->id}",
                     ],
                     "New comment\n" . '**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\"",
-                    fn ($count) => "New comments\nYou have **{$count}** new comments on \"**{$task->title}**\""
+                    fn ($count) => "New comments\nYou have **{$count}** new comments on \"**{$task->title}**\"",
+                    $comment->id
                 );
                 $notification = $piled['notification'];
 
@@ -169,7 +172,8 @@ class CommentController extends Controller
                         'group_key' => "task:{$task->id}",
                     ],
                     "You were mentioned\n" . '**' . Auth::user()->name . '**' . " mentioned you on \"**{$task->title}**\"",
-                    fn ($count) => "You were mentioned\nYou have **{$count}** new mentions on \"**{$task->title}**\""
+                    fn ($count) => "You were mentioned\nYou have **{$count}** new mentions on \"**{$task->title}**\"",
+                    $comment->id
                 );
                 $notification = $piled['notification'];
 
@@ -212,7 +216,8 @@ class CommentController extends Controller
                             'group_key' => "comment:{$parentComment->id}",
                         ],
                         "New reply\n" . '**' . Auth::user()->name . '**' . " replied to your comment on \"**{$task->title}**\"",
-                        fn ($count) => "New replies\nYou have **{$count}** new replies on \"**{$task->title}**\""
+                        fn ($count) => "New replies\nYou have **{$count}** new replies on \"**{$task->title}**\"",
+                        $comment->id
                     );
                     $notification = $piled['notification'];
 
@@ -268,6 +273,8 @@ class CommentController extends Controller
             }
             $comment->delete();
 
+            $this->purgeCommentNotifications($task, array_merge([$comment->id], $descendantIds));
+
             broadcast(new CommentDeleted($projectId))->toOthers();
 
             return back()->with('success', 'Comment deleted.');
@@ -291,6 +298,8 @@ class CommentController extends Controller
                 Comment::whereIn('id', $descendantIds)->delete();
             }
             $comment->delete();
+
+            $this->purgeCommentNotifications($task, array_merge([$comment->id], $descendantIds));
         } elseif ($comment->replies()->exists()) {
             $comment->forceFill([
                 'body' => '',
@@ -299,13 +308,107 @@ class CommentController extends Controller
                 'is_reopened' => false,
                 'deleted_at' => now(),
             ])->save();
+
+            // The row survives as a tombstone so replies stay put, but its
+            // content is gone - any notification still pointing at it (a
+            // comment/mention/reply row whose url references this exact
+            // comment) would open onto "Original comment was deleted", so
+            // it's purged the same as a hard delete.
+            $this->purgeCommentNotifications($task, [$comment->id]);
         } else {
             $comment->delete();
+
+            $this->purgeCommentNotifications($task, [$comment->id]);
         }
 
         broadcast(new CommentDeleted($projectId))->toOthers();
         
         return back()->with('success', 'Comment deleted.');
+    }
+
+    // Shrinks or removes any bell notification (task_commented, task_mentioned,
+    // comment_replied) that traces back to one of the given comment ids. These
+    // three types track exactly which comments fed each pile via source_ids
+    // (see NotificationPiler::pile()), so deleting one of several piled
+    // comments knocks the count down by one and rewrites the message/url to
+    // point at whatever's left, rather than only being able to blow away the
+    // whole notification. Deleting the last remaining source removes the row
+    // outright. Recipients with the bell open get a live NotificationUpdated
+    // (count went down) or NotificationDeleted (row gone); anyone else just
+    // sees the correct state next time they load their notifications.
+    private function purgeCommentNotifications(Task $task, array $commentIds): void
+    {
+        if (empty($commentIds)) {
+            return;
+        }
+
+        $notifications = UserNotification::whereIn('type', ['task_commented', 'task_mentioned', 'comment_replied'])
+            ->where(function ($query) use ($commentIds) {
+                foreach ($commentIds as $id) {
+                    $query->orWhereJsonContains('source_ids', $id);
+                }
+            })
+            ->get();
+
+        if ($notifications->isEmpty()) {
+            return;
+        }
+
+        $singleTemplates = [
+            'task_commented' => fn ($name) => "New comment\n**{$name}** commented on \"**{$task->title}**\"",
+            'task_mentioned' => fn ($name) => "You were mentioned\n**{$name}** mentioned you on \"**{$task->title}**\"",
+            'comment_replied' => fn ($name) => "New reply\n**{$name}** replied to your comment on \"**{$task->title}**\"",
+        ];
+        $pileTemplates = [
+            'task_commented' => fn ($n) => "New comments\nYou have **{$n}** new comments on \"**{$task->title}**\"",
+            'task_mentioned' => fn ($n) => "You were mentioned\nYou have **{$n}** new mentions on \"**{$task->title}**\"",
+            'comment_replied' => fn ($n) => "New replies\nYou have **{$n}** new replies on \"**{$task->title}**\"",
+        ];
+
+        foreach ($notifications as $notification) {
+            $remaining = array_values(array_diff($notification->source_ids ?? [], $commentIds));
+
+            if (empty($remaining)) {
+                $wasUnread = $notification->read_at === null;
+                $notification->delete();
+
+                try {
+                    broadcast(new NotificationDeleted($notification->user_id, $notification->id, $wasUnread))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+
+                continue;
+            }
+
+            $newCount = count($remaining);
+            $lastRemainingComment = Comment::find(end($remaining));
+
+            $notification->source_ids = $remaining;
+            $notification->pile_count = $newCount;
+
+            if ($newCount === 1 && $lastRemainingComment) {
+                // Back down to a single event - revert to the non-piled
+                // wording naming whoever's comment is actually left, instead
+                // of a "You have 1 new comment..." that reads like a bug.
+                $notification->message = $singleTemplates[$notification->type]($lastRemainingComment->user->name);
+                $notification->causer_id = $lastRemainingComment->user_id;
+            } else {
+                $notification->message = $pileTemplates[$notification->type]($newCount);
+            }
+
+            if ($lastRemainingComment) {
+                $notification->url = route('projects.show', $task->project_id, false) . '?task=' . $task->id . '&comment=' . $lastRemainingComment->id;
+            }
+
+            $notification->save();
+
+            try {
+                broadcast(new NotificationUpdated($notification->user_id, $notification->id, $notification->message, $notification->url, $notification->pile_count))->toOthers();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     // Depth-first collection of every reply id nested under $comment, however
