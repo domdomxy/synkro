@@ -8,12 +8,12 @@ import NotificationToast from '@/Components/NotificationToast';
 // at once the two stacks rendered directly on top of each other. This is the
 // single shared container both lists render into instead, so everything
 // stacks in one column regardless of which source produced it.
-// bottom-16 on mobile clears the fixed BottomNavBar (h-12) plus its safe-area
-// padding; sm:bottom-4 restores the original tighter offset on desktop,
-// which has no bottom bar.
+// bottom-24 on mobile clears the fixed BottomNavBar (58px icon+label bar)
+// plus its safe-area padding; sm:bottom-4 restores the original tighter
+// offset on desktop, which has no bottom bar.
 export default function ToastLayer() {
     return (
-        <div className="fixed bottom-16 left-1/2 z-[60] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 sm:bottom-4 sm:left-auto sm:right-4 sm:w-auto sm:max-w-sm sm:translate-x-0">
+        <div className="fixed bottom-24 left-1/2 z-[60] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 sm:bottom-4 sm:left-auto sm:right-4 sm:w-auto sm:max-w-sm sm:translate-x-0">
             <FlashMessages />
             <NotificationToast />
         </div>

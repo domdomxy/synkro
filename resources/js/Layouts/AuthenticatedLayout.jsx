@@ -288,10 +288,10 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                 </header>
             )}
 
-            {/* pb-16 keeps content clear of the fixed BottomNavBar on mobile (h-12
-                bar + safe-area inset + a little breathing room); sm:pb-0 drops it
-                once that bar is hidden. */}
-            <main className="pb-16 sm:pb-0">{children}</main>
+            {/* pb-24 keeps content clear of the fixed BottomNavBar on mobile (58px
+                icon+label bar + safe-area inset + breathing room); sm:pb-0 drops
+                it once that bar is hidden. */}
+            <main className="pb-24 sm:pb-0">{children}</main>
 
             {OverlayPanel && <OverlayPanel {...overlay.props} onClose={closeOverlay} />}
             <BottomNavBar links={mobileNavLinks} />
