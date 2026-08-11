@@ -123,6 +123,8 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
   recoverable before a scheduled command purges it for good is configurable via
   `ACCOUNT_DELETION_GRACE_DAYS`, `PROJECT_DELETION_GRACE_DAYS`, and `TASK_DELETION_GRACE_DAYS`
   (all default to 7 days) - see `config/synkro.php`.
+- **Name change cooldown:** how many days must pass between a user changing their display name
+  is configurable via `NAME_CHANGE_COOLDOWN_DAYS` (defaults to 7 days) - see `config/synkro.php`.
 
 ### Troubleshooting
 
