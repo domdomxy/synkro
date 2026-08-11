@@ -312,7 +312,7 @@ export default function Index({ projects, showingArchived, activeCount, archived
 
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-6 sm:gap-4">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
-                            <div className="relative w-full sm:w-auto">
+                            <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
                                 <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                     <SearchIcon />
                                 </div>
@@ -320,13 +320,13 @@ export default function Index({ projects, showingArchived, activeCount, archived
                                     value={search}
                                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                                     placeholder="Search by project name or owner..."
-                                    className="w-full pl-9 sm:w-72"
+                                    className="w-full pl-9"
                                 />
                             </div>
                             <FilterSelect
                                 value={roleFilter}
                                 onChange={(v) => { setRoleFilter(v); setPage(1); }}
-                                className="w-36"
+                                className="w-28 shrink-0 sm:w-36"
                                 options={[
                                     { value: 'all', label: 'All Roles' },
                                     { value: 'owner', label: 'Owner' },
@@ -341,6 +341,14 @@ export default function Index({ projects, showingArchived, activeCount, archived
                                 </button>
                             )}
                         </div>
+
+                        {/* Mobile only: the search/role-filter row above wraps to its own
+                            line (it's w-full there), so this rule marks it off visually from
+                            the New Project button/list below instead of the two blurring
+                            together. Not needed at sm+, where everything already sits on one
+                            row. */}
+                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                         {!showingArchived && (
                             <button onClick={() => setShowCreateModal(true)} className="rounded-md border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 sm:px-4 sm:py-2">
                                 New Project

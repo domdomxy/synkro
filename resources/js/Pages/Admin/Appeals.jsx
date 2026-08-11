@@ -334,7 +334,7 @@ export default function Appeals({ appeals, filters }) {
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl space-y-6 px-3 sm:px-6 lg:px-8">
                     <div ref={toolbarRef} className="flex flex-wrap items-center gap-3">
-                        <div className="relative w-full sm:w-64">
+                        <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon />
                             </div>
@@ -347,6 +347,7 @@ export default function Appeals({ appeals, filters }) {
                             />
                         </div>
                         <FiltersMenu
+                            buttonClassName="shrink-0"
                             activeCount={statusFilter !== 'all' ? 1 : 0}
                             hasActiveFilters={statusFilter !== 'all'}
                             onClear={() => setStatusFilter('all')}

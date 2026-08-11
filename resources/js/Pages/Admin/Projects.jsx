@@ -60,7 +60,7 @@ export default function Projects({ projects, filters }) {
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
-                        <div className="relative w-full sm:w-72">
+                        <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
                             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                                 <SearchIcon />
                             </div>
@@ -72,9 +72,9 @@ export default function Projects({ projects, filters }) {
                                 className="w-full pl-9"
                             />
                         </div>
-                        <button onClick={applyFilters} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
+                        <button onClick={applyFilters} className="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Filter</button>
                         {search && (
-                            <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">
+                            <button onClick={clearFilters} className="shrink-0 text-sm text-gray-500 hover:underline dark:text-gray-400">
                                 Clear
                             </button>
                         )}
