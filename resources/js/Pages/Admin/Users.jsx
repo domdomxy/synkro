@@ -508,7 +508,81 @@ export default function Users({ users, stats, filters }) {
                         </div>
                     )}
 
-                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+                    {/* Mobile only: the table below scrolls sideways to reach every
+                        column, which is awkward with one thumb, so under sm we swap
+                        to a stacked card per user with the same data/actions instead.
+                        Desktop keeps the table untouched. */}
+                    <div className="flex flex-col gap-3 sm:hidden">
+                        {users.data.map((user) => {
+                            const isSelf = user.id === auth.user.id;
+                            return (
+                                <div key={user.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-700 dark:bg-gray-800">
+                                    <div className="flex items-start gap-3">
+                                        {isSuperAdmin && (
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(user.id)}
+                                                onChange={() => toggleSelected(user.id)}
+                                                disabled={isSelf || user.role === 'superadmin' || !!user.deleted_at}
+                                                className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-700"
+                                            />
+                                        )}
+                                        <Avatar user={user} size="h-10 w-10" />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate font-medium text-gray-900 dark:text-gray-100">
+                                                {user.name}
+                                                {isSelf && <span className="ml-1.5 text-xs font-normal text-gray-400">(you)</span>}
+                                            </p>
+                                            <p className="truncate text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                                            {user.email_verified_at ? (
+                                                <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Verified
+                                                </span>
+                                            ) : (
+                                                <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Unverified
+                                                </span>
+                                            )}
+                                        </div>
+                                        <UserActionsMenu
+                                            user={user}
+                                            isSelf={isSelf}
+                                            isSuperAdmin={isSuperAdmin}
+                                            onToggleRole={toggleRole}
+                                            onToggleSuperAdmin={toggleSuperAdmin}
+                                            onResetPassword={resetPassword}
+                                            onSuspend={setSuspendTarget}
+                                            onLiftSuspension={liftSuspension}
+                                            onEdit={setEditTarget}
+                                            onDelete={deleteUser}
+                                        />
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 text-xs dark:border-gray-700">
+                                        <span className={`inline-block whitespace-nowrap rounded-full px-2 py-1 capitalize ${user.role === 'superadmin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                            {user.role === 'superadmin' ? 'Super Admin' : user.role}
+                                        </span>
+                                        <StatusBadge user={user} />
+                                        <span className="ml-auto text-gray-400 dark:text-gray-500">
+                                            #{user.id} · Joined {new Date(user.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {users.data.length === 0 && (
+                            <p className="rounded-lg border border-gray-200 bg-white px-6 py-10 text-center text-gray-400 shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500">
+                                No users match your filters.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800 sm:block">
                         <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">

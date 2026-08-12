@@ -95,7 +95,55 @@ export default function Projects({ projects, filters }) {
                         <Pagination meta={projects} />
                     </div>
 
-                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+                    {/* Mobile only: swap the sideways-scrolling table below for a
+                        stacked card per project, same data, no horizontal scroll.
+                        Desktop table is unchanged. */}
+                    <div className="flex flex-col gap-3 sm:hidden">
+                        {projects.data.map((project) => (
+                            <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-700 dark:bg-gray-800">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-medium text-gray-900 dark:text-gray-100" title={project.name}>{project.name}</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500">#{project.id}</p>
+                                    </div>
+                                    <Link
+                                        href={route('admin.projects.logs', project.id)}
+                                        className="flex shrink-0 items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                                    >
+                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        Logs
+                                    </Link>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm dark:border-gray-700">
+                                    {project.owner ? (
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <Avatar user={project.owner} size="h-6 w-6" />
+                                            <span className="truncate text-gray-500 dark:text-gray-400">{project.owner.name}</span>
+                                            {project.owner.deleted_at && (
+                                                <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                                    deleted
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="text-gray-400 dark:text-gray-500">No owner</span>
+                                    )}
+                                    <span className="shrink-0 text-gray-400 dark:text-gray-500">
+                                        {project.members_count} member{project.members_count !== 1 ? 's' : ''} · {project.tasks_count} task{project.tasks_count !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {projects.data.length === 0 && (
+                            <p className="rounded-lg border border-gray-200 bg-white px-6 py-10 text-center text-gray-400 shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500">
+                                No projects match your search.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800 sm:block">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
