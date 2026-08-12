@@ -148,6 +148,12 @@ export default function Notifications({ notificationsList, filters }) {
                         </FiltersMenu>
                     </div>
 
+                    {/* Mobile only: the search/filters row above wraps to its own
+                        full-width line, so this rule marks it off visually from the
+                        results count below instead of the two blurring together. Not
+                        needed at sm+, where everything already sits on one row. */}
+                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {notificationsList.total} notification{notificationsList.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ''}
                     </p>

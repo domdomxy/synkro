@@ -49,7 +49,7 @@ function SuspensionLogRow({ log }) {
     const lifted = Boolean(log.lifted_at);
 
     return (
-        <li className="border-b dark:border-gray-700 last:border-0">
+        <li className="border-b border-gray-100 last:border-0 dark:border-gray-700">
             <div className="flex w-full items-start gap-3 px-6 py-3 transition hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <button onClick={() => setOpen((v) => !v)} className="flex flex-1 items-start gap-3 text-left">
                     <span className="relative mt-0.5 h-8 w-8 shrink-0">
@@ -236,6 +236,12 @@ export default function SuspensionLogs({ logs, filters }) {
                             <DateRangeFilter from={from} to={to} onApply={applyDateRange} />
                         </FiltersMenu>
                     </div>
+
+                    {/* Mobile only: the search/filters row above wraps to its own
+                        full-width line, so this rule marks it off visually from the
+                        results count below instead of the two blurring together. Not
+                        needed at sm+, where everything already sits on one row. */}
+                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {logs.total} record{logs.total !== 1 ? 's' : ''} match{logs.total === 1 ? 'es' : ''} your filters

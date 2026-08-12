@@ -80,6 +80,12 @@ export default function Projects({ projects, filters }) {
                         )}
                     </div>
 
+                    {/* Mobile only: the search/filter row above wraps to its own
+                        full-width line, so this rule marks it off visually from the
+                        results count below instead of the two blurring together. Not
+                        needed at sm+, where everything already sits on one row. */}
+                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {projects.total} project{projects.total !== 1 ? 's' : ''} match{projects.total === 1 ? 'es' : ''} your search
                     </p>
@@ -102,7 +108,7 @@ export default function Projects({ projects, filters }) {
                                         <th className="px-6 py-3">Activity</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y dark:divide-gray-700">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {projects.data.map((project) => (
                                         <tr key={project.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                             <td className="px-6 py-3 text-gray-400 dark:text-gray-500">#{project.id}</td>

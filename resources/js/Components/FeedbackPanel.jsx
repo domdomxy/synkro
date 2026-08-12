@@ -837,7 +837,7 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
                                 </form>
 
                                 {!trackResult && (
-                                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-200 py-10 text-center dark:border-gray-700">
+                                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-300 py-10 text-center dark:border-gray-700">
                                         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
                                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

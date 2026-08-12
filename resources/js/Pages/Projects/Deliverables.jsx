@@ -194,14 +194,14 @@ export default function Deliverables({ project, tasks, role }) {
                     )}
 
                     {folderTasks.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
                             <p className="max-w-xs text-sm text-gray-400 dark:text-gray-500">No files yet. They'll show up here once tasks with attached files are marked done.</p>
                         </div>
                     ) : visibleFolderTasks.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <p className="text-sm text-gray-400 dark:text-gray-500">No file deliverables match "{search}".</p>
                         </div>
                     ) : (

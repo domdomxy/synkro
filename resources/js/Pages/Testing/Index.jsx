@@ -84,7 +84,7 @@ function FileIcon({ className }) {
 
 function EmptyState({ hasAnyTasks, onClearFilters }) {
     return (
-        <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center dark:border-gray-700">
+        <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
                 <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -167,38 +167,48 @@ export default function Index({ tasks }) {
             <Head title="Testing Queue" />
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
-                    <div className="mb-6 flex flex-wrap items-center gap-3">
-                        <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-                            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                                <SearchIcon />
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                            <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+                                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                                    <SearchIcon />
+                                </div>
+                                <TextInput
+                                    value={search}
+                                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                                    placeholder="Search by task or project name..."
+                                    className="w-full pl-9"
+                                />
                             </div>
-                            <TextInput
-                                value={search}
-                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                                placeholder="Search by task or project name..."
-                                className="w-full pl-9"
-                            />
+                            <FiltersMenu buttonClassName="shrink-0" activeCount={[statusFilter !== 'all', projectFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
+                                <FiltersMenu.Row label="Status">
+                                    <FilterSelect
+                                        value={statusFilter}
+                                        onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                                        className="w-full"
+                                        options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                                    />
+                                </FiltersMenu.Row>
+                                <FiltersMenu.Row label="Project">
+                                    <FilterSelect
+                                        value={projectFilter}
+                                        onChange={(v) => { setProjectFilter(v); setPage(1); }}
+                                        className="w-full"
+                                        options={projectOptions}
+                                    />
+                                </FiltersMenu.Row>
+                            </FiltersMenu>
                         </div>
-                        <FiltersMenu buttonClassName="shrink-0" activeCount={[statusFilter !== 'all', projectFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
-                            <FiltersMenu.Row label="Status">
-                                <FilterSelect
-                                    value={statusFilter}
-                                    onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                                    className="w-full"
-                                    options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
-                                />
-                            </FiltersMenu.Row>
-                            <FiltersMenu.Row label="Project">
-                                <FilterSelect
-                                    value={projectFilter}
-                                    onChange={(v) => { setProjectFilter(v); setPage(1); }}
-                                    className="w-full"
-                                    options={projectOptions}
-                                />
-                            </FiltersMenu.Row>
-                        </FiltersMenu>
+
+                        {/* Mobile only: the search/filters group above wraps to its
+                            own full-width line, so this rule marks it off visually
+                            from the in-review badge below instead of the two blurring
+                            together. Not needed at sm+, where everything already sits
+                            on one row. */}
+                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                         {inReviewCount > 0 && (
-                            <span className="ml-auto flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
+                            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
                                 {inReviewCount} in review
                             </span>
                         )}

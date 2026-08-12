@@ -107,7 +107,7 @@ function PinIcon({ filled, className = 'h-4 w-4' }) {
 
 function EmptyState({ hasAnyTasks, onClearFilters }) {
     return (
-        <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center dark:border-gray-700">
+        <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
                 <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -200,38 +200,48 @@ export default function Index({ tasks }) {
             <Head title="My Tasks" />
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
-                    <div className="mb-6 flex flex-wrap items-center gap-3">
-                        <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-                            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                                <SearchIcon />
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                            <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+                                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                                    <SearchIcon />
+                                </div>
+                                <TextInput
+                                    value={search}
+                                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                                    placeholder="Search by task or project name..."
+                                    className="w-full pl-9"
+                                />
                             </div>
-                            <TextInput
-                                value={search}
-                                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                                placeholder="Search by task or project name..."
-                                className="w-full pl-9"
-                            />
+                            <FiltersMenu buttonClassName="shrink-0" activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
+                                <FiltersMenu.Row label="Status">
+                                    <FilterSelect
+                                        value={statusFilter}
+                                        onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                                        className="w-full"
+                                        options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
+                                    />
+                                </FiltersMenu.Row>
+                                <FiltersMenu.Row label="Priority">
+                                    <FilterSelect
+                                        value={priorityFilter}
+                                        onChange={(v) => { setPriorityFilter(v); setPage(1); }}
+                                        className="w-full"
+                                        options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
+                                    />
+                                </FiltersMenu.Row>
+                            </FiltersMenu>
                         </div>
-                        <FiltersMenu buttonClassName="shrink-0" activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearFilters}>
-                            <FiltersMenu.Row label="Status">
-                                <FilterSelect
-                                    value={statusFilter}
-                                    onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                                    className="w-full"
-                                    options={Object.entries(statusOptions).map(([key, label]) => ({ value: key, label }))}
-                                />
-                            </FiltersMenu.Row>
-                            <FiltersMenu.Row label="Priority">
-                                <FilterSelect
-                                    value={priorityFilter}
-                                    onChange={(v) => { setPriorityFilter(v); setPage(1); }}
-                                    className="w-full"
-                                    options={Object.entries(priorityOptions).map(([key, label]) => ({ value: key, label }))}
-                                />
-                            </FiltersMenu.Row>
-                        </FiltersMenu>
+
+                        {/* Mobile only: the search/filters group above wraps to its
+                            own full-width line, so this rule marks it off visually
+                            from the overdue badge below instead of the two blurring
+                            together. Not needed at sm+, where everything already
+                            sits on one row. */}
+                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                         {overdueCount > 0 && (
-                            <span className="ml-auto flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-950/30 dark:text-red-400">
                                 <AlertIcon className="h-3.5 w-3.5" />
                                 {overdueCount} overdue
                             </span>

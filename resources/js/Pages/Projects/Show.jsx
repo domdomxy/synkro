@@ -1370,7 +1370,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
-                                    <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center dark:border-gray-700">
+                                    <div className="rounded-lg border border-dashed border-gray-300 py-8 text-center dark:border-gray-700">
                                         <p className="text-sm text-gray-500 dark:text-gray-400">{project.tasks.length === 0 ? 'No tasks yet.' : 'No tasks match your filters.'}</p>
                                         {project.tasks.length > 0 && hasActiveTaskFilters && (
                                             <button onClick={clearTaskFilters} className="mt-2 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">Clear filters</button>

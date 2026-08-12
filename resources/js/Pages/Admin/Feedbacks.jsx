@@ -422,6 +422,12 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
                         </FiltersMenu>
                     </div>
 
+                    {/* Mobile only: the search/filters row above wraps to its own
+                        full-width line, so this rule marks it off visually from the
+                        feedback list below instead of the two blurring together. Not
+                        needed at sm+, where everything already sits on one row. */}
+                    <div className="h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                     <div className="space-y-3">
                         {feedbacks.data.length === 0 ? (
                             <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No feedback found.</p>

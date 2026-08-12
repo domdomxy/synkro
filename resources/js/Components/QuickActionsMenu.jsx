@@ -26,7 +26,7 @@ function ActionLink({ href, icon, children, badge }) {
  * trigger instead of an avatar, so it reads as a menu rather than a profile
  * switcher.
  */
-export default function QuickActionsMenu({ items, label = 'Quick Actions' }) {
+export default function QuickActionsMenu({ items, label = 'Quick Actions', width = '56' }) {
     return (
         <Dropdown>
             <Dropdown.Trigger>
@@ -41,7 +41,7 @@ export default function QuickActionsMenu({ items, label = 'Quick Actions' }) {
                 </button>
             </Dropdown.Trigger>
 
-            <Dropdown.Content align="left" width="72" contentClasses="py-2 bg-white dark:bg-gray-800">
+            <Dropdown.Content align="left" width={width} contentClasses="py-2 bg-white dark:bg-gray-800">
                 {items.map((item) => (
                     <ActionLink key={item.href} href={item.href} icon={item.icon} badge={item.badge}>
                         {item.label}

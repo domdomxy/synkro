@@ -6,7 +6,7 @@
 export default function EmptyChartState({ height = 240, title = 'No activity in this period', subtitle }) {
     return (
         <div
-            className="flex flex-col items-center justify-center rounded-md border border-dashed border-gray-200 text-center dark:border-gray-700"
+            className="flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 text-center dark:border-gray-700"
             style={{ height }}
         >
             <svg className="mb-3 h-9 w-9 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">

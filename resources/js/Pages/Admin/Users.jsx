@@ -477,6 +477,13 @@ export default function Users({ users, stats, filters }) {
                                 hasActiveFilters={hasActiveFilters}
                             />
                         </div>
+
+                        {/* Mobile only: the search/filters row above wraps to its own
+                            full-width line, so this rule marks it off visually from the
+                            results count below instead of the two blurring together. Not
+                            needed at sm+, where everything already sits on one row. */}
+                        <div className="my-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
+
                         <p className="text-sm text-gray-400 dark:text-gray-500">
                             {users.total} user{users.total !== 1 ? 's' : ''} match{users.total === 1 ? 'es' : ''} your filters
                         </p>
@@ -525,7 +532,7 @@ export default function Users({ users, stats, filters }) {
                                     <th className="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y dark:divide-gray-700">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {users.data.map((user) => {
                                     const isSelf = user.id === auth.user.id;
                                     return (

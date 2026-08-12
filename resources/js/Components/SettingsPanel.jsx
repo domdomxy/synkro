@@ -727,7 +727,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                         </div>
 
                         {trustedHosts.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-200 px-4 py-8 text-center dark:border-gray-700">
+                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-700">
                                 <LinkIcon className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                                 <p className="text-sm text-gray-400 dark:text-gray-500">No trusted sites yet.</p>
                                 <p className="max-w-xs text-xs text-gray-400 dark:text-gray-500">
@@ -789,7 +789,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                         </div>
 
                         {Object.keys(filteredEmailCatalog).length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-200 px-4 py-8 text-center dark:border-gray-700">
+                            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-700">
                                 <svg className="h-6 w-6 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                                 </svg>

@@ -827,7 +827,7 @@ export default function Resources({ project, resources, canManage, role }) {
                     )}
 
                     {resources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
@@ -838,7 +838,7 @@ export default function Resources({ project, resources, canManage, role }) {
                             </p>
                         </div>
                     ) : visibleResources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
                                 <SearchIcon className="h-5 w-5" />
                             </div>

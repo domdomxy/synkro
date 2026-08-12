@@ -387,7 +387,7 @@ function LogRow({ log, actorName, actor }) {
     const relative = timeAgo(log.created_at);
 
     return (
-        <li className="border-b dark:border-gray-700 last:border-0">
+        <li className="border-b border-gray-100 last:border-0 dark:border-gray-700">
             <button
                 onClick={() => hasDetails && setOpen((v) => !v)}
                 className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasDetails ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
@@ -624,6 +624,12 @@ export default function ActivityLogs({ logs, userProjects, filters, backHref, ba
                             <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
                         </FiltersMenu>
                     </div>
+
+                    {/* Mobile only: the filters row above wraps to its own full-width
+                        line, so this rule marks it off visually from the results count
+                        below instead of the two blurring together. Not needed at sm+,
+                        where everything already sits on one row. */}
+                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
 
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {logs.total} event{logs.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ' recorded'}
