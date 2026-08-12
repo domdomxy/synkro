@@ -68,7 +68,7 @@ export default function ScrollToPaginationButton({ targetRef, offset = 96 }) {
             onClick={scrollToPagination}
             aria-label="Scroll up to pagination"
             title="Back to pagination"
-            className={`fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-500 shadow-lg backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:text-gray-800 active:scale-95 dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-400 dark:hover:text-gray-100 ${
+            className={`fixed bottom-[calc(58px+env(safe-area-inset-bottom)+16px)] right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-500 shadow-lg backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:text-gray-800 active:scale-95 dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-400 dark:hover:text-gray-100 sm:bottom-6 ${
                 visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
             }`}
         >
