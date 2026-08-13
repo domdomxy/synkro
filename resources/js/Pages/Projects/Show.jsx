@@ -1370,7 +1370,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     />
                                 ))}
                                 {filteredTasks.length === 0 && (
-                                    <div className="rounded-lg border border-dashed border-gray-300 py-8 text-center dark:border-gray-700">
+                                    <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center dark:border-gray-700">
                                         <p className="text-sm text-gray-500 dark:text-gray-400">{project.tasks.length === 0 ? 'No tasks yet.' : 'No tasks match your filters.'}</p>
                                         {project.tasks.length > 0 && hasActiveTaskFilters && (
                                             <button onClick={clearTaskFilters} className="mt-2 text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">Clear filters</button>
@@ -1401,7 +1401,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         <button
                             onClick={() => setShowBoardModal(false)}
                             aria-label="Close"
-                            className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            className="shrink-0 rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                         >
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

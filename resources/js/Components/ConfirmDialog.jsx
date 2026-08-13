@@ -36,7 +36,7 @@ function ChoiceCard({ choice, checked, onSelect }) {
             type="button"
             onClick={onSelect}
             aria-pressed={checked}
-            className={`flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 sm:gap-3 sm:p-3 ${
+            className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
                 checked
                     ? tone === 'danger'
                         ? 'border-red-500 bg-red-50 focus-visible:ring-red-500 dark:border-red-500 dark:bg-red-950/30'
@@ -45,7 +45,7 @@ function ChoiceCard({ choice, checked, onSelect }) {
             }`}
         >
             <span
-                className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
+                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                     checked
                         ? tone === 'danger'
                             ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
@@ -106,24 +106,24 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
             maxWidth={hasChoices ? 'md' : 'sm'}
             overlayClassName="bg-black/55 dark:bg-black/70"
         >
-            <div className="p-4 sm:p-6">
+            <div className="p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        {title && <h2 className="text-lg font-extrabold text-neutral-900 dark:text-neutral-100 sm:text-xl">{title}</h2>}
-                        <p className={`text-sm leading-relaxed text-neutral-600 dark:text-neutral-300 sm:text-[15px] ${title ? 'mt-1.5 sm:mt-2.5' : ''}`}>{message}</p>
+                        {title && <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>}
+                        <p className={`text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300 ${title ? 'mt-2.5' : ''}`}>{message}</p>
                     </div>
                     <button
                         type="button"
                         onClick={onCancel}
                         aria-label="Close"
-                        className="shrink-0 rounded-md p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                        className="shrink-0 rounded-md p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                     >
-                        <CloseIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <CloseIcon className="h-5 w-5" />
                     </button>
                 </div>
 
                 {hasChoices && (
-                    <div className="mt-3.5 space-y-2 sm:mt-5 sm:space-y-2.5" role="radiogroup" aria-label={title}>
+                    <div className="mt-5 space-y-2.5" role="radiogroup" aria-label={title}>
                         {choices.map((choice) => (
                             <ChoiceCard
                                 key={choice.value}
@@ -135,12 +135,12 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
                     </div>
                 )}
 
-                <div className="mt-4 flex justify-end gap-2 sm:mt-6 sm:gap-2.5">
+                <div className="mt-6 flex justify-end gap-2.5">
                     {!hideCancel && (
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800 sm:px-4 sm:py-2"
+                            className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                         >
                             {cancelLabel}
                         </button>
@@ -149,7 +149,7 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
                         type="button"
                         onClick={handleConfirm}
                         autoFocus
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 sm:px-4 sm:py-2 ${
+                        className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
                             isDanger
                                 ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
                                 : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'

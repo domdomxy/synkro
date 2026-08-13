@@ -175,7 +175,7 @@ function DialogHeader({ title, subtitle, onClose }) {
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="shrink-0 rounded p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                className="shrink-0 rounded p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
             >
                 <CloseIcon className="h-5 w-5" />
             </button>
@@ -349,7 +349,7 @@ function AddResourcesModal({ show, onClose, project }) {
                             <UploadIcon className="h-3.5 w-3.5" />
                             Browse Files
                         </button>
-                        <div className="flex min-w-[260px] flex-1 items-center gap-1 rounded bg-white pl-2.5 pr-1 shadow-sm dark:bg-neutral-800">
+                        <div className="flex w-full flex-1 items-center gap-1 rounded bg-white pl-2.5 pr-1 shadow-sm dark:bg-neutral-800 sm:w-auto sm:min-w-[260px]">
                             <input
                                 type="text"
                                 value={linkTitle}
@@ -827,7 +827,7 @@ export default function Resources({ project, resources, canManage, role }) {
                     )}
 
                     {resources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
@@ -838,7 +838,7 @@ export default function Resources({ project, resources, canManage, role }) {
                             </p>
                         </div>
                     ) : visibleResources.length === 0 ? (
-                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                        <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300 dark:bg-gray-900 dark:text-gray-600">
                                 <SearchIcon className="h-5 w-5" />
                             </div>

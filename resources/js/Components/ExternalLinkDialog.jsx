@@ -47,7 +47,7 @@ export default function ExternalLinkDialog({ open, hostname, url, trustChecked, 
                         type="button"
                         onClick={onCancel}
                         aria-label="Close"
-                        className="rounded-md p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                        className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                     >
                         <CloseIcon className="h-5 w-5" />
                     </button>

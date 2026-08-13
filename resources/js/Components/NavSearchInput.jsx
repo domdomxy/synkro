@@ -101,7 +101,7 @@ export default function NavSearchInput({ items, onSelect, placeholder = 'Search'
                 <button
                     type="button"
                     onClick={clear}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 transition hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 transition hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                 >
                     <ClearIcon className="h-3.5 w-3.5" />
                     <span className="sr-only">Clear search</span>

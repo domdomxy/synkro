@@ -430,7 +430,7 @@ export default function NotificationBell() {
                                             deleteNotification(note.id);
                                         }}
                                         title="Delete notification"
-                                        className="mt-1 shrink-0 rounded p-1 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700"
+                                        className="mt-1 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
                                     >
                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

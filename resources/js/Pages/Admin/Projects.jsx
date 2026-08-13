@@ -80,12 +80,6 @@ export default function Projects({ projects, filters }) {
                         )}
                     </div>
 
-                    {/* Mobile only: the search/filter row above wraps to its own
-                        full-width line, so this rule marks it off visually from the
-                        results count below instead of the two blurring together. Not
-                        needed at sm+, where everything already sits on one row. */}
-                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
-
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {projects.total} project{projects.total !== 1 ? 's' : ''} match{projects.total === 1 ? 'es' : ''} your search
                     </p>
@@ -95,13 +89,11 @@ export default function Projects({ projects, filters }) {
                         <Pagination meta={projects} />
                     </div>
 
-                    {/* Mobile only: swap the sideways-scrolling table below for a
-                        stacked card per project, same data, no horizontal scroll.
-                        Desktop table is unchanged. */}
-                    <div className="flex flex-col gap-3 sm:hidden">
+                    {/* Mobile: stacked cards instead of a horizontally-scrolling table (below sm only) */}
+                    <div className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-800 sm:hidden">
                         {projects.data.map((project) => (
-                            <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-700 dark:bg-gray-800">
-                                <div className="flex items-start justify-between gap-3">
+                            <div key={project.id} className="p-3.5">
+                                <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                         <p className="truncate font-medium text-gray-900 dark:text-gray-100" title={project.name}>{project.name}</p>
                                         <p className="text-xs text-gray-400 dark:text-gray-500">#{project.id}</p>
@@ -116,11 +108,11 @@ export default function Projects({ projects, filters }) {
                                         Logs
                                     </Link>
                                 </div>
-                                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm dark:border-gray-700">
+                                <div className="mt-2 flex items-center justify-between gap-2">
                                     {project.owner ? (
                                         <div className="flex min-w-0 items-center gap-2">
                                             <Avatar user={project.owner} size="h-6 w-6" />
-                                            <span className="truncate text-gray-500 dark:text-gray-400">{project.owner.name}</span>
+                                            <span className="truncate text-sm text-gray-500 dark:text-gray-400">{project.owner.name}</span>
                                             {project.owner.deleted_at && (
                                                 <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 dark:bg-rose-950 dark:text-rose-300">
                                                     deleted
@@ -128,18 +120,14 @@ export default function Projects({ projects, filters }) {
                                             )}
                                         </div>
                                     ) : (
-                                        <span className="text-gray-400 dark:text-gray-500">No owner</span>
+                                        <span className="text-sm text-gray-400 dark:text-gray-500">No owner</span>
                                     )}
-                                    <span className="shrink-0 text-gray-400 dark:text-gray-500">
-                                        {project.members_count} member{project.members_count !== 1 ? 's' : ''} · {project.tasks_count} task{project.tasks_count !== 1 ? 's' : ''}
-                                    </span>
+                                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{project.members_count} members · {project.tasks_count} tasks</span>
                                 </div>
                             </div>
                         ))}
                         {projects.data.length === 0 && (
-                            <p className="rounded-lg border border-gray-200 bg-white px-6 py-10 text-center text-gray-400 shadow dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500">
-                                No projects match your search.
-                            </p>
+                            <p className="px-4 py-10 text-center text-gray-400 dark:text-gray-500">No projects match your search.</p>
                         )}
                     </div>
 
@@ -156,7 +144,7 @@ export default function Projects({ projects, filters }) {
                                         <th className="px-6 py-3">Activity</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                <tbody className="divide-y dark:divide-gray-700">
                                     {projects.data.map((project) => (
                                         <tr key={project.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                             <td className="px-6 py-3 text-gray-400 dark:text-gray-500">#{project.id}</td>

@@ -148,12 +148,6 @@ export default function Notifications({ notificationsList, filters }) {
                         </FiltersMenu>
                     </div>
 
-                    {/* Mobile only: the search/filters row above wraps to its own
-                        full-width line, so this rule marks it off visually from the
-                        results count below instead of the two blurring together. Not
-                        needed at sm+, where everything already sits on one row. */}
-                    <div className="mb-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
-
                     <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
                         {notificationsList.total} notification{notificationsList.total !== 1 ? 's' : ''}{hasActiveFilters ? ' match your filters' : ''}
                     </p>
@@ -211,7 +205,7 @@ export default function Notifications({ notificationsList, filters }) {
                                             <button
                                                 onClick={() => deleteNotification(note.id)}
                                                 title="Delete notification"
-                                                className="mt-1 shrink-0 rounded p-1 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700"
+                                                className="mt-1 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
                                             >
                                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

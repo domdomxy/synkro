@@ -1406,7 +1406,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                             <button
                                                 type="button"
                                                 onClick={() => editForm.setData('dependencies', editForm.data.dependencies.filter((id) => id !== dep.id))}
-                                                className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
+                                                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 p-1 text-gray-400 hover:text-red-500 transition-opacity"
                                                 title="Remove dependency"
                                             >
                                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2015,7 +2015,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                             onClick={() => addChecklistItemToNotes(item)}
                                                             disabled={addingToNotesId === item.id}
                                                             title="Add to My Notes"
-                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
+                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-100 transition-opacity hover:text-indigo-500 disabled:opacity-50 dark:text-gray-500 sm:opacity-0 sm:group-hover:opacity-100"
                                                         >
                                                             + My Notes
                                                         </button>
@@ -2024,7 +2024,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                 {canEditChecklistItem(item) && (
                                                     <button
                                                         onClick={() => startEditChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 dark:text-gray-600"
+                                                        className="mt-0.5 shrink-0 p-0.5 text-gray-300 opacity-100 transition-opacity hover:text-indigo-500 dark:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100"
                                                         title="Edit item"
                                                     >
                                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2035,7 +2035,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                 {canDeleteChecklistItem(item) && (
                                                     <button
                                                         onClick={() => deleteChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
+                                                        className="mt-0.5 shrink-0 p-0.5 text-gray-300 opacity-100 transition-opacity hover:text-red-500 dark:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100"
                                                         title="Remove item"
                                                     >
                                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2129,7 +2129,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     <button
                         onClick={() => setShowHistory(false)}
                         aria-label="Close"
-                        className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        className="shrink-0 rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                     >
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
