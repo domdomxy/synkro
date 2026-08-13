@@ -30,6 +30,16 @@ const Dropdown = ({ children }) => {
         if (!open) return;
         const handlePointerDown = (event) => {
             if (rootRef.current && !rootRef.current.contains(event.target)) {
+                // FilterSelect (and anything else built the same way) portals its
+                // open options list straight to document.body to escape ancestor
+                // overflow-hidden/clipping - see ClampedOptions in FilterSelect.jsx.
+                // That means a click on one of its options lands on a DOM node
+                // that's a sibling of this dropdown in the actual DOM tree, not a
+                // descendant of rootRef, even though it's logically "inside" this
+                // panel from the user's point of view. Without this check, picking
+                // an option there reads as an outside click and closes the whole
+                // Filters panel instead of just applying that one selection.
+                if (event.target.closest?.('[data-filter-select-portal]')) return;
                 setOpen(false);
             }
         };

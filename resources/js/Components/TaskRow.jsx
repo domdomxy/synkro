@@ -493,7 +493,7 @@ function CommentEntry({
                         <div
                             onClick={canCollapse ? onToggleCollapse : undefined}
                             title={canCollapse ? (isCollapsed ? 'Expand thread' : 'Collapse thread') : undefined}
-                            className={`flex items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-3.5 py-2 text-sm italic text-gray-400 transition dark:border-gray-600 dark:text-gray-500 ${
+                            className={`flex items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2.5 py-2 text-sm italic text-gray-400 transition dark:border-gray-600 dark:text-gray-500 sm:px-3.5 ${
                                 canCollapse ? 'cursor-pointer hover:border-gray-400 dark:hover:border-gray-500' : ''
                             }`}
                         >
@@ -596,7 +596,7 @@ function CommentEntry({
                         <div
                             onClick={canCollapse ? onToggleCollapse : undefined}
                             title={canCollapse ? (isCollapsed ? 'Expand thread' : 'Collapse thread') : undefined}
-                            className={`rounded-2xl px-3.5 py-2 transition ${canCollapse ? 'cursor-pointer hover:brightness-95 dark:hover:brightness-110' : ''} ${
+                            className={`rounded-2xl px-2.5 py-2 transition sm:px-3.5 ${canCollapse ? 'cursor-pointer hover:brightness-95 dark:hover:brightness-110' : ''} ${
                             highlightedCommentId === comment.id
                                 ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring'
                                 : ''
@@ -724,9 +724,9 @@ function CommentThread({
     const toggle = () => onToggleCollapse(comment.id);
 
     return (
-        <div id={`comment-${comment.id}`} className="relative flex gap-2">
+        <div id={`comment-${comment.id}`} className="relative flex gap-1.5 sm:gap-2">
             <div className="flex shrink-0 flex-col items-center">
-                <Avatar user={comment.user} size="h-7 w-7" className={`mt-0.5 ${comment.is_deleted ? 'opacity-40 grayscale' : ''}`} />
+                <Avatar user={comment.user} size="h-6 w-6 sm:h-7 sm:w-7" className={`mt-0.5 ${comment.is_deleted ? 'opacity-40 grayscale' : ''}`} />
             </div>
             <div className="min-w-0 flex-1">
                 <CommentEntry
@@ -774,8 +774,8 @@ function CommentThread({
                                 : (reply.parent_id && !directParent ? null : undefined);
 
                             return (
-                                <div key={reply.id} id={`comment-${reply.id}`} className="relative flex gap-2">
-                                    <Avatar user={reply.user} size="h-7 w-7" className={`mt-0.5 shrink-0 ${reply.is_deleted ? 'opacity-40 grayscale' : ''}`} />
+                                <div key={reply.id} id={`comment-${reply.id}`} className="relative flex gap-1.5 sm:gap-2">
+                                    <Avatar user={reply.user} size="h-6 w-6 sm:h-7 sm:w-7" className={`mt-0.5 shrink-0 ${reply.is_deleted ? 'opacity-40 grayscale' : ''}`} />
                                     <div className="min-w-0 flex-1">
                                         <CommentEntry
                                             comment={reply}
@@ -1232,29 +1232,51 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         </button>
                     </div>
                 )}
-                <MentionTextarea
-                    value={commentForm.data.body}
-                    onChange={(val) => commentForm.setData('body', val)}
-                    members={members}
-                    canMentionEveryone={canManage}
-                    autoFocus={!!replyingTo}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            if (commentForm.data.body.trim()) submitComment(e);
-                        }
-                        if (e.key === 'Escape' && replyingTo) cancelReply();
-                    }}
-                    placeholder={replyingTo ? `Reply to ${replyingTo.user?.name ?? 'Deleted user'}...` : 'Write a comment... (@ to mention someone)'}
-                    title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
-                    className="block w-full rounded-2xl border-gray-300 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                />
+                {/* Below sm, the send button below moves inside this pill (bottom-right,
+                    overlapping) instead of sitting beside it, so the input itself can use
+                    the full row width - there's no room to spare it on a phone. The extra
+                    !pr-11 keeps typed text clear of that button; sm:!pr-3 puts it back to
+                    the normal desktop padding once the separate button reappears. */}
+                <div className="relative">
+                    <MentionTextarea
+                        value={commentForm.data.body}
+                        onChange={(val) => commentForm.setData('body', val)}
+                        members={members}
+                        canMentionEveryone={canManage}
+                        autoFocus={!!replyingTo}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if (commentForm.data.body.trim()) submitComment(e);
+                            }
+                            if (e.key === 'Escape' && replyingTo) cancelReply();
+                        }}
+                        placeholder={replyingTo ? `Reply to ${replyingTo.user?.name ?? 'Deleted user'}...` : 'Write a comment... (@ to mention someone)'}
+                        title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
+                        className="block w-full rounded-2xl border-gray-300 py-2 !pr-11 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:!pr-3"
+                    />
+                    <button
+                        type="submit"
+                        disabled={commentForm.processing || !commentForm.data.body.trim()}
+                        aria-label="Send comment"
+                        className="absolute bottom-1.5 right-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40 sm:hidden"
+                    >
+                        {commentForm.processing ? (
+                            <Spinner className="h-3.5 w-3.5" />
+                        ) : (
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
             </div>
             <button
                 type="submit"
                 disabled={commentForm.processing || !commentForm.data.body.trim()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                aria-label="Send comment"
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40 sm:flex"
             >
                 {commentForm.processing ? (
                     <Spinner className="h-4 w-4" />
@@ -1406,7 +1428,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                             <button
                                                 type="button"
                                                 onClick={() => editForm.setData('dependencies', editForm.data.dependencies.filter((id) => id !== dep.id))}
-                                                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 p-1 text-gray-400 hover:text-red-500 transition-opacity"
+                                                className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-red-500 transition-opacity"
                                                 title="Remove dependency"
                                             >
                                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2015,7 +2037,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                             onClick={() => addChecklistItemToNotes(item)}
                                                             disabled={addingToNotesId === item.id}
                                                             title="Add to My Notes"
-                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-100 transition-opacity hover:text-indigo-500 disabled:opacity-50 dark:text-gray-500 sm:opacity-0 sm:group-hover:opacity-100"
+                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
                                                         >
                                                             + My Notes
                                                         </button>
@@ -2024,7 +2046,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                 {canEditChecklistItem(item) && (
                                                     <button
                                                         onClick={() => startEditChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 p-0.5 text-gray-300 opacity-100 transition-opacity hover:text-indigo-500 dark:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100"
+                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 dark:text-gray-600"
                                                         title="Edit item"
                                                     >
                                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2035,7 +2057,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                 {canDeleteChecklistItem(item) && (
                                                     <button
                                                         onClick={() => deleteChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 p-0.5 text-gray-300 opacity-100 transition-opacity hover:text-red-500 dark:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100"
+                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
                                                         title="Remove item"
                                                     >
                                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -2079,7 +2101,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                 )}
 
                 {showComments && (
-                    <div className="mt-2 space-y-4 rounded-md bg-white p-3 dark:bg-gray-800">
+                    /* Bleeds past the task card's own p-4 on mobile only (sm:mx-0 undoes
+                       it at the desktop breakpoint) so comments get the full card width
+                       instead of losing 16px a side to padding meant for the rest of the
+                       card's content. */
+                    <div className="-mx-4 mt-2 space-y-4 rounded-none bg-white p-1.5 dark:bg-gray-800 sm:mx-0 sm:rounded-md sm:p-3">
                         {commentTree.roots.map((comment) => (
                             <CommentThread
                                 key={comment.id}
@@ -2129,7 +2155,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     <button
                         onClick={() => setShowHistory(false)}
                         aria-label="Close"
-                        className="shrink-0 rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        className="shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                     >
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

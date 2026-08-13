@@ -28,12 +28,12 @@ export default function UserFiltersMenu({
     roleFilter, setRoleFilter,
     statusFilter, setStatusFilter,
     verifiedFilter, setVerifiedFilter,
-    onApply, onClear, hasActiveFilters,
+    onClear, hasActiveFilters,
 }) {
     const activeCount = [roleFilter !== 'all', statusFilter !== 'all', verifiedFilter !== 'all'].filter(Boolean).length;
 
     return (
-        <FiltersMenu activeCount={activeCount} hasActiveFilters={hasActiveFilters} onApply={onApply} onClear={onClear}>
+        <FiltersMenu activeCount={activeCount} hasActiveFilters={hasActiveFilters} onClear={onClear}>
             <FiltersMenu.Row label="Role">
                 <FilterSelect value={roleFilter} onChange={setRoleFilter} className="w-full" options={ROLE_OPTIONS} />
             </FiltersMenu.Row>

@@ -199,14 +199,16 @@ export default function SuspensionLogs({ logs, filters }) {
                         </div>
                         <FiltersMenu
                             activeCount={[status !== 'all', Boolean(from || to)].filter(Boolean).length}
-                            onApply={applyFilters}
                             onClear={clearFilters}
                             hasActiveFilters={hasActiveFilters}
                         >
                             <FiltersMenu.Row label="Status">
                                 <FilterSelect
                                     value={status}
-                                    onChange={setStatus}
+                                    onChange={(val) => {
+                                        setStatus(val);
+                                        router.get(route('admin.suspension-logs'), cleanParams({ search, status: val, from, to, per_page: perPage, sort, direction }, FILTER_DEFAULTS), { preserveState: true, preserveScroll: true });
+                                    }}
                                     className="w-full"
                                     options={[
                                         { value: 'all', label: 'All Statuses' },

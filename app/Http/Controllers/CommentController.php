@@ -149,9 +149,10 @@ class CommentController extends Controller
                     $recipient,
                     'task.commented',
                     Auth::user()->name . " commented on \"{$task->title}\"",
-                    ['**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\": \"{$preview}\""],
+                    ['**' . Auth::user()->name . '**' . " commented on \"**{$task->title}**\":"],
                     url($url),
-                    'View Task'
+                    'View Task',
+                    ['label' => 'Comment', 'content' => $preview]
                 );
             }
         }

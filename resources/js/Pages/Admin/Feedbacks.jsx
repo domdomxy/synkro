@@ -324,6 +324,16 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
         router.get(route('admin.feedbacks'), { search, category, status }, { preserveScroll: true });
     };
 
+    // Category/Status now apply the moment you pick them (see FiltersMenu's
+    // immediate-apply mode) instead of waiting for a separate "Apply
+    // Filters" click. Takes the just-picked value directly rather than
+    // reading the (still-stale, since setState hasn't re-rendered yet)
+    // category/status state, so the request that fires uses the selection
+    // that was actually just made.
+    const applyWith = (overrides) => {
+        router.get(route('admin.feedbacks'), { search, category, status, ...overrides }, { preserveScroll: true });
+    };
+
     const clearFilters = () => {
         setSearch(''); setCategory(''); setStatus('');
         router.get(route('admin.feedbacks'), {}, { preserveScroll: true });
@@ -390,14 +400,13 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
                         />
                         <FiltersMenu
                             activeCount={[Boolean(category), Boolean(status)].filter(Boolean).length}
-                            onApply={applyFilters}
                             onClear={clearFilters}
                             hasActiveFilters={Boolean(search || category || status)}
                         >
                             <FiltersMenu.Row label="Category">
                                 <FilterSelect
                                     value={category}
-                                    onChange={setCategory}
+                                    onChange={(val) => { setCategory(val); applyWith({ category: val }); }}
                                     className="w-full"
                                     options={[
                                         { value: '', label: 'All Categories' },
@@ -408,7 +417,7 @@ export default function Feedbacks({ feedbacks, filters, categories }) {
                             <FiltersMenu.Row label="Status">
                                 <FilterSelect
                                     value={status}
-                                    onChange={setStatus}
+                                    onChange={(val) => { setStatus(val); applyWith({ status: val }); }}
                                     className="w-full"
                                     options={[
                                         { value: '', label: 'All Statuses' },
