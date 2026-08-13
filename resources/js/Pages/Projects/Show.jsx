@@ -587,6 +587,73 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
     );
 }
 
+/**
+ * Team/Tasks/Notes tab bar for the mobile horizontally-snapping pane
+ * scroller. Kept as its own component (instead of inline state in the huge
+ * Show page) so the scroll listener's re-renders stay scoped to this small
+ * bar - tracking the active pane used to live in Show itself, which
+ * re-rendered the entire page (task list, forms, everything) on every
+ * scroll frame and caused visible jank / layout glitches mid-swipe.
+ */
+function MobilePaneTabs({ tabBarRef, columnsScrollRef, panes }) {
+    const [activePane, setActivePane] = useState(panes[1]?.label ?? panes[0]?.label);
+
+    useEffect(() => {
+        const container = columnsScrollRef.current;
+        if (!container) return;
+
+        let ticking = false;
+        const measure = () => {
+            ticking = false;
+            const containerCenter = container.scrollLeft + container.clientWidth / 2;
+            let closest = panes[0];
+            let closestDistance = Infinity;
+            for (const pane of panes) {
+                const el = pane.ref.current;
+                if (!el) continue;
+                const paneCenter = el.offsetLeft - container.offsetLeft + el.offsetWidth / 2;
+                const distance = Math.abs(paneCenter - containerCenter);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closest = pane;
+                }
+            }
+            setActivePane((prev) => (prev === closest.label ? prev : closest.label));
+        };
+
+        const handleScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(measure);
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        measure();
+
+        return () => container.removeEventListener('scroll', handleScroll);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+        <div ref={tabBarRef} className="mb-3 flex gap-1 rounded-md border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800 lg:hidden">
+            {panes.map(({ label, ref }) => (
+                <button
+                    key={label}
+                    type="button"
+                    onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })}
+                    className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors duration-150 ${
+                        activePane === label
+                            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    }`}
+                >
+                    {label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export default function Show({ project, role, myNotes, pendingInvitations }) {
     const { auth } = usePage().props;
     const { url } = usePage();
@@ -677,6 +744,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const tasksPaneRef = useRef(null);
     const taskToolbarRef = useRef(null);
     const notesPaneRef = useRef(null);
+    const columnsScrollRef = useRef(null);
+    const tabBarRef = useRef(null);
 
     useEffect(() => {
         // Open on the Tasks pane by default (mobile only; inert on desktop's grid layout).
@@ -1009,26 +1078,19 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
                     )}
-                    <div className="mb-3 flex gap-1 rounded-lg bg-gray-200/70 p-1 dark:bg-gray-900/60 lg:hidden">
-                        {[
+                    <MobilePaneTabs
+                        tabBarRef={tabBarRef}
+                        columnsScrollRef={columnsScrollRef}
+                        panes={[
                             { label: 'Team', ref: teamPaneRef },
                             { label: 'Tasks', ref: tasksPaneRef },
                             { label: 'Notes', ref: notesPaneRef },
-                        ].map(({ label, ref }) => (
-                            <button
-                                key={label}
-                                type="button"
-                                onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })}
-                                className="flex-1 rounded-md py-1.5 text-sm font-medium text-gray-600 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-gray-700/70"
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
+                        ]}
+                    />
+                    <div ref={columnsScrollRef} className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
 
                         {/* LEFT: Team - Invite, Members, and Pending Invitations grouped together */}
-                        <div ref={teamPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
+                        <div ref={teamPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && !isTrashed && (
                                 <div className="rounded-lg bg-white shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                     <button
@@ -1174,7 +1236,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </div>
 
                         {/* MIDDLE: Tasks */}
-                        <div ref={tasksPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
+                        <div ref={tasksPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
                             {canManage && !isTrashed && (
                                 <>
                                     <button onClick={() => setShowNewTaskForm((v) => !v)} className="flex w-full items-center justify-between rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
@@ -1382,7 +1444,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </div>
 
                         {/* RIGHT: My Notes - personal scratchpad, decoupled from team management */}
-                        <div ref={notesPaneRef} className="w-full shrink-0 snap-center space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
+                        <div ref={notesPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             <NotesPanel project={project} myNotes={myNotes} />
                         </div>
                     </div>
@@ -1432,7 +1494,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             {ConfirmDialog}
             {MuteScopeDialog}
 
-            {viewMode === 'list' && <ScrollToPaginationButton targetRef={taskToolbarRef} />}
+            {viewMode === 'list' && <ScrollToPaginationButton targetRef={tabBarRef} />}
         </AuthenticatedLayout>
     );
 }
