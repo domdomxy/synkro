@@ -428,7 +428,7 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
             onClick={onClick}
             title={label}
             aria-pressed={active}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+            className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition sm:gap-1.5 sm:px-2.5 ${
                 isWarning
                     ? active
                         ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
@@ -439,7 +439,7 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
             }`}
         >
             {icon}
-            <span>{label}</span>
+            <span className="sr-only sm:not-sr-only">{label}</span>
             {count != null && (
                 <span
                     className={`rounded-full px-1.5 py-px text-[10px] font-semibold ${
@@ -2011,60 +2011,62 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                                     title={canToggleChecklistItems ? undefined : 'Only the assignee can check items done'}
                                                     className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900"
                                                 />
-                                                <span className="min-w-0 flex-1">
+                                                <div className="min-w-0 flex-1">
                                                     <span className={`block whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
                                                         {item.title}
                                                     </span>
-                                                    {item.creator?.name && (
-                                                        <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
-                                                            Added by {item.creator.name}
+                                                    <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                                                            {item.creator?.name ? `Added by ${item.creator.name}` : ''}
                                                         </span>
-                                                    )}
-                                                </span>
-                                                {isAssignee && (
-                                                    item.in_my_notes ? (
-                                                        <span
-                                                            title="This item is in your My Notes checklist, kept in sync"
-                                                            className="mt-0.5 flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-indigo-500 dark:text-indigo-400"
-                                                        >
-                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                            In Notes
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => addChecklistItemToNotes(item)}
-                                                            disabled={addingToNotesId === item.id}
-                                                            title="Add to My Notes"
-                                                            className="mt-0.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-400 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 disabled:opacity-50 dark:text-gray-500"
-                                                        >
-                                                            + My Notes
-                                                        </button>
-                                                    )
-                                                )}
-                                                {canEditChecklistItem(item) && (
-                                                    <button
-                                                        onClick={() => startEditChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-indigo-500 group-hover:opacity-100 dark:text-gray-600"
-                                                        title="Edit item"
-                                                    >
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                                {canDeleteChecklistItem(item) && (
-                                                    <button
-                                                        onClick={() => deleteChecklistItem(item)}
-                                                        className="mt-0.5 shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-gray-600"
-                                                        title="Remove item"
-                                                    >
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                )}
+                                                        <div className="flex shrink-0 items-center gap-3 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                                                            {isAssignee && (
+                                                                item.in_my_notes ? (
+                                                                    <span
+                                                                        title="This item is in your My Notes checklist, kept in sync"
+                                                                        className="flex items-center gap-1 whitespace-nowrap text-xs font-medium text-indigo-500 dark:text-indigo-400"
+                                                                    >
+                                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                        In Notes
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => addChecklistItemToNotes(item)}
+                                                                        disabled={addingToNotesId === item.id}
+                                                                        title="Add to My Notes"
+                                                                        className="whitespace-nowrap text-xs font-medium text-gray-400 hover:text-indigo-500 disabled:opacity-50 dark:text-gray-500"
+                                                                    >
+                                                                        + My Notes
+                                                                    </button>
+                                                                )
+                                                            )}
+                                                            {canEditChecklistItem(item) && (
+                                                                <button
+                                                                    onClick={() => startEditChecklistItem(item)}
+                                                                    className="text-gray-400 hover:text-indigo-500 dark:text-gray-500"
+                                                                    title="Edit item"
+                                                                >
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
+                                                            {canDeleteChecklistItem(item) && (
+                                                                <button
+                                                                    onClick={() => deleteChecklistItem(item)}
+                                                                    className="text-gray-400 hover:text-red-500 dark:text-gray-500"
+                                                                    title="Remove item"
+                                                                >
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </>
                                         )}
                                     </div>
