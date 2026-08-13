@@ -120,3 +120,9 @@ html.dark:not(.theme-black) .dark\:text-gray-500{color:#7A7F9E!important;}
 html.dark:not(.theme-black) .dark\:text-gray-600{color:#5C6080!important;}
 html.dark:not(.theme-black) .dark\:text-gray-700{color:#454863!important;}
 html.dark:not(.theme-black) .dark\:text-gray-800{color:#20232F!important;}
+
+/* Activity chart's active-dot ring (see app.css) - match the dark theme's
+   card surface (dark:bg-gray-800) instead of the hardcoded white default. */
+html.dark:not(.theme-black) {
+    --chart-active-dot-stroke: #13151F;
+}

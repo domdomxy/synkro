@@ -288,3 +288,8 @@ html.theme-black .notification-toast[data-toast-type='error'] {
 html.theme-black .notification-toast[data-toast-type='info'] {
     box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.25), 0 8px 24px -6px rgba(129, 140, 248, 0.35);
 }
+/* Activity chart's active-dot ring (see app.css) - match the black theme's
+   card surface (dark:bg-gray-800) instead of the hardcoded white default. */
+html.theme-black {
+    --chart-active-dot-stroke: #0d0d0d;
+}

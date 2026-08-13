@@ -129,7 +129,7 @@ export default function ActivityChart({
         stroke: color,
         strokeWidth: 2.25,
         dot: false,
-        activeDot: { r: 5, strokeWidth: 2, stroke: '#fff' },
+        activeDot: { r: 5, strokeWidth: 2, stroke: 'var(--chart-active-dot-stroke, #fff)' },
         strokeDasharray: dash,
         hide: isHidden(key),
         filter: `url(#${uid}-glow)`,
@@ -201,7 +201,7 @@ export default function ActivityChart({
                         stroke={primary.color}
                         strokeWidth={2.25}
                         fill={`url(#${uid}-fill-${primary.key})`}
-                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--chart-active-dot-stroke, #fff)' }}
                         hide={isHidden(primary.key)}
                         filter={`url(#${uid}-glow)`}
                         animationDuration={650}

@@ -30,6 +30,17 @@
     margin: 0.15rem 0;
 }
 
+/* ActivityChart.jsx's hover/active dot on the area & combo charts needs a
+   ring color that matches the card it's drawn on (recharts default is a
+   hardcoded white stroke), or it shows as a stark white border punched
+   through the point on every dark/black-theme card - and on mobile that
+   ring is what actually renders on tap, not just desktop :hover, so it's
+   visible on both. Default here is the light-theme card background; the
+   dark/black theme files below override it to match their own card color. */
+:root {
+    --chart-active-dot-stroke: #ffffff;
+}
+
 /* Recharts doesn't use Tailwind dark: classes, so override its hardcoded colors explicitly */
 .dark .recharts-default-tooltip {
     background-color: #13151F !important;
