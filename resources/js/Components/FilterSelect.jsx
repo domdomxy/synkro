@@ -1,4 +1,8 @@
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
+import {
+    Listbox, ListboxButton, ListboxOptions, ListboxOption,
+    Combobox, ComboboxInput, ComboboxOptions, ComboboxOption,
+    Transition,
+} from '@headlessui/react';
 import { Fragment, forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Avatar from '@/Components/Avatar';
@@ -19,6 +23,22 @@ function CheckIcon() {
     );
 }
 
+function SearchIcon() {
+    return (
+        <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+    );
+}
+
+function XIcon() {
+    return (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    );
+}
+
 /**
  * Styled replacement for a native <select> used as a list filter.
  * options: [{ value, label, disabled?, avatar?, badge? }]. Panel is capped to a
@@ -31,8 +51,28 @@ function CheckIcon() {
  * open list. Pass badge: { label, className } to show a small rounded pill
  * (e.g. a role) between the avatar and the label - className supplies its
  * background/text color, same shape as the roleStyles map.
+ *
+ * Pass searchable to swap the closed-button/dropdown pair for a type-to-filter
+ * search box instead (still backed by the same local `options` list - no
+ * network round-trip, unlike UserSearchInput). Typing narrows the open list
+ * by label; picking a result or clearing back to the first option (the
+ * "All ..." entry) works the same as the plain select.
  */
-export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '' }) {
+export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '', searchable = false, searchPlaceholder = 'Search...' }) {
+    if (searchable) {
+        return (
+            <SearchableFilterSelect
+                id={id}
+                value={value}
+                onChange={onChange}
+                options={options}
+                className={className}
+                buttonClassName={buttonClassName}
+                placeholder={searchPlaceholder}
+            />
+        );
+    }
+
     const selected = options.find((o) => String(o.value) === String(value)) ?? options[0];
     const anchorRef = useRef(null);
 
@@ -61,7 +101,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <ClampedOptions open={open} anchorRef={anchorRef}>
+                        <ClampedOptions open={open} anchorRef={anchorRef} optionsAs={ListboxOptions}>
                             {options.map((opt) => (
                                 <ListboxOption
                                     key={opt.value}
@@ -129,7 +169,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
 // as={Fragment}>, which attaches a ref straight to its child to track the
 // DOM node for the transition - a plain function component can't receive
 // that ref.
-const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, children }, forwardedRef) {
+const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, optionsAs: OptionsComponent = ListboxOptions, children }, forwardedRef) {
     const [rect, setRect] = useState(null);
     const localRef = useRef(null);
 
@@ -167,24 +207,128 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, chi
     // open/close, and a component that sometimes returns null breaks that.
     const r = rect ?? { top: 0, bottom: 0, left: 0, right: 0, width: 0 };
     const margin = 8;
-    const minWidth = 176; // matches the old min-w-[11rem]
-    const width = Math.max(r.width, minWidth);
 
-    // Right-aligned to the trigger, same as the old `absolute right-0`,
-    // then nudged back on screen if that would run off either edge.
-    let left = r.right - width;
-    left = Math.min(left, window.innerWidth - margin - width);
-    left = Math.max(left, margin);
+    // Right-aligned to the trigger, same as the old `absolute right-0`, but
+    // anchored with `right` instead of a precomputed `left`+`width` pair so
+    // the panel can size itself to `max-content` - i.e. as wide as its
+    // longest option label, not a flat 176px minimum. That matters once
+    // triggers get narrow (e.g. a `w-24` priority select): a fixed minimum
+    // used to drag a much wider empty panel open under a small button.
+    // `minWidth` still floors it at the trigger's own width so the panel
+    // never reads as narrower than the control that opened it, and
+    // `maxWidth` both caps runaway labels and keeps the whole thing from
+    // running off the left edge of the screen (derived from how much room
+    // actually exists between the trigger and that edge, so no separate
+    // `left` clamp is needed).
+    const right = Math.max(margin, window.innerWidth - r.right);
+    const maxWidth = Math.max(80, Math.min(window.innerWidth - margin * 2, r.right - margin));
 
     return createPortal(
-        <ListboxOptions
+        <OptionsComponent
             ref={setRefs}
             data-filter-select-portal
-            style={{ position: 'fixed', top: r.bottom + 4, left, width }}
+            style={{ position: 'fixed', top: r.bottom + 4, right, width: 'max-content', minWidth: r.width, maxWidth }}
             className="z-[70] max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}
-        </ListboxOptions>,
+        </OptionsComponent>,
         document.body
     );
 });
+
+/**
+ * Combobox-backed sibling of the plain Listbox above, rendered when
+ * `searchable` is passed. Keeps the same options shape (value/label/avatar)
+ * and the same portaled/clamped panel positioning, but swaps the button for
+ * a text input people can type into to narrow the list - closer to a search
+ * bar than a dropdown. Selecting an option (or the built-in clear button)
+ * calls `onChange` exactly like the non-searchable version, so callers don't
+ * need to know which variant they got.
+ */
+function SearchableFilterSelect({ id, value, onChange, options, className, buttonClassName, placeholder }) {
+    const [query, setQuery] = useState('');
+    const anchorRef = useRef(null);
+    const firstOption = options[0];
+    const isCleared = String(value) === String(firstOption?.value);
+
+    const filteredOptions = query === ''
+        ? options
+        : options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()));
+
+    return (
+        <Combobox value={value} onChange={(v) => v !== null && onChange(v)}>
+            {({ open }) => (
+                <div className={`relative ${className}`} ref={anchorRef}>
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                        <SearchIcon />
+                    </span>
+                    <ComboboxInput
+                        id={id}
+                        autoComplete="off"
+                        placeholder={placeholder}
+                        displayValue={(v) => options.find((o) => String(o.value) === String(v))?.label ?? ''}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className={`w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-8 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 ${buttonClassName ?? ''}`}
+                    />
+                    {!isCleared && (
+                        <button
+                            type="button"
+                            onClick={() => { onChange(firstOption.value); setQuery(''); }}
+                            className="absolute inset-y-0 right-0 flex w-8 items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            aria-label="Clear"
+                        >
+                            <XIcon />
+                        </button>
+                    )}
+                    <Transition
+                        as={Fragment}
+                        afterLeave={() => setQuery('')}
+                        leave="transition ease-in duration-100"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <ClampedOptions open={open} anchorRef={anchorRef} optionsAs={ComboboxOptions}>
+                            {filteredOptions.length === 0 ? (
+                                <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No matches</p>
+                            ) : (
+                                filteredOptions.map((opt) => (
+                                    <ComboboxOption
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={opt.disabled}
+                                        className={({ focus, disabled }) =>
+                                            `relative select-none py-2 pl-9 pr-3 ${
+                                                disabled
+                                                    ? 'cursor-not-allowed text-gray-400 dark:text-gray-600'
+                                                    : `cursor-pointer ${focus ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200' : 'text-gray-700 dark:text-gray-300'}`
+                                            }`
+                                        }
+                                    >
+                                        {({ selected: isSelected }) => (
+                                            <>
+                                                <span className="flex min-w-0 items-center gap-2">
+                                                    {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
+                                                    {opt.badge && (
+                                                        <span className={`inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${opt.badge.className}`}>
+                                                            {opt.badge.label}
+                                                        </span>
+                                                    )}
+                                                    <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-indigo-600 dark:text-indigo-400">
+                                                        <CheckIcon />
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
+                                    </ComboboxOption>
+                                ))
+                            )}
+                        </ClampedOptions>
+                    </Transition>
+                </div>
+            )}
+        </Combobox>
+    );
+}

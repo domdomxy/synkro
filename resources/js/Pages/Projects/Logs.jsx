@@ -112,6 +112,8 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                                     value={userFilter}
                                     onChange={(v) => { setUserFilter(v); setPage(1); }}
                                     className="w-full"
+                                    searchable
+                                    searchPlaceholder="Search users..."
                                     options={[{ value: 'all', label: 'All Users' }, ...users.map((u) => ({ value: String(u.id), label: u.name, avatar: u }))]}
                                 />
                             </FiltersMenu.Row>
@@ -129,6 +131,12 @@ export default function Logs({ project, logs, backHref, backLabel }) {
                             <DateRangeFilter from={from} to={to} onApply={handleDateRangeApply} />
                         </FiltersMenu>
                     </div>
+
+                    {/* Mobile only: the filters row above wraps to its own full-width
+                        line, so this rule marks it off visually from the results count
+                        below instead of the two blurring together. Not needed at sm+,
+                        where everything already sits on one row. */}
+                    <div className="my-2 h-px w-full bg-gray-200 dark:bg-gray-700 sm:hidden" />
 
                     {logs.length > 0 && (
                         <p className="mb-2 text-sm text-gray-400 dark:text-gray-500">

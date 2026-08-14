@@ -256,26 +256,21 @@ function NoteItemRow({ item, onToggle, onRemove }) {
                     </svg>
                 )}
             </button>
-            {/* The sync icon used to sit as its own flex item after the text,
-                which put it at the top-right corner of the whole line instead
-                of near the words it's actually about - it now flows inline
-                with the text itself, right after the last word, wrapping
-                along with everything else instead of floating off to the side. */}
             <span className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-sm ${item.done ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'}`}>
                 {item.text}
-                {item.checklist_item_id != null && (
-                    <svg
-                        className="ml-1 inline-block h-3 w-3 shrink-0 align-text-bottom text-indigo-400 dark:text-indigo-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        title="Synced with the task checklist"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                )}
             </span>
+            {item.checklist_item_id != null && (
+                <svg
+                    className="mt-0.5 h-3 w-3 shrink-0 text-indigo-400 dark:text-indigo-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    title="Synced with the task checklist"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+            )}
             <button
                 type="button"
                 onClick={onRemove}
@@ -338,9 +333,6 @@ function NoteEditForm({ editForm, onSubmit, onCancel }) {
 
 function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCancelEdit, onDelete, onToggleItem, onRemoveItem, onAddItem, onClearCompleted }) {
     const [quickAdd, setQuickAdd] = useState('');
-    // Minimized by default - a card with its items expanded is the exception,
-    // not the rule, once there are more than one or two of these on the page.
-    const [expanded, setExpanded] = useState(false);
     const items = note.content ?? [];
     const doneCount = items.filter((i) => i.done).length;
     const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
@@ -360,66 +352,49 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
     return (
         <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
             <div className="flex items-start justify-between gap-2">
-                <button
-                    type="button"
-                    onClick={() => setExpanded((v) => !v)}
-                    aria-expanded={expanded}
-                    className="min-w-0 flex-1 text-left"
-                >
-                    <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        <svg className={`h-3 w-3 shrink-0 text-gray-400 transition-transform ${expanded ? '' : '-rotate-90'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                        <span className="truncate">{note.title || 'Checklist'}</span>
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 pl-[18px]">
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
                             <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
                         </div>
                         <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length} &bull; {timeAgoLabel(note.updated_at)}</span>
-                        {expanded && doneCount > 0 && (
-                            <button onClick={(e) => { e.stopPropagation(); onClearCompleted(); }} className="shrink-0 whitespace-nowrap text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
+                        {doneCount > 0 && (
+                            <button onClick={onClearCompleted} className="shrink-0 whitespace-nowrap text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
                         )}
                     </div>
-                </button>
+                </div>
                 <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
             </div>
 
             {/* border-t + pt separates the note's own header (title, progress,
                 Clear completed) from its items - previously just an mt-2 gap,
                 which read as one continuous block instead of two sections. */}
-            {expanded && (
-                <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
-                    {/* Moved above the item list and restyled as its own bordered
-                        pill (dashed border, solid + tinted once focused) instead of
-                        a bare underlined input below everything - it's the thing
-                        you'd reach for first when opening a checklist, not an
-                        afterthought tacked onto the bottom. */}
-                    <form onSubmit={submitQuickAdd} className="mb-2 flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-white px-2 py-1.5 transition focus-within:border-solid focus-within:border-indigo-400 focus-within:bg-indigo-50/40 dark:border-gray-600 dark:bg-gray-800/60 dark:focus-within:border-indigo-500 dark:focus-within:bg-indigo-950/20">
-                        <svg className="h-3.5 w-3.5 shrink-0 text-indigo-400 dark:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <AutoGrowTextarea
-                            value={quickAdd}
-                            onChange={(e) => setQuickAdd(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    if (quickAdd.trim()) submitQuickAdd(e);
-                                }
-                            }}
-                            placeholder="Add item..."
-                            className="block w-full border-0 bg-transparent p-0 text-xs text-gray-600 placeholder-gray-400 focus:ring-0 dark:text-gray-300 dark:placeholder-gray-500"
-                        />
-                    </form>
+            <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
+                <ul className="space-y-1.5 pl-0.5">
+                    {items.map((item) => (
+                        <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
+                    ))}
+                </ul>
 
-                    <ul className="space-y-1.5 pl-0.5">
-                        {items.map((item) => (
-                            <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
-                        ))}
-                    </ul>
-                </div>
-            )}
+                <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-start gap-1.5">
+                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <AutoGrowTextarea
+                        value={quickAdd}
+                        onChange={(e) => setQuickAdd(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if (quickAdd.trim()) submitQuickAdd(e);
+                            }
+                        }}
+                        placeholder="Add item..."
+                        className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
+                    />
+                </form>
+            </div>
         </li>
     );
 }
@@ -1396,14 +1371,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
                                     <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedTaskIds.length} selected</span>
                                     <FilterSelect
-                                        className="w-36"
+                                        className="w-24"
                                         value={bulkAction.status}
                                         onChange={(v) => { setBulkAction((s) => ({ ...s, status: v })); setBulkTouched((t) => ({ ...t, status: true })); }}
                                         options={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
                                     />
 
                                     <FilterSelect
-                                        className="w-32"
+                                        className="w-24"
                                         value={bulkAction.priority}
                                         onChange={(v) => { setBulkAction((s) => ({ ...s, priority: v })); setBulkTouched((t) => ({ ...t, priority: true })); }}
                                         options={PRIORITY_OPTIONS}

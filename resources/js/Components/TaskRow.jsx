@@ -420,7 +420,7 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
     );
 }
 
-function FooterToggle({ icon, label, count, active, onClick, variant = 'default', alwaysShowLabel = false, tinted = false }) {
+function FooterToggle({ icon, label, count, active, onClick, variant = 'default', showLabel = false }) {
     const isWarning = variant === 'warning';
     return (
         <button
@@ -433,19 +433,19 @@ function FooterToggle({ icon, label, count, active, onClick, variant = 'default'
                     ? active
                         ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
                         : 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950'
-                    : active || tinted
-                        ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400 dark:hover:bg-indigo-900'
+                    : active
+                        ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400'
                         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
             }`}
         >
             {icon}
-            <span className={alwaysShowLabel ? '' : 'sr-only sm:not-sr-only'}>{label}</span>
+            <span className={showLabel ? '' : 'sr-only sm:not-sr-only'}>{label}</span>
             {count != null && (
                 <span
                     className={`rounded-full px-1.5 py-px text-[10px] font-semibold ${
                         isWarning
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'
-                            : active || tinted
+                            : active
                                 ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
                                 : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}
@@ -863,16 +863,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingChecklistItemId, setEditingChecklistItemId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null); // comment object being replied to, or null
-    // Every root with replies starts collapsed - a fresh reader shouldn't have
-    // to scroll past a wall of old replies just to see what's been said on a
-    // task; they opt into a thread's replies rather than opting out. Computed
-    // once from the comments this task mounted with, not recomputed every time
-    // task.comments changes, so a thread the person already expanded doesn't
-    // snap back shut under them the moment a new comment/reply arrives.
-    const [collapsedIds, setCollapsedIds] = useState(() => {
-        const { roots, repliesByRoot } = buildCommentTree(task.comments);
-        return new Set(roots.filter((r) => (repliesByRoot.get(r.id)?.length ?? 0) > 0).map((r) => r.id));
-    });
+    const [collapsedIds, setCollapsedIds] = useState(() => new Set()); // ids of comments whose thread is minimized
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [historySearch, setHistorySearch] = useState('');
@@ -916,20 +907,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         if (!autoOpenCommentId || !task.comments?.some((c) => c.id === autoOpenCommentId)) return;
         setActiveSection('comments');
         setHighlightedCommentId(autoOpenCommentId);
-        // The target might be a reply sitting inside a collapsed thread - it
-        // has to be expanded first or the element below never exists to
-        // scroll to.
-        const { roots, repliesByRoot } = buildCommentTree(task.comments);
-        const rootId = roots.find((r) => r.id === autoOpenCommentId)?.id
-            ?? [...repliesByRoot.entries()].find(([, replies]) => replies.some((r) => r.id === autoOpenCommentId))?.[0];
-        if (rootId != null) {
-            setCollapsedIds((current) => {
-                if (!current.has(rootId)) return current;
-                const next = new Set(current);
-                next.delete(rootId);
-                return next;
-            });
-        }
         const scrollTimer = setTimeout(() => {
             document.getElementById(`comment-${autoOpenCommentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
@@ -1178,19 +1155,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         setEditingCommentId(null);
         setReplyingTo(comment);
         commentForm.setData('parent_id', comment.id);
-        // Replying to a comment inside a collapsed thread has to expand that
-        // thread first, or the composer has nowhere visible to render.
-        const { roots, repliesByRoot } = buildCommentTree(task.comments);
-        const rootId = roots.find((r) => r.id === comment.id)?.id
-            ?? [...repliesByRoot.entries()].find(([, replies]) => replies.some((r) => r.id === comment.id))?.[0];
-        if (rootId != null) {
-            setCollapsedIds((current) => {
-                if (!current.has(rootId)) return current;
-                const next = new Set(current);
-                next.delete(rootId);
-                return next;
-            });
-        }
     };
 
     const cancelReply = () => {
@@ -1262,19 +1226,17 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         <button
                             type="button"
                             onClick={cancelReply}
-                            aria-label="Cancel reply"
-                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            className="shrink-0 font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
                         >
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            Cancel
                         </button>
                     </div>
                 )}
-                {/* The send button always sits inside the pill (bottom-right, overlapping)
-                    instead of beside it, at every width - there used to be a second,
-                    separate circular button here for sm and up, but it just made the row
-                    inconsistent between mobile and desktop for no real benefit. */}
+                {/* Below sm, the send button below moves inside this pill (bottom-right,
+                    overlapping) instead of sitting beside it, so the input itself can use
+                    the full row width - there's no room to spare it on a phone. The extra
+                    !pr-11 keeps typed text clear of that button; sm:!pr-3 puts it back to
+                    the normal desktop padding once the separate button reappears. */}
                 <div className="relative">
                     <MentionTextarea
                         value={commentForm.data.body}
@@ -1291,13 +1253,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         }}
                         placeholder={replyingTo ? `Reply to ${replyingTo.user?.name ?? 'Deleted user'}...` : 'Write a comment... (@ to mention someone)'}
                         title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
-                        className="block w-full rounded-2xl border-gray-300 py-2 !pr-11 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="block w-full rounded-2xl border-gray-300 py-2 !pr-11 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:!pr-3"
                     />
                     <button
                         type="submit"
                         disabled={commentForm.processing || !commentForm.data.body.trim()}
                         aria-label="Send comment"
-                        className="absolute bottom-1.5 right-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                        className="absolute bottom-1.5 right-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40 sm:hidden"
                     >
                         {commentForm.processing ? (
                             <Spinner className="h-3.5 w-3.5" />
@@ -1310,6 +1272,20 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                 </div>
                 {commentForm.errors.body && <p className="mt-1 px-2 text-xs text-red-500">{commentForm.errors.body}</p>}
             </div>
+            <button
+                type="submit"
+                disabled={commentForm.processing || !commentForm.data.body.trim()}
+                aria-label="Send comment"
+                className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:opacity-40 sm:flex"
+            >
+                {commentForm.processing ? (
+                    <Spinner className="h-4 w-4" />
+                ) : (
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                )}
+            </button>
         </form>
     );
     const dependencyCount = task.dependencies?.length ?? 0;
@@ -1801,8 +1777,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             onClick={() => setShowDeliverables((v) => !v)}
                             label="Submitted"
                             count={task.deliverables.length}
-                            alwaysShowLabel
-                            tinted
                             icon={
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -1899,6 +1873,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         onClick={() => toggleSection('comments')}
                         label="Comments"
                         count={commentCount > 0 ? commentCount : null}
+                        showLabel
                         icon={
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -1912,6 +1887,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             label={dependenciesBlocked ? 'Blocked by' : 'Depends on'}
                             count={dependencyCount}
                             variant={dependenciesBlocked ? 'warning' : 'default'}
+                            showLabel
                             icon={
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <circle cx="6" cy="6" r="2.25" />

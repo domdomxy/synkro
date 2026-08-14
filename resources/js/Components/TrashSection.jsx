@@ -311,14 +311,16 @@ function TrashRow({ icon, title, titleHref, subtitle, deletedAt, graceEndsAt, se
 
 function EmptySection({ label, showClear, onClear }) {
     return (
-        <div role="status" className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-            <TrashIcon className="h-8 w-8 text-gray-300 dark:text-gray-700" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+        <div role="status" className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-14 text-center dark:border-gray-700">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+                <TrashIcon className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</p>
             {showClear && (
                 <button
                     type="button"
                     onClick={onClear}
-                    className="rounded-sm text-xs font-medium text-indigo-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-400"
+                    className="mt-2 rounded-sm text-xs font-medium text-indigo-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-400"
                 >
                     Clear filters
                 </button>
@@ -766,7 +768,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                                 allSelected={allProjectsSelected}
                                 onToggleSelectAll={toggleSelectAllProjects}
                             />
-                            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            <div className={filteredProjects.length === 0 ? '' : 'overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800'}>
                                 {filteredProjects.length === 0 ? (
                                     <EmptySection
                                         label={trashedProjects.length === 0 ? 'No deleted projects.' : 'No projects match your filters.'}
@@ -802,7 +804,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                                 allSelected={allTasksSelected}
                                 onToggleSelectAll={toggleSelectAllTasks}
                             />
-                            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                            <div className={filteredTasks.length === 0 ? '' : 'overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800'}>
                                 {filteredTasks.length === 0 ? (
                                     <EmptySection
                                         label={trashedTasks.length === 0 ? 'No deleted tasks.' : 'No tasks match your filters.'}
@@ -887,7 +889,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                             allSelected={allDeletableProjectsSelected}
                             onToggleSelectAll={toggleSelectAllDeletableProjects}
                         />
-                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                        <div className={filteredDeletableProjects.length === 0 ? '' : 'overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800'}>
                             {filteredDeletableProjects.length === 0 ? (
                                 <EmptySection
                                     label={deletableProjects.length === 0 ? 'No projects available to delete.' : 'No projects match your search.'}
@@ -914,7 +916,7 @@ export default function TrashSection({ trashedProjects, trashedTasks, deletableP
                             allSelected={allDeletableTasksSelected}
                             onToggleSelectAll={toggleSelectAllDeletableTasks}
                         />
-                        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+                        <div className={filteredDeletableTasks.length === 0 ? '' : 'overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800'}>
                             {filteredDeletableTasks.length === 0 ? (
                                 <EmptySection
                                     label={deletableTasks.length === 0 ? 'No tasks available to delete.' : 'No tasks match your search.'}

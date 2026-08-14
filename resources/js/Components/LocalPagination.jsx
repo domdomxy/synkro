@@ -42,11 +42,13 @@ function ChevronDoubleRightIcon() {
  *
  * Layout: stacks (summary text over full-width nav) below `sm`, and sits
  * inline side-by-side above it. Numbered page pills only render at `sm`+;
- * phones get a compact "Page X of Y" readout plus large tap targets instead,
- * and the go-to-page jump box (redundant with that readout, fiddly to type
- * into on a phone) is reserved for `sm`+ too. Everything (text size, button
- * size, gaps) is deliberately tighter below `sm` so the whole control reads
- * as a single slim strip on a phone instead of a tall stacked block.
+ * phones get a compact "Page X of Y" readout plus large tap targets instead.
+ * The go-to-page jump box now renders at every width - on phones it submits
+ * on blur (tapping away) in addition to Enter, since there's no separate
+ * "Go" button to tap and a bare number field with no visible submit action
+ * would otherwise look broken. Everything (text size, button size, gaps) is
+ * deliberately tighter below `sm` so the whole control reads as a single
+ * slim strip on a phone instead of a tall stacked block.
  */
 export default function LocalPagination({ page, totalPages, total, perPage, onPageChange }) {
     if (!total) return null;
@@ -86,7 +88,7 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
 
             {totalPages > 1 && (
                 <nav
-                    className="flex items-center justify-center gap-0.5 sm:justify-start sm:gap-1 sm:border-l sm:border-gray-100 sm:pl-4 dark:sm:border-gray-700"
+                    className="flex flex-wrap items-center justify-center gap-0.5 sm:flex-nowrap sm:justify-start sm:gap-1 sm:border-l sm:border-gray-100 sm:pl-4 dark:sm:border-gray-700"
                     aria-label="Pagination"
                 >
                     {showJumpButtons && (
@@ -162,7 +164,7 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
                     )}
 
                     {showJumpButtons && (
-                        <div className="ml-1 hidden items-center gap-1 border-l border-gray-200 pl-2 sm:flex dark:border-gray-700">
+                        <div className="ml-1 flex items-center gap-1 border-l border-gray-200 pl-2 dark:border-gray-700">
                             <span className="hidden text-sm text-gray-400 lg:inline dark:text-gray-500">Page</span>
                             <input
                                 type="number"
@@ -171,17 +173,11 @@ export default function LocalPagination({ page, totalPages, total, perPage, onPa
                                 value={goToValue}
                                 onChange={(e) => setGoToValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && submitGoTo()}
+                                onBlur={submitGoTo}
                                 placeholder="#"
                                 title={`Go to page (1-${totalPages})`}
-                                className="w-14 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="w-12 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-14 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
-                            <button
-                                type="button"
-                                onClick={submitGoTo}
-                                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                Go
-                            </button>
                         </div>
                     )}
                 </nav>
