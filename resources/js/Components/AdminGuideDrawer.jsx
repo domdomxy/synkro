@@ -1,9 +1,15 @@
-import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 
 // A panel that slides in from the right edge of the screen, not a centered
 // box like Modal/ConfirmDialog use. Admins can leave this open and glance at
 // it while they work a ticket or appeal, rather than it feeling like a
 // one-off "are you sure?" prompt they have to dismiss before continuing.
+//
+// Uses Dialog's own `open`/`transition` API (Headless UI v2.1+) instead of
+// wrapping it in an external <Transition show>: the external-wrapper pattern
+// is what left a still-focused element behind an aria-hidden ancestor
+// whenever this drawer opened alongside another already-open dialog, which
+// Chrome flags as a "Blocked aria-hidden" warning.
 
 const toneStyles = {
     do: {
@@ -61,61 +67,47 @@ function GuideSection({ heading, tone = 'neutral', items }) {
 
 export default function AdminGuideDrawer({ show, onClose, title, intro, sections }) {
     return (
-        <Transition show={show} leave="duration-150">
-            <Dialog as="div" className="fixed inset-0 z-[60]" onClose={onClose}>
-                <TransitionChild
-                    enter="ease-out duration-200"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-150"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/55 dark:bg-black/70" />
-                </TransitionChild>
+        <Dialog open={show} onClose={onClose} className="fixed inset-0 z-[60]">
+            <DialogBackdrop
+                transition
+                className="fixed inset-0 bg-black/55 duration-200 ease-out data-closed:opacity-0 data-leave:duration-150 data-leave:ease-in dark:bg-black/70"
+            />
 
-                <div className="fixed inset-0 overflow-hidden">
-                    <div className="absolute inset-y-0 right-0 flex max-w-full">
-                        <TransitionChild
-                            enter="transform transition ease-in-out duration-300"
-                            enterFrom="translate-x-full"
-                            enterTo="translate-x-0"
-                            leave="transform transition ease-in-out duration-200"
-                            leaveFrom="translate-x-0"
-                            leaveTo="translate-x-full"
-                        >
-                            <DialogPanel className="w-screen max-w-md sm:max-w-lg">
-                                <div className="flex h-full flex-col bg-white shadow-xl dark:bg-gray-800">
-                                    <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
-                                        <div>
-                                            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                                                {title}
-                                            </h2>
-                                            {intro && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{intro}</p>}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={onClose}
-                                            aria-label="Close"
-                                            className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                                        >
-                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
-                                        {sections.map((section, i) => (
-                                            <GuideSection key={i} {...section} />
-                                        ))}
-                                    </div>
+            <div className="fixed inset-0 overflow-hidden">
+                <div className="absolute inset-y-0 right-0 flex max-w-full">
+                    <DialogPanel
+                        transition
+                        className="w-screen max-w-md transform duration-300 ease-in-out data-closed:translate-x-full data-leave:duration-200 sm:max-w-lg"
+                    >
+                        <div className="flex h-full flex-col bg-white shadow-xl dark:bg-gray-800">
+                            <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                        {title}
+                                    </h2>
+                                    {intro && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{intro}</p>}
                                 </div>
-                            </DialogPanel>
-                        </TransitionChild>
-                    </div>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    aria-label="Close"
+                                    className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                >
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                                {sections.map((section, i) => (
+                                    <GuideSection key={i} {...section} />
+                                ))}
+                            </div>
+                        </div>
+                    </DialogPanel>
                 </div>
-            </Dialog>
-        </Transition>
+            </div>
+        </Dialog>
     );
 }
