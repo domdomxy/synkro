@@ -73,6 +73,37 @@ function SearchInput({ value, onChange, placeholder }) {
     );
 }
 
+/** Pill segmented control used to filter the deliverable list by type (matches the same control on the Resources page). */
+function FilterTabs({ value, onChange, options }) {
+    return (
+        <div className="inline-flex shrink-0 gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800">
+            {options.map((opt) => (
+                <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => onChange(opt.key)}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                        value === opt.key
+                            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                    }`}
+                >
+                    {opt.label}
+                    <span
+                        className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                            value === opt.key
+                                ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}
+                    >
+                        {opt.count}
+                    </span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
 /**
  * One card per task, expandable to reveal its files. Each file's icon picks
  * up the same color-coded badge used on the Resources page, so a glance
@@ -147,12 +178,24 @@ export default function Deliverables({ project, tasks, role }) {
     const hasAnyFiles = folderTasks.length > 0;
     const [previewingDeliverable, setPreviewingDeliverable] = useState(null);
     const [search, setSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'file' | 'link'
     const toolbarRef = useRef(null);
+
+    const allDeliverables = tasks.flatMap((t) => t.deliverables);
+    const fileCount = allDeliverables.filter((d) => d.type === 'file').length;
+    const linkCount = allDeliverables.filter((d) => d.type === 'link').length;
+    const filterOptions = [
+        { key: 'all', label: 'All', count: fileCount + linkCount },
+        { key: 'file', label: 'Files', count: fileCount },
+        { key: 'link', label: 'Links', count: linkCount },
+    ];
 
     const query = search.trim().toLowerCase();
     const visibleFolderTasks = query ? folderTasks.filter((t) => t.title.toLowerCase().includes(query)) : folderTasks;
     const visibleLinkTasks = query ? linkTasks.filter((t) => t.title.toLowerCase().includes(query)) : linkTasks;
-    const isFiltering = query.length > 0;
+    const showFolders = typeFilter !== 'link';
+    const showLinks = typeFilter !== 'file';
+    const isFiltering = query.length > 0 || typeFilter !== 'all';
 
     return (
         <AuthenticatedLayout header={
@@ -190,10 +233,13 @@ export default function Deliverables({ project, tasks, role }) {
                     </div>
 
                     {(folderTasks.length + linkTasks.length > 1) && (
-                        <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by task name..." />
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by task name..." />
+                            <FilterTabs value={typeFilter} onChange={setTypeFilter} options={filterOptions} />
+                        </div>
                     )}
 
-                    {folderTasks.length === 0 ? (
+                    {!showFolders ? null : folderTasks.length === 0 ? (
                         <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
                             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
@@ -210,39 +256,52 @@ export default function Deliverables({ project, tasks, role }) {
                         </div>
                     )}
 
-                    {linkTasks.length > 0 && visibleLinkTasks.length > 0 && (
+                    {showLinks && (linkTasks.length > 0 || typeFilter === 'link') && (
                         <>
                             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Links and documents</p>
-                            <div className="space-y-2">
-                                {visibleLinkTasks.map((task) =>
-                                    task.deliverables.filter((d) => d.type === 'link').map((d) => (
-                                        <div
-                                            key={d.id}
-                                            className="group relative flex items-center gap-3 overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
-                                        >
-                                            {/* A colored accent stripe as a clipped inset element, not an actual
-                                                thicker left border - mixing border-radius with an uneven
-                                                per-side border width made the browser render a stray sliver
-                                                outside the rounded corner instead of following it cleanly. */}
-                                            <span className="absolute inset-y-0 left-0 w-1 bg-indigo-300 dark:bg-indigo-700" />
-                                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${LINK_META.badge}`}>
-                                                <LinkIcon className="h-4 w-4" />
-                                            </span>
-                                            <span className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{task.title}</span>
-                                            <a
-                                                href={d.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="shrink-0 truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                                                style={{ maxWidth: '220px' }}
-                                                title={d.url}
+                            {linkTasks.length === 0 ? (
+                                <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                        <LinkIcon className="h-7 w-7" />
+                                    </div>
+                                    <p className="max-w-xs text-sm text-gray-400 dark:text-gray-500">No links yet. They'll show up here once tasks with attached links are marked done.</p>
+                                </div>
+                            ) : visibleLinkTasks.length === 0 ? (
+                                <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-300 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-800/60">
+                                    <p className="text-sm text-gray-400 dark:text-gray-500">No link deliverables match "{search}".</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {visibleLinkTasks.map((task) =>
+                                        task.deliverables.filter((d) => d.type === 'link').map((d) => (
+                                            <div
+                                                key={d.id}
+                                                className="group relative flex items-center gap-3 overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                                             >
-                                                {d.title || d.url}
-                                            </a>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                                {/* A colored accent stripe as a clipped inset element, not an actual
+                                                    thicker left border - mixing border-radius with an uneven
+                                                    per-side border width made the browser render a stray sliver
+                                                    outside the rounded corner instead of following it cleanly. */}
+                                                <span className="absolute inset-y-0 left-0 w-1 bg-indigo-300 dark:bg-indigo-700" />
+                                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${LINK_META.badge}`}>
+                                                    <LinkIcon className="h-4 w-4" />
+                                                </span>
+                                                <span className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{task.title}</span>
+                                                <a
+                                                    href={d.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="shrink-0 truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                                    style={{ maxWidth: '220px' }}
+                                                    title={d.url}
+                                                >
+                                                    {d.title || d.url}
+                                                </a>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
