@@ -46,6 +46,14 @@ const statusBarColors = {
     done: 'bg-green-500',
 };
 
+const statusPillStyles = {
+    todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+    in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    submitted: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+    in_review: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+    done: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+};
+
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All' },
     { value: 'todo', label: 'To Do' },
@@ -1310,7 +1318,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                                 { value: '', label: 'Add a dependency…' },
                                                                 ...project.tasks
                                                                     .filter((t) => !taskForm.data.dependencies.includes(t.id))
-                                                                    .map((t) => ({ value: t.id, label: t.title })),
+                                                                    .map((t) => ({
+                                                                        value: t.id,
+                                                                        label: t.title,
+                                                                        badge: { label: t.status.replace('_', ' '), className: statusPillStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
+                                                                    })),
                                                             ]}
                                                         />
                                                         <SecondaryButton type="button" onClick={addNewTaskDependency} disabled={!newTaskDependencyPick}>Add</SecondaryButton>
@@ -1454,7 +1466,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             <Modal
                 show={showBoardModal}
                 onClose={() => setShowBoardModal(false)}
-                maxWidth="6xl"
+                maxWidth="7xl"
                 overlayClassName="bg-black/55 dark:bg-black/70"
             >
                 <div className="p-6">

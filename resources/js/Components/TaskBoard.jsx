@@ -610,7 +610,7 @@ export default function TaskBoard({ tasks, canManage, canReview, isTrashed, curr
                             onDragOver={(e) => { if (draggedId != null) { e.preventDefault(); setDragOverStatus(col.status); } }}
                             onDragLeave={() => setDragOverStatus((s) => (s === col.status ? null : s))}
                             onDrop={(e) => { e.preventDefault(); handleDrop(col.status); }}
-                            className={`flex w-64 shrink-0 flex-col rounded-xl border-2 border-dashed p-2 transition-all ${
+                            className={`flex w-64 shrink-0 flex-col rounded-xl border-2 border-dashed p-2 transition-all sm:w-72 lg:w-0 lg:shrink lg:flex-1 lg:min-w-[220px] ${
                                 isDragTarget
                                     ? 'scale-[1.02] border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950'
                                     : 'border-transparent bg-gray-50 dark:bg-gray-900/40'

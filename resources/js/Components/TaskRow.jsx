@@ -1402,7 +1402,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                         { value: '', label: 'Add a dependency…' },
                                         ...allTasks
                                             .filter((t) => t.id !== task.id && !editForm.data.dependencies.includes(t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
-                                            .map((t) => ({ value: t.id, label: t.title })),
+                                            .map((t) => ({
+                                                value: t.id,
+                                                label: t.title,
+                                                badge: { label: t.status.replace('_', ' '), className: statusStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
+                                            })),
                                     ]}
                                 />
                             )}
