@@ -264,6 +264,126 @@ function HeroSpotlight() {
     );
 }
 
+// Splits a run of text into words, each masked inside an overflow-hidden
+// wrapper, and slides them up into view one after another. Borrowed from the
+// staggered headline reveal on revoholic.info/work.html - there the words
+// don't so much fade in as rise up from behind a mask.
+function RevealWords({ text, visible, baseDelay = 0, step = 40, className = '' }) {
+    const words = text.split(' ');
+    return words.map((word, i) => (
+        <span key={i} className="inline-block overflow-hidden align-bottom">
+            <span
+                className={`synkro-reveal-word inline-block transition-transform duration-700 ease-out ${className}`}
+                style={{
+                    transitionDelay: `${baseDelay + i * step}ms`,
+                    transform: visible ? 'translateY(0)' : 'translateY(110%)',
+                }}
+            >
+                {word}
+                {i < words.length - 1 ? '\u00A0' : ''}
+            </span>
+        </span>
+    ));
+}
+
+// A gentle "magnetic" pull toward the cursor, the way revoholic's buttons and
+// nav links nudge toward the pointer instead of just sitting still on hover.
+// Desktop pointer-fine only, and a no-op under prefers-reduced-motion.
+function useMagnetic(strength = 16) {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        if (typeof window !== 'undefined' && !window.matchMedia?.('(pointer: fine)').matches) return;
+
+        const handleMove = (e) => {
+            const rect = node.getBoundingClientRect();
+            const relX = e.clientX - rect.left - rect.width / 2;
+            const relY = e.clientY - rect.top - rect.height / 2;
+            node.style.transform = `translate(${(relX / rect.width) * strength}px, ${(relY / rect.height) * strength}px)`;
+        };
+        const handleLeave = () => { node.style.transform = 'translate(0px, 0px)'; };
+
+        node.addEventListener('mousemove', handleMove);
+        node.addEventListener('mouseleave', handleLeave);
+        return () => {
+            node.removeEventListener('mousemove', handleMove);
+            node.removeEventListener('mouseleave', handleLeave);
+        };
+    }, [strength]);
+
+    return ref;
+}
+
+function MagneticWrap({ children, strength = 16 }) {
+    const ref = useMagnetic(strength);
+    return (
+        <span ref={ref} className="inline-block transition-transform duration-200 ease-out">
+            {children}
+        </span>
+    );
+}
+
+// Numbered section index, fixed down the right edge on desktop - a nod to
+// the "01 Index" page-number nav on revoholic.info. Highlights whichever
+// section currently sits in the middle band of the viewport and expands its
+// label; the rest stay collapsed to a bare dot.
+const RAIL_SECTIONS = [
+    { id: 'hero', n: '00', label: 'Home' },
+    { id: 'how-it-works', n: '01', label: 'Guide' },
+    { id: 'features', n: '02', label: 'Features' },
+    { id: 'security', n: '03', label: 'Security' },
+];
+
+function SectionRail() {
+    const [activeId, setActiveId] = useState('hero');
+
+    useEffect(() => {
+        const sections = RAIL_SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean);
+        if (!sections.length) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) setActiveId(entry.target.id);
+                });
+            },
+            { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+        );
+        sections.forEach((s) => observer.observe(s));
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <nav aria-label="Section index" className="fixed right-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-4 lg:flex">
+            {RAIL_SECTIONS.map((s) => {
+                const active = activeId === s.id;
+                return (
+                    <a key={s.id} href={`#${s.id}`} className="group flex items-center gap-2">
+                        <span
+                            style={MONO}
+                            className={`overflow-hidden whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.14em] transition-all duration-300 ${
+                                active
+                                    ? 'max-w-[6rem] text-indigo-600 opacity-100 dark:text-indigo-400'
+                                    : 'max-w-0 text-gray-400 opacity-0 group-hover:max-w-[6rem] group-hover:opacity-100 dark:text-gray-500'
+                            }`}
+                        >
+                            {s.n} {s.label}
+                        </span>
+                        <span
+                            className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
+                                active ? 'scale-125 bg-indigo-500' : 'bg-gray-300 group-hover:bg-gray-400 dark:bg-gray-600 dark:group-hover:bg-gray-500'
+                            }`}
+                        />
+                    </a>
+                );
+            })}
+        </nav>
+    );
+}
+
 function StatColumn({ label, value, accent }) {
     const count = useCountUp(value);
     return (
@@ -419,6 +539,9 @@ export default function Welcome({ auth, stats }) {
                 @media (prefers-reduced-motion: reduce) {
                     .synkro-radar-ring { animation: none; opacity: 0.12; transform: translate(-50%, -50%); }
                 }
+                @media (prefers-reduced-motion: reduce) {
+                    .synkro-reveal-word { transform: none !important; transition: none !important; }
+                }
             `}</style>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <div
@@ -426,6 +549,8 @@ export default function Welcome({ auth, stats }) {
                     className="fixed inset-x-0 top-0 z-50 h-[3px] origin-left bg-indigo-500 transition-transform duration-150 ease-out"
                     style={{ transform: `scaleX(${scrollProgress})` }}
                 />
+
+                <SectionRail />
 
                 <header
                     className={`sticky top-0 z-40 transition-all duration-300 ${
@@ -467,7 +592,7 @@ export default function Welcome({ auth, stats }) {
                 </header>
 
                 <main>
-                    <section className="relative mx-auto max-w-4xl overflow-hidden px-6 py-20 text-center">
+                    <section id="hero" className="relative mx-auto max-w-4xl scroll-mt-20 overflow-hidden px-6 py-20 text-center">
                         <RadarRings />
                         <HeroSpotlight />
 
@@ -485,12 +610,14 @@ export default function Welcome({ auth, stats }) {
                             </span>
                         </div>
 
-                        <h1
-                            className={`mt-6 text-4xl font-bold tracking-tight text-gray-900 transition-all duration-700 dark:text-gray-100 sm:text-5xl ${
-                                heroVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
-                            }`}
-                        >
-                            Plan projects. Assign tasks. <span className="text-indigo-600 dark:text-indigo-400">Ship work, together.</span>
+                        <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+                            <RevealWords text="Plan projects. Assign tasks." visible={heroVisible} baseDelay={0} />{' '}
+                            <RevealWords
+                                text="Ship work, together."
+                                visible={heroVisible}
+                                baseDelay={260}
+                                className="text-indigo-600 dark:text-indigo-400"
+                            />
                         </h1>
                         <p
                             className={`mx-auto mt-6 max-w-2xl text-lg text-gray-600 transition-all delay-100 duration-700 dark:text-gray-400 ${
@@ -507,24 +634,34 @@ export default function Welcome({ auth, stats }) {
                         >
                             {auth.user ? (
                                 <>
-                                    <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
-                                        Go to Projects
-                                    </Link>
-                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                        Help / Feedback
-                                    </button>
+                                    <MagneticWrap>
+                                        <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                            Go to Projects
+                                        </Link>
+                                    </MagneticWrap>
+                                    <MagneticWrap>
+                                        <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                            Help / Feedback
+                                        </button>
+                                    </MagneticWrap>
                                 </>
                             ) : (
                                 <>
-                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
-                                        Create an Account
-                                    </Link>
-                                    <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                        Log in
-                                    </Link>
-                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                        Help / Feedback
-                                    </button>
+                                    <MagneticWrap>
+                                        <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                            Create an Account
+                                        </Link>
+                                    </MagneticWrap>
+                                    <MagneticWrap>
+                                        <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                            Log in
+                                        </Link>
+                                    </MagneticWrap>
+                                    <MagneticWrap>
+                                        <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                            Help / Feedback
+                                        </button>
+                                    </MagneticWrap>
                                 </>
                             )}
                         </div>
@@ -620,12 +757,14 @@ export default function Welcome({ auth, stats }) {
                                 : `Join ${liveStats.users.toLocaleString()} people already managing work on Synkro.`}
                         </p>
                         <div className="mt-8">
-                            <Link
-                                href={route(auth.user ? 'projects.index' : 'register')}
-                                className="inline-block rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md"
-                            >
-                                {auth.user ? 'Go to Projects' : 'Create an Account'}
-                            </Link>
+                            <MagneticWrap>
+                                <Link
+                                    href={route(auth.user ? 'projects.index' : 'register')}
+                                    className="inline-block rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md"
+                                >
+                                    {auth.user ? 'Go to Projects' : 'Create an Account'}
+                                </Link>
+                            </MagneticWrap>
                         </div>
                     </section>
                 </main>

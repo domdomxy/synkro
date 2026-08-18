@@ -1402,11 +1402,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                         { value: '', label: 'Add a dependency…' },
                                         ...allTasks
                                             .filter((t) => t.id !== task.id && !editForm.data.dependencies.includes(t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
-                                            .map((t) => ({
-                                                value: t.id,
-                                                label: t.title,
-                                                badge: { label: t.status.replace('_', ' '), className: statusStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
-                                            })),
+                                            .map((t) => ({ value: t.id, label: t.title })),
                                     ]}
                                 />
                             )}
@@ -2140,7 +2136,12 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             />
                         ))}
                         {commentCount === 0 && (
-                            <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                            <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
+                                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
+                                </svg>
+                                <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                            </div>
                         )}
                         {/* The bottom box is for starting a brand-new top-level comment.
                             While replying to an existing comment, the same composer
