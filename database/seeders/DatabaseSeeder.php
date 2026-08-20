@@ -26,6 +26,16 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        // Separate from $admin so the demo data has one of each platform role to
+        // click through: superadmin-only actions (deleting users, editing another
+        // user's core info, promote/demote) show up in the UI right away instead
+        // of needing a manual toggle-role first.
+        $superadmin = User::factory()->create([
+            'name' => 'Super Admin',
+            'email' => 'superadmin@synkro.test',
+            'role' => 'superadmin',
+        ]);
+
         // Named rather than fake()'d so project/task ownership below reads clearly
         // instead of juggling an anonymous $users[3].
         $alice = User::factory()->create(['name' => 'Alice Chen', 'email' => 'alice@synkro.test']);

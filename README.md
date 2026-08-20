@@ -94,8 +94,8 @@ To get something to click through instead of an empty database, seed it:
 php artisan db:seed
 ```
 
-This creates an admin account (`admin@synkro.test`) and 5 regular users, all with the
-password `password`.
+This creates an admin account (`admin@synkro.test`), a superadmin account
+(`superadmin@synkro.test`), and 5 regular users, all with the password `password`.
 
 Then start everything (Laravel server, queue worker, log viewer, and Vite dev server) with:
 

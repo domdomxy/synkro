@@ -16,9 +16,21 @@ before a defense) picking the project back up.
 
 ## Roles: two separate systems, don't confuse them
 
-- **Platform role** - `users.role` (`admin` | regular). Only gates access to `/admin/*`
-  routes (`auth` + `admin` middleware) and admin-only actions (moderation, feedback
-  management, suspension enforcement).
+- **Platform role** - `users.role` (`user` | `admin` | `superadmin`). `User::isAdmin()`
+  returns true for both `admin` and `superadmin`, since a superadmin carries every admin
+  permission plus a few of its own - so anywhere "is this user an admin" gates something
+  (route middleware, UI nav, feedback/appeal handling), `admin` and `superadmin` are
+  treated identically. `admin` and `superadmin` both gate access to `/admin/*` routes
+  (`auth` + `admin` middleware) and the shared admin-only actions: moderation (suspend/
+  lift-suspension), responding to feedback tickets, and reviewing suspension appeals -
+  none of that is superadmin-gated. On top of all of that, `superadmin` (`User::
+  isSuperAdmin()`, `EnsureUserIsSuperAdmin` middleware) exclusively gets: deleting user
+  accounts (single or bulk, gracefully or permanently - `AdminController::destroy()` /
+  `destroyBulk()`), limited editing of another user's core info (`AdminController::
+  updateUser()`), and promoting/demoting a user between `user`/`admin`/`superadmin`
+  (`toggleRole()`/`toggleSuperAdmin()`). High-impact superadmin actions (permanent user
+  deletion, role changes) require a fresh emailed confirmation code first
+  (`sendConfirmationCode()`, `User::verifyAdminConfirmationCode()`).
 - **Project role** - stored on the `project_user` pivot table (`owner` | `manager` |
   `member` | `tester`), scoped per project. A user can be a `manager` on one project and
   a `member` on another. `Project::roleFor($user)` is the lookup used everywhere
@@ -58,25 +70,37 @@ A `tester` (or `owner`/`manager`) reviews a `Submitted` task and either approves
 links) attach to a task via `TaskDeliverable`; a project's submitted deliverables can be
 bulk-exported as a ZIP.
 
-## Trash and soft deletion
+## Trash: two separate systems, don't confuse them
 
 Projects, tasks, and user accounts all use `SoftDeletes` rather than being removed
-outright:
+outright, but "trash" refers to two distinct things depending on who's deleting what:
 
-- Deleting a project (once its email-confirmed deletion request lands) or a task
-  soft-deletes it. `Project::booted()` cascades trashing/restoring to its own tasks
-  (matched by shared `deleted_at` timestamp, so an independently-trashed task isn't
-  auto-restored along with its project); `Task::project()` uses `withTrashed()` so a
-  cascade-trashed task can still resolve its project.
-- Deleting an account soft-deletes it; logging back in with the same credentials
-  self-restores it within the grace window.
+- **User-facing Trash (Settings)** - where a signed-in user finds their own deleted, or
+  still-existing but managed/owned, projects and tasks. Deleting a project (once its
+  email-confirmed deletion request lands) or a task soft-deletes it. `Project::booted()`
+  cascades trashing/restoring to its own tasks (matched by shared `deleted_at` timestamp,
+  so an independently-trashed task isn't auto-restored along with its project);
+  `Task::project()` uses `withTrashed()` so a cascade-trashed task can still resolve its
+  project. `App\Support\TrashData` builds the listing shown in the Trash section of
+  Settings (projects the user owns, tasks in projects they manage); `TrashController`
+  handles restore/permanent-delete actions - there's no longer a standalone `/trash`
+  page, it was folded into Settings so deleted items are managed in one place.
+- **Superadmin user deletion** - a completely separate flow from the Trash above:
+  superadmin-only, lives in `Admin/Users.jsx`/`AdminController::destroy()`/
+  `destroyBulk()`, and is how a superadmin gracefully (soft-delete, same grace-period
+  mechanism as self-deletion) or permanently (immediate, unrecoverable,
+  confirmation-code-gated) removes *another* user's account. It has no dedicated listing
+  page of its own - gracefully-deleted users just show as trashed inline in the Users
+  table (badge/tooltip) until their grace period lapses or they're restored.
+- A user's own account: requesting deletion soft-deletes it (`deletion_requested_at` +
+  `SoftDeletes`). Restoring is a self-service, email-code-verified flow
+  (`AccountController::sendRestoreCode()`/`restore()`) - not a plain login - and it works
+  the same way whether the account was soft-deleted by the user themselves or gracefully
+  deleted by a superadmin, as long as the grace period hasn't lapsed and it wasn't a
+  permanent deletion.
 - All three grace periods are configurable (`config/synkro.php`,
   `ACCOUNT_DELETION_GRACE_DAYS` / `PROJECT_DELETION_GRACE_DAYS` /
   `TASK_DELETION_GRACE_DAYS`, default 7 days each).
-- `App\Support\TrashData` builds the listing shown in the Trash section of Settings
-  (projects the user owns, tasks in projects they manage); `TrashController` handles
-  restore/permanent-delete actions - there's no longer a standalone `/trash` page, it
-  was folded into Settings so deleted items are managed in one place.
 - Scheduled commands (`accounts:purge-deleted`, `projects:purge-deleted`,
   `tasks:purge-deleted`) permanently purge anything past its grace period. Task purging
   skips tasks whose project is also trashed, since the project purge's cascading foreign
