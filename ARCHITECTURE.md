@@ -217,6 +217,35 @@ own `sessions` table (`SESSION_DRIVER=database`):
   activity calendar shown on both the personal dashboard (per-user) and the admin
   dashboard (site-wide, alongside Tasks by Status).
 
+## Login: one page absorbs several account states
+
+`AuthenticatedSessionController` treats a failed or blocked login as a chance to disambiguate
+*why*, rather than always showing a generic error, and the same `Auth/Login.jsx` page renders
+whichever state applies:
+
+- **Soft-deleted but still restorable account:** since the global `SoftDeletes` scope hides a
+  trashed user from the credentials query, a correct password against one always fails
+  authentication first. `store()` catches that failure, checks by hand whether a trashed user with
+  matching credentials exists and is still inside its grace period (`isRestorable()`), and if so
+  immediately seeds a restore code (`sendAccountRestoreCodeNotification()`) and redirects back to
+  `/login` with `pendingDeletion` data. The login page then swaps to a 6-digit-code restore form
+  right there, no separate page or prior "forgot password"-style request needed.
+- **Admin-issued temporary password, not yet expired:** a wrong password on an account with
+  `must_change_password` still pending is almost always someone typing their old password, so
+  instead of the generic credentials error the login page shows a "check your email for a
+  temporary password" notice (`passwordReset` session data).
+- **Admin-issued temporary password, expired:** `temp_password_expires_at` (24 hours from
+  `AdminController::resetPassword()`) having passed gets its own distinct screen telling the user
+  to contact an admin for a new one, rather than folding into the notice above.
+- **Suspended account:** shown inline with the suspension reason, time remaining if temporary, and
+  the appeal form itself embedded in the same screen (`SuspensionNotice`), rate-limited to one
+  appeal per 6 hours - see the Suspension & appeal flow section above.
+
+`AuthenticatedSessionController::suspendedLogout()` and `passwordResetLogout()` are what force a
+signed-in user back to one of these screens the moment their session stops being valid (suspended
+while logged in, or an admin resets their password while they're logged in) instead of just
+logging them out silently.
+
 ## Account deactivation vs. deletion
 
 Deactivation (`AccountController::deactivate()`) is a separate path from the delete-request flow

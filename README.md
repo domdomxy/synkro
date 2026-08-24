@@ -75,7 +75,9 @@ Built with Laravel 13, Inertia.js, and React.
   or in-flight ones are frozen for a manager to resolve, same as removal), your projects' owners
   and managers are notified, and logging back in reactivates the account automatically
 - Admins can issue a temporary password for a user; the next login is locked to a "set a new
-  password" screen until they change it
+  password" screen until they change it, and the temporary password itself expires after 24 hours
+- Trying to log into a deleted-but-not-yet-purged account is met with a 6-digit-code restore
+  prompt right on the login page, instead of a dead-end "incorrect credentials" error
 
 **Everywhere else**
 - Light, dark, and true-black themes, switchable anytime
