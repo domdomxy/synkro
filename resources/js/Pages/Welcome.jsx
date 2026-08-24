@@ -42,7 +42,7 @@ const features = [
     },
     {
         title: 'Personal dashboard',
-        description: 'A full activity chart with switchable area/bar/combo views, a session activity calendar, a deadline calendar with week/month/year views, due-soon alerts, task status breakdown, and personal reminders: everything you need to stay on top of your work.',
+        description: 'A full activity chart with switchable area/bar/combo views, a session activity calendar, a deadline calendar with week/month/year views, task status breakdown, and personal reminders. Each task can also carry its own configurable deadline reminder, set by whoever owns or manages it, so assignees hear about an approaching due date exactly as early as the work calls for.',
         icon: <path d="M16 8v8m-4-5v5m-4-2v2M4 20h16a1 1 0 001-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v13a1 1 0 001 1z" />,
         accent: 'indigo',
     },

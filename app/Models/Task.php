@@ -19,11 +19,13 @@ class Task extends Model
         'status', 
         'assigned_to', 
         'due_date',
+        'reminder_offset_minutes',
         'submitted_at',
         'review_started_at',
         'edited_at',
         'pending_resolution',
         'overdue_notified_at',
+        'reminder_notified_at',
         'priority',
     ];
 
@@ -34,7 +36,24 @@ class Task extends Model
         'edited_at' => 'datetime',
         'pending_resolution' => 'boolean',
         'overdue_notified_at' => 'datetime',
+        'reminder_notified_at' => 'datetime',
+        'reminder_offset_minutes' => 'integer',
     ];
+
+    /**
+     * Whether reminder_offset_minutes can currently be changed. Locked once the
+     * task is done or its due date has already passed - a reminder before a
+     * deadline that's finished or gone doesn't mean anything - unless due_date
+     * is also being changed in the same edit (a rescheduled task is fair game
+     * again). $incomingDueDate is the value being saved in this request, if any,
+     * so the frontend and TaskController::update() apply the exact same rule.
+     */
+    public function reminderIsLocked(?\Illuminate\Support\Carbon $incomingDueDate = null): bool
+    {
+        $dueDateChanging = $incomingDueDate?->toDateTimeString() !== $this->due_date?->toDateTimeString();
+
+        return ($this->status === 'done' || ($this->due_date && $this->due_date->isPast())) && ! $dueDateChanging;
+    }
 
     public function project(): BelongsTo
     {

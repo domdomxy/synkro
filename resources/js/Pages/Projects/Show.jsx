@@ -74,6 +74,20 @@ const PRIORITY_FILTER_OPTIONS = [
     ...PRIORITY_OPTIONS,
 ];
 
+// Values are minutes-before-due-date, matching reminder_offset_minutes on the
+// backend. '' means no reminder configured (sent as null). Kept in sync with
+// the same constant in TaskRow.jsx.
+const REMINDER_OPTIONS = [
+    { value: '', label: 'No reminder' },
+    { value: '15', label: '15 minutes before' },
+    { value: '60', label: '1 hour before' },
+    { value: '180', label: '3 hours before' },
+    { value: '1440', label: '1 day before' },
+    { value: '2880', label: '2 days before' },
+    { value: '4320', label: '3 days before' },
+    { value: '10080', label: '1 week before' },
+];
+
 const ROLE_OPTIONS = [
     { value: 'manager', label: 'Manager' },
     { value: 'member', label: 'Member' },
@@ -766,7 +780,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // or pressing Enter can clear the field without touching what's already
     // queued to be invited.
     const [inviteEmailInput, setInviteEmailInput] = useState('');
-    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', dependencies: [] });
+    const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', reminder_offset_minutes: '', priority: 'medium', dependencies: [] });
     const [newTaskDependencyPick, setNewTaskDependencyPick] = useState('');
     const leaveForm = useForm({ reason: '' });
 
@@ -890,7 +904,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const submitTask = (e) => {
         e.preventDefault();
-        taskForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
+        taskForm.transform((data) => ({
+            ...data,
+            due_date: localDateTimeToIso(data.due_date),
+            reminder_offset_minutes: data.reminder_offset_minutes === '' ? null : Number(data.reminder_offset_minutes),
+        }));
         taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setNewTaskDependencyPick(''); setShowNewTaskForm(false); } });
     };
 
@@ -1293,6 +1311,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                     <div className="flex-1">
                                                         <InputLabel htmlFor="priority" value="Priority" />
                                                         <FilterSelect id="priority" className="mt-1" value={taskForm.data.priority} onChange={(v) => taskForm.setData('priority', v)} options={PRIORITY_OPTIONS} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <div className="flex-1 sm:max-w-[calc(33%-0.67rem)]">
+                                                        <InputLabel htmlFor="reminder_offset_minutes" value="Deadline Reminder" />
+                                                        <FilterSelect
+                                                            id="reminder_offset_minutes"
+                                                            className="mt-1"
+                                                            value={taskForm.data.reminder_offset_minutes}
+                                                            onChange={(v) => taskForm.setData('reminder_offset_minutes', v)}
+                                                            options={REMINDER_OPTIONS}
+                                                            disabled={!taskForm.data.due_date}
+                                                        />
+                                                        <InputError message={taskForm.errors.reminder_offset_minutes} className="mt-1" />
+                                                        {!taskForm.data.due_date && (
+                                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Set a due date to enable a reminder.</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div>

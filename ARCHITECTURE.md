@@ -70,6 +70,37 @@ A `tester` (or `owner`/`manager`) reviews a `Submitted` task and either approves
 links) attach to a task via `TaskDeliverable`; a project's submitted deliverables can be
 bulk-exported as a ZIP.
 
+## Deadline reminders vs. personal reminders
+
+Two different mechanisms, easy to conflate since both end in a notification:
+
+- **Personal reminders** (`Reminder` model) are user-created and self-contained - a
+  user sets `remind_at` for themselves, optionally repeating (daily/weekly/monthly).
+  Fully independent of tasks. `SendDueReminders` (scheduled every minute) fires them.
+- **Task deadline reminders** are owner/manager-configured, per task, and automatic:
+  `Task::reminder_offset_minutes` is how long before `due_date` the assignee should be
+  notified (null = no reminder). `SendTaskDeadlineReminders` (scheduled every 15
+  minutes, same cadence as the overdue-alert command below) fires once the offset
+  window is reached, tracked via `reminder_notified_at` (cleared whenever
+  `due_date` or `reminder_offset_minutes` changes, so a rescheduled or re-configured
+  task gets a fresh chance to fire) - the same pattern `overdue_notified_at` already
+  used for `SendOverdueTaskAlerts`.
+  - Editable at any time by whoever can already edit the task (owner/manager - see
+    `TaskPolicy::edit()`), via the existing due-date edit form. Frozen once the task
+    is `done` or its `due_date` has passed, unless `due_date` is being changed in the
+    same request - see `Task::reminderIsLocked()`, checked both server-side
+    (`TaskController::update()`) and client-side (`TaskRow.jsx`, so the field
+    visibly disables rather than just rejecting on save).
+  - Changing it doesn't get its own notification type or appear on the task card -
+    it's folded into the existing `task_updated` notification/activity-log/email path
+    that every other content edit (title, description, due date, priority) already
+    goes through, so the assignee is told a task they're on was updated (with the
+    change visible in its history) without adding new UI surface for one more field.
+  - The reminder firing itself is a separate notification type (`task_reminder`,
+    category `task.reminder` in `NotificationPreferences`/`EmailPreferences`) from the
+    change-of-setting notification above and from `task_overdue` - a task can
+    reasonably trigger both a deadline reminder and, later, an overdue alert.
+
 ## Trash: two separate systems, don't confuse them
 
 Projects, tasks, and user accounts all use `SoftDeletes` rather than being removed

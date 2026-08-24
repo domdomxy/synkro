@@ -42,6 +42,19 @@ const priorityStyles = {
 const priorityLabels = { low: 'Low', medium: 'Medium', high: 'High' };
 const PRIORITY_OPTIONS = Object.entries(priorityLabels).map(([value, label]) => ({ value, label }));
 
+// Values are minutes-before-due-date, matching reminder_offset_minutes on the
+// backend. '' means no reminder configured (sent as null).
+const REMINDER_OPTIONS = [
+    { value: '', label: 'No reminder' },
+    { value: '15', label: '15 minutes before' },
+    { value: '60', label: '1 hour before' },
+    { value: '180', label: '3 hours before' },
+    { value: '1440', label: '1 day before' },
+    { value: '2880', label: '2 days before' },
+    { value: '4320', label: '3 days before' },
+    { value: '10080', label: '1 week before' },
+];
+
 // Mirrors TaskChecklistItemController's `title` validation rule (max:255) -
 // keep both in sync if that rule ever changes.
 const CHECKLIST_ITEM_MAX_LENGTH = 255;
@@ -928,10 +941,19 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         title: task.title,
         description: task.description ?? '',
         due_date: toDatetimeLocalValue(task.due_date),
+        reminder_offset_minutes: task.reminder_offset_minutes != null ? String(task.reminder_offset_minutes) : '',
         assigned_to: task.assigned_to ?? '',
         priority: task.priority ?? 'medium',
         dependencies: task.dependencies?.map((d) => d.id) ?? [],
     });
+
+    // The reminder offset is frozen once the task is done or its due date has
+    // already passed - unless the due date is also being changed in this same
+    // edit, which reopens it (see Task::reminderIsLocked() on the backend; kept
+    // in sync with it here so the field visibly disables instead of just
+    // rejecting on save).
+    const reminderDueDateChanged = editForm.data.due_date !== toDatetimeLocalValue(task.due_date);
+    const reminderLocked = (task.status === 'done' || (task.due_date && new Date(task.due_date) < new Date())) && !reminderDueDateChanged;
     const checklistForm = useForm({ title: '' });
     const editChecklistItemForm = useForm({ title: '' });
     const submitForm = useForm({ files: [], links: [] });
@@ -983,7 +1005,11 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     const saveEdit = async (e) => {
         e.preventDefault();
         if (!(await confirm('Save changes to this task?', { title: 'Save Changes?' }))) return;
-        editForm.transform((data) => ({ ...data, due_date: localDateTimeToIso(data.due_date) }));
+        editForm.transform((data) => ({
+            ...data,
+            due_date: localDateTimeToIso(data.due_date),
+            reminder_offset_minutes: data.reminder_offset_minutes === '' ? null : Number(data.reminder_offset_minutes),
+        }));
         editForm.patch(route('tasks.update', task.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -1382,6 +1408,26 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     <div>
                         <InputLabel htmlFor={`due-${task.id}`} value="Due Date & Time" />
                         <TextInput id={`due-${task.id}`} type="datetime-local" step="1" value={editForm.data.due_date} onChange={(e) => editForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor={`reminder-${task.id}`} value="Deadline Reminder" />
+                        <FilterSelect
+                            id={`reminder-${task.id}`}
+                            className="mt-1"
+                            value={editForm.data.reminder_offset_minutes}
+                            onChange={(v) => editForm.setData('reminder_offset_minutes', v)}
+                            options={REMINDER_OPTIONS}
+                            disabled={reminderLocked || !editForm.data.due_date}
+                        />
+                        <InputError message={editForm.errors.reminder_offset_minutes} className="mt-1" />
+                        {reminderLocked && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Locked because this task is {task.status === 'done' ? 'done' : 'past its due date'}. Change the due date to reopen it.
+                            </p>
+                        )}
+                        {!reminderLocked && !editForm.data.due_date && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Set a due date to enable a reminder.</p>
+                        )}
                     </div>
                     <div>
                         <InputLabel htmlFor={`priority-${task.id}`} value="Priority" />

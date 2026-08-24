@@ -24,6 +24,10 @@ Built with Laravel 13, Inertia.js, and React.
 - Per-project notes and checklists, with checklist items that can sync live, two-way, into a
   member's personal Notes; comments support @mentions, bare-URL and markdown-style links, rich
   text with lists, and threaded replies
+- Due dates with automatic overdue alerts, plus a per-task deadline reminder that the task's
+  owner or manager can configure (how long before the due date the assignee is notified) -
+  editable at any time, but locked once the task is done or its due date has passed unless
+  the due date is also being changed
 - Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
 - Pinning and archiving at both the project and note level (Projects list shows Active/Archived
   tabs with a live count per tab)

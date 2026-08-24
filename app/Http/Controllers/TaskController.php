@@ -20,6 +20,7 @@ use App\Models\Task;
 use App\Models\TaskDeliverable;
 use App\Models\UserNotification;
 use App\Support\NoteFormatter;
+use App\Support\DurationFormatter;
 use App\Support\NotificationMailer;
 use App\Support\NotificationPreferences;
 use Illuminate\Http\Request;
@@ -73,10 +74,16 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'assigned_to' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date',
+            'reminder_offset_minutes' => 'nullable|integer|min:1|max:43200',
             'priority' => 'nullable|in:low,medium,high',
             'dependencies' => 'nullable|array',
             'dependencies.*' => 'integer|exists:tasks,id',
         ]);
+
+        // A reminder with no due date to count back from doesn't mean anything.
+        if (empty($validated['due_date'])) {
+            $validated['reminder_offset_minutes'] = null;
+        }
 
         $dependencyIds = $validated['dependencies'] ?? [];
         unset($validated['dependencies']);
@@ -149,11 +156,31 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'due_date' => 'nullable|date',
+            'reminder_offset_minutes' => 'nullable|integer|min:1|max:43200',
             'assigned_to' => 'nullable|exists:users,id',
             'priority' => 'nullable|in:low,medium,high',
             'dependencies' => 'nullable|array',
             'dependencies.*' => 'integer|exists:tasks,id',
         ]);
+
+        // A reminder with no due date to count back from doesn't mean anything.
+        if (empty($validated['due_date'])) {
+            $validated['reminder_offset_minutes'] = null;
+        }
+
+        // reminder_offset_minutes is frozen once the task is done or its due date
+        // has passed, unless due_date is also changing in this same request (see
+        // Task::reminderIsLocked()). Checked against the raw incoming value before
+        // anything else touches $task, so this can't be bypassed by field ordering.
+        $incomingDueDate = $validated['due_date'] ? \Illuminate\Support\Carbon::parse($validated['due_date']) : null;
+        $reminderRequested = array_key_exists('reminder_offset_minutes', $validated) ? $validated['reminder_offset_minutes'] : $task->reminder_offset_minutes;
+        $reminderChangeRequested = (int) ($reminderRequested ?? -1) !== (int) ($task->reminder_offset_minutes ?? -1);
+
+        if ($reminderChangeRequested && $task->reminderIsLocked($incomingDueDate)) {
+            return back()->withErrors([
+                'reminder_offset_minutes' => "The deadline reminder can't be changed once the task is done or its due date has passed, unless you're also updating the due date.",
+            ]);
+        }
 
         // Present (even as []) whenever the edit form's Dependencies section submitted -
         // null means the field wasn't part of this request at all, so leave deps untouched.
@@ -178,10 +205,16 @@ class TaskController extends Controller
         $previousAssigneeName = $task->assignee?->name;
         $changes = [];
  
-        foreach (['title', 'description', 'due_date', 'priority'] as $field) {
+        foreach (['title', 'description', 'due_date', 'reminder_offset_minutes', 'priority'] as $field) {
             if ($field === 'due_date') {
                 $old = $task->due_date?->toDateTimeString();
                 $new = $validated['due_date'] ? \Illuminate\Support\Carbon::parse($validated['due_date'])->toDateTimeString() : null;
+            } elseif ($field === 'reminder_offset_minutes') {
+                // Stored as human text ("1 day before") rather than raw minutes so it
+                // reads cleanly in the activity log and the task_updated notification,
+                // same spirit as old_assignee/new_assignee storing names elsewhere.
+                $old = DurationFormatter::humanize($task->reminder_offset_minutes);
+                $new = DurationFormatter::humanize(array_key_exists('reminder_offset_minutes', $validated) ? $validated['reminder_offset_minutes'] : $task->reminder_offset_minutes);
             } else {
                 $old = $task->{$field};
                 $new = $validated[$field] ?? $old;
@@ -196,6 +229,12 @@ class TaskController extends Controller
 
         if (isset($changes['due_date'])) {
             $task->overdue_notified_at = null;
+        }
+
+        // A changed offset needs a fresh chance to fire; a changed due date shifts
+        // when "offset before due" lands even if the offset itself didn't change.
+        if (isset($changes['reminder_offset_minutes']) || isset($changes['due_date'])) {
+            $task->reminder_notified_at = null;
         }
  
         $assigneeChanged = $task->assigned_to !== $previousAssignee;

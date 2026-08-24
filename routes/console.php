@@ -12,6 +12,7 @@ Schedule::command('reminders:send')->everyMinute();
 Schedule::command('suspensions:lift-expired')->everyMinute();
 Schedule::command('feedback:close-inactive')->hourly();
 Schedule::command('tasks:notify-overdue')->everyFifteenMinutes();
+Schedule::command('tasks:notify-deadline-reminders')->everyFifteenMinutes();
 Schedule::command('accounts:purge-deleted')->daily();
 Schedule::command('projects:purge-deleted')->daily();
 Schedule::command('tasks:purge-deleted')->daily();

@@ -60,6 +60,7 @@ class EmailPreferences
                     'task.reopened' => 'A completed task was reopened for changes',
                     'task.done' => 'A task you manage was marked done',
                     'task.overdue' => 'A task assigned to you passed its due date',
+                    'task.reminder' => 'A task assigned to you is approaching its due date',
                 ],
             ],
             'tickets' => [

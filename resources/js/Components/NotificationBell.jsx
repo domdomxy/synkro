@@ -55,6 +55,7 @@ export default function NotificationBell() {
             '.task.done',
             '.task.review-needed',
             '.task.overdue',
+            '.task.reminder',
             '.task.updated',
             '.task.unassigned',
             '.task.deleted',
@@ -152,6 +153,9 @@ export default function NotificationBell() {
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_overdue') {
                 message = `Task overdue\n"**${payload.title}**" is past its due date`;
+                url = `/projects/${payload.project_id}?task=${payload.task_id}`;
+            } else if (payload.type === 'task_reminder') {
+                message = `Deadline approaching\n"**${payload.title}**" is due soon`;
                 url = `/projects/${payload.project_id}?task=${payload.task_id}`;
             } else if (payload.type === 'task_updated') {
                 message = `Task updated\nTask "**${payload.title}**" was updated`;

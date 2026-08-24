@@ -58,7 +58,7 @@ function XIcon() {
  * by label; picking a result or clearing back to the first option (the
  * "All ..." entry) works the same as the plain select.
  */
-export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '', searchable = false, searchPlaceholder = 'Search...' }) {
+export default function FilterSelect({ id, value, onChange, options, className = '', buttonClassName = '', searchable = false, searchPlaceholder = 'Search...', disabled = false }) {
     if (searchable) {
         return (
             <SearchableFilterSelect
@@ -77,12 +77,12 @@ export default function FilterSelect({ id, value, onChange, options, className =
     const anchorRef = useRef(null);
 
     return (
-        <Listbox value={value} onChange={onChange}>
+        <Listbox value={value} onChange={onChange} disabled={disabled}>
             {({ open }) => (
                 <div className={`relative ${className}`} ref={anchorRef}>
                     <ListboxButton
                         id={id}
-                        className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${buttonClassName}`}
+                        className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-left text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 ${disabled ? 'cursor-not-allowed opacity-50 hover:bg-white dark:hover:bg-gray-900' : ''} ${buttonClassName}`}
                     >
                         <span className="flex min-w-0 items-center gap-2">
                             {selected?.avatar && <Avatar user={selected.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}

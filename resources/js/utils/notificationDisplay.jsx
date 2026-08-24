@@ -16,6 +16,7 @@ export const categoryMap = {
     task_checklist_item_updated: 'assignments',
     task_checklist_item_deleted: 'assignments',
     task_overdue: 'assignments',
+    task_reminder: 'assignments',
     task_approved: 'reviews',
     task_rejected: 'reviews',
     task_reopened: 'reviews',
@@ -86,6 +87,11 @@ export const typeStyles = {
         bg: 'bg-red-100 dark:bg-red-900',
         text: 'text-red-600 dark:text-red-300',
         icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
+    },
+    task_reminder: {
+        bg: 'bg-amber-100 dark:bg-amber-900',
+        text: 'text-amber-600 dark:text-amber-300',
+        icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
     task_rejected: {
         bg: 'bg-amber-100 dark:bg-amber-900',
