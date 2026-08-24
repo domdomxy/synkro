@@ -9,10 +9,10 @@ import FeedbackPanel from '@/Components/FeedbackPanel';
 const MONO = { fontFamily: "'JetBrains Mono', ui-monospace, monospace" };
 
 const ACCENTS = {
-    indigo: { bar: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-50 dark:bg-indigo-950/40', iconBgHover: 'group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60', iconText: 'text-indigo-600 dark:text-indigo-400', dot: 'bg-indigo-500' },
-    teal: { bar: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400', iconBg: 'bg-teal-50 dark:bg-teal-950/40', iconBgHover: 'group-hover:bg-teal-100 dark:group-hover:bg-teal-900/60', iconText: 'text-teal-600 dark:text-teal-400', dot: 'bg-teal-500' },
-    amber: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-50 dark:bg-amber-950/40', iconBgHover: 'group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60', iconText: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
-    pink: { bar: 'bg-pink-500', text: 'text-pink-600 dark:text-pink-400', iconBg: 'bg-pink-50 dark:bg-pink-950/40', iconBgHover: 'group-hover:bg-pink-100 dark:group-hover:bg-pink-900/60', iconText: 'text-pink-600 dark:text-pink-400', dot: 'bg-pink-500' },
+    indigo: { bar: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-50 dark:bg-indigo-950/40', iconBgHover: 'group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900', iconText: 'text-indigo-600 dark:text-indigo-400', dot: 'bg-indigo-500' },
+    teal: { bar: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400', iconBg: 'bg-teal-50 dark:bg-teal-950/40', iconBgHover: 'group-hover:bg-teal-200 dark:group-hover:bg-teal-900', iconText: 'text-teal-600 dark:text-teal-400', dot: 'bg-teal-500' },
+    amber: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-50 dark:bg-amber-950/40', iconBgHover: 'group-hover:bg-amber-200 dark:group-hover:bg-amber-900', iconText: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+    pink: { bar: 'bg-pink-500', text: 'text-pink-600 dark:text-pink-400', iconBg: 'bg-pink-50 dark:bg-pink-950/40', iconBgHover: 'group-hover:bg-pink-200 dark:group-hover:bg-pink-900', iconText: 'text-pink-600 dark:text-pink-400', dot: 'bg-pink-500' },
 };
 
 const features = [
@@ -271,7 +271,11 @@ function HeroSpotlight() {
 function RevealWords({ text, visible, baseDelay = 0, step = 40, className = '' }) {
     const words = text.split(' ');
     return words.map((word, i) => (
-        <span key={i} className="inline-block overflow-hidden align-bottom">
+        <span
+            key={i}
+            className="inline-block overflow-hidden align-bottom"
+            style={{ paddingBottom: '0.2em', marginBottom: '-0.2em' }}
+        >
             <span
                 className={`synkro-reveal-word inline-block transition-transform duration-700 ease-out ${className}`}
                 style={{
@@ -387,14 +391,17 @@ function SectionRail() {
 function StatColumn({ label, value, accent }) {
     const count = useCountUp(value);
     return (
-        <div className="flex-1 px-6 py-5 text-center sm:text-left">
-            <div className="flex items-center justify-center gap-1.5 sm:justify-start">
+        <div className="flex-1 px-2 py-4 text-center sm:px-6 sm:py-5">
+            <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${accent.dot}`} />
-                <span style={MONO} className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+                <span
+                    style={MONO}
+                    className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500 sm:text-[11px] sm:tracking-[0.14em]"
+                >
                     {label}
                 </span>
             </div>
-            <p style={MONO} className={`mt-1.5 text-3xl font-bold tabular-nums sm:text-4xl ${accent.text}`}>
+            <p style={MONO} className={`mt-1 text-2xl font-bold tabular-nums sm:mt-1.5 sm:text-3xl md:text-4xl ${accent.text}`}>
                 {count.toLocaleString()}
             </p>
         </div>
@@ -403,10 +410,34 @@ function StatColumn({ label, value, accent }) {
 
 function StatStrip({ stats }) {
     return (
-        <div className="mx-auto mt-14 flex max-w-2xl flex-col divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white/70 backdrop-blur sm:flex-row sm:divide-x sm:divide-y-0 dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-800/60">
+        <div className="mx-auto mt-14 grid max-w-2xl grid-cols-3 divide-x divide-gray-200 rounded-xl border border-gray-200 bg-white/70 backdrop-blur dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-800/60">
             <StatColumn label="Users" value={stats.users} accent={ACCENTS.indigo} />
             <StatColumn label="Projects" value={stats.projects} accent={ACCENTS.pink} />
             <StatColumn label="Tasks" value={stats.tasks} accent={ACCENTS.teal} />
+        </div>
+    );
+}
+
+// A full-bleed, infinitely-looping word strip - the same "signal ticker" device
+// as the bordered marquee on revoholic.info/index.html. Two copies of the word
+// list sit back-to-back and the track slides exactly -50%, so the loop point is
+// invisible. Pauses on hover/focus and sits still under reduced-motion.
+const MARQUEE_WORDS = ['PLAN PROJECTS', 'ASSIGN TASKS', 'REVIEW WORK', 'SHIP TOGETHER', 'TRACK PROGRESS', 'STAY IN SYNC'];
+
+function MarqueeStrip() {
+    const words = [...MARQUEE_WORDS, ...MARQUEE_WORDS];
+    return (
+        <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen overflow-hidden border-y border-gray-200 bg-white/70 py-3 backdrop-blur dark:border-gray-700 dark:bg-gray-800/60">
+            <div className="synkro-marquee-track flex w-max items-center">
+                {words.map((word, i) => (
+                    <span key={i} className="flex items-center">
+                        <span style={MONO} className="px-6 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400 sm:text-sm">
+                            {word}
+                        </span>
+                        <span className="h-1 w-1 shrink-0 rounded-full bg-indigo-400 dark:bg-indigo-500" />
+                    </span>
+                ))}
+            </div>
         </div>
     );
 }
@@ -542,6 +573,19 @@ export default function Welcome({ auth, stats }) {
                 @media (prefers-reduced-motion: reduce) {
                     .synkro-reveal-word { transform: none !important; transition: none !important; }
                 }
+                @keyframes synkro-marquee {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-50%); }
+                }
+                .synkro-marquee-track {
+                    animation: synkro-marquee 26s linear infinite;
+                }
+                .synkro-marquee-track:hover {
+                    animation-play-state: paused;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .synkro-marquee-track { animation: none; }
+                }
             `}</style>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <div
@@ -590,6 +634,8 @@ export default function Welcome({ auth, stats }) {
                         </nav>
                     </div>
                 </header>
+
+                <MarqueeStrip />
 
                 <main>
                     <section id="hero" className="relative mx-auto max-w-4xl scroll-mt-20 overflow-hidden px-6 py-20 text-center">
