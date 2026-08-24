@@ -113,6 +113,26 @@ class DashboardController extends Controller
         };
     }
 
+    /**
+     * Forward-looking window for the Due Soon panel, driven by its own
+     * due_range/due_from/due_to query params (kept separate from the
+     * Activity chart's backward-looking range/from/to above). Unlike
+     * buckets(), which slices a span into buckets for a chart, this just
+     * needs a single [start, end] pair to filter tasks by due_date against.
+     */
+    private function dueSoonWindow(string $range, ?string $from = null, ?string $to = null): array
+    {
+        if ($range === 'custom' && $from && $to) {
+            return [\Carbon\Carbon::parse($from)->startOfDay(), \Carbon\Carbon::parse($to)->endOfDay()];
+        }
+
+        return match ($range) {
+            'today' => [now(), now()->endOfDay()],
+            'month' => [now(), now()->addDays(30)],
+            default => [now(), now()->addDays(7)],
+        };
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -125,10 +145,13 @@ class DashboardController extends Controller
             ->groupBy('status')
             ->pluck('count', 'status');
 
+        $dueRange = request('due_range', 'week');
+        [$dueSoonStart, $dueSoonEnd] = $this->dueSoonWindow($dueRange, request('due_from'), request('due_to'));
+
         $dueSoon = Task::where('assigned_to', $user->id)
             ->whereNotIn('status', ['done'])
             ->whereNotNull('due_date')
-            ->whereBetween('due_date', [now(), now()->addDays(7)])
+            ->whereBetween('due_date', [$dueSoonStart, $dueSoonEnd])
             ->with('project')
             ->orderBy('due_date')
             ->limit(5)
@@ -278,6 +301,9 @@ class DashboardController extends Controller
             'range' => $range,
             'customFrom' => request('from'),
             'customTo' => request('to'),
+            'dueRange' => $dueRange,
+            'dueCustomFrom' => request('due_from'),
+            'dueCustomTo' => request('due_to'),
             'stats' => [
                 'projectsCount' => $user->projects()->count(),
                 'projectsTrend' => $projectsTrend,

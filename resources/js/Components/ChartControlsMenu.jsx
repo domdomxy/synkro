@@ -15,8 +15,13 @@ const CHART_LABELS = { area: 'Area', bar: 'Bar', combo: 'Combo' };
  * on narrower screens. The current selection is summarized on the trigger
  * itself (e.g. "This Week, Area") so the state is still visible at a glance
  * without opening the panel.
+ *
+ * `extraParams` is passed straight through to RangeButtons so this menu's
+ * own date-range navigation preserves any other filter the page is tracking
+ * (e.g. the Due Soon panel's separate date-range filter on the user
+ * dashboard) instead of clobbering it.
  */
-export default function ChartControlsMenu({ chartType, onChartTypeChange, range, routeName, customFrom, customTo }) {
+export default function ChartControlsMenu({ chartType, onChartTypeChange, range, routeName, customFrom, customTo, extraParams }) {
     return (
         <Dropdown>
             <Dropdown.Trigger>
@@ -40,7 +45,7 @@ export default function ChartControlsMenu({ chartType, onChartTypeChange, range,
                 </div>
                 <div>
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Date range</p>
-                    <RangeButtons range={range} routeName={routeName} customFrom={customFrom} customTo={customTo} />
+                    <RangeButtons range={range} routeName={routeName} customFrom={customFrom} customTo={customTo} extraParams={extraParams} />
                 </div>
             </Dropdown.Content>
         </Dropdown>

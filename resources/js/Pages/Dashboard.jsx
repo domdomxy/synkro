@@ -10,6 +10,7 @@ import Spinner from '@/Components/Spinner';
 import FilterSelect from '@/Components/FilterSelect';
 import StatusDonut from '@/Components/StatusDonut';
 import ChartControlsMenu from '@/Components/ChartControlsMenu';
+import DueSoonFilterMenu from '@/Components/DueSoonFilterMenu';
 import SectionHeader from '@/Components/SectionHeader';
 import ActivityChart from '@/Components/ActivityChart';
 import SessionActivityCalendar from '@/Components/SessionActivityCalendar';
@@ -477,7 +478,14 @@ function AlarmRow({ r, now, onDismiss, onDelete, isHighlighted }) {
     );
 }
 
-function DueSoonPanel({ dueSoon }) {
+const DUE_RANGE_EMPTY_LABELS = {
+    today: 'Nothing due today',
+    week: 'Nothing due in the next 7 days',
+    month: 'Nothing due in the next 30 days',
+    custom: 'Nothing due in this range',
+};
+
+function DueSoonPanel({ dueSoon, dueRange, dueCustomFrom, dueCustomTo, chartRange, chartCustomFrom, chartCustomTo }) {
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
@@ -490,6 +498,15 @@ function DueSoonPanel({ dueSoon }) {
         [dueSoon]
     );
 
+    const dueDateRangeLabel = (() => {
+        if (dueRange === 'custom' && dueCustomFrom && dueCustomTo) {
+            return `${new Date(dueCustomFrom).toLocaleDateString(undefined, { dateStyle: 'medium' })} – ${new Date(dueCustomTo).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+        }
+        if (dueRange === 'today') return new Date().toLocaleDateString(undefined, { dateStyle: 'full' });
+        if (dueRange === 'month') return `${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date(Date.now() + 29 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        return `${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date(Date.now() + 6 * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    })();
+
     return (
         <div className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:ring-white/[0.05] dark:hover:ring-white/[0.16] dark:hover:shadow-lg dark:hover:shadow-black/50 dark:bg-gray-800 sm:p-6">
             <SectionHeader
@@ -501,14 +518,24 @@ function DueSoonPanel({ dueSoon }) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 }
-            />
+            >
+                <DueSoonFilterMenu
+                    range={dueRange}
+                    routeName="dashboard"
+                    customFrom={dueCustomFrom}
+                    customTo={dueCustomTo}
+                    extraParams={{ range: chartRange, from: chartCustomFrom, to: chartCustomTo }}
+                />
+            </SectionHeader>
+
+            <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{dueDateRangeLabel}</p>
 
             {sorted.length === 0 ? (
                 <div className="flex flex-col items-center py-6 text-center">
                     <svg className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Nothing due in the next 7 days</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">{DUE_RANGE_EMPTY_LABELS[dueRange] ?? DUE_RANGE_EMPTY_LABELS.week}</p>
                 </div>
             ) : (
                 <ul className="thin-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1.5">
@@ -800,9 +827,9 @@ function MyNotesPanel({ notesByProject }) {
     );
 }
 
-export default function Dashboard({ stats, range, customFrom, customTo, myNotes = [] }) {
+export default function Dashboard({ stats, range, customFrom, customTo, dueRange, dueCustomFrom, dueCustomTo, myNotes = [] }) {
     const navigateSessionActivity = (offset) => {
-        router.get(route('dashboard', { range, from: customFrom, to: customTo, session_offset: offset }), {}, {
+        router.get(route('dashboard', { range, from: customFrom, to: customTo, due_range: dueRange, due_from: dueCustomFrom, due_to: dueCustomTo, session_offset: offset }), {}, {
             only: ['stats'],
             preserveState: true,
             preserveScroll: true,
@@ -880,6 +907,7 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                                 routeName="dashboard"
                                 customFrom={customFrom}
                                 customTo={customTo}
+                                extraParams={{ due_range: dueRange, due_from: dueCustomFrom, due_to: dueCustomTo }}
                             />
                         </SectionHeader>
 
@@ -941,7 +969,15 @@ export default function Dashboard({ stats, range, customFrom, customTo, myNotes 
                             durationByDay={stats.sessionDuration}
                         />
 
-                        <DueSoonPanel dueSoon={stats.dueSoon} />
+                        <DueSoonPanel
+                            dueSoon={stats.dueSoon}
+                            dueRange={dueRange}
+                            dueCustomFrom={dueCustomFrom}
+                            dueCustomTo={dueCustomTo}
+                            chartRange={range}
+                            chartCustomFrom={customFrom}
+                            chartCustomTo={customTo}
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

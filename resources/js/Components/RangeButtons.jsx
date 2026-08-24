@@ -6,14 +6,23 @@ import { useState } from 'react';
  * Shared by the user and admin dashboards (was previously duplicated in both
  * Pages/Dashboard.jsx and Pages/Admin/Dashboard.jsx). `routeName` lets each
  * page point it at its own Inertia route while keeping the same look.
+ *
+ * `rangeParam`/`fromParam`/`toParam` default to the original "range"/"from"/
+ * "to" query keys but can be overridden so a page can host more than one of
+ * these controls at once against different bits of state (e.g. the
+ * dashboard's Activity chart range vs. the Due Soon panel's own date-range
+ * filter). `extraParams` is merged into every navigation so switching one
+ * control doesn't wipe out the other's current query params - without it,
+ * a plain `route(routeName, { range: key })` call drops everything not
+ * explicitly passed in.
  */
-export default function RangeButtons({ range, routeName, customFrom, customTo }) {
+export default function RangeButtons({ range, routeName, customFrom, customTo, rangeParam = 'range', fromParam = 'from', toParam = 'to', extraParams = {} }) {
     const [showCustom, setShowCustom] = useState(range === 'custom');
     const [from, setFrom] = useState(customFrom ?? '');
     const [to, setTo] = useState(customTo ?? '');
 
     const applyCustom = () => {
-        if (from && to) router.get(route(routeName, { range: 'custom', from, to }), {}, { preserveScroll: true });
+        if (from && to) router.get(route(routeName, { ...extraParams, [rangeParam]: 'custom', [fromParam]: from, [toParam]: to }), {}, { preserveScroll: true });
     };
 
     const ranges = {
@@ -28,7 +37,7 @@ export default function RangeButtons({ range, routeName, customFrom, customTo })
                 {Object.entries(ranges).map(([key, { short, full }]) => (
                     <Link
                         key={key}
-                        href={route(routeName, { range: key })}
+                        href={route(routeName, { ...extraParams, [rangeParam]: key })}
                         preserveScroll
                         className={`min-h-[36px] rounded-md px-3 py-1.5 text-xs font-medium leading-[20px] transition-colors sm:min-h-0 sm:py-1 ${
                             range === key
