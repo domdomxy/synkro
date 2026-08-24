@@ -37,6 +37,15 @@ Built with Laravel 13, Inertia.js, and React.
   a manager acting on themselves)
 - Soft-deleted projects and tasks land in a recoverable Trash (in Settings) for a grace period
   before permanent deletion, with restore available the whole time
+- Testing Queue: a cross-project view of every task awaiting or under review, for anyone who can
+  review it (owner, manager, or tester on that project) - separate from the per-project Kanban
+  board, and sorted by wait time with in-review tasks first
+- Multi-select bulk actions on the project task list (delete, change status, change priority,
+  reassign), restricted to owners/managers
+- When a member is removed, leaves, deactivates, or deletes their account, their unfinished tasks
+  are unassigned and reset to To Do, but tasks that were done, submitted, or in review are frozen
+  instead so nothing gets silently reassigned or lost - a manager then explicitly keeps or resets
+  each frozen task
 
 **Notifications & activity**
 - In-app notification bell plus emailed notifications (queued), with per-notification-type
@@ -44,6 +53,8 @@ Built with Laravel 13, Inertia.js, and React.
   into a single row instead of flooding the bell
 - Optional real-time updates over WebSockets (Laravel Reverb) - live notifications, checklist and
   note sync, project updates, and admin alerts
+- Notifications can be muted per project or per task (in-app, email, or both), independent of the
+  global per-notification-type preferences above
 - Personal activity feed and account activity log
 - Logged-in devices panel: see every active session (browser, device, approximate location) and
   disconnect any of them remotely, or log out of all other devices at once
@@ -51,12 +62,20 @@ Built with Laravel 13, Inertia.js, and React.
   switchable between area/bar/combo views), a session activity calendar, and a deadline calendar
 
 **Support & moderation**
-- Help & Feedback center: submit categorized tickets, track status by ID, threaded replies
+- Help & Feedback center: submit categorized tickets, track status by ID, threaded replies -
+  admins can create, edit, and remove the categories tickets are filed under
 - Suspension system with a user-facing appeal flow and admin review
 - Admin console: manage users, feedback tickets, project logs, suspension logs, platform-wide
   analytics (including site-wide session activity), and read-only access to a user's own
   activity/login history for support investigations - every admin lookup and action is written
   to a permanent audit log
+
+**Account**
+- Deactivate your account instead of deleting it: your unfinished tasks are unassigned (finished
+  or in-flight ones are frozen for a manager to resolve, same as removal), your projects' owners
+  and managers are notified, and logging back in reactivates the account automatically
+- Admins can issue a temporary password for a user; the next login is locked to a "set a new
+  password" screen until they change it
 
 **Everywhere else**
 - Light, dark, and true-black themes, switchable anytime

@@ -70,6 +70,12 @@ A `tester` (or `owner`/`manager`) reviews a `Submitted` task and either approves
 links) attach to a task via `TaskDeliverable`; a project's submitted deliverables can be
 bulk-exported as a ZIP.
 
+`TaskController::bulkUpdate()` lets an owner/manager act on several tasks from the project task
+list at once (delete, change status, change priority, reassign) rather than one at a time. Status
+changes made this way bypass the guided start/submit/review flow, but still set the same
+`submitted_at`/`review_started_at` timestamps that flow would, so the Testing Queue's ordering
+stays correct for tasks touched in bulk.
+
 ## Deadline reminders vs. personal reminders
 
 Two different mechanisms, easy to conflate since both end in a notification:
@@ -100,6 +106,36 @@ Two different mechanisms, easy to conflate since both end in a notification:
     category `task.reminder` in `NotificationPreferences`/`EmailPreferences`) from the
     change-of-setting notification above and from `task_overdue` - a task can
     reasonably trigger both a deadline reminder and, later, an overdue alert.
+
+## Task freeze/resolve: what happens to a task when its assignee is gone
+
+Member removal (`ProjectMemberController::freezeOrReset()`), leaving a project, account
+deactivation (`AccountController::deactivate()`), and account deletion (`AccountDeletion`) all
+run the same split on that user's assigned tasks, since walking away from a project mid-task is
+the same problem in every case:
+
+- Tasks not yet in `done`/`submitted`/`in_review` are safe to reset: `assigned_to` is cleared and
+  `status` goes back to `todo`. Any comments the departing user left on those tasks are deleted
+  along with the reset.
+- Tasks already `done`, `submitted`, or `in_review` are not touched automatically, since silently
+  reassigning or resetting finished or in-flight work would be destructive. Instead they're
+  flagged `pending_resolution = true` and left exactly as they were.
+
+A manager resolves a frozen task via `TaskController::resolvePending()`: **keep** just clears the
+flag and leaves the task's state as-is, **reset** deletes its deliverables and comments and puts
+it back to `todo`, unassigned. Frozen tasks feed the "Needs Attention" count in
+`App\Support\AdminAlerts` and are flagged inline in `TaskRow.jsx` for whoever can manage the
+project.
+
+## Testing Queue: reviewing across projects, not within one
+
+`TestingController::index()` (`/testing`, `Testing/Index.jsx`) is a separate page from the
+per-project Kanban board: it lists every task that's `submitted` or `in_review` across *every*
+project where the current user holds a role that can review (`owner`, `manager`, or `tester`,
+matching `TaskPolicy::review()`). `in_review` tasks are ordered first, then by however long each
+task has been waiting (`COALESCE(review_started_at, submitted_at)`). Where the Kanban board
+answers "what's the state of this project," the Testing Queue answers "what's waiting on me to
+review, anywhere."
 
 ## Trash: two separate systems, don't confuse them
 
@@ -181,10 +217,30 @@ own `sessions` table (`SESSION_DRIVER=database`):
   activity calendar shown on both the personal dashboard (per-user) and the admin
   dashboard (site-wide, alongside Tasks by Status).
 
+## Account deactivation vs. deletion
+
+Deactivation (`AccountController::deactivate()`) is a separate path from the delete-request flow
+described under Trash above: it runs the same task freeze/reset split as member removal, notifies
+the affected projects' owners/managers, and requires no grace period or restore code, since simply
+logging back in reactivates the account. It's meant for "stepping away for a while," where
+deletion is meant for "leaving for good."
+
+## Admin-issued temporary passwords
+
+`AdminController::resetPassword()` sets a random password on a user's account plus
+`must_change_password` (and `temp_password_expires_at`). `EnsurePasswordIsChanged` middleware then
+redirects every request other than the password-change routes themselves to
+`Auth/ForcePasswordChange.jsx` until the user sets a new password, so there's no way to use the
+temporary one past the first login.
+
 ## Notifications
 
 Two independent channels, both respecting the same per-user preferences
-(`NotificationPreferences` / `EmailPreferences` in `app/Support`):
+(`NotificationPreferences` / `EmailPreferences` in `app/Support`), plus a separate, narrower mute
+layer on top: a user can mute a specific project (`project_user.mute_in_app`/`mute_email`) or a
+specific task (`mutedTasks()` pivot, same two columns) for in-app, email, or both, independent of
+their global per-type preferences. Type preferences decide *what* a user hears about across the
+whole app; muting decides where they've asked to hear nothing regardless of type.
 
 - **In-app:** `UserNotification` rows, surfaced via the notification bell
   (`NotificationController`), optionally pushed live over the user's private channel
