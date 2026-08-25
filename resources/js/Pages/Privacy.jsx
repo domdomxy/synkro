@@ -62,8 +62,9 @@ const sections = [
                 You can request deletion of your account at any time from Account Settings. Deletion
                 requires confirming via a link sent to your email before it takes effect. Rather than being
                 erased immediately, a deleted account, project, or task is held in a recoverable state for
-                a grace period (7 days by default) - logging back in restores a deleted account within that
-                window, and a project or task can be restored from the Trash section of Settings. Once the
+                a grace period (7 days by default) - a deleted account is restored by entering a 6-digit
+                code emailed to you at the login screen (not simply by signing back in), and a project or
+                task can be restored from the Trash section of Settings. Once the
                 grace period passes, the data is purged permanently. Some records, such as the
                 administrative audit log, may be retained in de-identified or aggregate form for platform
                 integrity.

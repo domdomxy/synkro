@@ -137,6 +137,27 @@ task has been waiting (`COALESCE(review_started_at, submitted_at)`). Where the K
 answers "what's the state of this project," the Testing Queue answers "what's waiting on me to
 review, anywhere."
 
+## Dashboard: clickable legend as a comparison filter
+
+`ClickableLegend` (used by `ActivityChart` on both the personal and admin dashboards) turns a
+recharts legend into a series filter rather than a static key: no selection shows every series;
+clicking one isolates it; clicking additional entries adds them so several series render side by
+side for comparison; clicking a selected entry again removes it, and once nothing is selected
+every series reappears. Selection state (`selectedKeys`) lives in the page component, not the
+chart, so it survives a chart-type switch (area/bar/combo).
+
+## Dashboard: two independent date-range filters
+
+The personal dashboard (`DashboardController::index()`, `Dashboard.jsx`) has two separate
+date-range controls that are easy to conflate since they look alike: the Activity chart's
+range (`range`/`from`/`to` query params, backward-looking, sliced into buckets by `buckets()`)
+and the Due Soon panel's range (`due_range`/`due_from`/`due_to`, forward-looking, resolved by
+`dueSoonWindow()` into a single `[start, end]` window used to filter tasks by `due_date`).
+`ChartControlsMenu` and `DueSoonFilterMenu` both render via the shared `RangeButtons`
+component (parameterized with `rangeParam`/`fromParam`/`toParam` so each writes its own query
+params) and each passes the other's active params through as `extraParams`, so switching one
+filter's range doesn't reset the other's.
+
 ## Trash: two separate systems, don't confuse them
 
 Projects, tasks, and user accounts all use `SoftDeletes` rather than being removed

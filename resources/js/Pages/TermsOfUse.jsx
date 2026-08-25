@@ -64,8 +64,8 @@ const sections = [
                 Synkro administrators may suspend an account, temporarily or permanently, for violations of
                 these terms. You may also delete your own account at any time from Account Settings, which
                 requires email confirmation before it takes effect. A deleted account is held for a short
-                grace period during which signing back in restores it; once that window passes, deletion is
-                permanent.
+                grace period during which it can be restored by entering a 6-digit code emailed to you at
+                the login screen; once that window passes, deletion is permanent.
             </p>
         ),
     },

@@ -58,8 +58,14 @@ Built with Laravel 13, Inertia.js, and React.
 - Personal activity feed and account activity log
 - Logged-in devices panel: see every active session (browser, device, approximate location) and
   disconnect any of them remotely, or log out of all other devices at once
-- Personal dashboard with task/project stats, an activity chart (day/week/month/custom range,
-  switchable between area/bar/combo views), a session activity calendar, and a deadline calendar
+- Personal dashboard with task/project stats, an animated task-status donut chart, an activity
+  chart (day/week/month/custom range, switchable between area/bar/combo views) whose legend
+  doubles as a series filter - click one entry to isolate it, click more to compare several
+  side by side - a session activity calendar, and a deadline calendar
+- A "My Notes" dashboard widget: every checklist you've synced into your personal Notes,
+  grouped by project, checkable right from the dashboard without opening the Notes panel
+- Due Soon panel on the dashboard with its own independent date-range filter (today/week/month/
+  custom), so narrowing upcoming due tasks doesn't disturb the Activity chart's range
 
 **Support & moderation**
 - Help & Feedback center: submit categorized tickets, track status by ID, threaded replies -

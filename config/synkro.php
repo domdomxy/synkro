@@ -8,10 +8,10 @@ return [
     |--------------------------------------------------------------------|
     |
     | When a user confirms account deletion, the account is soft-deleted
-    | rather than removed outright. It can be self-restored (by logging
-    | back in with the same credentials) for this many days afterwards.
-    | Once the window passes, the accounts:purge-deleted scheduled command
-    | permanently deletes it, and it cannot be recovered.
+    | rather than removed outright. It can be self-restored (by entering a
+    | 6-digit code emailed to the account at the login screen) for this
+    | many days afterwards. Once the window passes, the accounts:purge-deleted
+    | scheduled command permanently deletes it, and it cannot be recovered.
     |
     */
 
@@ -25,7 +25,7 @@ return [
     | Deleting a project (once its email-confirmed deletion request lands)
     | or a task soft-deletes it into the trash rather than removing it
     | outright. Owners/managers can restore it or permanently delete it
-    | from the Trash page during this window. Once it passes, the
+    | from the Trash section of Settings during this window. Once it passes, the
     | projects:purge-deleted / tasks:purge-deleted scheduled commands
     | permanently delete it, and it cannot be recovered.
     |
