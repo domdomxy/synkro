@@ -85,6 +85,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Task::class, 'pinned_tasks');
     }
 
+    /** Tasks this user has archived from their own "My Tasks" list. Per-user,
+     *  like pinnedTasks above - archiving doesn't affect the task for anyone
+     *  else it's assigned to. */
+    public function archivedTasks()
+    {
+        return $this->belongsToMany(Task::class, 'archived_tasks');
+    }
+
     /** Tasks whose comment notifications (in-app, email, or both) this user has muted. */
     public function mutedTasks()
     {

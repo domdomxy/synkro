@@ -1572,7 +1572,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 their own line when there isn't (mobile) - so neither ever
                                 gets squeezed. */}
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                                <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
                                         {!task.assignee && <span>Unassigned</span>}
                                         {task.assignee && (
@@ -1590,7 +1590,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-1.5">
+                                    <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
                                         {task.priority && task.priority !== 'medium' && (
                                             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
                                                 {priorityLabels[task.priority] ?? task.priority}

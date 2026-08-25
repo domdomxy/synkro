@@ -49,19 +49,33 @@ class TaskController extends Controller
 
     public function index()
     {
+        $showArchived = request()->boolean('archived');
+
         $pinnedIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();
- 
+        $archivedIds = Auth::user()->archivedTasks()->pluck('tasks.id')->toArray();
+
         $tasks = Task::where('assigned_to', Auth::id())
             ->with('project')
             ->withCount('comments')
             ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, due_date ASC')
             ->get()
+            ->filter(fn ($t) => in_array($t->id, $archivedIds) === $showArchived)
             ->map(fn ($t) => tap($t, fn ($t) => $t->is_pinned = in_array($t->id, $pinnedIds)))
             ->sortByDesc('is_pinned')
             ->values();
- 
+
+        // Counted separately (not derived from $tasks) so both tab badges
+        // stay accurate regardless of which tab is currently loaded - same
+        // reasoning as ProjectController::index's activeCount/archivedCount.
+        $assignedTaskIds = Task::where('assigned_to', Auth::id())->pluck('id');
+        $archivedCount = $assignedTaskIds->intersect($archivedIds)->count();
+        $activeCount = $assignedTaskIds->count() - $archivedCount;
+
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
+            'showingArchived' => $showArchived,
+            'activeCount' => $activeCount,
+            'archivedCount' => $archivedCount,
         ]);
     }
  
@@ -1369,6 +1383,19 @@ class TaskController extends Controller
         Auth::user()->pinnedTasks()->detach($task->id);
         return back()->with('success', 'Task unpinned.');
     }
+
+    public function archive(Task $task)
+    {
+        Auth::user()->archivedTasks()->syncWithoutDetaching([$task->id]);
+        return back()->with('success', 'Task archived.');
+    }
+
+    public function unarchive(Task $task)
+    {
+        Auth::user()->archivedTasks()->detach($task->id);
+        return back()->with('success', 'Task unarchived.');
+    }
+
     public function mute(Request $request, Task $task)
     {
         $validated = $request->validate([

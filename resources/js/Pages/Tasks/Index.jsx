@@ -8,7 +8,9 @@ import PerPageSelect from '@/Components/PerPageSelect';
 import LocalPagination from '@/Components/LocalPagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
 import { Head, Link, router } from '@inertiajs/react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import Modal from '@/Components/Modal';
 
 const statusStyles = {
     todo: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -105,7 +107,88 @@ function PinIcon({ filled, className = 'h-4 w-4' }) {
     );
 }
 
-function EmptyState({ hasAnyTasks, onClearFilters }) {
+function ArchiveIcon({ className = 'h-4 w-4' }) {
+    return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+    );
+}
+
+function TaskActionsMenu({ task, pinning, showingArchived, onPin, onUnpin, onArchive, onUnarchive }) {
+    const [open, setOpen] = useState(false);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const btnRef = useRef(null);
+    const menuRef = useRef(null);
+    const MENU_WIDTH = 160;
+
+    const toggle = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setCoords({ top: rect.bottom + 4, left: Math.max(8, rect.right - MENU_WIDTH) });
+        }
+        setOpen((v) => !v);
+    };
+
+    // Same "flip upward if it'd spill past the bottom of the viewport" logic
+    // as ProjectActionsMenu, for rows near the end of the list.
+    useLayoutEffect(() => {
+        if (!open || !menuRef.current || !btnRef.current) return;
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const btnRect = btnRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        if (spaceBelow < menuRect.height + 12 && btnRect.top > menuRect.height + 12) {
+            setCoords((prev) => ({ ...prev, top: btnRect.top - menuRect.height - 4 }));
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) setOpen(false);
+        };
+        const handleScroll = () => setOpen(false);
+        document.addEventListener('mousedown', handleClick);
+        window.addEventListener('scroll', handleScroll, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            window.removeEventListener('scroll', handleScroll, true);
+        };
+    }, [open]);
+
+    return (
+        <>
+            <button
+                ref={btnRef}
+                onClick={toggle}
+                disabled={pinning}
+                title="More actions"
+                className="rounded-md p-1.5 text-gray-300 opacity-100 transition hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+                </svg>
+            </button>
+            {open && createPortal(
+                <div ref={menuRef} style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }} className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700">
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); task.is_pinned ? onUnpin() : onPin(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <PinIcon filled={!!task.is_pinned} className="h-4 w-4" />
+                        {task.is_pinned ? 'Unpin' : 'Pin to top'}
+                    </button>
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); showingArchived ? onUnarchive() : onArchive(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <ArchiveIcon className="h-4 w-4" />
+                        {showingArchived ? 'Unarchive' : 'Archive'}
+                    </button>
+                </div>,
+                document.body
+            )}
+        </>
+    );
+}
+
+function EmptyState({ hasAnyTasks, showingArchived, onClearFilters }) {
     return (
         <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
@@ -121,6 +204,11 @@ function EmptyState({ hasAnyTasks, onClearFilters }) {
                         Clear filters
                     </button>
                 </>
+            ) : showingArchived ? (
+                <>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">No archived tasks</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Tasks you archive will show up here.</p>
+                </>
             ) : (
                 <>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">You don't have any tasks assigned yet</p>
@@ -131,7 +219,7 @@ function EmptyState({ hasAnyTasks, onClearFilters }) {
     );
 }
 
-export default function Index({ tasks }) {
+export default function Index({ tasks, showingArchived, activeCount, archivedCount }) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
@@ -143,6 +231,12 @@ export default function Index({ tasks }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const paginationRef = useRef(null);
+    const [archiveTarget, setArchiveTarget] = useState(null);
+    const [skipArchiveConfirm, setSkipArchiveConfirm] = useState(false);
+
+    // Scoped to this page only - "don't show this again" here has no effect
+    // on any other confirmation dialog in the app (e.g. project archiving).
+    const SKIP_ARCHIVE_CONFIRM_KEY = 'synkro:tasks-archive-skip-confirm';
 
     const changeView = (next) => {
         setView(next);
@@ -161,6 +255,10 @@ export default function Index({ tasks }) {
         setPage(1);
     };
 
+    const switchTab = (archived) => {
+        router.get(route('tasks.index'), { archived: archived ? 1 : undefined }, { preserveState: false });
+    };
+
     const togglePin = (task) => {
         setPinningId(task.id);
         const routeName = task.is_pinned ? 'tasks.unpin' : 'tasks.pin';
@@ -170,6 +268,39 @@ export default function Index({ tasks }) {
             onFinish: () => setPinningId(null),
         });
     };
+
+    const postArchive = (task) => {
+        router.post(route('tasks.archive', task.id), {}, { preserveScroll: true });
+    };
+
+    const archiveTask = (task) => {
+        let skip = false;
+        try { skip = localStorage.getItem(SKIP_ARCHIVE_CONFIRM_KEY) === '1'; } catch { /* private browsing, etc. */ }
+        if (skip) {
+            postArchive(task);
+        } else {
+            setArchiveTarget(task);
+        }
+    };
+
+    const confirmArchiveTask = () => {
+        if (skipArchiveConfirm) {
+            try { localStorage.setItem(SKIP_ARCHIVE_CONFIRM_KEY, '1'); } catch { /* private browsing, etc. */ }
+        }
+        postArchive(archiveTarget);
+        setArchiveTarget(null);
+        setSkipArchiveConfirm(false);
+    };
+
+    const cancelArchiveTask = () => {
+        setArchiveTarget(null);
+        setSkipArchiveConfirm(false);
+    };
+
+    const unarchiveTask = (task) => {
+        router.post(route('tasks.unarchive', task.id), {}, { preserveScroll: true });
+    };
+
 
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -200,6 +331,51 @@ export default function Index({ tasks }) {
             <Head title="My Tasks" />
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl px-3 sm:px-6 lg:px-8">
+                    <div className="mb-4 inline-flex gap-1 rounded-full border border-gray-200 bg-gray-100 p-1 dark:border-transparent dark:bg-gray-800 sm:mb-6">
+                        <button
+                            onClick={() => switchTab(false)}
+                            className={`rounded-full px-3.5 py-1 text-sm font-medium transition sm:px-5 sm:py-1.5 ${
+                                !showingArchived
+                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            Active
+                            {typeof activeCount === 'number' && (
+                                <span
+                                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                                        !showingArchived
+                                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    {activeCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => switchTab(true)}
+                            className={`rounded-full px-3.5 py-1 text-sm font-medium transition sm:px-5 sm:py-1.5 ${
+                                showingArchived
+                                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            Archived
+                            {typeof archivedCount === 'number' && (
+                                <span
+                                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                                        showingArchived
+                                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200'
+                                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                    }`}
+                                >
+                                    {archivedCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
                             <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
@@ -285,18 +461,17 @@ export default function Index({ tasks }) {
                                     const overdue = isOverdue(task);
                                     return (
                                         <li key={task.id} className="group relative border-b border-gray-100 last:border-0 dark:border-gray-700">
-                                            <button
-                                                onClick={() => togglePin(task)}
-                                                disabled={pinningId === task.id}
-                                                title={task.is_pinned ? 'Unpin' : 'Pin to top'}
-                                                className={`absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-md p-1.5 transition disabled:opacity-50 ${
-                                                    task.is_pinned
-                                                        ? 'text-amber-500 opacity-100'
-                                                        : 'text-gray-300 opacity-100 hover:bg-gray-100 hover:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
-                                                }`}
-                                            >
-                                                <PinIcon filled={!!task.is_pinned} className="h-3.5 w-3.5" />
-                                            </button>
+                                            <div className="absolute right-2 top-1/2 z-10 -translate-y-1/2">
+                                                <TaskActionsMenu
+                                                    task={task}
+                                                    pinning={pinningId === task.id}
+                                                    showingArchived={showingArchived}
+                                                    onPin={() => togglePin(task)}
+                                                    onUnpin={() => togglePin(task)}
+                                                    onArchive={() => archiveTask(task)}
+                                                    onUnarchive={() => unarchiveTask(task)}
+                                                />
+                                            </div>
                                             <Link
                                                 href={`${route('projects.show', task.project_id)}?task=${task.id}`}
                                                 className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 pr-10 transition hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:grid-cols-[14rem_minmax(0,1fr)_14rem_7rem_10rem_2.5rem] sm:items-center sm:gap-4"
@@ -306,6 +481,9 @@ export default function Index({ tasks }) {
                                                         <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100" title={task.title}>
                                                             {task.title}
                                                         </span>
+                                                        {!!task.is_pinned && (
+                                                            <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                                        )}
                                                         {task.priority && task.priority !== 'medium' && (
                                                             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
                                                                 {task.priority === 'high' ? 'High' : 'Low'}
@@ -355,18 +533,17 @@ export default function Index({ tasks }) {
                                     key={task.id}
                                     className={`group relative rounded-lg border-l-4 bg-white p-5 shadow transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-800 ${statusBorders[task.status] ?? 'border-l-gray-400'}`}
                                 >
-                                    <button
-                                        onClick={() => togglePin(task)}
-                                        disabled={pinningId === task.id}
-                                        title={task.is_pinned ? 'Unpin' : 'Pin to top'}
-                                        className={`absolute right-3 top-3 z-10 rounded-md p-1.5 transition disabled:opacity-50 ${
-                                            task.is_pinned
-                                                ? 'text-amber-500 opacity-100'
-                                                : 'text-gray-300 opacity-100 hover:bg-gray-100 hover:text-gray-600 sm:opacity-0 sm:group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
-                                        }`}
-                                    >
-                                        <PinIcon filled={!!task.is_pinned} className="h-3.5 w-3.5" />
-                                    </button>
+                                    <div className="absolute right-3 top-3 z-10">
+                                        <TaskActionsMenu
+                                            task={task}
+                                            pinning={pinningId === task.id}
+                                            showingArchived={showingArchived}
+                                            onPin={() => togglePin(task)}
+                                            onUnpin={() => togglePin(task)}
+                                            onArchive={() => archiveTask(task)}
+                                            onUnarchive={() => unarchiveTask(task)}
+                                        />
+                                    </div>
                                     <Link
                                         href={`${route('projects.show', task.project_id)}?task=${task.id}`}
                                         className="block"
@@ -374,6 +551,9 @@ export default function Index({ tasks }) {
                                         <div className="flex items-start justify-between gap-2 pr-6">
                                             <h3 className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100" title={task.title}>
                                                 {task.title}
+                                                {!!task.is_pinned && (
+                                                    <PinIcon filled className="ml-2 inline-block h-3.5 w-3.5 shrink-0 align-middle text-amber-500" />
+                                                )}
                                                 {task.edited_at && (
                                                     <span className="ml-2 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>
                                                 )}
@@ -418,11 +598,47 @@ export default function Index({ tasks }) {
 
                     {filtered.length === 0 && (
                         <div className="grid">
-                            <EmptyState hasAnyTasks={tasks.length > 0} onClearFilters={clearFilters} />
+                            <EmptyState hasAnyTasks={tasks.length > 0} showingArchived={showingArchived} onClearFilters={clearFilters} />
                         </div>
                     )}
                 </div>
             </div>
+            <Modal show={!!archiveTarget} onClose={cancelArchiveTask} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
+                <div className="p-6">
+                    <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">
+                        Archive "{archiveTarget?.title}"?
+                    </h2>
+                    <p className="mt-2.5 text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
+                        This only affects your own "My Tasks" list; the task itself is unchanged for everyone else. You can unarchive it anytime.
+                    </p>
+                    <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={skipArchiveConfirm}
+                            onChange={(e) => setSkipArchiveConfirm(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        Don't show this again
+                    </label>
+                    <div className="mt-6 flex justify-end gap-2.5">
+                        <button
+                            type="button"
+                            onClick={cancelArchiveTask}
+                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-800"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmArchiveTask}
+                            autoFocus
+                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            </Modal>
             <ScrollToPaginationButton targetRef={paginationRef} />
         </AuthenticatedLayout>
     );

@@ -162,6 +162,18 @@ project's ("what's the state of this project"). Pinning (`pinnedTasks()`, a per-
 project's own task list - it's independent of, and works the same way as, the existing
 project- and note-level pinning.
 
+Archiving works the same way, via its own per-user pivot: `archivedTasks()`
+(`archived_tasks` table, `TaskController::archive()`/`unarchive()`). Same shape as
+project archiving (`project_user.archived`) and the same not-a-team-setting rule applies -
+archiving a task only removes it from *your* My Tasks list; everyone else it's assigned to
+(there's only ever one assignee, but managers/owners still see it in the project) sees no
+change at all. `TaskController::index()` reads an `archived` query param the same way
+`ProjectController::index()` does, filters the assigned-task set against the current user's
+`archivedTasks()` ids, and returns `showingArchived`/`activeCount`/`archivedCount` so
+`Tasks/Index.jsx` can render the same Active/Archived tab pattern as `Projects/Index.jsx`.
+Unlike project archiving, task archiving has no bearing on notifications or membership -
+it's purely a list-visibility toggle.
+
 ## Dashboard: clickable legend as a comparison filter
 
 `ClickableLegend` (used by `ActivityChart` on both the personal and admin dashboards) turns a

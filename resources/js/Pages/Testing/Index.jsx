@@ -339,7 +339,7 @@ export default function Index({ tasks }) {
                                     <div className="flex min-w-0 items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                         {task.assignee ? (
                                             <>
-                                                <Avatar user={task.assignee} size="h-4 w-4" />
+                                                <Avatar user={task.assignee} size="h-6 w-6" className="shrink-0" />
                                                 <span className="truncate">{task.assignee.name}</span>
                                             </>
                                         ) : (

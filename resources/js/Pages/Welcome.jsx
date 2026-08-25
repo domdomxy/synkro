@@ -24,7 +24,7 @@ const features = [
     },
     {
         title: 'Task lifecycle & board',
-        description: 'Tasks move from todo → in progress → submitted → in review → done, with a reject/reopen loop and a full tester approval gate before anything counts as complete. Track it all on a live kanban board (drag-and-drop, touch-friendly) restricted to the transitions your workflow allows, chain tasks together as dependencies with cycle detection, and see exactly what a blocked task is waiting on.',
+        description: 'Tasks move from todo → in progress → submitted → in review → done, with a reject/reopen loop and a full tester approval gate before anything counts as complete. Track it all on a live kanban board (drag-and-drop, touch-friendly) restricted to the transitions your workflow allows, chain tasks together as dependencies with cycle detection, see exactly what a blocked task is waiting on, and pin or archive tasks in your personal My Tasks list without affecting anyone else assigned to them.',
         icon: <path d="M4 4h4v16H4V4zm6 0h4v11h-4V4zm6 0h4v14h-4V4z" />,
         accent: 'teal',
     },

@@ -188,6 +188,8 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/tasks/{task}/review', [TaskController::class, 'review'])->name('tasks.review');
     Route::post('/tasks/{task}/pin', [TaskController::class, 'pin'])->name('tasks.pin');
     Route::post('/tasks/{task}/unpin', [TaskController::class, 'unpin'])->name('tasks.unpin');
+    Route::post('/tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
+    Route::post('/tasks/{task}/unarchive', [TaskController::class, 'unarchive'])->name('tasks.unarchive');
     Route::post('/tasks/{task}/mute', [TaskController::class, 'mute'])->name('tasks.mute');
     Route::post('/tasks/{task}/unmute', [TaskController::class, 'unmute'])->name('tasks.unmute');
     Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');

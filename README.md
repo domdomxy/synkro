@@ -33,8 +33,9 @@ Built with Laravel 13, Inertia.js, and React.
   the due date is also being changed
 - Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
 - Pinning and archiving at the project, task, and note level - a pinned task rises to the top of
-  its project's list and of your My Tasks page alike (Projects list shows Active/Archived tabs
-  with a live count per tab)
+  its project's list and of your My Tasks page alike; both the Projects list and My Tasks list
+  show Active/Archived tabs with a live count per tab (archiving a task only affects your own
+  My Tasks view - it stays visible and unchanged for everyone else it's assigned to)
 - Invite one or many members at once in a single request, with a live name/email search that
   autocompletes against existing users as you type, all given the same role, cancel a
   pending invitation at any time, plus ownership transfer (owner-only, gated by a 6-digit code
@@ -47,8 +48,9 @@ Built with Laravel 13, Inertia.js, and React.
   review it (owner, manager, or tester on that project) - separate from the per-project Kanban
   board, and sorted by wait time with in-review tasks first
 - My Tasks: a personal, cross-project list of every task assigned to you, sorted by due date with
-  pinned tasks first - search by task or project name, filter by status or priority, and switch
-  between grid and list views (remembered per browser)
+  pinned tasks first - search by task or project name, filter by status or priority, switch
+  between grid and list views (remembered per browser), and archive tasks you don't need to see
+  day-to-day into their own Active/Archived tab, same as Projects
 - Multi-select bulk actions on the project task list (delete, change status, change priority,
   reassign, change or clear the due date), restricted to owners/managers
 - When a member is removed, leaves, deactivates, or deletes their account, their unfinished tasks
