@@ -18,21 +18,25 @@ Built with Laravel 13, Inertia.js, and React.
 - Per-task checklists with role-scoped permissions (who can add, remove, and check off items),
   separate from comments
 - File and link deliverables per task, with type-aware icons and ZIP export of a project's
-  submitted work
+  submitted work - text and code files preview in place with syntax highlighting (covering
+  most common languages) and in-file search, including files inside a previewed ZIP, read-only
 - A dedicated resources hub per project: files and links organized into folders, added one at a
   time or as a drag-and-drop batch
 - Per-project notes and checklists, with checklist items that can sync live, two-way, into a
-  member's personal Notes; comments support @mentions (mentioning "everyone" is owner/manager-only),
-  bare-URL and markdown-style links, rich text with lists, threaded replies, and author-only
-  editing (marked "edited", logged to the project's activity log)
+  member's personal Notes, a one-click "clear completed" to sweep checked-off items from a note;
+  comments support @mentions (mentioning "everyone" is owner/manager-only), bare-URL and
+  markdown-style links, rich text with lists, threaded replies, and author-only editing (marked
+  "edited", logged to the project's activity log)
 - Due dates with automatic overdue alerts, plus a per-task deadline reminder that the task's
   owner or manager can configure (how long before the due date the assignee is notified) -
   editable at any time, but locked once the task is done or its due date has passed unless
   the due date is also being changed
 - Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
-- Pinning and archiving at both the project and note level (Projects list shows Active/Archived
-  tabs with a live count per tab)
-- Invite one or many members at once in a single request, all given the same role, cancel a
+- Pinning and archiving at the project, task, and note level - a pinned task rises to the top of
+  its project's list and of your My Tasks page alike (Projects list shows Active/Archived tabs
+  with a live count per tab)
+- Invite one or many members at once in a single request, with a live name/email search that
+  autocompletes against existing users as you type, all given the same role, cancel a
   pending invitation at any time, plus ownership transfer (owner-only, gated by a 6-digit code
   emailed to the current owner before it takes effect) - role changes and removal are
   hierarchy-aware: a manager can act on members and testers, but only the project owner can
@@ -42,6 +46,9 @@ Built with Laravel 13, Inertia.js, and React.
 - Testing Queue: a cross-project view of every task awaiting or under review, for anyone who can
   review it (owner, manager, or tester on that project) - separate from the per-project Kanban
   board, and sorted by wait time with in-review tasks first
+- My Tasks: a personal, cross-project list of every task assigned to you, sorted by due date with
+  pinned tasks first - search by task or project name, filter by status or priority, and switch
+  between grid and list views (remembered per browser)
 - Multi-select bulk actions on the project task list (delete, change status, change priority,
   reassign, change or clear the due date), restricted to owners/managers
 - When a member is removed, leaves, deactivates, or deletes their account, their unfinished tasks
@@ -70,11 +77,11 @@ Built with Laravel 13, Inertia.js, and React.
   custom), so narrowing upcoming due tasks doesn't disturb the Activity chart's range
 
 **Support & moderation**
-- Help & Feedback center: submit categorized tickets (with up to 5 image attachments), track
-  status by ID, threaded replies once support has responded - the submitter can close or reopen
-  their own ticket at any point, and a ticket with no activity for 24 hours after a support reply
-  auto-closes (reopenable from the tracking page) - admins can create, edit, and remove the
-  categories tickets are filed under
+- Help & Feedback center: submit categorized tickets (with up to 5 image attachments, viewable
+  full-size in a lightbox), track status by ID, threaded replies once support has responded - the
+  submitter can close or reopen their own ticket at any point, and a ticket with no activity for
+  24 hours after a support reply auto-closes (reopenable from the tracking page) - admins can
+  create, edit, and remove the categories tickets are filed under
 - Suspension system with a user-facing appeal flow and admin review
 - Admin console: manage users, feedback tickets, project logs, suspension logs, platform-wide
   analytics (including site-wide session activity), and read-only access to a user's own
@@ -82,6 +89,7 @@ Built with Laravel 13, Inertia.js, and React.
   to a permanent audit log
 
 **Account**
+- Upload a profile avatar, cropping it in-browser before it's saved
 - Deactivate your account instead of deleting it: your unfinished tasks are unassigned (finished
   or in-flight ones are frozen for a manager to resolve, same as removal), your projects' owners
   and managers are notified, and logging back in reactivates the account automatically
@@ -96,6 +104,12 @@ Built with Laravel 13, Inertia.js, and React.
   the project page and touch drag-and-drop on the kanban board
 - Trusted-site external link confirmation: a warning before you leave Synkro through a link
   someone posted, remembered per host so you're only asked once
+- A search box in Settings and Account jumps straight to the field you need - it matches on
+  each section's actual field names, not just the section titles, so searching "password" finds
+  the right panel even though no section is titled that
+- Live assistance on email and password fields: a typo hint on email inputs (catching common
+  misspellings like a dropped or swapped letter in "gmail.com"), and a real-time match indicator
+  on password confirmation fields
 
 ## Tech stack
 

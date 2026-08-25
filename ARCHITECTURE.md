@@ -150,6 +150,18 @@ task has been waiting (`COALESCE(review_started_at, submitted_at)`). Where the K
 answers "what's the state of this project," the Testing Queue answers "what's waiting on me to
 review, anywhere."
 
+## My Tasks: personal, not per-project
+
+`TaskController::index()` (`/tasks`, `Tasks/Index.jsx`) is a third, easily-conflated list
+alongside the per-project Kanban board and the Testing Queue: it shows only tasks
+`assigned_to` the current user, across every project they belong to, ordered by `due_date`
+(nulls last). It's the assignee's own view ("what do I have to do"), where the Testing Queue
+is the reviewer's ("what's waiting on me to review") and the Kanban board is the
+project's ("what's the state of this project"). Pinning (`pinnedTasks()`, a per-user pivot,
+`TaskController::pin()`/`unpin()`) sorts a task to the top of both this page and its
+project's own task list - it's independent of, and works the same way as, the existing
+project- and note-level pinning.
+
 ## Dashboard: clickable legend as a comparison filter
 
 `ClickableLegend` (used by `ActivityChart` on both the personal and admin dashboards) turns a
@@ -393,6 +405,23 @@ retargets the message/url, rather than only being able to remove the whole notif
   rather than navigating away and unmounting the background page. Coordination state
   lives at module scope in the hook, not component state, since `AuthenticatedLayout`
   remounts on every top-level page swap.
+- `resources/js/Components/NavSearchInput.jsx` - the search box in the Settings/Account
+  nav sidebars. Matches against each section's `terms` (the actual field/control names
+  inside it, e.g. "Full name", "New Password"), not just the section's own label, so a
+  section surfaces as a result whenever anything inside it matches.
+- `resources/js/Components/CodeEditor.jsx` - a read-only CodeMirror instance with
+  per-extension syntax highlighting (`LANGUAGE_BY_EXT`, covering most mainstream
+  languages) and in-file search, used by `DeliverableViewer.jsx` and `ZipViewer.jsx` to
+  preview text/code files - including files inside a previewed ZIP - without downloading
+  them. Extensions with no language entry still open, just as plain text.
+- `resources/js/Components/AvatarCropperModal.jsx` - the in-browser crop step between
+  picking an image file and submitting it in `UpdateAvatarForm.jsx` (Account settings).
+- `resources/js/Components/UserSearchInput.jsx` (backed by `UserSearchController::search()`)
+  - the name/email autocomplete behind the project member-invite field; queries active users
+    by name or email (2+ characters) and lets a picked result or free-typed address get queued
+    into the batch invite.
+- `resources/js/Components/ImageLightbox.jsx` - full-size viewer for feedback-ticket image
+  attachments, used in `FeedbackPanel.jsx` and `Admin/Feedbacks.jsx`.
 
 ## Known rough edges
 
