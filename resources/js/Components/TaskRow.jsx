@@ -21,6 +21,8 @@ import { describeLog } from '@/utils/activityLog';
 import Modal from '@/Components/Modal';
 import FilterSelect from '@/Components/FilterSelect';
 import DeliverableViewer from '@/Components/DeliverableViewer';
+import CommentDrawer from '@/Components/CommentDrawer';
+import useIsMobileViewport from '@/hooks/useIsMobileViewport';
 import { router, useForm } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -902,6 +904,19 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     const showChecklist = activeSection === 'checklist';
     const showDependencies = activeSection === 'dependencies';
 
+    // On mobile, "Comments" opens a bottom sheet instead of expanding the
+    // accordion in place - there isn't enough width there for a thread once
+    // replies start nesting. Desktop keeps the inline behavior above.
+    const isMobileViewport = useIsMobileViewport();
+    const [commentDrawerOpen, setCommentDrawerOpen] = useState(false);
+    const handleCommentsToggle = () => {
+        if (isMobileViewport) {
+            setCommentDrawerOpen(true);
+        } else {
+            toggleSection('comments');
+        }
+    };
+
     useEffect(() => {
         if (autoOpenHistory) setShowHistory(true);
     }, [autoOpenHistory]);
@@ -1314,6 +1329,51 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
             </button>
         </form>
     );
+
+    // Shared between the desktop inline accordion and the mobile
+    // CommentDrawer bottom sheet - same thread, two different containers.
+    const commentsPanelContent = (
+        <>
+            {commentTree.roots.map((comment) => (
+                <CommentThread
+                    key={comment.id}
+                    comment={comment}
+                    replies={commentTree.repliesByRoot.get(comment.id) ?? []}
+                    byId={commentTree.byId}
+                    isCollapsed={collapsedIds.has(comment.id)}
+                    onToggleCollapse={toggleCommentCollapse}
+                    replyingToId={replyingTo?.id ?? null}
+                    composer={commentComposer}
+                    highlightedCommentId={highlightedCommentId}
+                    editingCommentId={editingCommentId}
+                    editCommentForm={editCommentForm}
+                    currentUserId={currentUserId}
+                    canManage={canManage}
+                    isTrashed={isTrashed}
+                    members={members}
+                    onSaveEdit={saveCommentEdit}
+                    onStartEdit={startEditComment}
+                    onCancelEdit={() => setEditingCommentId(null)}
+                    onDelete={deleteComment}
+                    onStartReply={startReply}
+                    onScrollToComment={scrollToComment}
+                />
+            ))}
+            {commentCount === 0 && (
+                <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
+                    <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
+                    </svg>
+                    <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                </div>
+            )}
+            {/* The bottom box is for starting a brand-new top-level comment.
+                While replying to an existing comment, the same composer
+                renders inline inside that thread instead (see CommentThread). */}
+            {!replyingTo && commentComposer}
+        </>
+    );
+
     const dependencyCount = task.dependencies?.length ?? 0;
     const dependenciesBlocked = task.dependencies?.some((d) => d.status !== 'done') ?? false;
     const canEditDeliverables = isAssignee && !isTrashed && ['in_progress', 'submitted'].includes(task.status);
@@ -1915,8 +1975,8 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
             <div className="mt-3 border-t border-gray-100 pt-2.5 dark:border-gray-700">
                 <div className="flex flex-wrap items-center gap-1">
                     <FooterToggle
-                        active={showComments}
-                        onClick={() => toggleSection('comments')}
+                        active={showComments || commentDrawerOpen}
+                        onClick={handleCommentsToggle}
                         label="Comments"
                         count={commentCount > 0 ? commentCount : null}
                         showLabel
@@ -2150,53 +2210,26 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     </div>
                 )}
 
-                {showComments && (
+                {showComments && !isMobileViewport && (
                     /* Bleeds past the task card's own p-4 on mobile only (sm:mx-0 undoes
                        it at the desktop breakpoint) so comments get the full card width
                        instead of losing 16px a side to padding meant for the rest of the
                        card's content. */
                     <div className="-mx-4 mt-2 space-y-4 rounded-none bg-white p-1.5 dark:bg-gray-800 sm:mx-0 sm:rounded-md sm:p-3">
-                        {commentTree.roots.map((comment) => (
-                            <CommentThread
-                                key={comment.id}
-                                comment={comment}
-                                replies={commentTree.repliesByRoot.get(comment.id) ?? []}
-                                byId={commentTree.byId}
-                                isCollapsed={collapsedIds.has(comment.id)}
-                                onToggleCollapse={toggleCommentCollapse}
-                                replyingToId={replyingTo?.id ?? null}
-                                composer={commentComposer}
-                                highlightedCommentId={highlightedCommentId}
-                                editingCommentId={editingCommentId}
-                                editCommentForm={editCommentForm}
-                                currentUserId={currentUserId}
-                                canManage={canManage}
-                                isTrashed={isTrashed}
-                                members={members}
-                                onSaveEdit={saveCommentEdit}
-                                onStartEdit={startEditComment}
-                                onCancelEdit={() => setEditingCommentId(null)}
-                                onDelete={deleteComment}
-                                onStartReply={startReply}
-                                onScrollToComment={scrollToComment}
-                            />
-                        ))}
-                        {commentCount === 0 && (
-                            <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
-                                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
-                                </svg>
-                                <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
-                            </div>
-                        )}
-                        {/* The bottom box is for starting a brand-new top-level comment.
-                            While replying to an existing comment, the same composer
-                            renders inline inside that thread instead (see CommentThread). */}
-                        {!replyingTo && commentComposer}
+                        {commentsPanelContent}
                     </div>
                 )}
             </div>
         </div>
+
+        <CommentDrawer
+            show={commentDrawerOpen}
+            onClose={() => setCommentDrawerOpen(false)}
+            title="Comments"
+            count={commentCount}
+        >
+            {commentsPanelContent}
+        </CommentDrawer>
 
         <Modal
             show={showHistory}
