@@ -22,8 +22,9 @@ Built with Laravel 13, Inertia.js, and React.
 - A dedicated resources hub per project: files and links organized into folders, added one at a
   time or as a drag-and-drop batch
 - Per-project notes and checklists, with checklist items that can sync live, two-way, into a
-  member's personal Notes; comments support @mentions, bare-URL and markdown-style links, rich
-  text with lists, and threaded replies
+  member's personal Notes; comments support @mentions (mentioning "everyone" is owner/manager-only),
+  bare-URL and markdown-style links, rich text with lists, threaded replies, and author-only
+  editing (marked "edited", logged to the project's activity log)
 - Due dates with automatic overdue alerts, plus a per-task deadline reminder that the task's
   owner or manager can configure (how long before the due date the assignee is notified) -
   editable at any time, but locked once the task is done or its due date has passed unless
@@ -31,10 +32,11 @@ Built with Laravel 13, Inertia.js, and React.
 - Reminders (one-off or repeating) with countdown display, and a personal dashboard for setting them
 - Pinning and archiving at both the project and note level (Projects list shows Active/Archived
   tabs with a live count per tab)
-- Invite one or many members at once in a single request, all given the same role, plus
-  ownership transfer - role changes and removal are hierarchy-aware: a manager can act on
-  members and testers, but only the project owner can change or remove a manager (including
-  a manager acting on themselves)
+- Invite one or many members at once in a single request, all given the same role, cancel a
+  pending invitation at any time, plus ownership transfer (owner-only, gated by a 6-digit code
+  emailed to the current owner before it takes effect) - role changes and removal are
+  hierarchy-aware: a manager can act on members and testers, but only the project owner can
+  change or remove a manager (including a manager acting on themselves)
 - Soft-deleted projects and tasks land in a recoverable Trash (in Settings) for a grace period
   before permanent deletion, with restore available the whole time
 - Testing Queue: a cross-project view of every task awaiting or under review, for anyone who can
@@ -68,8 +70,11 @@ Built with Laravel 13, Inertia.js, and React.
   custom), so narrowing upcoming due tasks doesn't disturb the Activity chart's range
 
 **Support & moderation**
-- Help & Feedback center: submit categorized tickets, track status by ID, threaded replies -
-  admins can create, edit, and remove the categories tickets are filed under
+- Help & Feedback center: submit categorized tickets (with up to 5 image attachments), track
+  status by ID, threaded replies once support has responded - the submitter can close or reopen
+  their own ticket at any point, and a ticket with no activity for 24 hours after a support reply
+  auto-closes (reopenable from the tracking page) - admins can create, edit, and remove the
+  categories tickets are filed under
 - Suspension system with a user-facing appeal flow and admin review
 - Admin console: manage users, feedback tickets, project logs, suspension logs, platform-wide
   analytics (including site-wide session activity), and read-only access to a user's own
@@ -156,6 +161,8 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
   (all default to 7 days) - see `config/synkro.php`.
 - **Name change cooldown:** how many days must pass between a user changing their display name
   is configurable via `NAME_CHANGE_COOLDOWN_DAYS` (defaults to 7 days) - see `config/synkro.php`.
+  A changed display name also notifies the owners/managers of that user's projects, so a sudden
+  name change doesn't read as an unfamiliar member.
 
 ### Troubleshooting
 

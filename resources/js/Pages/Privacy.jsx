@@ -25,7 +25,8 @@ const sections = [
                 <li>Content you create: projects, tasks, comments, notes, and any files or links you attach as deliverables.</li>
                 <li>Session activity: approximate location, browser, and device for each active sign-in, so you can see exactly who's signed into your account right now and disconnect any session you don't recognize.</li>
                 <li>Notification preferences and reminders you set up.</li>
-                <li>Support tickets and suspension appeals you submit, along with any admin responses.</li>
+                <li>Support tickets and suspension appeals you submit, along with any admin responses and
+                any image attachments you add to a ticket.</li>
             </ul>
         ),
     },

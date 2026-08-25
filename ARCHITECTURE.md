@@ -30,7 +30,12 @@ before a defense) picking the project back up.
   updateUser()`), and promoting/demoting a user between `user`/`admin`/`superadmin`
   (`toggleRole()`/`toggleSuperAdmin()`). High-impact superadmin actions (permanent user
   deletion, role changes) require a fresh emailed confirmation code first
-  (`sendConfirmationCode()`, `User::verifyAdminConfirmationCode()`).
+  (`sendConfirmationCode()`, `User::verifyAdminConfirmationCode()`). The same step-up code
+  mechanism (`User::sendAdminConfirmationCodeNotification()`/`verifyAdminConfirmationCode()` -
+  not actually admin-only, just named for their first use case) is reused outside the admin
+  system entirely for `ProjectController::transferOwnership()`: handing off a project is just as
+  hard to undo as anything superadmin-gated, so a project owner has to enter a code emailed to
+  them before the transfer goes through.
 - **Project role** - stored on the `project_user` pivot table (`owner` | `manager` |
   `member` | `tester`), scoped per project. A user can be a `manager` on one project and
   a `member` on another. `Project::roleFor($user)` is the lookup used everywhere
@@ -39,7 +44,12 @@ before a defense) picking the project back up.
 Authorization for project/task actions goes through Laravel Policies
 (`app/Policies/{Project,Task,Comment}Policy.php`), not ad hoc `if` checks scattered in
 controllers. E.g. `TaskPolicy::review()` allows `owner`, `manager`, or `tester` - but
-`update()` also allows the task's own assignee, and `manageChecklist()` allows
+`update()` also allows the task's own assignee (it gates the narrower assignee-facing actions -
+starting a task, submitting it, managing its own deliverables - not full editing of the task
+itself, which is `edit()`, owner/manager only: `TaskController::update()` used to authorize
+against `update` too, letting an assignee rewrite a task's title/description or reassign it
+through the raw PATCH endpoint even though the UI never offered that form - it now checks
+`edit` instead), and `manageChecklist()` allows
 `owner`/`manager` (any checklist item) or `tester` (only items they added themselves) -
 the assignee's only checklist permission is toggling an item done, enforced in the
 controller rather than the policy. When adding a new project-scoped action, add a policy
@@ -286,6 +296,30 @@ redirects every request other than the password-change routes themselves to
 `Auth/ForcePasswordChange.jsx` until the user sets a new password, so there's no way to use the
 temporary one past the first login.
 
+## Feedback / support tickets
+
+`Feedback` (`status`: `pending` | `reviewing` | `accepted` | `rejected` | `closed`) is open to
+guests and registered users alike - there's no login requirement, only a name/email on the
+ticket itself, matched against a registered account (if any) purely to decide whether an in-app
+notification can also be pushed alongside the always-sent email. Submitters attach up to 5 images
+per ticket (`FeedbackAttachment`, validated as `image|max:4096` each).
+
+- A submitter can only reply once an admin has responded at least once (`FeedbackController::
+  reply()`) - an unanswered ticket has nothing to reply to yet. Replies, closes, and reopens are
+  all authenticated by `tracking_id` + `email` matching the ticket, not a session.
+- The submitter can close (`close()`) or reopen a closed ticket (`reopen()`, back to `pending`)
+  themselves at any time, independent of the admin-side status changes in
+  `FeedbackAdminController::update()`.
+- `feedback:close-inactive` (scheduled) auto-closes any ticket that's had no activity - no new
+  reply from either side - for 24 hours *after* an admin has replied at least once
+  (`CloseInactiveFeedback`). A never-answered ticket is a support backlog problem, not something
+  that should vanish on the submitter, so it's excluded. The auto-close posts a system-authored
+  `FeedbackResponse` (`sender_type: 'system'`) explaining why, same as an admin close would, and
+  is reopenable the same way as any other closed ticket.
+- Admins manage the categories tickets are filed under (`Admin\FeedbackCategoryController`) and
+  reply to/change the status of tickets (`Admin\FeedbackAdminController::update()`), which always
+  sends the submitter a single email combining the message and any status change together.
+
 ## Notifications
 
 Two independent channels, both respecting the same per-user preferences
@@ -334,6 +368,12 @@ retargets the message/url, rather than only being able to remove the whole notif
 
 ## Known rough edges
 
+- `AdminController::destroyProject()` (routed as `DELETE /admin/projects/{project}`) intentionally
+  aborts with a 403 rather than deleting anything - platform admins have no direct way to delete a
+  project. That's deliberate: project deletion is owner-initiated and email-confirmed (see Trash
+  above), and giving admins a silent bypass around that would undercut it. The route and controller
+  method are kept as an explicit, documented no-op rather than removed, so this doesn't look like a
+  bug if revisited later.
 - `AdminController` and `TaskController` have grown large (currently a little over 1,400
   and 1,300 lines respectively) by doing most of their domain's work in one place. Not
   broken, but a good first refactor target - see the per-resource split already started
