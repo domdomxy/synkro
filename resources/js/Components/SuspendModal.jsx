@@ -30,9 +30,9 @@ export default function SuspendModal({ user, show, onClose }) {
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg" overlayClassName="bg-black/55 dark:bg-black/70" overflowVisible>
-            <form onSubmit={submit} className="p-6">
-                <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">Suspend {user?.name}?</h2>
-                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">They won't be able to log in until the suspension is lifted or expires.</p>
+            <form onSubmit={submit} className="p-5">
+                <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100">Suspend {user?.name}?</h2>
+                <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">They won't be able to log in until the suspension is lifted or expires.</p>
 
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Duration</label>
@@ -67,18 +67,18 @@ export default function SuspendModal({ user, show, onClose }) {
                     <InputError message={form.errors.reason} className="mt-1" />
                 </div>
 
-                <div className="mt-6 flex justify-end gap-2.5">
+                <div className="mt-5 flex justify-end gap-2">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        className="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
                     >
                         {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         Suspend

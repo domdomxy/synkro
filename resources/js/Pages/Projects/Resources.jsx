@@ -168,23 +168,23 @@ function DialogHeader({ title, subtitle, onClose }) {
     return (
         <div className="flex items-start justify-between gap-3">
             <div>
-                <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>
+                <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100">{title}</h2>
                 {subtitle && <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
             </div>
             <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="shrink-0 rounded p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                className="shrink-0 rounded p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
             >
-                <CloseIcon className="h-5 w-5" />
+                <CloseIcon className="h-4 w-4" />
             </button>
         </div>
     );
 }
 
 function DialogActions({ children }) {
-    return <div className="mt-6 flex justify-end gap-2.5">{children}</div>;
+    return <div className="mt-5 flex justify-end gap-2">{children}</div>;
 }
 
 function DialogCancelButton({ onClick, disabled, children = 'Cancel' }) {
@@ -193,7 +193,7 @@ function DialogCancelButton({ onClick, disabled, children = 'Cancel' }) {
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
         >
             {children}
         </button>
@@ -205,7 +205,7 @@ function DialogSubmitButton({ disabled, loading, children }) {
         <button
             type="submit"
             disabled={disabled}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
         >
             {loading && <Spinner className="mr-2 h-4 w-4" />}
             {children}

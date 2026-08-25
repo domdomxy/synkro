@@ -78,9 +78,9 @@ export default function AdminConfirmationModal({ show, purpose, sendCodeUrl, tit
 
     return (
         <Modal show={!!show} onClose={sending ? () => {} : onClose} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
-            <form onSubmit={handleSubmit} className="p-6">
-                <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+            <form onSubmit={handleSubmit} className="p-5">
+                <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100">{title}</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                     {description} We've sent a 6-digit code to{' '}
                     {auth?.user?.email && <span className="font-medium text-neutral-800 dark:text-neutral-200">{auth.user.email}</span>}.
                 </p>
@@ -103,19 +103,19 @@ export default function AdminConfirmationModal({ show, purpose, sendCodeUrl, tit
                     <ResendCodeButton onResend={sendCode} cooldownSeconds={RESEND_COOLDOWN_SECONDS} disabled={sending} />
                 </div>
 
-                <div className="mt-6 flex justify-end gap-2.5">
+                <div className="mt-5 flex justify-end gap-2">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={sending}
-                        className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={sending || code.length !== 6 || initialSendFailed}
-                        className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-neutral-800 ${
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-neutral-800 ${
                             danger
                                 ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
                                 : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'

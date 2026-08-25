@@ -51,23 +51,23 @@ export default function MuteScopeDialog({ open, title, message, defaultScope = '
 
     return (
         <Modal show={!!open} onClose={onCancel} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
-            <div className="p-6">
+            <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        {title && <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>}
-                        <p className={`text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300 ${title ? 'mt-2.5' : ''}`}>{message}</p>
+                        {title && <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100">{title}</h2>}
+                        <p className={`text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 ${title ? 'mt-1.5' : ''}`}>{message}</p>
                     </div>
                     <button
                         type="button"
                         onClick={onCancel}
                         aria-label="Close"
-                        className="shrink-0 rounded-md p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                        className="shrink-0 rounded-md p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                     >
-                        <CloseIcon className="h-5 w-5" />
+                        <CloseIcon className="h-4 w-4" />
                     </button>
                 </div>
 
-                <div className="mt-5 space-y-2">
+                <div className="mt-4 space-y-2">
                     {OPTIONS.map(({ value, label, description, Icon }) => (
                         <label
                             key={value}
@@ -94,11 +94,11 @@ export default function MuteScopeDialog({ open, title, message, defaultScope = '
                     ))}
                 </div>
 
-                <div className="mt-6 flex justify-end gap-2.5">
+                <div className="mt-5 flex justify-end gap-2">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                     >
                         Cancel
                     </button>
@@ -106,7 +106,7 @@ export default function MuteScopeDialog({ open, title, message, defaultScope = '
                         type="button"
                         onClick={() => onConfirm(scope)}
                         autoFocus
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800"
+                        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800"
                     >
                         {confirmLabel}
                     </button>

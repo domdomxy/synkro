@@ -604,38 +604,43 @@ export default function Index({ tasks, showingArchived, activeCount, archivedCou
                 </div>
             </div>
             <Modal show={!!archiveTarget} onClose={cancelArchiveTask} maxWidth="sm" overlayClassName="bg-black/55 dark:bg-black/70">
-                <div className="p-6">
-                    <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">
+                <div className="p-5">
+                    <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-gray-900 dark:text-gray-100">
                         Archive "{archiveTarget?.title}"?
                     </h2>
-                    <p className="mt-2.5 text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
-                        This only affects your own "My Tasks" list; the task itself is unchanged for everyone else. You can unarchive it anytime.
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                        This only affects your own "My Tasks" list; the task itself is unchanged for everyone else.
                     </p>
-                    <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <input
-                            type="checkbox"
-                            checked={skipArchiveConfirm}
-                            onChange={(e) => setSkipArchiveConfirm(e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
-                        />
-                        Don't show this again
-                    </label>
-                    <div className="mt-6 flex justify-end gap-2.5">
-                        <button
-                            type="button"
-                            onClick={cancelArchiveTask}
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-800"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={confirmArchiveTask}
-                            autoFocus
-                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-                        >
-                            Confirm
-                        </button>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+                        You can unarchive it anytime.
+                    </p>
+                    <div className="mt-5 flex items-center justify-between gap-3">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            <input
+                                type="checkbox"
+                                checked={skipArchiveConfirm}
+                                onChange={(e) => setSkipArchiveConfirm(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                            />
+                            Don't show this again
+                        </label>
+                        <div className="flex shrink-0 gap-2">
+                            <button
+                                type="button"
+                                onClick={cancelArchiveTask}
+                                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmArchiveTask}
+                                autoFocus
+                                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                            >
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 </div>
             </Modal>

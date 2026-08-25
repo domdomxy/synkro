@@ -212,8 +212,14 @@ export default function Index({ projects, showingArchived, activeCount, archived
         router.get(route('projects.index'), { archived: archived ? 1 : undefined }, { preserveState: false });
     };
 
+    // Scoped to this page only - "don't show this again" here has no effect
+    // on any other confirmation dialog in the app (e.g. task archiving).
     const archiveProject = async (project) => {
-        if (await confirm('This only affects your own view; other members will still see it normally. You can unarchive it anytime.', { title: `Archive "${project.name}"?` })) {
+        if (await confirm('This only affects your view; other members will still see the project normally.', {
+            title: `Archive "${project.name}"?`,
+            note: 'You can unarchive it anytime.',
+            skipKey: 'synkro:projects-archive-skip-confirm',
+        })) {
             router.post(route('projects.archive', project.id), {}, { preserveScroll: true });
         }
     };

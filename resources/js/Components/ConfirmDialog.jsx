@@ -78,15 +78,20 @@ function ChoiceCard({ choice, checked, onSelect }) {
     );
 }
 
-export default function ConfirmDialog({ open, title, message, danger, confirmLabel = 'Confirm', cancelLabel = 'Cancel', choices, hideCancel = false, onConfirm, onCancel }) {
+export default function ConfirmDialog({ open, title, message, note, danger, confirmLabel = 'Confirm', cancelLabel = 'Cancel', choices, hideCancel = false, skipKey, onConfirm, onCancel }) {
     const hasChoices = Array.isArray(choices) && choices.length > 0;
     const defaultChoice = hasChoices ? (choices.find((c) => c.default) ?? choices[0]).value : null;
     const [selected, setSelected] = useState(defaultChoice);
+    const [skipChecked, setSkipChecked] = useState(false);
 
-    // Reset the selection back to the default choice each time the dialog opens, so a
-    // previous pick from an earlier confirm() call doesn't leak into this one.
+    // Reset the selection (and the skip checkbox) back to their defaults each time the
+    // dialog opens, so a previous pick from an earlier confirm() call doesn't leak into
+    // this one.
     useEffect(() => {
-        if (open) setSelected(defaultChoice);
+        if (open) {
+            setSelected(defaultChoice);
+            setSkipChecked(false);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
@@ -94,7 +99,12 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
     const isDanger = hasChoices ? !!selectedChoice?.danger : !!danger;
     const finalConfirmLabel = selectedChoice?.confirmLabel ?? confirmLabel;
 
-    const handleConfirm = () => onConfirm(hasChoices ? selected : true);
+    const handleConfirm = () => {
+        if (skipKey && skipChecked) {
+            try { localStorage.setItem(skipKey, '1'); } catch { /* private browsing, etc. */ }
+        }
+        onConfirm(hasChoices ? selected : true);
+    };
 
     // Uses neutral-* instead of gray-* on purpose: this project's tailwind.config.js
     // remaps gray to a bluish slate palette app-wide, but this dialog is styled to match
@@ -106,24 +116,25 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
             maxWidth={hasChoices ? 'md' : 'sm'}
             overlayClassName="bg-black/55 dark:bg-black/70"
         >
-            <div className="p-6">
+            <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
-                    <div>
-                        {title && <h2 className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">{title}</h2>}
-                        <p className={`text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300 ${title ? 'mt-2.5' : ''}`}>{message}</p>
+                    <div className="min-w-0">
+                        {title && <h2 className="text-[15px] font-semibold leading-snug tracking-tight text-neutral-900 dark:text-neutral-100">{title}</h2>}
+                        <p className={`text-sm leading-relaxed text-neutral-800 dark:text-neutral-200 ${title ? 'mt-1.5' : ''}`}>{message}</p>
+                        {note && <p className="mt-1.5 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{note}</p>}
                     </div>
                     <button
                         type="button"
                         onClick={onCancel}
                         aria-label="Close"
-                        className="shrink-0 rounded-md p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                        className="shrink-0 rounded-md p-1.5 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                     >
-                        <CloseIcon className="h-5 w-5" />
+                        <CloseIcon className="h-4 w-4" />
                     </button>
                 </div>
 
                 {hasChoices && (
-                    <div className="mt-5 space-y-2.5" role="radiogroup" aria-label={title}>
+                    <div className="mt-4 space-y-2" role="radiogroup" aria-label={title}>
                         {choices.map((choice) => (
                             <ChoiceCard
                                 key={choice.value}
@@ -135,28 +146,41 @@ export default function ConfirmDialog({ open, title, message, danger, confirmLab
                     </div>
                 )}
 
-                <div className="mt-6 flex justify-end gap-2.5">
-                    {!hideCancel && (
+                <div className={`mt-5 flex items-center gap-3 ${skipKey ? 'justify-between' : 'justify-end'}`}>
+                    {skipKey && (
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+                            <input
+                                type="checkbox"
+                                checked={skipChecked}
+                                onChange={(e) => setSkipChecked(e.target.checked)}
+                                className="h-4 w-4 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-700"
+                            />
+                            Don't show this again
+                        </label>
+                    )}
+                    <div className="flex shrink-0 gap-2">
+                        {!hideCancel && (
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                            >
+                                {cancelLabel}
+                            </button>
+                        )}
                         <button
                             type="button"
-                            onClick={onCancel}
-                            className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                            onClick={handleConfirm}
+                            autoFocus
+                            className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
+                                isDanger
+                                    ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
+                            }`}
                         >
-                            {cancelLabel}
+                            {finalConfirmLabel}
                         </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={handleConfirm}
-                        autoFocus
-                        className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
-                            isDanger
-                                ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
-                                : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
-                        }`}
-                    >
-                        {finalConfirmLabel}
-                    </button>
+                    </div>
                 </div>
             </div>
         </Modal>
