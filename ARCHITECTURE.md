@@ -251,6 +251,34 @@ own `sessions` table (`SESSION_DRIVER=database`):
   activity calendar shown on both the personal dashboard (per-user) and the admin
   dashboard (site-wide, alongside Tasks by Status).
 
+## Verification codes: one pattern, five separate flows
+
+Synkro never uses Laravel's default signed-link verification - everywhere a person needs to
+prove they control an inbox or step up for a sensitive action, it's the same emailed 6-digit
+code pattern (short, typeable, hashed at rest, expiring, attempt-limited), implemented
+independently five times rather than as one shared class:
+
+- **Email verification** (`VerifyEmailController`) - code + `email_verification_code_expires_at`
+  on the `users` row, 5 wrong attempts before a fresh code is required, resend
+  throttled `6,1` at the route.
+- **Password reset** (`PasswordResetLinkController`/`NewPasswordController`) - bypasses
+  Laravel's Password broker entirely; code hashed into `password_reset_tokens.token`,
+  expiry from `config('auth.passwords....expire')` (15 minutes by default), 5 attempts.
+- **Account restore** (soft-deleted account logging back in) - see Login below, 6-digit code,
+  no separate request needed.
+- **Admin/owner step-up confirmation** (`User::sendAdminConfirmationCodeNotification()`/
+  `verifyAdminConfirmationCode()`) - 10-minute expiry, `admin_confirmation_code_purpose` scopes
+  a code to the one action it was issued for (`users.role_change`, `users.delete_permanent`,
+  `projects.transfer_ownership`) so a code meant for one can't be replayed against another.
+- **Account/project deletion confirmation** is the one exception to the code pattern - those use
+  a Laravel signed URL emailed as a link instead, since the flow is a single click-through
+  rather than something typed back into a form (see Trash above).
+
+A new password is also gated client-side (`meetsMinimumStrength()`) at every point one is set
+(registration, reset, forced change, and the logged-in change-password form) - the account must
+reach at least "Good" strength before the form submits. The server only enforces Laravel's
+baseline `Password::defaults()` rules, so this is a UX nudge, not a hard server-side minimum.
+
 ## Login: one page absorbs several account states
 
 `AuthenticatedSessionController` treats a failed or blocked login as a chance to disambiguate
