@@ -1567,25 +1567,39 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             />
                         )}
                         <div className="min-w-0 flex-1">
-                            {/* Title row: name stays with the kebab menu so both are always
-                                reachable together, on a phone screen or a wide one. Badges
-                                and metadata live on their own row below instead of competing
-                                for space here. */}
+                            {/* Meta row: assignee/due date on the left, badges and the kebab
+                                menu on the right when there's room (desktop), wrapping to
+                                their own line when there isn't (mobile) - so neither ever
+                                gets squeezed. */}
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                    {task.assignee && <Avatar user={task.assignee} size="h-5 w-5" className="shrink-0" />}
-                                    <p className="min-w-0 break-words font-semibold text-gray-900 dark:text-gray-100">
-                                        {task.title}
-                                        {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
-                                    </p>
-                                    {task.is_pinned && (
-                                        <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                    )}
-                                    {effectivelyMuted && (
-                                        <svg title={projectMuted && !task.is_muted ? 'Notifications muted (whole project muted)' : 'Notifications muted for this task'} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
-                                        </svg>
-                                    )}
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                        {!task.assignee && <span>Unassigned</span>}
+                                        {task.assignee && (
+                                            <span className="flex items-center gap-1.5">
+                                                <Avatar user={task.assignee} size="h-5 w-5" className="shrink-0" />
+                                                {task.assignee.name}
+                                            </span>
+                                        )}
+                                        {task.due_date && (
+                                            <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
+                                                <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {formatDue(task.due_date)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {task.priority && task.priority !== 'medium' && (
+                                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
+                                                {priorityLabels[task.priority] ?? task.priority}
+                                            </span>
+                                        )}
+                                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                            {task.status.replace('_', ' ')}
+                                        </span>
+                                    </div>
                                 </div>
                                 <KebabMenu
                                     canManage={canManage}
@@ -1602,32 +1616,22 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     onShowHistory={() => setShowHistory(true)}
                                 />
                             </div>
-                            {/* Meta row: assignee/due date on the left, badges on the right
-                                when there's room (desktop), wrapping to their own line when
-                                there isn't (mobile) - so neither ever gets squeezed. */}
-                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                    {!task.assignee && <span>Unassigned</span>}
-                                    {task.assignee && <span>{task.assignee.name}</span>}
-                                    {task.due_date && (
-                                        <span className={`flex items-center gap-1 ${new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : ''}`}>
-                                            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            {formatDue(task.due_date)}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
-                                    {task.priority && task.priority !== 'medium' && (
-                                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority] ?? priorityStyles.medium}`}>
-                                            {priorityLabels[task.priority] ?? task.priority}
-                                        </span>
-                                    )}
-                                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                        {task.status.replace('_', ' ')}
-                                    </span>
-                                </div>
+                            {/* Title row: sits on its own line below the meta row now that
+                                the kebab menu has moved up there with the rest of the
+                                header controls. */}
+                            <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                <p className="min-w-0 break-words font-semibold text-gray-900 dark:text-gray-100">
+                                    {task.title}
+                                    {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
+                                </p>
+                                {task.is_pinned && (
+                                    <PinIcon filled className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                )}
+                                {effectivelyMuted && (
+                                    <svg title={projectMuted && !task.is_muted ? 'Notifications muted (whole project muted)' : 'Notifications muted for this task'} className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
+                                    </svg>
+                                )}
                             </div>
                         </div>
                     </div>
