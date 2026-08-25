@@ -605,10 +605,11 @@ class TaskController extends Controller
         $validated = $request->validate([
             'task_ids' => 'required|array|min:1',
             'task_ids.*' => 'integer|exists:tasks,id',
-            'action' => 'required|in:delete,status,priority,assign',
+            'action' => 'required|in:delete,status,priority,assign,due_date',
             'status' => 'nullable|in:todo,in_progress,submitted,in_review,done',
             'priority' => 'nullable|in:low,medium,high',
             'assigned_to' => 'nullable|exists:users,id',
+            'due_date' => 'nullable|date',
         ]);
 
         $tasks = $project->tasks()->whereIn('id', $validated['task_ids'])->get();
@@ -697,6 +698,54 @@ class TaskController extends Controller
             $this->broadcastTaskChanged($tasks->first());
 
             return back()->with('success', 'Priority updated for ' . count($tasks) . ' task(s).');
+        }
+
+        if ($validated['action'] === 'due_date') {
+            $newDueDate = $validated['due_date'] ?? null;
+            $newDueDateParsed = $newDueDate ? \Illuminate\Support\Carbon::parse($newDueDate) : null;
+
+            $affected = [];
+
+            foreach ($tasks as $task) {
+                $old = $task->due_date?->toDateTimeString();
+                $new = $newDueDateParsed?->toDateTimeString();
+
+                if ($old === $new) {
+                    continue;
+                }
+
+                $task->due_date = $newDueDateParsed;
+                // A due date change shifts when the overdue alert and the "offset
+                // before due" reminder should fire, and clearing the due date
+                // altogether leaves a reminder with nothing to count back from -
+                // same rules TaskController::update() applies to a single task.
+                $task->overdue_notified_at = null;
+                $task->reminder_notified_at = null;
+                if (! $newDueDateParsed) {
+                    $task->reminder_offset_minutes = null;
+                }
+                $task->save();
+
+                ProjectActivityLog::log($project, 'task_updated', [
+                    'task_title' => $task->title,
+                    'changes' => ['due_date' => ['old' => $old, 'new' => $new]],
+                ], $task);
+
+                if ($task->assigned_to && (int) $task->assigned_to !== Auth::id()) {
+                    $affected[$task->assigned_to][] = $task->title;
+                }
+            }
+
+            $this->notifyBulkFieldChange(
+                $project,
+                $affected,
+                'due date',
+                $newDueDateParsed ? $newDueDateParsed->format('M j, Y') : 'no due date'
+            );
+
+            $this->broadcastTaskChanged($tasks->first());
+
+            return back()->with('success', 'Due date updated for ' . count($tasks) . ' task(s).');
         }
 
         if ($validated['action'] === 'assign') {
@@ -883,8 +932,15 @@ class TaskController extends Controller
             return;
         }
 
-        $label = ucwords(str_replace('_', ' ', $newValue));
-        $fieldLabel = $field === 'status' ? 'Status' : 'Priority';
+        // due_date passes an already-human value ("Aug 30, 2026", "no due date");
+        // status/priority pass a raw enum value that still needs humanizing.
+        $label = $field === 'due date' ? $newValue : ucwords(str_replace('_', ' ', $newValue));
+        $fieldLabel = match ($field) {
+            'status' => 'Status',
+            'priority' => 'Priority',
+            'due date' => 'Due date',
+            default => ucfirst($field),
+        };
         $headline = "{$fieldLabel} changed to {$label}";
 
         foreach ($affectedTitles as $userId => $titles) {

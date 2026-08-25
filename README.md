@@ -41,7 +41,7 @@ Built with Laravel 13, Inertia.js, and React.
   review it (owner, manager, or tester on that project) - separate from the per-project Kanban
   board, and sorted by wait time with in-review tasks first
 - Multi-select bulk actions on the project task list (delete, change status, change priority,
-  reassign), restricted to owners/managers
+  reassign, change or clear the due date), restricted to owners/managers
 - When a member is removed, leaves, deactivates, or deletes their account, their unfinished tasks
   are unassigned and reset to To Do, but tasks that were done, submitted, or in review are frozen
   instead so nothing gets silently reassigned or lost - a manager then explicitly keeps or resets

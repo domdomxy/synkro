@@ -696,8 +696,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
     const { askMuteScope, MuteScopeDialog } = useMuteScope();
-    const [bulkAction, setBulkAction] = useState({status: '',priority: '',assigned_to: '',});
-    const [bulkTouched, setBulkTouched] = useState({status: false,priority: false,assigned_to: false,});
+    const [bulkAction, setBulkAction] = useState({status: '',priority: '',assigned_to: '',due_date: '',});
+    const [bulkTouched, setBulkTouched] = useState({status: false,priority: false,assigned_to: false,due_date: false,});
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const toggleTaskSelect = (taskId) => {setSelectedTaskIds((prev) => (prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]));
     };
@@ -724,6 +724,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         if (bulkTouched.status) jobs.push({ action: 'status', extra: { status: bulkAction.status } });
         if (bulkTouched.priority) jobs.push({ action: 'priority', extra: { priority: bulkAction.priority } });
         if (bulkTouched.assigned_to) jobs.push({ action: 'assign', extra: { assigned_to: bulkAction.assigned_to || null } });
+        if (bulkTouched.due_date) jobs.push({ action: 'due_date', extra: { due_date: bulkAction.due_date || null } });
         if (jobs.length === 0) return;
 
         setBulkProcessing(true);
@@ -736,7 +737,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             });
         }
         setBulkProcessing(false);
-        setBulkTouched({ status: false, priority: false, assigned_to: false });
+        setBulkTouched({ status: false, priority: false, assigned_to: false, due_date: false });
         setSelectedTaskIds([]);
     };
     const [highlightedTaskId, setHighlightedTaskId] = useState(null);
@@ -1438,8 +1439,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name, avatar: m }))]}
                                     />
 
+                                    <input
+                                        type="date"
+                                        value={bulkAction.due_date}
+                                        onChange={(e) => { setBulkAction((s) => ({ ...s, due_date: e.target.value })); setBulkTouched((t) => ({ ...t, due_date: true })); }}
+                                        title="Set due date for selected tasks (leave blank to clear it)"
+                                        className="w-36 rounded-md border border-gray-300 bg-white py-2 pl-3 pr-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    />
+
                                     <PrimaryButton
-                                        disabled={bulkProcessing || !(bulkTouched.status || bulkTouched.priority || bulkTouched.assigned_to)}
+                                        disabled={bulkProcessing || !(bulkTouched.status || bulkTouched.priority || bulkTouched.assigned_to || bulkTouched.due_date)}
                                         onClick={saveBulkChanges}
                                     >
                                         Save Changes
@@ -1447,7 +1456,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
                                     <DangerButton disabled={bulkProcessing} onClick={() => runBulkAction('delete')}>Delete</DangerButton>
                                     <button
-                                        onClick={() => { clearSelection(); setBulkTouched({ status: false, priority: false, assigned_to: false }); }}
+                                        onClick={() => { clearSelection(); setBulkTouched({ status: false, priority: false, assigned_to: false, due_date: false }); }}
                                         className="ml-auto text-sm text-indigo-700 hover:underline dark:text-indigo-300"
                                     >
                                         Clear selection

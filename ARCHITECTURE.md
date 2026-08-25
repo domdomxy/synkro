@@ -71,10 +71,13 @@ links) attach to a task via `TaskDeliverable`; a project's submitted deliverable
 bulk-exported as a ZIP.
 
 `TaskController::bulkUpdate()` lets an owner/manager act on several tasks from the project task
-list at once (delete, change status, change priority, reassign) rather than one at a time. Status
-changes made this way bypass the guided start/submit/review flow, but still set the same
-`submitted_at`/`review_started_at` timestamps that flow would, so the Testing Queue's ordering
-stays correct for tasks touched in bulk.
+list at once (delete, change status, change priority, reassign, change or clear the due date)
+rather than one at a time. Status changes made this way bypass the guided start/submit/review
+flow, but still set the same `submitted_at`/`review_started_at` timestamps that flow would, so
+the Testing Queue's ordering stays correct for tasks touched in bulk. A bulk due-date change
+resets `overdue_notified_at`/`reminder_notified_at` the same way a single-task edit does (see
+Deadline reminders below), and clearing the due date altogether also clears
+`reminder_offset_minutes`, since a reminder needs a due date to count back from.
 
 ## Deadline reminders vs. personal reminders
 
