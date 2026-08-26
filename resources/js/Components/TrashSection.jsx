@@ -257,13 +257,13 @@ function TrashRow({ icon, title, titleHref, subtitle, deletedAt, graceEndsAt, se
         // instead of pushing the actions button out.
         <div
             className={
-                'flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
+                'flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-1.5 transition last:border-0 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-2 ' +
                 (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
             }
         >
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                 <Checkbox checked={selected} onChange={onToggleSelect} aria-label={`Select ${title}`} className="h-4 w-4 shrink-0 cursor-pointer" />
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 sm:h-8 sm:w-8">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 sm:h-7 sm:w-7">
                     {icon}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -360,12 +360,12 @@ function PickRow({ icon, title, subtitle, selected, onToggleSelect }) {
                 // sharp-cornered by default) pokes square corners out past
                 // the container's rounded top/bottom edge whenever the
                 // first or last row in the list gets focus.
-                'flex cursor-pointer flex-nowrap items-center gap-2 border-b border-gray-100 px-3 py-3 transition first:rounded-t-lg last:rounded-b-lg last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-3.5 ' +
+                'flex cursor-pointer flex-nowrap items-center gap-2 border-b border-gray-100 px-3 py-1.5 transition first:rounded-t-lg last:rounded-b-lg last:border-0 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 dark:border-gray-700 sm:gap-3 sm:px-4 sm:py-2 ' +
                 (selected ? 'bg-indigo-50/70 dark:bg-indigo-950/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/20')
             }
         >
             <Checkbox checked={selected} onChange={onToggleSelect} aria-label={`Select ${title}`} className="h-4 w-4 shrink-0 cursor-pointer" />
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 sm:h-8 sm:w-8">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 sm:h-7 sm:w-7">
                 {icon}
             </div>
             <div className="min-w-0 flex-1">

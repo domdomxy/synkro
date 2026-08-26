@@ -856,7 +856,7 @@ export default function SettingsPanel({ emailCatalog, emailPreferences, emailDef
                     )}
 
                     {activeSection === 'devices' && (
-                        <DeviceSessionsSection devices={devices ?? []} />
+                        <DeviceSessionsSection devices={devices ?? []} overlayActions={overlayActions} />
                     )}
 
                     {activeSection === 'support' && (

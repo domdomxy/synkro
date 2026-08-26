@@ -34,9 +34,9 @@ function DeviceRow({ device, onDisconnect }) {
     const detailLine = [device.location, device.ip].filter(Boolean).join(' - ');
 
     return (
-        <div className="flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-3 transition last:border-0 hover:bg-gray-50/80 dark:border-gray-700 dark:hover:bg-gray-700/20 sm:gap-3 sm:px-4 sm:py-3.5">
+        <div className="flex flex-nowrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-1.5 transition last:border-0 hover:bg-gray-50/80 dark:border-gray-700 dark:hover:bg-gray-700/20 sm:gap-3 sm:px-4 sm:py-2">
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                     <Icon path={isMobileDevice ? ICON_PATHS.mobile : ICON_PATHS.desktop} className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -72,14 +72,41 @@ function DeviceRow({ device, onDisconnect }) {
     );
 }
 
-export default function DeviceSessionsSection({ devices }) {
+export default function DeviceSessionsSection({ devices, overlayActions }) {
     const { confirm, ConfirmDialog } = useConfirm();
     const otherCount = devices.filter((d) => !d.is_current).length;
+
+    // Mirrors the same panel-hop pattern used by the sidebar's "Account" link
+    // and NavSearchInput's handleNavSelect below - jump straight into the
+    // Account panel's password section when this is rendered inside the
+    // overlay, falling back to a real page visit when it isn't (e.g. if this
+    // section is ever used standalone).
+    const goToPassword = () => {
+        if (overlayActions?.switchToAccount) {
+            overlayActions.switchToAccount('update-password');
+        } else {
+            router.visit(route('account.edit', { section: 'update-password' }));
+        }
+    };
+
+    const passwordNote = (
+        <>
+            If this wasn't you,{' '}
+            <button
+                type="button"
+                onClick={goToPassword}
+                className="rounded-sm font-medium text-indigo-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-400"
+            >
+                change your password
+            </button>{' '}
+            right away.
+        </>
+    );
 
     const disconnectDevice = async (device) => {
         const ok = await confirm(
             `${device.browser} on ${device.device} will be signed out immediately.`,
-            { title: 'Disconnect this device?', danger: true, confirmLabel: 'Disconnect' }
+            { title: 'Disconnect this device?', danger: true, confirmLabel: 'Disconnect', note: passwordNote }
         );
         if (ok) router.delete(route('settings.devices.disconnect', device.id), { preserveScroll: true });
     };
@@ -87,7 +114,7 @@ export default function DeviceSessionsSection({ devices }) {
     const disconnectOthers = async () => {
         const ok = await confirm(
             `${otherCount} other device${otherCount === 1 ? '' : 's'} will be signed out immediately. This device stays signed in.`,
-            { title: 'Log out of all other devices?', danger: true, confirmLabel: 'Log out others' }
+            { title: 'Log out of all other devices?', danger: true, confirmLabel: 'Log out others', note: passwordNote }
         );
         if (ok) router.delete(route('settings.devices.disconnect-others'), { preserveScroll: true });
     };
