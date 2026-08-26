@@ -225,9 +225,9 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                                                     type="button"
                                                     className="relative inline-flex items-center justify-center rounded-full text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out focus:outline-none dark:text-gray-400"
                                                 >
-                                                    <Avatar user={user} size="h-9 w-9" rounded="rounded-full" />
-                                                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 ring-2 ring-white dark:bg-gray-700 dark:ring-gray-900">
-                                                        <svg className="h-3 w-3 text-gray-600 dark:text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <Avatar user={user} size="h-8 w-8" rounded="rounded-full" />
+                                                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gray-200 ring-2 ring-white dark:bg-gray-700 dark:ring-gray-900">
+                                                        <svg className="h-2.5 w-2.5 text-gray-600 dark:text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                         <path
                                                             fillRule="evenodd"
                                                             d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
