@@ -173,8 +173,11 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                     <div className="flex h-14 justify-between sm:h-16">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/">
+                                <Link href="/" className="flex items-center gap-2">
                                     <ApplicationLogo className="block h-7 w-auto fill-current text-gray-800 dark:text-gray-200 sm:h-9" />
+                                    <span className="text-lg font-semibold tracking-tight text-gray-800 dark:text-gray-200 sm:text-xl">
+                                        synkro
+                                    </span>
                                 </Link>
                             </div>
 
@@ -285,14 +288,14 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
             <ToastLayer />
             {header && (
                 <header className={`sticky top-14 z-40 border-b border-white/10 bg-white/20 shadow-lg backdrop-blur-md transition-transform duration-300 dark:border-gray-700/20 dark:bg-gray-800/20 sm:top-16 ${headerVisible ? 'translate-y-0' : '-translate-y-[calc(100%_+_3.5rem)] sm:-translate-y-[calc(100%_+_4rem)]'}`}>
-                    <div className={`mx-auto ${headerMaxWidth} px-3 py-3 sm:px-6 sm:py-6 lg:px-8`}>{header}</div>
+                    <div className={`mx-auto ${headerMaxWidth} px-3 py-2 sm:px-6 sm:py-3.5 lg:px-8`}>{header}</div>
                 </header>
             )}
 
-            {/* pb-24 keeps content clear of the fixed BottomNavBar on mobile (58px
+            {/* pb-20 keeps content clear of the fixed BottomNavBar on mobile (46px
                 icon+label bar + safe-area inset + breathing room); sm:pb-0 drops
                 it once that bar is hidden. */}
-            <main className="pb-24 sm:pb-0">{children}</main>
+            <main className="pb-20 sm:pb-0">{children}</main>
 
             {OverlayPanel && <OverlayPanel {...overlay.props} onClose={closeOverlay} />}
             <BottomNavBar links={mobileNavLinks} />

@@ -46,7 +46,7 @@ export default function ChartTypeToggle({ value, onChange }) {
                     onClick={() => onChange(key)}
                     title={`${label} chart`}
                     aria-pressed={value === key}
-                    className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors sm:px-2.5 sm:py-1 ${
                         value === key
                             ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'

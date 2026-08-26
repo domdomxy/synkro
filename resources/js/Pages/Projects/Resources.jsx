@@ -828,7 +828,7 @@ export default function Resources({ project, resources, canManage, role }) {
 
                     {resources.length === 0 ? (
                         <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800/60">
-                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-400">
+                            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-400">
                                 <BoxIcon className="h-7 w-7" />
                             </div>
                             <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">

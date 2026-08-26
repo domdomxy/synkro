@@ -878,7 +878,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingChecklistItemId, setEditingChecklistItemId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null); // comment object being replied to, or null
-    const [collapsedIds, setCollapsedIds] = useState(() => new Set()); // ids of comments whose thread is minimized
+    const [collapsedIds, setCollapsedIds] = useState(() => {
+        // Reply threads start minimized behind "View N replies" - only the
+        // root comment shows initially. Seeded once from the task's comments
+        // as loaded; toggling a thread open/closed after that is left to the
+        // user, not re-collapsed on every re-render.
+        const tree = buildCommentTree(task.comments);
+        return new Set(tree.roots.filter((c) => (tree.repliesByRoot.get(c.id)?.length ?? 0) > 0).map((c) => c.id));
+    }); // ids of comments whose thread is minimized
     const [showReopenPanel, setShowReopenPanel] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [historySearch, setHistorySearch] = useState('');
@@ -935,6 +942,20 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         if (!autoOpenCommentId || !task.comments?.some((c) => c.id === autoOpenCommentId)) return;
         setActiveSection('comments');
         setHighlightedCommentId(autoOpenCommentId);
+        // The target might be a reply sitting inside a thread that's
+        // collapsed by default - expand its root first so the element
+        // actually exists in the DOM for the scroll below to find.
+        const rootId = (() => {
+            const tree = buildCommentTree(task.comments);
+            let current = tree.byId.get(autoOpenCommentId);
+            const seen = new Set();
+            while (current?.parent_id && tree.byId.has(current.parent_id) && !seen.has(current.id)) {
+                seen.add(current.id);
+                current = tree.byId.get(current.parent_id);
+            }
+            return current?.id;
+        })();
+        if (rootId) setCollapsedIds((current) => { const next = new Set(current); next.delete(rootId); return next; });
         const scrollTimer = setTimeout(() => {
             document.getElementById(`comment-${autoOpenCommentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
@@ -1334,42 +1355,48 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     // CommentDrawer bottom sheet - same thread, two different containers.
     const commentsPanelContent = (
         <>
-            {commentTree.roots.map((comment) => (
-                <CommentThread
-                    key={comment.id}
-                    comment={comment}
-                    replies={commentTree.repliesByRoot.get(comment.id) ?? []}
-                    byId={commentTree.byId}
-                    isCollapsed={collapsedIds.has(comment.id)}
-                    onToggleCollapse={toggleCommentCollapse}
-                    replyingToId={replyingTo?.id ?? null}
-                    composer={commentComposer}
-                    highlightedCommentId={highlightedCommentId}
-                    editingCommentId={editingCommentId}
-                    editCommentForm={editCommentForm}
-                    currentUserId={currentUserId}
-                    canManage={canManage}
-                    isTrashed={isTrashed}
-                    members={members}
-                    onSaveEdit={saveCommentEdit}
-                    onStartEdit={startEditComment}
-                    onCancelEdit={() => setEditingCommentId(null)}
-                    onDelete={deleteComment}
-                    onStartReply={startReply}
-                    onScrollToComment={scrollToComment}
-                />
-            ))}
-            {commentCount === 0 && (
-                <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
-                    <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
-                    </svg>
-                    <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
-                </div>
-            )}
+            <div className="thin-scrollbar max-h-[26rem] space-y-4 overflow-y-auto pr-0.5">
+                {commentTree.roots.map((comment) => (
+                    <CommentThread
+                        key={comment.id}
+                        comment={comment}
+                        replies={commentTree.repliesByRoot.get(comment.id) ?? []}
+                        byId={commentTree.byId}
+                        isCollapsed={collapsedIds.has(comment.id)}
+                        onToggleCollapse={toggleCommentCollapse}
+                        replyingToId={replyingTo?.id ?? null}
+                        composer={commentComposer}
+                        highlightedCommentId={highlightedCommentId}
+                        editingCommentId={editingCommentId}
+                        editCommentForm={editCommentForm}
+                        currentUserId={currentUserId}
+                        canManage={canManage}
+                        isTrashed={isTrashed}
+                        members={members}
+                        onSaveEdit={saveCommentEdit}
+                        onStartEdit={startEditComment}
+                        onCancelEdit={() => setEditingCommentId(null)}
+                        onDelete={deleteComment}
+                        onStartReply={startReply}
+                        onScrollToComment={scrollToComment}
+                    />
+                ))}
+                {commentCount === 0 && (
+                    <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
+                        <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
+                        </svg>
+                        <p className="text-center text-sm text-gray-400 dark:text-gray-500">No comments yet. Be the first to say something.</p>
+                    </div>
+                )}
+            </div>
             {/* The bottom box is for starting a brand-new top-level comment.
                 While replying to an existing comment, the same composer
-                renders inline inside that thread instead (see CommentThread). */}
+                renders inline inside that thread instead (see CommentThread),
+                so it stays inside the scroll area next to the thread it's
+                replying to rather than duplicating down here. Kept outside
+                the scroll area above so it's always reachable without having
+                to scroll through every existing comment first. */}
             {!replyingTo && commentComposer}
         </>
     );

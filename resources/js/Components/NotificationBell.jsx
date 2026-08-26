@@ -352,7 +352,10 @@ export default function NotificationBell() {
                                 </button>
                             )}
                             {items.length > 0 && (
-                                <button onClick={clearAll} className="text-xs font-medium text-gray-500 hover:underline dark:text-gray-400">
+                                <button
+                                    onClick={clearAll}
+                                    className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:border-transparent dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
+                                >
                                     Clear all
                                 </button>
                             )}
@@ -405,12 +408,12 @@ export default function NotificationBell() {
                             return (
                                 <div
                                     key={note.id}
-                                    className={`group flex items-start gap-2 border-b border-gray-50 px-3 py-2 transition hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 sm:px-4 sm:py-3 ${
+                                    className={`group flex items-start gap-2 border-b border-gray-50 px-3 py-1.5 transition hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 sm:px-4 sm:py-2 ${
                                         !note.read_at ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
                                     }`}
                                 >
-                                    <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-3 text-left">
-                                        <NotificationIcon causer={note.causer} style={style} size="h-8 w-8" />
+                                    <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-2.5 text-left">
+                                        <NotificationIcon causer={note.causer} style={style} size="h-6 w-6" />
                                         <span className="min-w-0 flex-1">
                                             <span className={`block break-words text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                                                 {title}
@@ -418,10 +421,10 @@ export default function NotificationBell() {
                                             {description && (
                                                 <NoteList
                                                     note={description}
-                                                    className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                    className="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
                                                 />
                                             )}
-                                            <span className="mt-1 block text-[11px] text-gray-400 dark:text-gray-500">
+                                            <span className="mt-0.5 block text-[11px] text-gray-400 dark:text-gray-500">
                                                 {relativeTime(note.created_at)}
                                             </span>
                                         </span>
@@ -434,7 +437,7 @@ export default function NotificationBell() {
                                             deleteNotification(note.id);
                                         }}
                                         title="Delete notification"
-                                        className="mt-1 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
+                                        className="mt-0.5 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
                                     >
                                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

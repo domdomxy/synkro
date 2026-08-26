@@ -32,14 +32,14 @@ export default function RangeButtons({ range, routeName, customFrom, customTo, r
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
                 {Object.entries(ranges).map(([key, { short, full }]) => (
                     <Link
                         key={key}
                         href={route(routeName, { ...extraParams, [rangeParam]: key })}
                         preserveScroll
-                        className={`min-h-[36px] rounded-md px-3 py-1.5 text-xs font-medium leading-[20px] transition-colors sm:min-h-0 sm:py-1 ${
+                        className={`min-h-[24px] rounded-md px-2 py-0.5 text-xs font-medium leading-[18px] transition-colors sm:min-h-0 ${
                             range === key
                                 ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
                                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -52,7 +52,7 @@ export default function RangeButtons({ range, routeName, customFrom, customTo, r
                 ))}
                 <button
                     onClick={() => setShowCustom((v) => !v)}
-                    className={`flex min-h-[36px] items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium leading-[20px] transition-colors sm:min-h-0 sm:py-1 ${
+                    className={`flex min-h-[24px] items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium leading-[18px] transition-colors sm:min-h-0 ${
                         range === 'custom'
                             ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -66,10 +66,10 @@ export default function RangeButtons({ range, routeName, customFrom, customTo, r
             </div>
             {showCustom && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-[36px] rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-[24px] rounded-md border-gray-300 px-2 py-0.5 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
                     <span className="text-xs text-gray-400">to</span>
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-[36px] rounded-md border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
-                    <button onClick={applyCustom} className="min-h-[36px] rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500">
+                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-[24px] rounded-md border-gray-300 px-2 py-0.5 text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+                    <button onClick={applyCustom} className="min-h-[24px] rounded-md bg-indigo-600 px-3 py-0.5 text-xs font-medium text-white hover:bg-indigo-500">
                         Apply
                     </button>
                 </div>

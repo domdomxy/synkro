@@ -38,13 +38,13 @@ export default function ChartControlsMenu({ chartType, onChartTypeChange, range,
                     </span>
                 </button>
             </Dropdown.Trigger>
-            <Dropdown.Content align="right" width="auto" contentClasses="w-max max-w-[calc(100vw-2rem)] space-y-3 bg-white p-3 dark:bg-gray-800">
+            <Dropdown.Content align="right" width="auto" contentClasses="w-max max-w-[calc(100vw-2rem)] space-y-2 bg-white p-2.5 dark:bg-gray-800 sm:space-y-3 sm:p-3">
                 <div>
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Chart type</p>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 sm:mb-1.5">Chart type</p>
                     <ChartTypeToggle value={chartType} onChange={onChartTypeChange} />
                 </div>
                 <div>
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Date range</p>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 sm:mb-1.5">Date range</p>
                     <RangeButtons range={range} routeName={routeName} customFrom={customFrom} customTo={customTo} extraParams={extraParams} />
                 </div>
             </Dropdown.Content>

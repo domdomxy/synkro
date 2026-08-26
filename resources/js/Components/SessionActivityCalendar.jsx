@@ -528,9 +528,9 @@ export default function SessionActivityCalendar({ title = 'Session Activity', se
                         <FiltersPanel anchorEl={filtersTriggerRef.current} onClose={() => setFiltersOpen(false)}>
                             <div>
                                 <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Month</p>
-                                <div className="flex max-w-[15rem] flex-wrap items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
+                                <div className="grid w-[19rem] grid-cols-6 items-center gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-900/60">
                                     {monthOptions.map(({ name, i }) => (
-                                        <button key={i} type="button" onClick={() => handleMonthChange(i)} className={pillClass(i === selectedMonthIndex)}>
+                                        <button key={i} type="button" onClick={() => handleMonthChange(i)} className={`${pillClass(i === selectedMonthIndex)} text-center`}>
                                             {name.slice(0, 3)}
                                         </button>
                                     ))}

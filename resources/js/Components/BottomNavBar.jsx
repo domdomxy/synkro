@@ -117,7 +117,7 @@ export default function BottomNavBar({ links }) {
             className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200/80 bg-white/95 shadow-[0_-1px_8px_rgba(0,0,0,0.05)] backdrop-blur dark:border-gray-700/80 dark:bg-gray-800/95 sm:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-            <div className="flex h-[58px] items-stretch">
+            <div className="flex h-[46px] items-stretch">
                 {links.map((link) => {
                     const Icon = ICONS[link.key] ?? DashboardIcon;
                     return (
@@ -125,7 +125,7 @@ export default function BottomNavBar({ links }) {
                             key={link.href}
                             href={link.href}
                             aria-current={link.active ? 'page' : undefined}
-                            className="group relative flex flex-1 flex-col items-center justify-center gap-1 pt-1.5 focus:outline-none"
+                            className="group relative flex flex-1 flex-col items-center justify-center gap-0.5 pt-1 focus:outline-none"
                         >
                             <span
                                 className={`absolute inset-x-[22%] top-0 h-0.5 rounded-full bg-indigo-500 transition-opacity duration-150 dark:bg-indigo-400 ${
@@ -139,7 +139,7 @@ export default function BottomNavBar({ links }) {
                                         : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300'
                                 }`}
                             >
-                                <Icon className="h-[21px] w-[21px]" active={link.active} />
+                                <Icon className="h-[18px] w-[18px]" active={link.active} />
                                 {link.badge === 'dot' && (
                                     <span className="absolute right-0.5 top-0 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800" />
                                 )}

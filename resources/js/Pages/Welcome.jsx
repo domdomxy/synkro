@@ -293,7 +293,7 @@ function RevealWords({ text, visible, baseDelay = 0, step = 40, className = '' }
 // A gentle "magnetic" pull toward the cursor, the way revoholic's buttons and
 // nav links nudge toward the pointer instead of just sitting still on hover.
 // Desktop pointer-fine only, and a no-op under prefers-reduced-motion.
-function useMagnetic(strength = 16) {
+function useMagnetic(strength = 8) {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -306,9 +306,13 @@ function useMagnetic(strength = 16) {
             const rect = node.getBoundingClientRect();
             const relX = e.clientX - rect.left - rect.width / 2;
             const relY = e.clientY - rect.top - rect.height / 2;
+            node.style.transition = 'none';
             node.style.transform = `translate(${(relX / rect.width) * strength}px, ${(relY / rect.height) * strength}px)`;
         };
-        const handleLeave = () => { node.style.transform = 'translate(0px, 0px)'; };
+        const handleLeave = () => {
+            node.style.transition = 'transform 200ms ease-out';
+            node.style.transform = 'translate(0px, 0px)';
+        };
 
         node.addEventListener('mousemove', handleMove);
         node.addEventListener('mouseleave', handleLeave);
@@ -321,10 +325,10 @@ function useMagnetic(strength = 16) {
     return ref;
 }
 
-function MagneticWrap({ children, strength = 16 }) {
+function MagneticWrap({ children, strength = 8 }) {
     const ref = useMagnetic(strength);
     return (
-        <span ref={ref} className="inline-block transition-transform duration-200 ease-out">
+        <span ref={ref} className="inline-block">
             {children}
         </span>
     );
@@ -623,7 +627,7 @@ export default function Welcome({ auth, stats }) {
                                 </Link>
                             ) : (
                                 <div className="flex items-center gap-2 sm:gap-4">
-                                    <Link href={route('login')} className="text-xs font-medium text-gray-700 transition hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 sm:text-sm">
+                                    <Link href={route('login')} className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 sm:px-4 sm:py-2 sm:text-sm">
                                         Log in
                                     </Link>
                                     <Link href={route('register')} className="rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-500 sm:px-4 sm:py-2 sm:text-sm">

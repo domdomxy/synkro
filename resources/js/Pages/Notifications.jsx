@@ -92,7 +92,13 @@ export default function Notifications({ notificationsList, filters }) {
                         </button>
                     )}
                     {notificationsList.total > 0 && (
-                        <button onClick={clearAll} className="text-sm font-medium text-gray-500 hover:underline dark:text-gray-400">
+                        <button
+                            onClick={clearAll}
+                            className="inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 dark:border-transparent dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
+                            </svg>
                             {hasActiveFilters ? 'Clear filtered' : 'Clear all'}
                         </button>
                     )}
@@ -180,12 +186,12 @@ export default function Notifications({ notificationsList, filters }) {
                                     return (
                                         <li
                                             key={note.id}
-                                            className={`group flex items-start gap-2 border-b border-gray-50 px-4 py-4 transition last:border-b-0 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 ${
+                                            className={`group flex items-start gap-2 border-b border-gray-50 px-4 py-2.5 transition last:border-b-0 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30 ${
                                                 !note.read_at ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
                                             }`}
                                         >
-                                            <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-3 text-left">
-                                                <NotificationIcon causer={note.causer} style={style} size="h-9 w-9" />
+                                            <button onClick={() => openNotification(note)} className="flex flex-1 items-start gap-2.5 text-left">
+                                                <NotificationIcon causer={note.causer} style={style} size="h-7 w-7" />
                                                 <span className="min-w-0 flex-1">
                                                     <span className={`block text-sm ${!note.read_at ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                                                         {title}
@@ -193,10 +199,10 @@ export default function Notifications({ notificationsList, filters }) {
                                                     {description && (
                                                         <NoteList
                                                             note={description}
-                                                            className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                                                            className="mt-0.5 text-sm text-gray-500 dark:text-gray-400"
                                                         />
                                                     )}
-                                                    <span className="mt-1 block text-xs text-gray-400 dark:text-gray-500">
+                                                    <span className="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">
                                                         {relativeTime(note.created_at)}
                                                     </span>
                                                 </span>
@@ -205,7 +211,7 @@ export default function Notifications({ notificationsList, filters }) {
                                             <button
                                                 onClick={() => deleteNotification(note.id)}
                                                 title="Delete notification"
-                                                className="mt-1 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
+                                                className="mt-0.5 shrink-0 rounded p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-red-500 dark:text-gray-600 dark:hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100"
                                             >
                                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
