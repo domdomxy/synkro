@@ -97,9 +97,18 @@ function Popover({ trigger, children, open, onToggle, onClose, width = 'auto', l
         // Touch browsers don't reliably fire mousedown for outside taps, so this is handled
         // separately rather than relying on the synthetic mouse events some mobile browsers emit.
         document.addEventListener('touchstart', handleOutside, { passive: true });
-        window.addEventListener('scroll', handleScrollOrResize, true);
-        window.addEventListener('resize', handleScrollOrResize);
+        // Arm the scroll/resize listeners a tick after opening rather than immediately. Some
+        // popovers (the link one) autofocus a real input the instant they mount, and focusing
+        // something can itself trigger a same-frame scroll of an ancestor container - which, if
+        // this listener were live already, closed the popover the same moment it opened. A short
+        // delay skips that self-inflicted opening scroll while still closing on any scroll a
+        // person actually causes afterward.
+        const armTimer = setTimeout(() => {
+            window.addEventListener('scroll', handleScrollOrResize, true);
+            window.addEventListener('resize', handleScrollOrResize);
+        }, 150);
         return () => {
+            clearTimeout(armTimer);
             document.removeEventListener('mousedown', handleOutside);
             document.removeEventListener('touchstart', handleOutside);
             window.removeEventListener('scroll', handleScrollOrResize, true);
@@ -155,6 +164,18 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const [customFontSizes, setCustomFontSizes] = useState([]);
     const [linkLabel, setLinkLabel] = useState('');
     const [linkUrl, setLinkUrl] = useState('');
+    const linkUrlInputRef = useRef(null);
+
+    // Runs instead of a plain `autoFocus` on the URL input. Plain autoFocus calls .focus() with
+    // no options, and if the popover renders anywhere the browser considers "off view" (common
+    // for a `position: fixed` portal near the edge of a scrollable settings panel), the browser
+    // scrolls that ancestor to bring the newly-focused input into view. That scroll fires on the
+    // very frame the popover opens and got picked up by Popover's own scroll-to-close listener
+    // below, closing the popover before it had even finished appearing. `preventScroll: true`
+    // stops the browser from doing that scroll in the first place.
+    useEffect(() => {
+        if (openPopover === 'link') linkUrlInputRef.current?.focus({ preventScroll: true });
+    }, [openPopover]);
 
     useEffect(() => {
         if (isFirstRender.current && editorRef.current) {
@@ -247,9 +268,15 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     };
 
     const exec = (command, arg = null) => {
+        // Restore/plant the Range *before* focusing. Calling .focus() on a contentEditable that
+        // doesn't already hold a live Range makes most browsers default the caret to the very
+        // start of the content - so doing this the other way round (as it used to be) silently
+        // discarded wherever the cursor actually was every time real DOM focus had moved away
+        // (e.g. after typing in a popover's own input field) and replayed the command at position
+        // zero instead.
+        ensureSelection();
         editorRef.current.focus();
         document.execCommand('styleWithCSS', false, true);
-        ensureSelection();
         document.execCommand(command, false, arg);
         onChange(editorRef.current.innerHTML);
         updateActiveStates();
@@ -278,9 +305,10 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     };
 
     const toggleHighlight = (color) => {
+        // See exec() above: restore the Range before focusing, not after.
+        ensureSelection();
         editorRef.current.focus();
         document.execCommand('styleWithCSS', false, true);
-        ensureSelection();
         const selection = window.getSelection();
         if (selection.rangeCount > 0 && !selection.isCollapsed) {
             const node = selection.anchorNode?.parentElement;
@@ -302,9 +330,10 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     };
 
     const clearHighlight = () => {
+        // See exec() above: restore the Range before focusing, not after.
+        ensureSelection();
         editorRef.current.focus();
         document.execCommand('styleWithCSS', false, true);
-        ensureSelection();
         const selection = window.getSelection();
         if (selection.rangeCount > 0 && !selection.isCollapsed) {
             stripHighlightInRange(selection.getRangeAt(0));
@@ -376,8 +405,16 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
         const url = linkUrl.trim();
         if (!url) return;
         const label = linkLabel.trim() || url;
-        editorRef.current.focus();
+        // By the time this runs, real DOM focus is sitting in the popover's URL input (it has to
+        // be, to type a URL into it) - not in the editor. Calling .focus() on the editor first
+        // (as this used to) hands it a blank slate with no live Range, and most browsers default
+        // that to the very start of the content, so the link always landed at the beginning of
+        // the description no matter where the cursor had actually been left. Restoring the saved
+        // Range *before* focusing gives the editor something to keep, so the link lands back
+        // where the cursor was - unless the description was empty to begin with, in which case
+        // start and "wherever the cursor was" are the same place anyway.
         ensureSelection();
+        editorRef.current.focus();
         document.execCommand('insertText', false, `[${label}](${url})`);
         onChange(editorRef.current.innerHTML);
         setLinkLabel('');
@@ -401,8 +438,9 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const ZWSP = '\u200b';
 
     const applyFontSize = (px) => {
-        editorRef.current.focus();
+        // See exec() above: restore the Range before focusing, not after.
         if (!ensureSelection()) { setOpenPopover(null); return; }
+        editorRef.current.focus();
         const sel = window.getSelection();
         if (sel.rangeCount === 0) { setOpenPopover(null); return; }
 
@@ -866,7 +904,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                                 onChange={(e) => setLinkUrl(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertLink(); } }}
                                 placeholder="https://example.com"
-                                autoFocus
+                                ref={linkUrlInputRef}
                                 className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                         </div>

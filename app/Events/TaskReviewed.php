@@ -36,6 +36,7 @@ class TaskReviewed implements ShouldBroadcastNow
             'title' => $this->task->title,
             'decision' => $this->decision,
             'feedback' => $this->feedback,
+            'project_id' => $this->task->project_id,
             'task_id' => $this->task->id,
             'type' => $this->decision === 'approve' ? 'task_approved' : 'task_rejected',
         ];

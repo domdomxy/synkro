@@ -1,5 +1,5 @@
 import { useEcho } from '@laravel/echo-react';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import useToastStack from '@/hooks/useToastStack';
 import { noteBoldSegments } from '../utils/noteFormat';
 
@@ -32,24 +32,49 @@ const TOAST_STYLES = {
 // a `type` field (task_assigned / task_approved / task_rejected / task_updated);
 // task.deleted doesn't (see TaskDeleted::broadcastWith) but ships a ready-made,
 // already-bold-formatted `message` instead.
+//
+// Each toast also carries a `url` and `notificationId` (mirroring the same
+// payload fields NotificationBell already builds its own urls from) so
+// clicking the toast can navigate to the same destination and mark the same
+// underlying notification read - see openToast() below.
 function toastFromPayload(payload) {
+    const notificationId = payload.notification_id;
     switch (payload.type) {
         case 'task_approved':
             return {
                 type: 'success',
                 message: `"**${payload.title}**" was approved${payload.feedback ? ': ' + payload.feedback : ''}`,
+                url: `/projects/${payload.project_id}?task=${payload.task_id}`,
+                notificationId,
             };
         case 'task_rejected':
             return {
                 type: 'error',
                 message: `"**${payload.title}**" was sent back for changes${payload.feedback ? ': ' + payload.feedback : ''}`,
+                url: `/projects/${payload.project_id}?task=${payload.task_id}`,
+                notificationId,
             };
         case 'task_assigned':
-            return { type: 'info', message: `You were assigned a new task: "**${payload.title}**"` };
+            return {
+                type: 'info',
+                message: `You were assigned a new task: "**${payload.title}**"`,
+                url: `/projects/${payload.project_id}?task=${payload.task_id}`,
+                notificationId,
+            };
         case 'task_updated':
-            return { type: 'info', message: `"**${payload.title}**" was updated` };
+            return {
+                type: 'info',
+                message: `"**${payload.title}**" was updated`,
+                url: `/projects/${payload.project_id}?task=${payload.task_id}&history=1`,
+                notificationId,
+            };
         default:
-            return { type: 'error', message: payload.message ?? `"**${payload.task_title}**" was deleted` };
+            return {
+                type: 'error',
+                message: payload.message ?? `"**${payload.task_title}**" was deleted`,
+                url: payload.project_id !== undefined ? `/projects/${payload.project_id}` : null,
+                notificationId,
+            };
     }
 }
 
@@ -74,6 +99,18 @@ export default function NotificationToast() {
     const enterAnim = 'animate-toast-drop-mobile sm:animate-toast-slide-desktop';
     const exitAnim = 'animate-toast-lift-mobile sm:animate-toast-slide-out-desktop';
 
+    // Same two steps NotificationBell's openNotification() does for a bell row: mark the
+    // underlying notification read (if it has one to mark - not every toast maps to a stored
+    // notification), then navigate. Dismissing the toast itself is left to the caller, same as
+    // the bell closes its own dropdown separately from this.
+    const openToast = (toast) => {
+        if (!toast.url) return;
+        if (toast.notificationId) {
+            router.patch(route('notifications.read', toast.notificationId), {}, { preserveScroll: true, preserveState: true });
+        }
+        router.visit(toast.url);
+    };
+
     // No outer `fixed` wrapper here: this renders inside the shared <ToastLayer>
     // alongside FlashMessages' list, so both sources stack in one column instead
     // of each anchoring to bottom-right independently and overlapping.
@@ -87,7 +124,16 @@ export default function NotificationToast() {
                     <div
                         key={toast.id}
                         data-toast-type={toast.type}
-                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-9 text-sm shadow-lg ${style.card}`}
+                        role={toast.url ? 'button' : undefined}
+                        tabIndex={toast.url ? 0 : undefined}
+                        onClick={() => openToast(toast)}
+                        onKeyDown={(e) => {
+                            if (toast.url && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                openToast(toast);
+                            }
+                        }}
+                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-9 text-sm shadow-lg ${style.card} ${toast.url ? 'cursor-pointer' : ''}`}
                     >
                         <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
 
@@ -103,7 +149,12 @@ export default function NotificationToast() {
 
                         <button
                             type="button"
-                            onClick={() => dismiss(toast.id)}
+                            onClick={(e) => {
+                                // The dismiss button sits inside the now-clickable card, so its
+                                // click must not also bubble up and trigger openToast() above.
+                                e.stopPropagation();
+                                dismiss(toast.id);
+                            }}
                             aria-label="Dismiss notification"
                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200"
                         >
