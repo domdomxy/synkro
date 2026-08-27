@@ -7,6 +7,7 @@ import ViewToggle from '@/Components/ViewToggle';
 import PerPageSelect from '@/Components/PerPageSelect';
 import LocalPagination from '@/Components/LocalPagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
+import RichTextContent from '@/Components/RichTextContent';
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
 
@@ -43,11 +44,6 @@ function formatWait(dateString) {
 // reviewer picked it up) - these are two different clocks, not one continuous wait.
 function waitTimestamp(task) {
     return task.status === 'in_review' ? task.review_started_at : task.submitted_at;
-}
-
-function descriptionPreview(html) {
-    if (!html) return '';
-    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function SearchIcon() {
@@ -275,11 +271,12 @@ export default function Index({ tasks }) {
                                                     {task.project?.name} · {waitTimestamp(task) ? `Waiting ${formatWait(waitTimestamp(task))}` : ''}
                                                 </p>
                                             </div>
-                                            <span className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block">
-                                                {task.description
-                                                    ? descriptionPreview(task.description)
-                                                    : <span className="italic text-gray-300 dark:text-gray-600">No description</span>}
-                                            </span>
+                                            <RichTextContent
+                                                as="span"
+                                                className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block [&_*]:inline"
+                                                html={task.description}
+                                                fallback='<span class="italic text-gray-300 dark:text-gray-600">No description</span>'
+                                            />
                                             <span className="hidden text-sm text-gray-500 dark:text-gray-400 sm:line-clamp-2 sm:block" title={task.project?.name}>
                                                 {task.project?.name}
                                             </span>
@@ -328,9 +325,11 @@ export default function Index({ tasks }) {
                                     </span>
                                 </div>
                                 {task.description && (
-                                    <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-                                        {descriptionPreview(task.description)}
-                                    </p>
+                                    <RichTextContent
+                                        className="prose-sm mt-2 line-clamp-2 max-w-none whitespace-pre-wrap break-words text-sm text-gray-500 dark:text-gray-400"
+                                        style={{ tabSize: 4 }}
+                                        html={task.description}
+                                    />
                                 )}
                                 <p className="mt-3 truncate text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500" title={task.project?.name}>
                                     {task.project?.name}

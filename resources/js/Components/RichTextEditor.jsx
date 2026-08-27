@@ -108,7 +108,7 @@ function Popover({ trigger, children, open, onToggle, onClose, width = 'auto', l
     }, [open, onClose]);
 
     return (
-        <div className={`relative flex items-stretch ${leadingButton ? 'overflow-hidden rounded-md' : ''}`}>
+        <div className={`relative flex shrink-0 items-stretch ${leadingButton ? 'overflow-hidden rounded-md' : ''}`}>
             {leadingButton}
             {leadingButton && <div className="w-px shrink-0 self-stretch bg-gray-300 dark:bg-gray-600" />}
             <button
@@ -120,11 +120,17 @@ function Popover({ trigger, children, open, onToggle, onClose, width = 'auto', l
             >
                 {trigger}
             </button>
+            {/* Portals to document.body, so inside a Modal this ends up a `fixed` sibling of
+                Modal's own Dialog wrapper (z-[60]) - two `fixed` elements at the body level stack
+                by z-index alone, not DOM order, so without a higher z-index here the modal painted
+                on top and every dropdown/popover in this toolbar (list type, font size, colors,
+                insert-link, the tip) was invisible behind it despite being open. z-[70] matches the
+                convention FilterSelect.jsx already established for this exact situation. */}
             {open && createPortal(
                 <div
                     ref={menuRef}
                     style={{ position: 'fixed', top: coords.top, left: coords.left, width }}
-                    className="z-50 rounded-lg bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                    className="z-[70] rounded-lg bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
                     {children}
                 </div>,
@@ -147,6 +153,8 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const [customHighlightColors, setCustomHighlightColors] = useState([]);
     const [customSize, setCustomSize] = useState('');
     const [customFontSizes, setCustomFontSizes] = useState([]);
+    const [linkLabel, setLinkLabel] = useState('');
+    const [linkUrl, setLinkUrl] = useState('');
 
     useEffect(() => {
         if (isFirstRender.current && editorRef.current) {
@@ -217,7 +225,25 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const ensureSelection = () => {
         const sel = window.getSelection();
         const stillInEditor = sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode);
-        return stillInEditor ? true : restoreSelection();
+        if (stillInEditor) return true;
+        if (restoreSelection()) return true;
+
+        // Neither a live selection nor a saved one to fall back to - this is the very first
+        // toolbar click on a description that's never been clicked into yet (a brand-new "New
+        // Project"/"New Task" form, exactly like the empty state in the screenshot). Calling
+        // .focus() on a contentEditable doesn't drop a caret into it by itself in most browsers,
+        // so without an actual Range/Selection, execCommand has nothing to act on and every
+        // button silently no-ops - looks and feels completely dead. Planting a collapsed caret at
+        // the end of whatever's already there (the very start, for an empty editor) gives every
+        // toolbar action somewhere real to apply itself from the first click onward.
+        if (!editorRef.current) return false;
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        setSavedRange(range.cloneRange());
+        return true;
     };
 
     const exec = (command, arg = null) => {
@@ -325,6 +351,39 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     // that can go unreadable after a theme switch (see utils/richTextColor.js for the equivalent fix
     // applied to already-saved fixed colors when rendering them elsewhere in the app).
     const applyDefaultTextColor = () => { exec('foreColor', 'inherit'); setOpenPopover(null); };
+
+    // Prefills the Label field with whatever's currently selected (so selecting a phrase
+    // and then adding a link keeps that phrase as the label instead of starting blank),
+    // and clears the URL field for a fresh entry each time the popover opens.
+    const openLinkPopover = () => {
+        ensureSelection();
+        const sel = window.getSelection();
+        const selectedText = sel && sel.rangeCount > 0 ? sel.toString() : '';
+        setLinkLabel(selectedText);
+        setLinkUrl('');
+        togglePopover('link');
+    };
+
+    // Types the markdown link syntax (the same `[label](url)` syntax the info tip documents,
+    // and the same thing a user typing it by hand would produce) as literal plain text at the
+    // cursor/selection via execCommand('insertText', ...), rather than inserting a real <a> tag
+    // into the editable region. That keeps the editor's content model exactly what it already
+    // was - there's no live/editable anchor to fight with while typing nearby, and nothing here
+    // can end up split across a formatting tag the way manually coloring a raw URL can (see
+    // Linkifier.php's unwrap step for that failure mode) since this never leaves the editor at
+    // all until the whole markdown text is already assembled.
+    const insertLink = () => {
+        const url = linkUrl.trim();
+        if (!url) return;
+        const label = linkLabel.trim() || url;
+        editorRef.current.focus();
+        ensureSelection();
+        document.execCommand('insertText', false, `[${label}](${url})`);
+        onChange(editorRef.current.innerHTML);
+        setLinkLabel('');
+        setLinkUrl('');
+        setOpenPopover(null);
+    };
 
     // Custom colors picked via the native <input type="color"> get remembered here so they show up
     // as reusable swatches instead of requiring the OS color picker to be reopened every time.
@@ -455,7 +514,10 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                 style={{ minHeight: `${rows * 1.5}rem`, maxHeight, tabSize: 4 }}
             />
 
-            <div className="flex flex-wrap items-center gap-1 border-t border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-700 dark:bg-gray-900 sm:gap-0.5 sm:py-1.5">
+            <div
+                className="no-scrollbar flex flex-nowrap items-center gap-1 overflow-x-auto border-t border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-700 dark:bg-gray-900 sm:flex-wrap sm:gap-0.5 sm:overflow-x-visible sm:py-1.5"
+                onMouseDownCapture={saveSelection}
+            >
                 <ToolbarButton active={activeStates.bold} onClick={() => exec('bold')} title="Bold">
                     <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M7 5h6a3.5 3.5 0 013.02 5.28A3.5 3.5 0 0114.5 17H7V5zm2.5 2v4H13a1.5 1.5 0 000-3H9.5zm0 6v4h5a1.5 1.5 0 000-3H9.5z" />
@@ -771,6 +833,54 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10 5h9M6 5h1m6 14H6a2 2 0 01-2-2V9m5-4L7 15" />
                     </svg>
                 </ToolbarButton>
+
+                <Divider />
+
+                <Popover
+                    open={openPopover === 'link'}
+                    onToggle={openLinkPopover}
+                    onClose={() => setOpenPopover(null)}
+                    width="16rem"
+                    trigger={
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" />
+                        </svg>
+                    }
+                >
+                    <div className="space-y-2 px-1 py-0.5">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Label</label>
+                            <input
+                                type="text"
+                                value={linkLabel}
+                                onChange={(e) => setLinkLabel(e.target.value)}
+                                placeholder="Link text"
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">URL</label>
+                            <input
+                                type="text"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertLink(); } }}
+                                placeholder="https://example.com"
+                                autoFocus
+                                className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={insertLink}
+                            disabled={!linkUrl.trim()}
+                            className="w-full rounded-md bg-indigo-600 px-2 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Insert link
+                        </button>
+                    </div>
+                </Popover>
 
                 <Divider />
 

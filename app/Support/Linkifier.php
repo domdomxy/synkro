@@ -31,6 +31,22 @@ class Linkifier
             return $html;
         }
 
+        // If the URL half of a markdown link ended up wrapped in its own inline
+        // formatting tag - most likely because someone selected the raw URL text and
+        // manually colored/underlined it to make it "look" like a link, since there's
+        // no dedicated insert-link button - that tag sits right between the "](" and
+        // ")" of the markdown syntax. Splitting on tags below would then break the
+        // label+URL into three separate text nodes that never read as one contiguous
+        // match, so only the bare URL itself gets linkified and "[label](" / ")" are
+        // left behind as literal text. Unwrapping any inline tag whose entire content
+        // is already a bare URL first lets the markdown pattern see one uninterrupted
+        // run again.
+        $html = preg_replace(
+            '/<(span|b|strong|i|em|u|font)\b[^>]*>\s*((?:https?:\/\/|www\.)[^\s<>"\']+)\s*<\/\1>/i',
+            '$2',
+            $html
+        );
+
         $parts = preg_split('/(<[^>]+>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
         if ($parts === false) {

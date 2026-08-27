@@ -90,6 +90,19 @@ html.dark {
    the first card and getting visually sliced by its rounded corner. This
    strips the scrollbar down to a plain thin thumb with no arrow buttons,
    consistently across browsers. */
+/* RichTextEditor.jsx's toolbar scrolls horizontally on mobile instead of wrapping to a second
+   row (see the toolbar's own comment). It's a dense strip of small icon buttons, not a content
+   list, so even .thin-scrollbar's slim thumb reads as visual clutter sitting right under the
+   icons - hiding it entirely (the row is still fully scrollable by touch/trackpad) matches how
+   most mobile toolbars/chip-rows handle this. */
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
 .thin-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(156, 163, 175, 0.5) transparent;

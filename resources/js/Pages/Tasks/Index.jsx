@@ -60,13 +60,6 @@ function isOverdue(task) {
     return new Date(task.due_date) < new Date();
 }
 
-/** Rich-text descriptions are stored as HTML; strip tags for a plain-text list preview. */
-function descriptionPreview(html) {
-    if (!html) return '';
-    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    return text;
-}
-
 function SearchIcon() {
     return (
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -500,11 +493,12 @@ export default function Index({ tasks, showingArchived, activeCount, archivedCou
                                                         {task.project?.name} · {task.due_date ? `${overdue ? 'Overdue' : 'Due'} ${formatDue(task.due_date)}` : 'No due date'}
                                                     </p>
                                                 </div>
-                                                <span className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block">
-                                                    {task.description
-                                                        ? descriptionPreview(task.description)
-                                                        : <span className="italic text-gray-300 dark:text-gray-600">No description</span>}
-                                                </span>
+                                                <RichTextContent
+                                                    as="span"
+                                                    className="hidden truncate text-sm text-gray-500 dark:text-gray-400 sm:block [&_*]:inline"
+                                                    html={task.description}
+                                                    fallback='<span class="italic text-gray-300 dark:text-gray-600">No description</span>'
+                                                />
                                                 <span className="hidden text-sm text-gray-500 dark:text-gray-400 sm:line-clamp-2 sm:block" title={task.project?.name}>
                                                     {task.project?.name}
                                                 </span>

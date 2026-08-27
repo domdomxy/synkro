@@ -53,11 +53,6 @@ class ProjectController extends Controller
         return back()->with('success', 'Project unarchived.');
     }
 
-    public function create()
-    {
-        return Inertia::render('Projects/Create');
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -191,13 +186,6 @@ class ProjectController extends Controller
             'myNotes' => $notes,
             'pendingInvitations' => $pendingInvitations,
         ]);
-    }
-
-    public function edit(Project $project)
-    {
-        $this->authorize('update', $project);
-
-        return Inertia::render('Projects/Edit', ['project' => $project]);
     }
 
     public function update(Request $request, Project $project)

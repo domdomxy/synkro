@@ -110,7 +110,7 @@ Route::middleware(['auth', 'verified', 'password.change'])->group(function () {
     Route::post('/account/avatar', [AccountController::class, 'updateAvatar'])->name('account.avatar.update');
     Route::delete('/account/avatar', [AccountController::class, 'destroyAvatar'])->name('account.avatar.destroy');
     Route::post('/account/deactivate', [AccountController::class, 'deactivate'])->name('account.deactivate');
-    Route::resource('projects', ProjectController::class)->except(['show']);
+    Route::resource('projects', ProjectController::class)->except(['show', 'create', 'edit']);
     // Split out from the resource() call above and given withTrashed() so a
     // project's members can still open it (read-only - every write route below
     // stays on normal, non-trashed binding) during its trash grace period to
