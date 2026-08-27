@@ -144,7 +144,7 @@ export default function BottomNavBar({ links }) {
                                     <span className="absolute right-0.5 top-0 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800" />
                                 )}
                                 {typeof link.badge === 'number' && link.badge > 0 && (
-                                    <span className="absolute -right-1 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-indigo-500 px-0.5 text-[9px] font-semibold leading-none text-white ring-2 ring-white dark:ring-gray-800">
+                                    <span className="absolute -right-1.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-indigo-500 px-0.5 text-[9px] font-semibold leading-none text-white ring-2 ring-white dark:ring-gray-800">
                                         {link.badge > 99 ? '99+' : link.badge}
                                     </span>
                                 )}

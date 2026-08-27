@@ -586,7 +586,7 @@ export default function Users({ users, stats, filters }) {
                                         </span>
                                         <StatusBadge user={user} />
                                         <span className="ml-auto text-gray-400 dark:text-gray-500">
-                                            #{user.id} · Joined {new Date(user.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                            #{user.id} · Joined {new Date(user.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                         </span>
                                     </div>
                                 </div>
@@ -605,7 +605,7 @@ export default function Users({ users, stats, filters }) {
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                                 <tr>
                                     {isSuperAdmin && (
-                                        <th className="w-10 px-4 py-3">
+                                        <th className="w-10 px-4 py-2 align-middle">
                                             <input
                                                 type="checkbox"
                                                 checked={allSelectableSelected}
@@ -615,12 +615,12 @@ export default function Users({ users, stats, filters }) {
                                             />
                                         </th>
                                     )}
-                                    <SortableHeader label="ID" column="id" sort={sort} direction={direction} onSort={handleSort} />
-                                    <SortableHeader label="User" column="name" sort={sort} direction={direction} onSort={handleSort} />
-                                    <SortableHeader label="Role" column="role" sort={sort} direction={direction} onSort={handleSort} />
-                                    <th className="px-6 py-3">Status</th>
-                                    <SortableHeader label="Joined" column="joined" sort={sort} direction={direction} onSort={handleSort} />
-                                    <th className="px-6 py-3">Actions</th>
+                                    <SortableHeader label="ID" column="id" sort={sort} direction={direction} onSort={handleSort} padding="px-6 py-2" />
+                                    <SortableHeader label="User" column="name" sort={sort} direction={direction} onSort={handleSort} padding="px-6 py-2" />
+                                    <SortableHeader label="Role" column="role" sort={sort} direction={direction} onSort={handleSort} padding="px-6 py-2" />
+                                    <th className="px-6 py-2 align-middle">Status</th>
+                                    <SortableHeader label="Joined" column="joined" sort={sort} direction={direction} onSort={handleSort} padding="px-6 py-2" />
+                                    <th className="px-6 py-2 align-middle">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -629,7 +629,7 @@ export default function Users({ users, stats, filters }) {
                                     return (
                                         <tr key={user.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                             {isSuperAdmin && (
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-2 align-middle">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedIds.includes(user.id)}
@@ -639,12 +639,12 @@ export default function Users({ users, stats, filters }) {
                                                     />
                                                 </td>
                                             )}
-                                            <td className="px-6 py-3 font-mono text-sm text-gray-400 dark:text-gray-500">
+                                            <td className="px-6 py-2 align-middle font-mono text-sm text-gray-400 dark:text-gray-500">
                                                 #{user.id}
                                             </td>
-                                            <td className="px-6 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar user={user} size="h-9 w-9" />
+                                            <td className="px-6 py-2 align-middle">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar user={user} size="h-8 w-8" />
                                                     <div className="min-w-0">
                                                         <p className="truncate font-medium text-gray-900 dark:text-gray-100">
                                                             {user.name}
@@ -669,18 +669,18 @@ export default function Users({ users, stats, filters }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-3">
+                                            <td className="px-6 py-2 align-middle">
                                                 <span className={`inline-block whitespace-nowrap rounded-full px-2 py-1 text-xs capitalize ${user.role === 'superadmin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : user.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                                     {user.role === 'superadmin' ? 'Super Admin' : user.role}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-3">
+                                            <td className="px-6 py-2 align-middle">
                                                 <StatusBadge user={user} />
                                             </td>
-                                            <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
-                                                {new Date(user.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                            <td className="whitespace-nowrap px-6 py-2 align-middle text-gray-500 dark:text-gray-400">
+                                                {new Date(user.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                             </td>
-                                            <td className="px-6 py-3">
+                                            <td className="px-6 py-2 align-middle">
                                                 <UserActionsMenu
                                                     user={user}
                                                     isSelf={isSelf}

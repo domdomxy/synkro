@@ -649,7 +649,23 @@ export default function FeedbackPanel({ flash, categories, trackingId: trackingI
                                         <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Category <span className="text-red-400">*</span>{selectedCategory && <span className="font-normal text-gray-400"> · {selectedCategory.label}</span>}
                                         </label>
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+
+                                        {/* Mobile: same styled-select pattern used for section switching elsewhere in
+                                            this panel, since a grid of tappable cards wastes vertical space on narrow
+                                            screens and a raw native <select> would lose the category icons. */}
+                                        <div className="sm:hidden">
+                                            <SectionSelect
+                                                items={categories.map((c) => ({
+                                                    id: c.key,
+                                                    label: c.label,
+                                                    icon: <CategoryIcon icon={c.icon} className="h-4 w-4" />,
+                                                }))}
+                                                value={data.category}
+                                                onChange={(key) => setData('category', key)}
+                                            />
+                                        </div>
+
+                                        <div className="hidden gap-2 sm:grid sm:grid-cols-3">
                                             {categories.map((c) => {
                                                 const isSelected = data.category === c.key;
                                                 return (

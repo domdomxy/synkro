@@ -36,7 +36,7 @@ function ChoiceCard({ choice, checked, onSelect }) {
             type="button"
             onClick={onSelect}
             aria-pressed={checked}
-            className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
+            className={`flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
                 checked
                     ? tone === 'danger'
                         ? 'border-red-500 bg-red-50 focus-visible:ring-red-500 dark:border-red-500 dark:bg-red-950/30'
@@ -45,7 +45,7 @@ function ChoiceCard({ choice, checked, onSelect }) {
             }`}
         >
             <span
-                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                     checked
                         ? tone === 'danger'
                             ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
@@ -53,7 +53,7 @@ function ChoiceCard({ choice, checked, onSelect }) {
                         : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500'
                 }`}
             >
-                {choice.icon === 'trash' ? <TrashIcon className="h-4 w-4" /> : <ClockIcon className="h-4 w-4" />}
+                {choice.icon === 'trash' ? <TrashIcon className="h-3.5 w-3.5" /> : <ClockIcon className="h-3.5 w-3.5" />}
             </span>
             <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
@@ -61,10 +61,10 @@ function ChoiceCard({ choice, checked, onSelect }) {
                         {choice.label}
                     </span>
                 </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{choice.description}</span>
+                <span className="mt-0.5 block text-xs leading-snug text-neutral-500 dark:text-neutral-400">{choice.description}</span>
             </span>
             <span
-                className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                className={`flex h-4 w-4 shrink-0 items-center justify-center self-center rounded-full border-2 ${
                     checked
                         ? tone === 'danger'
                             ? 'border-red-500'
@@ -134,7 +134,7 @@ export default function ConfirmDialog({ open, title, message, note, danger, conf
                 </div>
 
                 {hasChoices && (
-                    <div className="mt-4 space-y-2" role="radiogroup" aria-label={title}>
+                    <div className="mt-3 space-y-1.5" role="radiogroup" aria-label={title}>
                         {choices.map((choice) => (
                             <ChoiceCard
                                 key={choice.value}

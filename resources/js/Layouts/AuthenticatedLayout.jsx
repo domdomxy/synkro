@@ -267,12 +267,6 @@ export default function AuthenticatedLayout({ header, headerMaxWidth = 'max-w-8x
                                         <AccountMenu user={user} theme={theme} onThemeChange={handleThemeChange} onOpenSettings={openSettings} onOpenAccount={openAccount} onOpenTrash={openTrash} />
                                     </Dropdown.Content>
                                 </Dropdown>
-                                {/* Testing/Admin badges now live on BottomNavBar's icons too, but this
-                                    dot stays as a hint on the avatar itself since the bottom bar may be
-                                    scrolled out of view or the user hasn't glanced down yet. */}
-                                {(hasPendingAlert || pendingTestCount > 0) && (
-                                    <span className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-                                )}
                             </div>
                         </div>
                     </div>

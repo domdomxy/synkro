@@ -24,16 +24,21 @@ function SortIcon({ active, direction }) {
  *
  * Usage: <SortableHeader label="Name" column="name" sort={sort} direction={direction} onSort={handleSort} />
  * Pass no `column` (or omit onSort) for a plain, non-sortable header.
+ *
+ * `padding` fully replaces the default cell padding (rather than being
+ * merged with it) so a caller can match its own <td> padding exactly
+ * without fighting Tailwind class-order/specificity. `className` is for
+ * anything else (width, text alignment, etc.) and is appended as usual.
  */
-export default function SortableHeader({ label, column, sort, direction, onSort, className = '' }) {
+export default function SortableHeader({ label, column, sort, direction, onSort, className = '', padding = 'px-6 py-3' }) {
     if (!column || !onSort) {
-        return <th className={`px-6 py-3 ${className}`}>{label}</th>;
+        return <th className={`${padding} align-middle ${className}`}>{label}</th>;
     }
 
     const active = sort === column;
 
     return (
-        <th className={`px-6 py-3 ${className}`}>
+        <th className={`${padding} align-middle ${className}`}>
             <button
                 type="button"
                 onClick={() => onSort(column)}
