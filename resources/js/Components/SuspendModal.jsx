@@ -67,21 +67,25 @@ export default function SuspendModal({ user, show, onClose }) {
                     <InputError message={form.errors.reason} className="mt-1" />
                 </div>
 
+                {/* Reversed on purpose: Cancel sits in the usual confirm slot and wears the
+                    colored style, while Suspend is neutral. Breaks the reflex of clicking the
+                    colored/rightmost button without reading the dialog. */}
                 <div className="mt-5 flex justify-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
-                    >
-                        Cancel
-                    </button>
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-neutral-800"
+                        className="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
                     >
                         {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         Suspend
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        autoFocus
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800"
+                    >
+                        Cancel
                     </button>
                 </div>
             </form>

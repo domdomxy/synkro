@@ -159,27 +159,40 @@ export default function ConfirmDialog({ open, title, message, note, danger, conf
                         </label>
                     )}
                     <div className="flex shrink-0 gap-2">
+                        {/* Deliberately reversed: the button in the "usual confirm" slot is Cancel,
+                            styled in the color that used to signal confirm. This is intentional -
+                            it breaks the habit of clicking the colored/rightmost button on reflex
+                            without reading the dialog. See PR discussion for rationale. */}
+                        <button
+                            type="button"
+                            onClick={handleConfirm}
+                            autoFocus={hideCancel}
+                            className={
+                                hideCancel
+                                    ? `rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
+                                          isDanger
+                                              ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
+                                              : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
+                                      }`
+                                    : 'rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800'
+                            }
+                        >
+                            {finalConfirmLabel}
+                        </button>
                         {!hideCancel && (
                             <button
                                 type="button"
                                 onClick={onCancel}
-                                className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                                autoFocus
+                                className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
+                                    isDanger
+                                        ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
+                                        : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
+                                }`}
                             >
                                 {cancelLabel}
                             </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={handleConfirm}
-                            autoFocus
-                            className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-800 ${
-                                isDanger
-                                    ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
-                                    : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
-                            }`}
-                        >
-                            {finalConfirmLabel}
-                        </button>
                     </div>
                 </div>
             </div>

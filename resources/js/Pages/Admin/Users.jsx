@@ -456,7 +456,7 @@ export default function Users({ users, stats, filters }) {
             <div className="py-6 sm:py-12">
                 <div className="mx-auto max-w-8xl space-y-6 px-3 sm:px-6 lg:px-8">
 
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
                         <StatCard label="Total Users" value={stats.total} sub={`${stats.newUsersThisMonth} new this month`} pct={stats.userGrowthRate} accentColor="text-indigo-600 dark:text-indigo-400" icon={statIcons.total} />
                         <StatCard label="Active" value={stats.active} sub={`${stats.activeRatio}% of all users`} pct={stats.activeTrend} accentColor="text-green-600 dark:text-green-400" icon={statIcons.active} />
                         <StatCard label="Inactive" value={stats.inactive} sub={`${stats.inactiveRatio}% of all users`} pct={stats.inactiveTrend} accentColor="text-gray-500 dark:text-gray-400" icon={statIcons.inactive} />

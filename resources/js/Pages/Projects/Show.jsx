@@ -593,15 +593,21 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
                     <InputError message={form.errors.reason} className="mt-1" />
                 </div>
 
+                {/* Reversed on purpose: Cancel sits in the usual confirm slot and wears the
+                    colored style, while the real action is neutral. Breaks the reflex of
+                    clicking the colored/rightmost button without reading the dialog. */}
                 <div className="mt-6 flex justify-end gap-3">
-                    <SecondaryButton type="button" onClick={onClose}>Cancel</SecondaryButton>
-                    <button
-                        type="submit"
-                        disabled={form.processing}
-                        className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
-                    >
+                    <SecondaryButton type="submit" disabled={form.processing}>
                         {form.processing && <Spinner className="mr-2 h-4 w-4" />}
                         {form.processing ? 'Leaving...' : 'Leave Project'}
+                    </SecondaryButton>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        autoFocus
+                        className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                    >
+                        Cancel
                     </button>
                 </div>
             </form>

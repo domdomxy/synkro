@@ -103,26 +103,30 @@ export default function AdminConfirmationModal({ show, purpose, sendCodeUrl, tit
                     <ResendCodeButton onResend={sendCode} cooldownSeconds={RESEND_COOLDOWN_SECONDS} disabled={sending} />
                 </div>
 
+                {/* Reversed on purpose: Cancel sits in the usual confirm slot and wears the
+                    colored style, while the real action is neutral. Breaks the reflex of
+                    clicking the colored/rightmost button without reading the dialog. */}
                 <div className="mt-5 flex justify-end gap-2">
+                    <button
+                        type="submit"
+                        disabled={sending || code.length !== 6 || initialSendFailed}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
+                    >
+                        {sending && <Spinner className="h-4 w-4" />}
+                        {sending ? 'Confirming...' : confirmLabel}
+                    </button>
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={sending}
-                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus-visible:ring-offset-neutral-800"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={sending || code.length !== 6 || initialSendFailed}
-                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-neutral-800 ${
+                        autoFocus
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-neutral-800 ${
                             danger
                                 ? 'bg-red-600 hover:bg-red-500 focus-visible:ring-red-500'
                                 : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:ring-indigo-500'
                         }`}
                     >
-                        {sending && <Spinner className="h-4 w-4" />}
-                        {sending ? 'Confirming...' : confirmLabel}
+                        Cancel
                     </button>
                 </div>
             </form>

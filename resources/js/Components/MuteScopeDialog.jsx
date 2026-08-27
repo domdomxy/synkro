@@ -67,11 +67,11 @@ export default function MuteScopeDialog({ open, title, message, defaultScope = '
                     </button>
                 </div>
 
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 space-y-1.5">
                     {OPTIONS.map(({ value, label, description, Icon }) => (
                         <label
                             key={value}
-                            className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3.5 py-3 transition ${
+                            className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 transition ${
                                 scope === value
                                     ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-500/10'
                                     : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/40'
@@ -83,18 +83,18 @@ export default function MuteScopeDialog({ open, title, message, defaultScope = '
                                 value={value}
                                 checked={scope === value}
                                 onChange={() => setScope(value)}
-                                className="mt-0.5 h-4 w-4 shrink-0 border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-800"
+                                className="h-4 w-4 shrink-0 border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-800"
                             />
-                            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                            <Icon className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
                             <span>
-                                <span className="block text-sm font-medium text-neutral-800 dark:text-neutral-100">{label}</span>
-                                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                                <span className="block text-sm font-medium leading-tight text-neutral-800 dark:text-neutral-100">{label}</span>
+                                <span className="block text-xs leading-tight text-neutral-500 dark:text-neutral-400">{description}</span>
                             </span>
                         </label>
                     ))}
                 </div>
 
-                <div className="mt-5 flex justify-end gap-2">
+                <div className="mt-4 flex justify-end gap-2">
                     <button
                         type="button"
                         onClick={onCancel}
