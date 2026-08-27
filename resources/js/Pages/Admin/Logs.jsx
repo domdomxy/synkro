@@ -113,14 +113,14 @@ function AdminLogRow({ log, actionCatalog }) {
         <li className="border-b border-gray-100 last:border-0 dark:border-gray-700">
             <button
                 onClick={() => hasReason && setOpen((v) => !v)}
-                className={`flex w-full items-start gap-3 px-6 py-3 text-left transition ${hasReason ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
+                className={`flex w-full items-start gap-2.5 px-6 py-2 text-left transition ${hasReason ? 'hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}`}
             >
-                <span className="relative mt-0.5 h-8 w-8 shrink-0">
-                    <Avatar user={log.admin} system={!log.admin && AUTOMATED_ACTIONS.has(log.action)} size="h-8 w-8" rounded="rounded-full" />
+                <span className="relative mt-0.5 h-7 w-7 shrink-0">
+                    <Avatar user={log.admin} system={!log.admin && AUTOMATED_ACTIONS.has(log.action)} size="h-7 w-7" rounded="rounded-full" />
                     <span
-                        className={`absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
+                        className={`absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-white dark:border-gray-800 dark:bg-gray-800 ${iconConfig.color}`}
                     >
-                        <Icon path={iconConfig.path} className="h-3 w-3" />
+                        <Icon path={iconConfig.path} className="h-2.5 w-2.5" />
                     </span>
                 </span>
                 <div className="min-w-0 flex-1">
@@ -133,23 +133,23 @@ function AdminLogRow({ log, actionCatalog }) {
                         </span>
                     </div>
                     {description && (
-                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
                             {noteBoldSegmentsWithCopy(description, 'font-bold text-gray-800 dark:text-gray-200')}
                         </p>
                     )}
                     {hasReason && open && (
-                        <div className="mt-2">
+                        <div className="mt-1.5">
                             <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Reason Given
                             </p>
-                            <div className="mt-1.5 rounded-md border border-indigo-100 bg-indigo-50/50 p-2.5 dark:border-indigo-900 dark:bg-indigo-950/20">
+                            <div className="mt-1 rounded-md border border-indigo-100 bg-indigo-50/50 p-2.5 dark:border-indigo-900 dark:bg-indigo-950/20">
                                 <p className="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300">
                                     <Linkify text={reason} />
                                 </p>
                             </div>
                         </div>
                     )}
-                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                         <span>
                             {new Date(log.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>

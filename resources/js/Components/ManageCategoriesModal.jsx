@@ -102,11 +102,11 @@ function CategoryRow({ category, confirm }) {
     }
 
     return (
-        <div className="group rounded-lg border border-gray-200 p-3.5 transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:hover:border-gray-600">
+        <div className="group rounded-lg border border-gray-200 p-2.5 transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:hover:border-gray-600">
             <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${accentFor(category.icon).chip}`}>
-                        <CategoryIcon icon={category.icon} className="h-4 w-4" />
+                <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${accentFor(category.icon).chip}`}>
+                        <CategoryIcon icon={category.icon} className="h-3.5 w-3.5" />
                     </span>
                     <span className="truncate font-medium">{category.label}</span>
                 </div>
@@ -196,7 +196,7 @@ export default function ManageCategoriesModal({ show, onClose, categories }) {
                         scrolls, instead of the whole modal needing a second, outer scroll to reach
                         content that's already below the fold. One column on phones, two from `sm`
                         up once there's room for a second card beside the first. */}
-                    <div className="thin-scrollbar max-h-[min(38vh,18rem)] space-y-2 overflow-y-auto pr-1">
+                    <div className="thin-scrollbar max-h-[min(38vh,18rem)] space-y-1.5 overflow-y-auto pr-1">
                         {categories.length === 0 ? (
                             <p className="py-6 text-center text-sm text-gray-400 dark:text-gray-500">No categories yet.</p>
                         ) : (

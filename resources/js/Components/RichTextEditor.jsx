@@ -329,6 +329,69 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
         setOpenPopover(null);
     };
 
+    // For a collapsed cursor (no selection) sitting inside an already-highlighted span,
+    // execCommand('hiliteColor', 'transparent') only sets the browser's internal "next
+    // character" typing style - it doesn't move the caret out of that span. The next
+    // character typed then lands nested inside it, and a transparent background on that
+    // nested text doesn't actually hide the ancestor's highlight (same underlying issue
+    // stripHighlightInRange above works around for selections, just with nothing to select
+    // here). This physically splits the highlighted element at the caret and drops a plain,
+    // un-highlighted marker span between the two true-sibling halves, so typing afterward
+    // has genuinely left the highlighted element instead of merely being told to look clear
+    // while still inside it.
+    const escapeHighlightAtCursor = () => {
+        const selection = window.getSelection();
+        if (!selection.rangeCount || !selection.isCollapsed || !editorRef.current) return;
+        const range = selection.getRangeAt(0);
+
+        let highlighted = null;
+        let el = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentElement : range.startContainer;
+        while (el && el !== editorRef.current) {
+            if (el.style?.backgroundColor && el.style.backgroundColor !== 'transparent') {
+                highlighted = el;
+                break;
+            }
+            el = el.parentElement;
+        }
+        // Nothing highlighted around the caret to escape - execCommand's own typing-state
+        // handling is already correct in that case.
+        if (!highlighted) return;
+
+        // Everything from the caret to the end of the highlighted element becomes the
+        // "after" half, extracted out so it can be re-wrapped in its own copy of the
+        // highlighted element once the marker is in place between the two halves.
+        const afterRange = document.createRange();
+        afterRange.setStart(range.startContainer, range.startOffset);
+        afterRange.setEndAfter(highlighted.lastChild ?? highlighted);
+        const afterFragment = afterRange.extractContents();
+
+        const marker = document.createElement('span');
+        marker.style.backgroundColor = 'transparent';
+        // A real (non-empty) text node gives the caret something concrete to sit inside;
+        // an empty span gets silently merged away by the browser's own editing commands on
+        // the very next keystroke, undoing the escape before it's even used.
+        marker.appendChild(document.createTextNode(ZWSP));
+        highlighted.after(marker);
+
+        if (afterFragment.hasChildNodes()) {
+            const afterSpan = highlighted.cloneNode(false);
+            afterSpan.appendChild(afterFragment);
+            marker.after(afterSpan);
+        }
+
+        // The caret was at the very start of the highlighted element's content (nothing left
+        // in the "before" half) - it's now an empty span sitting to the left of the marker
+        // with nothing in it, so drop it instead of leaving a stray empty tag behind.
+        if (!highlighted.hasChildNodes()) highlighted.remove();
+
+        const newRange = document.createRange();
+        newRange.setStart(marker.firstChild, 1);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        setSavedRange(newRange.cloneRange());
+    };
+
     const clearHighlight = () => {
         // See exec() above: restore the Range before focusing, not after.
         ensureSelection();
@@ -337,8 +400,11 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
         const selection = window.getSelection();
         if (selection.rangeCount > 0 && !selection.isCollapsed) {
             stripHighlightInRange(selection.getRangeAt(0));
+            document.execCommand('hiliteColor', false, 'transparent');
+        } else {
+            document.execCommand('hiliteColor', false, 'transparent');
+            escapeHighlightAtCursor();
         }
-        document.execCommand('hiliteColor', false, 'transparent');
         onChange(editorRef.current.innerHTML);
         updateActiveStates();
         setOpenPopover(null);
@@ -501,12 +567,19 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write s
     const removeCustomFontSize = (px) => setCustomFontSizes((prev) => prev.filter((s) => s.px !== px));
 
     const handleInput = () => {
-        // Once real characters land after a font-size marker's zero-width space, drop the ZWSP so
-        // it doesn't linger invisibly in the saved content forever.
+        // Once real characters land after a marker's zero-width space (font-size markers below,
+        // and RichTextEditor's own highlight-escape marker), drop the ZWSP so it doesn't linger
+        // invisibly in the saved content forever. Uses deleteData(0, 1) rather than reassigning
+        // .nodeValue wholesale: a full nodeValue reassignment makes the browser treat it as
+        // replacing the *entire* string, which collapses any live cursor sitting in this text
+        // node back to the very start of the new text instead of preserving its relative
+        // position - visibly yanking the caret one character to the left of whatever was just
+        // typed. deleteData with an explicit offset/count performs a genuine partial deletion,
+        // which the DOM spec's Range/Selection boundary-point adjustment handles correctly.
         const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_TEXT);
         for (let node = walker.nextNode(); node; node = walker.nextNode()) {
             if (node.nodeValue.length > 1 && node.nodeValue.startsWith(ZWSP)) {
-                node.nodeValue = node.nodeValue.slice(1);
+                node.deleteData(0, 1);
             }
         }
         onChange(editorRef.current.innerHTML);

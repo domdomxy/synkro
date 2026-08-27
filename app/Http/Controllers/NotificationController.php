@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NotificationRead;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,7 +83,17 @@ class NotificationController extends Controller
     {
         abort_unless($notification->user_id === Auth::id(), 403);
 
+        // Only a genuine unread -> read transition is worth telling other
+        // tabs/devices about; re-marking an already-read notification (not
+        // expected from the UI, but harmless if it happens) shouldn't nudge
+        // their unread counts down a second time.
+        $wasUnread = is_null($notification->read_at);
+
         $notification->update(['read_at' => now()]);
+
+        if ($wasUnread) {
+            broadcast(new NotificationRead($notification->user_id, $notification->id, $notification->read_at?->toISOString()))->toOthers();
+        }
 
         return back();
     }

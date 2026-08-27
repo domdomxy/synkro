@@ -72,6 +72,7 @@ export default function NotificationBell() {
             '.ticket.responded',
             '.notification.deleted',
             '.notification.updated',
+            '.notification.read',
         ],
         (payload) => {
             // Fired when a comment backing an unread (or already-seen) bell
@@ -84,6 +85,19 @@ export default function NotificationBell() {
                 if (payload.was_unread) {
                     setUnreadCount((c) => Math.max(0, c - 1));
                 }
+                return;
+            }
+
+            // Fired when this notification was marked read elsewhere - a
+            // NotificationToast click, a bell row click on another tab/
+            // device, or the Notifications page. Mirrors what
+            // openNotification() below already does locally when the click
+            // happens in this same bell instance.
+            if (payload.kind === 'read') {
+                setItems((prev) => prev.map((n) => (
+                    n.id === payload.notification_id ? { ...n, read_at: payload.read_at ?? new Date().toISOString() } : n
+                )));
+                setUnreadCount((c) => Math.max(0, c - 1));
                 return;
             }
 

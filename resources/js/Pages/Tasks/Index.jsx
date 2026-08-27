@@ -543,13 +543,18 @@ export default function Index({ tasks, showingArchived, activeCount, archivedCou
                                         className="block"
                                     >
                                         <div className="flex items-start justify-between gap-2 pr-6">
-                                            <h3 className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100" title={task.title}>
-                                                {task.title}
+                                            {/* Only the title text truncates - the pin icon and "(edited)" tag sit
+                                                outside that truncating span so a long title can't clip through the
+                                                middle of them (previously the whole line, title+icon+tag together,
+                                                truncated as one unit, which could hard-cut the tag's own text with
+                                                no ellipsis shown, e.g. "(edited" missing its closing paren). */}
+                                            <h3 className="flex min-w-0 items-center font-semibold text-gray-900 dark:text-gray-100" title={task.title}>
+                                                <span className="min-w-0 truncate">{task.title}</span>
                                                 {!!task.is_pinned && (
                                                     <PinIcon filled className="ml-2 inline-block h-3.5 w-3.5 shrink-0 align-middle text-amber-500" />
                                                 )}
                                                 {task.edited_at && (
-                                                    <span className="ml-2 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>
+                                                    <span className="ml-2 shrink-0 text-xs italic text-gray-400 dark:text-gray-500">(edited)</span>
                                                 )}
                                             </h3>
                                             <span className={`shrink-0 rounded-full px-2 py-1 text-xs capitalize ${statusStyles[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
