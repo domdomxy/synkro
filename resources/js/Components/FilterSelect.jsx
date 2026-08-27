@@ -169,7 +169,7 @@ export default function FilterSelect({ id, value, onChange, options, className =
 // as={Fragment}>, which attaches a ref straight to its child to track the
 // DOM node for the transition - a plain function component can't receive
 // that ref.
-const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, optionsAs: OptionsComponent = ListboxOptions, children }, forwardedRef) {
+const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, optionsAs: OptionsComponent = ListboxOptions, align = 'right', children }, forwardedRef) {
     const [rect, setRect] = useState(null);
     const localRef = useRef(null);
 
@@ -208,26 +208,34 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, opt
     const r = rect ?? { top: 0, bottom: 0, left: 0, right: 0, width: 0 };
     const margin = 8;
 
-    // Right-aligned to the trigger, same as the old `absolute right-0`, but
-    // anchored with `right` instead of a precomputed `left`+`width` pair so
-    // the panel can size itself to `max-content` - i.e. as wide as its
-    // longest option label, not a flat 176px minimum. That matters once
-    // triggers get narrow (e.g. a `w-24` priority select): a fixed minimum
-    // used to drag a much wider empty panel open under a small button.
-    // `minWidth` still floors it at the trigger's own width so the panel
-    // never reads as narrower than the control that opened it, and
-    // `maxWidth` both caps runaway labels and keeps the whole thing from
-    // running off the left edge of the screen (derived from how much room
-    // actually exists between the trigger and that edge, so no separate
-    // `left` clamp is needed).
-    const right = Math.max(margin, window.innerWidth - r.right);
-    const maxWidth = Math.max(80, Math.min(window.innerWidth - margin * 2, r.right - margin));
+    // Right-aligned to the trigger by default, same as the old `absolute
+    // right-0`, but anchored with `right` instead of a precomputed
+    // `left`+`width` pair so the panel can size itself to `max-content` -
+    // i.e. as wide as its longest option label, not a flat 176px minimum.
+    // That matters once triggers get narrow (e.g. a `w-24` priority
+    // select): a fixed minimum used to drag a much wider empty panel open
+    // under a small button. `minWidth` still floors it at the trigger's own
+    // width so the panel never reads as narrower than the control that
+    // opened it, and `maxWidth` both caps runaway labels and keeps the
+    // whole thing from running off the opposite edge of the screen (derived
+    // from how much room actually exists between the trigger and that
+    // edge, so no separate clamp on the anchored side is needed).
+    //
+    // `align="left"` flips all of this to the mirror image - anchored by
+    // `left` instead of `right`, growing rightward instead of leftward -
+    // for triggers that sit near the left edge of their container (e.g. the
+    // dependency picker on the new-task form) where a right-aligned panel
+    // would spill outside a narrow sidebar or overlap the member list
+    // instead of the open space actually beside it.
+    const style = align === 'left'
+        ? { left: Math.max(margin, r.left), maxWidth: Math.max(80, Math.min(window.innerWidth - margin * 2, window.innerWidth - r.left - margin)) }
+        : { right: Math.max(margin, window.innerWidth - r.right), maxWidth: Math.max(80, Math.min(window.innerWidth - margin * 2, r.right - margin)) };
 
     return createPortal(
         <OptionsComponent
             ref={setRefs}
             data-filter-select-portal
-            style={{ position: 'fixed', top: r.bottom + 4, right, width: 'max-content', minWidth: r.width, maxWidth }}
+            style={{ position: 'fixed', top: r.bottom + 4, width: 'max-content', minWidth: r.width, ...style }}
             className="z-[70] max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}

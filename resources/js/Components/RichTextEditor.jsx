@@ -92,7 +92,17 @@ function Popover({ trigger, children, open, onToggle, onClose, width = 'auto', l
             if (menuRef.current && !menuRef.current.contains(e.target) && !btnRef.current.contains(e.target)) onClose();
         };
         // Closing on scroll/resize is simpler and more reliable than re-tracking position mid-scroll.
-        const handleScrollOrResize = () => onClose();
+        // Scroll events don't bubble, but this listener is registered on the capture phase so it
+        // still sees them on their way down to the real target. That includes the *internal*
+        // scroll a text input fires when its content overflows and the caret moves past the
+        // visible edge (arrow keys, Home/End, or dragging a selection) - a "scroll" in the DOM
+        // sense even though the page hasn't moved. Without filtering those out, scrolling to read
+        // a long URL in the popover's own input closed the popover mid-keystroke. Only an actual
+        // page/ancestor scroll (target outside the popover) should close it.
+        const handleScrollOrResize = (e) => {
+            if (e.target && menuRef.current && menuRef.current.contains(e.target)) return;
+            onClose();
+        };
         document.addEventListener('mousedown', handleOutside);
         // Touch browsers don't reliably fire mousedown for outside taps, so this is handled
         // separately rather than relying on the synthetic mouse events some mobile browsers emit.

@@ -788,7 +788,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // queued to be invited.
     const [inviteEmailInput, setInviteEmailInput] = useState('');
     const taskForm = useForm({ title: '', description: '', assigned_to: '', due_date: '', reminder_offset_minutes: '', priority: 'medium', dependencies: [] });
-    const [newTaskDependencyPick, setNewTaskDependencyPick] = useState('');
     const leaveForm = useForm({ reason: '' });
 
     useEcho(`project.${project.id}`, ['.comment.posted', '.comment.deleted', '.comment.updated'], () => {
@@ -916,16 +915,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             due_date: localDateTimeToIso(data.due_date),
             reminder_offset_minutes: data.reminder_offset_minutes === '' ? null : Number(data.reminder_offset_minutes),
         }));
-        taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setNewTaskDependencyPick(''); setShowNewTaskForm(false); } });
-    };
-
-    const addNewTaskDependency = () => {
-        if (!newTaskDependencyPick) return;
-        const id = Number(newTaskDependencyPick);
-        if (!taskForm.data.dependencies.includes(id)) {
-            taskForm.setData('dependencies', [...taskForm.data.dependencies, id]);
-        }
-        setNewTaskDependencyPick('');
+        taskForm.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => { taskForm.reset(); setShowNewTaskForm(false); } });
     };
 
     const removeNewTaskDependency = (id) => {
@@ -1300,74 +1290,75 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                         rows={3}
                                                     />
                                                 </div>
-                                                <div className="flex gap-4">
-                                                    <div className="flex-1">
-                                                        <InputLabel htmlFor="assigned_to" value="Assign To" />
-                                                        <FilterSelect
-                                                            id="assigned_to"
-                                                            className="mt-1"
-                                                            value={taskForm.data.assigned_to}
-                                                            onChange={(v) => taskForm.setData('assigned_to', v)}
-                                                            options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name, avatar: m }))]}
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <InputLabel htmlFor="due_date" value="Due Date & Time" />
-                                                        <TextInput id="due_date" type="datetime-local" step="1" value={taskForm.data.due_date} onChange={(e) => taskForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <InputLabel htmlFor="priority" value="Priority" />
-                                                        <FilterSelect id="priority" className="mt-1" value={taskForm.data.priority} onChange={(v) => taskForm.setData('priority', v)} options={PRIORITY_OPTIONS} />
-                                                    </div>
+                                                <div>
+                                                    <InputLabel htmlFor="assigned_to" value="Assign To" />
+                                                    <FilterSelect
+                                                        id="assigned_to"
+                                                        className="mt-1"
+                                                        value={taskForm.data.assigned_to}
+                                                        onChange={(v) => taskForm.setData('assigned_to', v)}
+                                                        options={[{ value: '', label: 'Unassigned' }, ...project.members.map((m) => ({ value: m.id, label: m.name, avatar: m }))]}
+                                                    />
                                                 </div>
-                                                <div className="flex gap-4">
-                                                    <div className="flex-1 sm:max-w-[calc(33%-0.67rem)]">
-                                                        <InputLabel htmlFor="reminder_offset_minutes" value="Deadline Reminder" />
-                                                        <FilterSelect
-                                                            id="reminder_offset_minutes"
-                                                            className="mt-1"
-                                                            value={taskForm.data.reminder_offset_minutes}
-                                                            onChange={(v) => taskForm.setData('reminder_offset_minutes', v)}
-                                                            options={REMINDER_OPTIONS}
-                                                            disabled={!taskForm.data.due_date}
-                                                        />
-                                                        <InputError message={taskForm.errors.reminder_offset_minutes} className="mt-1" />
-                                                        {!taskForm.data.due_date && (
-                                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Set a due date to enable a reminder.</p>
-                                                        )}
-                                                    </div>
+                                                <div>
+                                                    <InputLabel htmlFor="due_date" value="Due Date & Time" />
+                                                    <TextInput id="due_date" type="datetime-local" step="1" value={taskForm.data.due_date} onChange={(e) => taskForm.setData('due_date', e.target.value)} className="mt-1 block w-full" />
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="reminder_offset_minutes" value="Deadline Reminder" />
+                                                    <FilterSelect
+                                                        id="reminder_offset_minutes"
+                                                        className="mt-1"
+                                                        value={taskForm.data.reminder_offset_minutes}
+                                                        onChange={(v) => taskForm.setData('reminder_offset_minutes', v)}
+                                                        options={REMINDER_OPTIONS}
+                                                        disabled={!taskForm.data.due_date}
+                                                    />
+                                                    <InputError message={taskForm.errors.reminder_offset_minutes} className="mt-1" />
+                                                    {!taskForm.data.due_date && (
+                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Set a due date to enable a reminder.</p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="priority" value="Priority" />
+                                                    <FilterSelect id="priority" className="mt-1" value={taskForm.data.priority} onChange={(v) => taskForm.setData('priority', v)} options={PRIORITY_OPTIONS} />
                                                 </div>
                                                 <div>
                                                     <InputLabel htmlFor="dependencies" value="Dependencies" />
-                                                    {taskForm.data.dependencies.length > 0 && (
-                                                        <ul className="mt-1 space-y-1">
-                                                            {taskForm.data.dependencies.map((id) => {
-                                                                const dep = project.tasks.find((t) => t.id === id);
-                                                                return (
-                                                                    <li key={id} className="flex items-center gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-sm dark:bg-gray-900/40">
-                                                                        <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{dep?.title ?? `Task #${id}`}</span>
-                                                                        <RemoveButton onClick={() => removeNewTaskDependency(id)} />
-                                                                    </li>
-                                                                );
-                                                            })}
-                                                        </ul>
-                                                    )}
-                                                    <div className="mt-1 flex items-center gap-2">
+                                                    <div className="mt-1 space-y-2 rounded-md border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-900/40">
                                                         <FilterSelect
-                                                            value={newTaskDependencyPick}
-                                                            onChange={setNewTaskDependencyPick}
+                                                            id="dependencies"
+                                                            value=""
+                                                            onChange={(v) => {
+                                                                if (!v) return;
+                                                                const id = Number(v);
+                                                                if (!taskForm.data.dependencies.includes(id)) {
+                                                                    taskForm.setData('dependencies', [...taskForm.data.dependencies, id]);
+                                                                }
+                                                            }}
                                                             options={[
                                                                 { value: '', label: 'Add a dependency…' },
                                                                 ...project.tasks
                                                                     .filter((t) => !taskForm.data.dependencies.includes(t.id))
-                                                                    .map((t) => ({
-                                                                        value: t.id,
-                                                                        label: t.title,
-                                                                        badge: { label: t.status.replace('_', ' '), className: statusPillStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
-                                                                    })),
+                                                                    .map((t) => ({ value: t.id, label: t.title })),
                                                             ]}
                                                         />
-                                                        <SecondaryButton type="button" onClick={addNewTaskDependency} disabled={!newTaskDependencyPick}>Add</SecondaryButton>
+                                                        {taskForm.data.dependencies.length === 0 && (
+                                                            <p className="text-sm text-gray-400 dark:text-gray-500">This task doesn't depend on anything.</p>
+                                                        )}
+                                                        {taskForm.data.dependencies.map((id) => {
+                                                            const dep = project.tasks.find((t) => t.id === id);
+                                                            return (
+                                                                <div key={id} className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm group dark:border-gray-700 dark:bg-gray-800/60">
+                                                                    <span className={`h-2 w-2 shrink-0 rounded-full ${dep?.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                                                                    <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{dep?.title ?? `Task #${id}`}</span>
+                                                                    {dep && (
+                                                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusPillStyles[dep.status] ?? 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                                                                    )}
+                                                                    <RemoveButton onClick={() => removeNewTaskDependency(id)} />
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
