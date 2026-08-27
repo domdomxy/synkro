@@ -54,6 +54,14 @@ const statusPillStyles = {
     done: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
 };
 
+// Mirrors TaskRow's `priorityStyles`, kept as a separate copy rather than a shared import since
+// each file already keeps its own local status/priority pill maps (see statusPillStyles above).
+const priorityPillStyles = {
+    low: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+    medium: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+    high: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+};
+
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All' },
     { value: 'todo', label: 'To Do' },
@@ -1340,7 +1348,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                                                 { value: '', label: 'Add a dependency…' },
                                                                 ...project.tasks
                                                                     .filter((t) => !taskForm.data.dependencies.includes(t.id))
-                                                                    .map((t) => ({ value: t.id, label: t.title })),
+                                                                    .map((t) => ({
+                                                                        value: t.id,
+                                                                        label: t.title,
+                                                                        endBadges: [
+                                                                            { label: t.status.replace('_', ' '), className: statusPillStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
+                                                                            { label: t.priority, className: priorityPillStyles[t.priority] ?? priorityPillStyles.medium },
+                                                                        ],
+                                                                    })),
                                                             ]}
                                                         />
                                                         {taskForm.data.dependencies.length === 0 && (

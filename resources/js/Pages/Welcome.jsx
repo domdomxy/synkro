@@ -290,50 +290,6 @@ function RevealWords({ text, visible, baseDelay = 0, step = 40, className = '' }
     ));
 }
 
-// A gentle "magnetic" pull toward the cursor, the way revoholic's buttons and
-// nav links nudge toward the pointer instead of just sitting still on hover.
-// Desktop pointer-fine only, and a no-op under prefers-reduced-motion.
-function useMagnetic(strength = 8) {
-    const ref = useRef(null);
-
-    useEffect(() => {
-        const node = ref.current;
-        if (!node) return;
-        if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        if (typeof window !== 'undefined' && !window.matchMedia?.('(pointer: fine)').matches) return;
-
-        const handleMove = (e) => {
-            const rect = node.getBoundingClientRect();
-            const relX = e.clientX - rect.left - rect.width / 2;
-            const relY = e.clientY - rect.top - rect.height / 2;
-            node.style.transition = 'none';
-            node.style.transform = `translate(${(relX / rect.width) * strength}px, ${(relY / rect.height) * strength}px)`;
-        };
-        const handleLeave = () => {
-            node.style.transition = 'transform 200ms ease-out';
-            node.style.transform = 'translate(0px, 0px)';
-        };
-
-        node.addEventListener('mousemove', handleMove);
-        node.addEventListener('mouseleave', handleLeave);
-        return () => {
-            node.removeEventListener('mousemove', handleMove);
-            node.removeEventListener('mouseleave', handleLeave);
-        };
-    }, [strength]);
-
-    return ref;
-}
-
-function MagneticWrap({ children, strength = 8 }) {
-    const ref = useMagnetic(strength);
-    return (
-        <span ref={ref} className="inline-block">
-            {children}
-        </span>
-    );
-}
-
 // Numbered section index, fixed down the right edge on desktop - a nod to
 // the "01 Index" page-number nav on revoholic.info. Highlights whichever
 // section currently sits in the middle band of the viewport and expands its
@@ -684,34 +640,24 @@ export default function Welcome({ auth, stats }) {
                         >
                             {auth.user ? (
                                 <>
-                                    <MagneticWrap>
-                                        <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
-                                            Go to Projects
-                                        </Link>
-                                    </MagneticWrap>
-                                    <MagneticWrap>
-                                        <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Help / Feedback
-                                        </button>
-                                    </MagneticWrap>
+                                    <Link href={route('projects.index')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                        Go to Projects
+                                    </Link>
+                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Help / Feedback
+                                    </button>
                                 </>
                             ) : (
                                 <>
-                                    <MagneticWrap>
-                                        <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
-                                            Create an Account
-                                        </Link>
-                                    </MagneticWrap>
-                                    <MagneticWrap>
-                                        <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Log in
-                                        </Link>
-                                    </MagneticWrap>
-                                    <MagneticWrap>
-                                        <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                                            Help / Feedback
-                                        </button>
-                                    </MagneticWrap>
+                                    <Link href={route('register')} className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md">
+                                        Create an Account
+                                    </Link>
+                                    <Link href={route('login')} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Log in
+                                    </Link>
+                                    <button type="button" onClick={openHelpFeedback} className="rounded-md border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                                        Help / Feedback
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -807,14 +753,12 @@ export default function Welcome({ auth, stats }) {
                                 : `Join ${liveStats.users.toLocaleString()} people already managing work on Synkro.`}
                         </p>
                         <div className="mt-8">
-                            <MagneticWrap>
-                                <Link
-                                    href={route(auth.user ? 'projects.index' : 'register')}
-                                    className="inline-block rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md"
-                                >
-                                    {auth.user ? 'Go to Projects' : 'Create an Account'}
-                                </Link>
-                            </MagneticWrap>
+                            <Link
+                                href={route(auth.user ? 'projects.index' : 'register')}
+                                className="inline-block rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-indigo-500 hover:shadow-md"
+                            >
+                                {auth.user ? 'Go to Projects' : 'Create an Account'}
+                            </Link>
                         </div>
                     </section>
                 </main>

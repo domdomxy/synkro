@@ -1535,7 +1535,14 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                         { value: '', label: 'Add a dependency…' },
                                         ...allTasks
                                             .filter((t) => t.id !== task.id && !editForm.data.dependencies.includes(t.id) && !wouldCreateCycle(allTasks, task.id, t.id))
-                                            .map((t) => ({ value: t.id, label: t.title })),
+                                            .map((t) => ({
+                                                value: t.id,
+                                                label: t.title,
+                                                endBadges: [
+                                                    { label: t.status.replace('_', ' '), className: statusStyles[t.status] ?? 'bg-gray-100 text-gray-600' },
+                                                    { label: t.priority, className: priorityStyles[t.priority] ?? priorityStyles.medium },
+                                                ],
+                                            })),
                                     ]}
                                 />
                             )}
@@ -2059,7 +2066,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 type="button"
                                 onClick={() => onJumpToTask?.(dep.id)}
                                 title={`Go to "${dep.title}"`}
-                                className="flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-sm transition hover:text-indigo-600 dark:hover:text-indigo-400"
+                                className="flex w-full min-w-0 items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-left text-sm shadow-sm transition hover:border-indigo-200 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-indigo-900 dark:hover:text-indigo-400"
                             >
                                 <span className={`h-2 w-2 shrink-0 rounded-full ${dep.status === 'done' ? 'bg-green-500' : 'bg-amber-500'}`} />
                                 <span className="min-w-0 flex-1 truncate text-gray-700 hover:underline dark:text-gray-300">{dep.title}</span>

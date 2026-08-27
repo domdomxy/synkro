@@ -41,16 +41,20 @@ function XIcon() {
 
 /**
  * Styled replacement for a native <select> used as a list filter.
- * options: [{ value, label, disabled?, avatar?, badge? }]. Panel is capped to a
- * scrollable ~15rem (roughly 5-6 items) instead of a native OS listbox with
- * no size control. Pass disabled: true on an option to show but not allow
- * picking it (e.g. a stale/former value kept only so its label still
- * renders). Pass avatar: <user-like object with name/avatar_path> on an
- * option (e.g. a project member or "All Users" entry) to show that user's
- * picture/initials next to the label, both in the closed button and in the
- * open list. Pass badge: { label, className } to show a small rounded pill
- * (e.g. a role) between the avatar and the label - className supplies its
- * background/text color, same shape as the roleStyles map.
+ * options: [{ value, label, disabled?, avatar?, badge?, endBadges? }]. Panel is
+ * capped to a scrollable ~15rem (roughly 5-6 items) instead of a native OS
+ * listbox with no size control. Pass disabled: true on an option to show but
+ * not allow picking it (e.g. a stale/former value kept only so its label
+ * still renders). Pass avatar: <user-like object with name/avatar_path> on
+ * an option (e.g. a project member or "All Users" entry) to show that
+ * user's picture/initials next to the label, both in the closed button and
+ * in the open list. Pass badge: { label, className } to show a small
+ * rounded pill (e.g. a role) between the avatar and the label - className
+ * supplies its background/text color, same shape as the roleStyles map.
+ * Pass endBadges: [{ label, className }, ...] to instead show one or more
+ * small pills right-aligned at the far edge of the row (e.g. a task's
+ * status and priority in a dependency picker) - unlike badge, this only
+ * renders in the open list, not the closed button.
  *
  * Pass searchable to swap the closed-button/dropdown pair for a type-to-filter
  * search box instead (still backed by the same local `options` list - no
@@ -117,14 +121,25 @@ export default function FilterSelect({ id, value, onChange, options, className =
                                 >
                                     {({ selected: isSelected }) => (
                                         <>
-                                            <span className="flex min-w-0 items-center gap-2">
-                                                {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
-                                                {opt.badge && (
-                                                    <span className={`inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${opt.badge.className}`}>
-                                                        {opt.badge.label}
+                                            <span className="flex min-w-0 items-center justify-between gap-2">
+                                                <span className="flex min-w-0 items-center gap-2">
+                                                    {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
+                                                    {opt.badge && (
+                                                        <span className={`inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${opt.badge.className}`}>
+                                                            {opt.badge.label}
+                                                        </span>
+                                                    )}
+                                                    <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
+                                                </span>
+                                                {opt.endBadges && opt.endBadges.length > 0 && (
+                                                    <span className="flex shrink-0 items-center gap-1">
+                                                        {opt.endBadges.map((b, i) => (
+                                                            <span key={i} className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${b.className}`}>
+                                                                {b.label}
+                                                            </span>
+                                                        ))}
                                                     </span>
                                                 )}
-                                                <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
                                             </span>
                                             {isSelected && (
                                                 <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-indigo-600 dark:text-indigo-400">
@@ -314,14 +329,25 @@ function SearchableFilterSelect({ id, value, onChange, options, className, butto
                                     >
                                         {({ selected: isSelected }) => (
                                             <>
-                                                <span className="flex min-w-0 items-center gap-2">
-                                                    {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
-                                                    {opt.badge && (
-                                                        <span className={`inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${opt.badge.className}`}>
-                                                            {opt.badge.label}
+                                                <span className="flex min-w-0 items-center justify-between gap-2">
+                                                    <span className="flex min-w-0 items-center gap-2">
+                                                        {opt.avatar && <Avatar user={opt.avatar} size="h-5 w-5" rounded="rounded-full" className="shrink-0" />}
+                                                        {opt.badge && (
+                                                            <span className={`inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${opt.badge.className}`}>
+                                                                {opt.badge.label}
+                                                            </span>
+                                                        )}
+                                                        <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
+                                                    </span>
+                                                    {opt.endBadges && opt.endBadges.length > 0 && (
+                                                        <span className="flex shrink-0 items-center gap-1">
+                                                            {opt.endBadges.map((b, i) => (
+                                                                <span key={i} className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs capitalize ${b.className}`}>
+                                                                    {b.label}
+                                                                </span>
+                                                            ))}
                                                         </span>
                                                     )}
-                                                    <span className={`block truncate ${isSelected ? 'font-medium' : ''}`}>{opt.label}</span>
                                                 </span>
                                                 {isSelected && (
                                                     <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-indigo-600 dark:text-indigo-400">
