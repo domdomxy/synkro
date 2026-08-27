@@ -391,6 +391,19 @@ whole app; muting decides where they've asked to hear nothing regardless of type
 - **Email:** queued via `NotificationMailer`, only sent if the user hasn't opted out of
   that notification type.
 
+Marking a notification read (a bell row click, or a toast click - see below) fires a
+`NotificationRead` broadcast (`.notification.read`) on the user's private channel so any
+other open tab or device updates its own bell badge/row without a reload, the same pattern
+`NotificationDeleted`/`NotificationUpdated` already use for deletes and pile shrinks;
+`NotificationController::markRead()` only fires it on a genuine unread -> read transition,
+so re-marking an already-read row doesn't double-decrement another tab's unread count.
+
+`NotificationToast.jsx` toasts are clickable, not just informational: each toast carries a
+`url` (built per notification type, e.g. `/projects/{id}?task={id}` or with `&history=1` for
+`task_updated`) and the underlying `notificationId`. Clicking a toast marks that notification
+read and navigates to it, mirroring what a bell row click already does; the dismiss (X)
+button stops propagation so dismissing doesn't also open it.
+
 Repeated events on the same target don't flood the bell with near-duplicates -
 `NotificationPiler::pile()` folds a new event into an existing unread row (matched on
 `user_id` + `type` + `group_key`) instead of inserting a new one, bumping `pile_count`
