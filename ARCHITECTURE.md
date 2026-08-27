@@ -265,7 +265,11 @@ own `sessions` table (`SESSION_DRIVER=database`):
 - `DeviceSessionController::disconnect()`/`disconnectOthers()` disconnect a session by
   deleting its row - the browser holding that session is invalidated on its next
   request. A user can't disconnect their own current session this way (they're pointed
-  at logout instead).
+  at logout instead). Both confirmation dialogs (`DeviceSessionsSection.jsx`) include a
+  "change your password" link in case the session wasn't theirs; when rendered inside the
+  Settings overlay it hops straight to the Account panel's password section via
+  `overlayActions.switchToAccount('update-password')` (see the overlay-panel note in the
+  Directory map below), falling back to a normal page visit otherwise.
 - The admin side keeps a real historical log for support/audit purposes
   (`AdminController::userLoginHistory`, rendered by `Admin/UserLoginHistory.jsx`, a fork
   of the old self-service login-history page) - viewing it doesn't notify the user (that
@@ -434,6 +438,20 @@ retargets the message/url, rather than only being able to remove the whole notif
     into the batch invite.
 - `resources/js/Components/ImageLightbox.jsx` - full-size viewer for feedback-ticket image
   attachments, used in `FeedbackPanel.jsx` and `Admin/Feedbacks.jsx`.
+- `resources/js/Components/TaskRow.jsx` - besides the task detail panel itself, owns the
+  comment-thread UI: replies are grouped under their root comment (`buildCommentTree`) and
+  start collapsed behind a "View replies" toggle, expanding only the thread(s) a user opens.
+  Navigating to a specific comment (e.g. from a notification) walks up to that comment's root
+  and force-expands it first, so the target has something to scroll to even if its thread was
+  collapsed.
+- `resources/js/Components/ConfirmDialog.jsx` + `hooks/useConfirm.jsx` - the shared
+  confirmation dialog used across the app (project/task deletion, archiving, disconnecting a
+  device, and more) instead of one-off modals per action; `confirm(message, options)` returns
+  a promise resolved on confirm/cancel. An optional `skipKey` opts a specific caller into a
+  "don't show this again" checkbox, persisted to `localStorage` under that key - scoped to
+  whichever page passes it (e.g. `synkro:projects-archive-skip-confirm` and
+  `synkro:tasks-archive-skip-confirm` are independent, so skipping one archive confirmation
+  doesn't silence the other).
 
 ## Known rough edges
 

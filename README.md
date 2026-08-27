@@ -25,8 +25,9 @@ Built with Laravel 13, Inertia.js, and React.
 - Per-project notes and checklists, with checklist items that can sync live, two-way, into a
   member's personal Notes, a one-click "clear completed" to sweep checked-off items from a note;
   comments support @mentions (mentioning "everyone" is owner/manager-only), bare-URL and
-  markdown-style links, rich text with lists, threaded replies, and author-only editing (marked
-  "edited", logged to the project's activity log)
+  markdown-style links, rich text with lists, threaded replies (collapsed behind a "View replies"
+  toggle by default, auto-expanding the relevant thread when you jump to a specific comment), and
+  author-only editing (marked "edited", logged to the project's activity log)
 - Due dates with automatic overdue alerts, plus a per-task deadline reminder that the task's
   owner or manager can configure (how long before the due date the assignee is notified) -
   editable at any time, but locked once the task is done or its due date has passed unless
@@ -35,7 +36,8 @@ Built with Laravel 13, Inertia.js, and React.
 - Pinning and archiving at the project, task, and note level - a pinned task rises to the top of
   its project's list and of your My Tasks page alike; both the Projects list and My Tasks list
   show Active/Archived tabs with a live count per tab (archiving a task only affects your own
-  My Tasks view - it stays visible and unchanged for everyone else it's assigned to)
+  My Tasks view - it stays visible and unchanged for everyone else it's assigned to); the archive
+  confirmation on each page offers a "don't show this again" opt-in, remembered per page
 - Invite one or many members at once in a single request, with a live name/email search that
   autocompletes against existing users as you type, all given the same role, cancel a
   pending invitation at any time, plus ownership transfer (owner-only, gated by a 6-digit code
@@ -68,7 +70,8 @@ Built with Laravel 13, Inertia.js, and React.
   global per-notification-type preferences above
 - Personal activity feed and account activity log
 - Logged-in devices panel: see every active session (browser, device, approximate location) and
-  disconnect any of them remotely, or log out of all other devices at once
+  disconnect any of them remotely, or log out of all other devices at once - both disconnect
+  confirmations include a direct link into your password settings, in case it wasn't you
 - Personal dashboard with task/project stats, an animated task-status donut chart, an activity
   chart (day/week/month/custom range, switchable between area/bar/combo views) whose legend
   doubles as a series filter - click one entry to isolate it, click more to compare several
