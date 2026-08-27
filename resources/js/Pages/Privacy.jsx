@@ -21,9 +21,10 @@ const sections = [
         title: 'Information we collect',
         body: (
             <ul className="list-disc space-y-1.5 pl-5">
-                <li>Account details you provide: name, email address, and password (stored as a salted hash, never in plain text).</li>
-                <li>Content you create: projects, tasks, comments, notes, and any files or links you attach as deliverables.</li>
+                <li>Account details you provide: name, email address, password (stored as a salted hash, never in plain text), and an optional profile avatar photo.</li>
+                <li>Content you create: projects, tasks, comments, notes, and any files or links you attach as task deliverables or project resources.</li>
                 <li>Session activity: approximate location, browser, and device for each active sign-in, so you can see exactly who's signed into your account right now and disconnect any session you don't recognize.</li>
+                <li>A small cookie recording your device's timezone, used only to display timestamps back to you correctly (times are always stored on our servers in a fixed reference timezone regardless of this cookie), plus the standard session cookie that keeps you signed in.</li>
                 <li>Notification preferences and reminders you set up.</li>
                 <li>Support tickets and suspension appeals you submit, along with any admin responses and
                 any image attachments you add to a ticket.</li>

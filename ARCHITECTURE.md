@@ -474,8 +474,8 @@ retargets the message/url, rather than only being able to remove the whole notif
   above), and giving admins a silent bypass around that would undercut it. The route and controller
   method are kept as an explicit, documented no-op rather than removed, so this doesn't look like a
   bug if revisited later.
-- `AdminController` and `TaskController` have grown large (currently a little over 1,400
-  and 1,300 lines respectively) by doing most of their domain's work in one place. Not
+- `AdminController` and `TaskController` have grown large (currently around 1,500 lines
+  each) by doing most of their domain's work in one place. Not
   broken, but a good first refactor target - see the per-resource split already started
   with `Admin/FeedbackAdminController` and `Admin/FeedbackCategoryController`.
 - Test coverage is currently limited to Breeze's default auth scaffolding plus a small

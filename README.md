@@ -150,7 +150,9 @@ php artisan db:seed
 ```
 
 This creates an admin account (`admin@synkro.test`), a superadmin account
-(`superadmin@synkro.test`), and 5 regular users, all with the password `password`.
+(`superadmin@synkro.test`), and 9 regular users (5 named users seeded onto demo projects,
+3 unattached accounts for trying out invite/search flows, and one suspended account with a
+pending appeal), all with the password `password`.
 
 Then start everything (Laravel server, queue worker, log viewer, and Vite dev server) with:
 
