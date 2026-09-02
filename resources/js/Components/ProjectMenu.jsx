@@ -49,16 +49,16 @@ function LeaveIcon() {
     );
 }
 
-function DotsIcon() {
+function MenuIcon() {
     return (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6h.01M12 12h.01M12 18h.01" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
     );
 }
 
 /**
- * The "..." project menu (Project Information / Deliverables / Resources /
+ * The hamburger project menu (Project Information / Deliverables / Resources /
  * Owner-Manager Settings). Used on every project page it can navigate to, so
  * `page` tells it which one it's currently rendered on, so that page's own
  * entry can be left out of its own list - navigating to where you already are
@@ -74,7 +74,7 @@ export default function ProjectMenu({ project, page, isOwner, canManage, onShowI
                     title="More options"
                     className={`flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 ${className}`}
                 >
-                    <DotsIcon />
+                    <MenuIcon />
                 </button>
             </Dropdown.Trigger>
             <Dropdown.Content align="right" width="56" contentClasses="py-1 bg-white dark:bg-gray-800">

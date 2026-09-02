@@ -3,10 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 // Modeled on Discord's in-server search: typing a filter keyword like "from:"
 // or "has:" locks it into a solid dark tag inside the bar (not just text)
 // and opens a value list below it; picking a value turns the whole thing
-// into a removable applied-filter pill. Synkro only has two task filters
-// (status, priority) so each is single-select and shows as at most one
-// applied pill, but the interaction (keyword -> tag -> value list -> pill,
-// backspace to pop the last tag/pill) mirrors Discord's flow.
+// into a removable applied-filter pill. Each filter is single-select and
+// shows as at most one applied pill; the interaction (keyword -> tag ->
+// value list -> pill, backspace to pop the last tag/pill) mirrors Discord's
+// flow across however many filters are passed in.
 
 function SearchIcon() {
     return (
@@ -56,20 +56,9 @@ function AppliedPill({ children, onRemove }) {
     );
 }
 
-// options: [{ value, label }], excluding the "all" entry - "all" is what
-// clearing the pill sets the underlying filter back to.
-export default function TaskSearchBar({
-    value,
-    onChange,
-    status,
-    onStatusChange,
-    statusOptions,
-    priority,
-    onPriorityChange,
-    priorityOptions,
-    placeholder = 'Search...',
-    className = '',
-}) {
+// filters: [{ key, keyword, description, options: [{value,label}], value, onChange }]
+// `value` is the filter's currently-applied option value, 'all' meaning unset.
+export default function TaskSearchBar({ value, onChange, filters, placeholder = 'Search...', className = '' }) {
     const [open, setOpen] = useState(false);
     // The filter type currently locked into a dark keyword tag (e.g. after
     // typing "status:"), while its value is still being picked. Separate
@@ -79,17 +68,8 @@ export default function TaskSearchBar({
     const containerRef = useRef(null);
     const inputRef = useRef(null);
 
-    const FILTER_TYPES = useMemo(
-        () => [
-            { key: 'status', keyword: 'status', description: 'Filter by task status', options: statusOptions, active: status, onSelect: onStatusChange },
-            { key: 'priority', keyword: 'priority', description: 'Filter by task priority', options: priorityOptions, active: priority, onSelect: onPriorityChange },
-        ],
-        [statusOptions, status, onStatusChange, priorityOptions, priority, onPriorityChange]
-    );
-
-    const statusLabel = statusOptions.find((o) => o.value === status)?.label ?? status;
-    const priorityLabel = priorityOptions.find((o) => o.value === priority)?.label ?? priority;
-    const availableFilterTypes = FILTER_TYPES.filter((f) => f.active === 'all');
+    const appliedFilters = useMemo(() => filters.filter((f) => f.value !== 'all'), [filters]);
+    const availableFilterTypes = useMemo(() => filters.filter((f) => f.value === 'all'), [filters]);
 
     useEffect(() => {
         const handlePointerDown = (event) => {
@@ -105,7 +85,7 @@ export default function TaskSearchBar({
     };
 
     const applyValue = (filterType, optionValue) => {
-        filterType.onSelect(optionValue);
+        filterType.onChange(optionValue);
         cancelPending();
         onChange('');
         setOpen(false);
@@ -128,7 +108,7 @@ export default function TaskSearchBar({
         // Auto-lock into a keyword tag the moment a full "status:" / "priority:"
         // is typed, same as Discord converting a finished keyword into a tag.
         const fullMatch = raw.match(/^(\w+):(.*)$/);
-        const matchedType = fullMatch && FILTER_TYPES.find((f) => f.keyword === fullMatch[1].toLowerCase() && f.active === 'all');
+        const matchedType = fullMatch && availableFilterTypes.find((f) => f.keyword === fullMatch[1].toLowerCase());
         if (matchedType) {
             setPendingType(matchedType);
             setPendingQuery(fullMatch[2] ?? '');
@@ -145,10 +125,9 @@ export default function TaskSearchBar({
             return;
         }
         if (value !== '') return;
-        // Nothing typed - pop the most recently applied pill, priority first
-        // since it's rendered last (mirrors Discord popping the last tag).
-        if (priority !== 'all') onPriorityChange('all');
-        else if (status !== 'all') onStatusChange('all');
+        // Nothing typed - pop the most recently applied pill (last one in
+        // the filters list order, mirrors Discord popping the last tag).
+        if (appliedFilters.length > 0) appliedFilters[appliedFilters.length - 1].onChange('all');
     };
 
     const showValueList = Boolean(pendingType);
@@ -170,8 +149,11 @@ export default function TaskSearchBar({
                 onClick={() => inputRef.current?.focus()}
             >
                 <SearchIcon />
-                {status !== 'all' && <AppliedPill onRemove={() => onStatusChange('all')}>status: {statusLabel}</AppliedPill>}
-                {priority !== 'all' && <AppliedPill onRemove={() => onPriorityChange('all')}>priority: {priorityLabel}</AppliedPill>}
+                {appliedFilters.map((f) => (
+                    <AppliedPill key={f.key} onRemove={() => f.onChange('all')}>
+                        {f.keyword}: {f.options.find((o) => o.value === f.value)?.label ?? f.value}
+                    </AppliedPill>
+                ))}
                 {pendingType && <KeywordTag keyword={pendingType.keyword} />}
                 <input
                     ref={inputRef}
@@ -180,7 +162,7 @@ export default function TaskSearchBar({
                     onChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
                     onFocus={() => setOpen(true)}
                     onKeyDown={handleKeyDown}
-                    placeholder={!pendingType && status === 'all' && priority === 'all' ? placeholder : ''}
+                    placeholder={!pendingType && appliedFilters.length === 0 ? placeholder : ''}
                     className="min-w-[48px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
                 />
             </div>

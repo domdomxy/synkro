@@ -10,6 +10,7 @@ import Spinner from '@/Components/Spinner';
 import Avatar from '@/Components/Avatar';
 import TaskRow from '@/Components/TaskRow';
 import TaskBoard from '@/Components/TaskBoard';
+import TaskStatusBar from '@/Components/TaskStatusBar';
 import useConfirm from '@/hooks/useConfirm';
 import useMuteScope from '@/hooks/useMuteScope';
 import useLandscapeOnOpen from '@/hooks/useLandscapeOnOpen';
@@ -67,6 +68,16 @@ const PRIORITY_OPTIONS = [
     { value: 'low', label: 'Low' },
     { value: 'medium', label: 'Medium' },
     { value: 'high', label: 'High' },
+];
+
+const HAS_COMMENTS_OPTIONS = [
+    { value: 'has', label: 'Has comments' },
+    { value: 'none', label: 'No comments' },
+];
+
+const HAS_DELIVERABLES_OPTIONS = [
+    { value: 'has', label: 'Has deliverables' },
+    { value: 'none', label: 'No deliverables' },
 ];
 
 // Values are minutes-before-due-date, matching reminder_offset_minutes on the
@@ -678,6 +689,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [taskSearch, setTaskSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
+    const [memberFilter, setMemberFilter] = useState('all');
+    const [commentsFilter, setCommentsFilter] = useState('all');
+    const [deliverablesFilter, setDeliverablesFilter] = useState('all');
     const [selectedTaskIds, setSelectedTaskIds] = useState([]);
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
@@ -949,6 +963,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const clearTaskFilters = () => { setTaskSearch(''); setStatusFilter('all'); setPriorityFilter('all'); };
 
+    const memberOptions = useMemo(
+        () => [
+            { value: 'unassigned', label: 'Unassigned' },
+            ...project.members.map((m) => ({ value: String(m.id), label: m.name })),
+        ],
+        [project.members]
+    );
+
     const filteredMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
         const list = term
@@ -972,6 +994,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             .filter((t) => {
                 if (statusFilter !== 'all' && t.status !== statusFilter) return false;
                 if (priorityFilter !== 'all' && (t.priority ?? 'medium') !== priorityFilter) return false;
+                if (memberFilter !== 'all') {
+                    if (memberFilter === 'unassigned') {
+                        if (t.assignee) return false;
+                    } else if (t.assignee?.id !== Number(memberFilter)) {
+                        return false;
+                    }
+                }
+                if (commentsFilter !== 'all') {
+                    const hasComments = (t.comments?.length ?? 0) > 0;
+                    if (commentsFilter === 'has' && !hasComments) return false;
+                    if (commentsFilter === 'none' && hasComments) return false;
+                }
+                if (deliverablesFilter !== 'all') {
+                    const hasDeliverables = (t.deliverables?.length ?? 0) > 0;
+                    if (deliverablesFilter === 'has' && !hasDeliverables) return false;
+                    if (deliverablesFilter === 'none' && hasDeliverables) return false;
+                }
                 if (!term) return true;
                 const titleMatch = t.title.toLowerCase().includes(term);
                 const assigneeMatch = t.assignee?.name?.toLowerCase().includes(term);
@@ -983,9 +1022,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 if (pinDiff !== 0) return pinDiff;
                 return (PRIORITY_ORDER[a.priority ?? 'medium'] ?? 1) - (PRIORITY_ORDER[b.priority ?? 'medium'] ?? 1);
             });
-    }, [project.tasks, taskSearch, statusFilter, priorityFilter]);
+    }, [project.tasks, taskSearch, statusFilter, priorityFilter, memberFilter, commentsFilter, deliverablesFilter]);
 
-    const hasActiveTaskFilters = taskSearch.trim() !== '' || statusFilter !== 'all' || priorityFilter !== 'all';
+    const hasActiveTaskFilters =
+        taskSearch.trim() !== '' ||
+        statusFilter !== 'all' ||
+        priorityFilter !== 'all' ||
+        memberFilter !== 'all' ||
+        commentsFilter !== 'all' ||
+        deliverablesFilter !== 'all';
     const canLeave = !isOwner && role !== 'admin';
 
     // Mobile-only back navigation: on small screens there's no persistent sidebar
@@ -1003,7 +1048,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+                <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-200">
                     <HeaderIconButton onClick={goBack} title="Go back" className="-ms-2 shrink-0 sm:hidden">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1038,13 +1083,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     <TaskSearchBar
                         value={taskSearch}
                         onChange={setTaskSearch}
-                        status={statusFilter}
-                        onStatusChange={setStatusFilter}
-                        statusOptions={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
-                        priority={priorityFilter}
-                        onPriorityChange={setPriorityFilter}
-                        priorityOptions={PRIORITY_OPTIONS}
-                        placeholder="Search tasks, or type status: / priority:..."
+                        filters={[
+                            { key: 'status', keyword: 'status', description: 'Filter by task status', options: STATUS_OPTIONS.filter((s) => s.value !== 'all'), value: statusFilter, onChange: setStatusFilter },
+                            { key: 'priority', keyword: 'priority', description: 'Filter by task priority', options: PRIORITY_OPTIONS, value: priorityFilter, onChange: setPriorityFilter },
+                            { key: 'member', keyword: 'member', description: 'Filter by assigned member', options: memberOptions, value: memberFilter, onChange: setMemberFilter },
+                            { key: 'comments', keyword: 'comments', description: 'Filter by comments', options: HAS_COMMENTS_OPTIONS, value: commentsFilter, onChange: setCommentsFilter },
+                            { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverables', options: HAS_DELIVERABLES_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
+                        ]}
+                        placeholder={`Search in ${project.name}`}
                         className="w-full sm:w-64"
                     />
 
@@ -1378,6 +1424,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     )}
                                 </>
                             )}
+
+                            <TaskStatusBar tasks={project.tasks} />
 
                             {viewMode === 'list' && hasActiveTaskFilters && (
                                 <p className="text-sm text-gray-400 dark:text-gray-500">Showing {filteredTasks.length} of {project.tasks.length} tasks</p>
