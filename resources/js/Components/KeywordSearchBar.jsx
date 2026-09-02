@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 // Modeled on Discord's in-server search: typing a filter keyword like "from:"
 // or "has:" locks it into a solid dark tag inside the bar (not just text)
@@ -129,6 +129,11 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
     const [pendingQuery, setPendingQuery] = useState('');
     const containerRef = useRef(null);
     const inputRef = useRef(null);
+    // On mobile the panel below is `fixed` (viewport-relative) rather than `absolute`
+    // (bar-relative) so it can sit centered on the screen instead of off to one side of
+    // a bar that no longer spans the same fixed width - see the panel's own comment.
+    // `top` has to be measured in JS since a fixed element ignores the bar's position.
+    const [mobileDropdownTop, setMobileDropdownTop] = useState(0);
 
     const appliedFilters = useMemo(() => filters.filter(isFilterApplied), [filters]);
     const availableFilterTypes = useMemo(() => filters.filter((f) => !isFilterApplied(f)), [filters]);
@@ -249,6 +254,24 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
     const showResultsSection = !showValueList && !showTextPanel && !pendingType && Boolean(resultGroups) && value.trim() !== '';
     const nonEmptyResultGroups = showResultsSection ? resultGroups.filter((g) => g.items.length > 0) : [];
     const showDropdown = open && (showValueList || showTextPanel || showKeywordSuggestions || showResultsSection);
+
+    // Re-measures the bar's bottom edge whenever the mobile panel opens, and keeps it
+    // in sync if the page scrolls or resizes while it's open (e.g. rotating the device,
+    // or the sticky header hiding/showing on scroll - see AuthenticatedLayout).
+    useLayoutEffect(() => {
+        if (!showDropdown) return;
+        const updatePosition = () => {
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (rect) setMobileDropdownTop(rect.bottom + 6);
+        };
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [showDropdown]);
     const inputValue = pendingType ? pendingQuery : value;
 
     // Group the "Filter by" suggestion list by category (e.g. "Tasks"),
@@ -314,10 +337,11 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                 />
             </div>
 
-            {showDropdown && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-[22rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:w-96">
+            {showDropdown && (() => {
+                const dropdownBody = (
+                    <>
                     {showValueList && (
-                        <div className="max-h-56 overflow-y-auto py-1">
+                        <div className="thin-scrollbar max-h-72 overflow-y-auto py-1">
                             <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 {pendingType.keyword}
                             </p>
@@ -338,7 +362,7 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                     )}
 
                     {showTextPanel && (
-                        <div className="max-h-64 overflow-y-auto py-1">
+                        <div className="thin-scrollbar max-h-80 overflow-y-auto py-1">
                             <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 {pendingType.keyword}
                             </p>
@@ -373,7 +397,7 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                     )}
 
                     {showKeywordSuggestions && (
-                        <div className="max-h-56 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700">
+                        <div className="thin-scrollbar max-h-72 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700">
                             <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Filter by
                             </p>
@@ -390,7 +414,7 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                     )}
 
                     {showResultsSection && (
-                        <div className={`max-h-80 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700 ${showKeywordSuggestions ? 'border-t border-gray-200 dark:border-gray-600' : ''}`}>
+                        <div className={`thin-scrollbar max-h-96 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700 ${showKeywordSuggestions ? 'border-t border-gray-200 dark:border-gray-600' : ''}`}>
                             {nonEmptyResultGroups.length === 0 && (
                                 <p className="px-3 py-3 text-sm text-gray-400 dark:text-gray-500">No results for &quot;{value}&quot;</p>
                             )}
@@ -415,8 +439,28 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                             ))}
                         </div>
                     )}
-                </div>
-            )}
+                    </>
+                );
+
+                return (
+                    <>
+                        {/* Mobile: fixed to the viewport and centered on screen (see mobileDropdownTop
+                            above), capped to a viewport-relative width - since the bar itself can now
+                            span most of the header width (see Projects/Show.jsx), anchoring to its own
+                            edge no longer lands anywhere near the middle of the screen. */}
+                        <div
+                            className="fixed left-1/2 z-20 w-[min(92vw,22rem)] -translate-x-1/2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:hidden"
+                            style={{ top: mobileDropdownTop }}
+                        >
+                            {dropdownBody}
+                        </div>
+                        {/* Desktop: unchanged from before - anchored to the bar's own right edge. */}
+                        <div className="absolute right-0 top-full z-20 mt-1 hidden w-96 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:block">
+                            {dropdownBody}
+                        </div>
+                    </>
+                );
+            })()}
         </div>
     );
 }

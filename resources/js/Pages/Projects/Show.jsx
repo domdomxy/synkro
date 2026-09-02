@@ -1205,7 +1205,10 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-200">
+                {/* w-full on mobile so the back/title/menu row spans the whole header width
+                    (matching the toolbar row below it); sm+ reverts to its natural width so
+                    it sits inline with the toolbar on one line like before. */}
+                <h2 className="flex w-full min-w-0 items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-200 sm:w-auto">
                     <HeaderIconButton onClick={goBack} title="Go back" className="-ms-2 shrink-0 sm:hidden">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1217,8 +1220,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
                         </svg>
                     )}
+                    {/* Mobile-only: the project menu lives up here on the title row (in the
+                        space that used to just be empty to the right of the title), freeing
+                        the toolbar row below to give Board/Mute/Search the full width. Desktop
+                        keeps it in the toolbar, where it always was. */}
+                    <div className="ms-auto shrink-0 sm:hidden">
+                        <ProjectMenu
+                            project={project}
+                            page="show"
+                            isOwner={isOwner}
+                            canManage={canManage}
+                            onShowInfo={() => setShowInfoModal(true)}
+                            canLeave={canLeave}
+                            onLeave={leaveProject}
+                        />
+                    </div>
                 </h2>
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex w-full shrink-0 items-center gap-1 sm:w-auto">
                     <HeaderIconButton onClick={() => setShowBoardModal(true)} title="Board">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -1250,18 +1268,22 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         ]}
                         resultGroups={searchResultGroups}
                         placeholder={`Search in ${project.name}`}
-                        className="w-full sm:w-64"
+                        className="flex-1 sm:w-64 sm:flex-none"
                     />
 
-                    <ProjectMenu
-                        project={project}
-                        page="show"
-                        isOwner={isOwner}
-                        canManage={canManage}
-                        onShowInfo={() => setShowInfoModal(true)}
-                        canLeave={canLeave}
-                        onLeave={leaveProject}
-                    />
+                    {/* Desktop-only: same menu as the mobile one above the fold, just kept
+                        in its original spot here since desktop never wraps to two rows. */}
+                    <div className="hidden sm:block">
+                        <ProjectMenu
+                            project={project}
+                            page="show"
+                            isOwner={isOwner}
+                            canManage={canManage}
+                            onShowInfo={() => setShowInfoModal(true)}
+                            canLeave={canLeave}
+                            onLeave={leaveProject}
+                        />
+                    </div>
                 </div>
             </div>
         }>
@@ -1430,7 +1452,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     </span>
                                 </div>
                                 <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
-                                <ul className="space-y-1 pr-1">
+                                {/* Taller than a typical dropdown-sized list and internally scrollable
+                                    (thin-scrollbar, see app.css) so a long member list doesn't push the
+                                    Pending Invitations section (or the whole page) further down. On lg
+                                    the cap is viewport-relative instead of a fixed rem value, since this
+                                    card sits in a sticky column (see teamPaneRef below) - keeps it from
+                                    ever growing taller than the visible viewport while stickied. */}
+                                <ul className="thin-scrollbar max-h-[26rem] space-y-1 overflow-y-auto pr-1.5 lg:max-h-[calc(100vh-16rem)]">
                                     {filteredMembers.map((member) => (
                                         <li
                                             key={member.id}
