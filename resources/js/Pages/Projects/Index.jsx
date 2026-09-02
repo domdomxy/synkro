@@ -7,8 +7,8 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import Spinner from '@/Components/Spinner';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
-import FilterSelect from '@/Components/FilterSelect';
 import ViewToggle from '@/Components/ViewToggle';
+import ProjectSearchBar from '@/Components/KeywordSearchBar';
 import PerPageSelect from '@/Components/PerPageSelect';
 import LocalPagination from '@/Components/LocalPagination';
 import ScrollToPaginationButton from '@/Components/ScrollToPaginationButton';
@@ -26,14 +26,6 @@ const roleStyles = {
     member: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     tester: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
 };
-
-function SearchIcon() {
-    return (
-        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-    );
-}
 
 function EmptyState({ hasAnyProjects, showingArchived, onNewProject, onClearFilters }) {
     return (
@@ -318,28 +310,26 @@ export default function Index({ projects, showingArchived, activeCount, archived
 
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-6 sm:gap-4">
                         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
-                            <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-                                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                                    <SearchIcon />
-                                </div>
-                                <TextInput
-                                    value={search}
-                                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                                    placeholder="Search by project name or owner..."
-                                    className="w-full pl-9"
-                                />
-                            </div>
-                            <FilterSelect
-                                value={roleFilter}
-                                onChange={(v) => { setRoleFilter(v); setPage(1); }}
-                                className="w-28 shrink-0 sm:w-36"
-                                options={[
-                                    { value: 'all', label: 'All Roles' },
-                                    { value: 'owner', label: 'Owner' },
-                                    { value: 'manager', label: 'Manager' },
-                                    { value: 'member', label: 'Member' },
-                                    { value: 'tester', label: 'Tester' },
+                            <ProjectSearchBar
+                                value={search}
+                                onChange={(v) => { setSearch(v); setPage(1); }}
+                                filters={[
+                                    {
+                                        key: 'role',
+                                        keyword: 'role',
+                                        description: 'Filter by your role',
+                                        options: [
+                                            { value: 'owner', label: 'Owner' },
+                                            { value: 'manager', label: 'Manager' },
+                                            { value: 'member', label: 'Member' },
+                                            { value: 'tester', label: 'Tester' },
+                                        ],
+                                        value: roleFilter,
+                                        onChange: (v) => { setRoleFilter(v); setPage(1); },
+                                    },
                                 ]}
+                                placeholder="Search by project name or owner..."
+                                className="w-full sm:w-72"
                             />
                             {hasActiveFilters && (
                                 <button onClick={clearFilters} className="text-sm text-gray-500 hover:underline dark:text-gray-400">

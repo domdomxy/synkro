@@ -101,6 +101,10 @@ class ProjectController extends Controller
             'tasks.dependencies:id,title,status',
             'tasks.dependents:id,title,status',
             'tasks.activityLogs' => fn ($q) => $q->with('user')->limit(20),
+            // Loaded here (not just on the dedicated Resources page) so the project
+            // search bar's "resources:" filter can match against them without a
+            // separate round trip.
+            'resources' => fn ($q) => $q->latest(),
         ]);
 
         $pinnedTaskIds = Auth::user()->pinnedTasks()->pluck('tasks.id')->toArray();

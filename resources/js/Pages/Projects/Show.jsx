@@ -20,7 +20,7 @@ import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
-import TaskSearchBar from '@/Components/TaskSearchBar';
+import TaskSearchBar from '@/Components/KeywordSearchBar';
 import ProjectMenu from '@/Components/ProjectMenu';
 import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import { localDateTimeToIso } from '@/utils/datetime';
@@ -70,15 +70,16 @@ const PRIORITY_OPTIONS = [
     { value: 'high', label: 'High' },
 ];
 
-const HAS_COMMENTS_OPTIONS = [
-    { value: 'has', label: 'Has comments' },
-    { value: 'none', label: 'No comments' },
+// Shared by both the "deliverables:" (per-task) and "resources:" (project-level)
+// search filters - both underlying records use the same file/link type enum.
+const ATTACHMENT_TYPE_OPTIONS = [
+    { value: 'file', label: 'File' },
+    { value: 'link', label: 'Link' },
 ];
 
-const HAS_DELIVERABLES_OPTIONS = [
-    { value: 'has', label: 'Has deliverables' },
-    { value: 'none', label: 'No deliverables' },
-];
+// Strips HTML tags from a rich-text body so free-text search (e.g. "comments:")
+// matches on the visible words rather than markup.
+const stripHtml = (html) => (html ?? '').replace(/<[^>]*>/g, ' ');
 
 // Values are minutes-before-due-date, matching reminder_offset_minutes on the
 // backend. '' means no reminder configured (sent as null). Kept in sync with
@@ -689,9 +690,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [taskSearch, setTaskSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
-    const [memberFilter, setMemberFilter] = useState('all');
-    const [commentsFilter, setCommentsFilter] = useState('all');
-    const [deliverablesFilter, setDeliverablesFilter] = useState('all');
+    const [assigneeFilter, setAssigneeFilter] = useState('all');
+    const [commentsFilter, setCommentsFilter] = useState('');
+    const [deliverablesFilter, setDeliverablesFilter] = useState({ type: null, text: '' });
+    // Project-level, not per-task - matched against project.resources and shown
+    // in its own results panel rather than narrowing the task list below.
+    const [resourcesFilter, setResourcesFilter] = useState({ type: null, text: '' });
     const [selectedTaskIds, setSelectedTaskIds] = useState([]);
     const [viewMode, setViewMode] = useState('list');
     const { confirm, ConfirmDialog } = useConfirm();
@@ -961,7 +965,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     };
 
-    const clearTaskFilters = () => { setTaskSearch(''); setStatusFilter('all'); setPriorityFilter('all'); };
+    const clearTaskFilters = () => {
+        setTaskSearch('');
+        setStatusFilter('all');
+        setPriorityFilter('all');
+        setAssigneeFilter('all');
+        setCommentsFilter('');
+        setDeliverablesFilter({ type: null, text: '' });
+        setResourcesFilter({ type: null, text: '' });
+    };
 
     const memberOptions = useMemo(
         () => [
@@ -988,28 +1000,34 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
+    const commentsTerm = commentsFilter.trim().toLowerCase();
+    const deliverablesTerm = deliverablesFilter.text.trim().toLowerCase();
+    const hasDeliverablesFilter = Boolean(deliverablesFilter.type) || deliverablesTerm !== '';
+
     const filteredTasks = useMemo(() => {
         const term = taskSearch.trim().toLowerCase();
         return project.tasks
             .filter((t) => {
                 if (statusFilter !== 'all' && t.status !== statusFilter) return false;
                 if (priorityFilter !== 'all' && (t.priority ?? 'medium') !== priorityFilter) return false;
-                if (memberFilter !== 'all') {
-                    if (memberFilter === 'unassigned') {
+                if (assigneeFilter !== 'all') {
+                    if (assigneeFilter === 'unassigned') {
                         if (t.assignee) return false;
-                    } else if (t.assignee?.id !== Number(memberFilter)) {
+                    } else if (t.assignee?.id !== Number(assigneeFilter)) {
                         return false;
                     }
                 }
-                if (commentsFilter !== 'all') {
-                    const hasComments = (t.comments?.length ?? 0) > 0;
-                    if (commentsFilter === 'has' && !hasComments) return false;
-                    if (commentsFilter === 'none' && hasComments) return false;
+                if (commentsTerm) {
+                    const matches = (t.comments ?? []).some((c) => stripHtml(c.body).toLowerCase().includes(commentsTerm));
+                    if (!matches) return false;
                 }
-                if (deliverablesFilter !== 'all') {
-                    const hasDeliverables = (t.deliverables?.length ?? 0) > 0;
-                    if (deliverablesFilter === 'has' && !hasDeliverables) return false;
-                    if (deliverablesFilter === 'none' && hasDeliverables) return false;
+                if (hasDeliverablesFilter) {
+                    const matches = (t.deliverables ?? []).some((d) => {
+                        if (deliverablesFilter.type && d.type !== deliverablesFilter.type) return false;
+                        if (!deliverablesTerm) return true;
+                        return [d.title, d.original_name, d.url].some((v) => v?.toLowerCase().includes(deliverablesTerm));
+                    });
+                    if (!matches) return false;
                 }
                 if (!term) return true;
                 const titleMatch = t.title.toLowerCase().includes(term);
@@ -1022,15 +1040,27 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 if (pinDiff !== 0) return pinDiff;
                 return (PRIORITY_ORDER[a.priority ?? 'medium'] ?? 1) - (PRIORITY_ORDER[b.priority ?? 'medium'] ?? 1);
             });
-    }, [project.tasks, taskSearch, statusFilter, priorityFilter, memberFilter, commentsFilter, deliverablesFilter]);
+    }, [project.tasks, taskSearch, statusFilter, priorityFilter, assigneeFilter, commentsTerm, hasDeliverablesFilter, deliverablesFilter.type, deliverablesTerm]);
+
+    const resourcesTerm = resourcesFilter.text.trim().toLowerCase();
+    const hasResourcesFilter = Boolean(resourcesFilter.type) || resourcesTerm !== '';
+    const matchingResources = useMemo(() => {
+        if (!hasResourcesFilter) return [];
+        return (project.resources ?? []).filter((r) => {
+            if (resourcesFilter.type && r.type !== resourcesFilter.type) return false;
+            if (!resourcesTerm) return true;
+            return [r.name, r.original_name, r.url, r.description].some((v) => v?.toLowerCase().includes(resourcesTerm));
+        });
+    }, [project.resources, hasResourcesFilter, resourcesFilter.type, resourcesTerm]);
 
     const hasActiveTaskFilters =
         taskSearch.trim() !== '' ||
         statusFilter !== 'all' ||
         priorityFilter !== 'all' ||
-        memberFilter !== 'all' ||
-        commentsFilter !== 'all' ||
-        deliverablesFilter !== 'all';
+        assigneeFilter !== 'all' ||
+        commentsTerm !== '' ||
+        hasDeliverablesFilter ||
+        hasResourcesFilter;
     const canLeave = !isOwner && role !== 'admin';
 
     // Mobile-only back navigation: on small screens there's no persistent sidebar
@@ -1084,11 +1114,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         value={taskSearch}
                         onChange={setTaskSearch}
                         filters={[
-                            { key: 'status', keyword: 'status', description: 'Filter by task status', options: STATUS_OPTIONS.filter((s) => s.value !== 'all'), value: statusFilter, onChange: setStatusFilter },
-                            { key: 'priority', keyword: 'priority', description: 'Filter by task priority', options: PRIORITY_OPTIONS, value: priorityFilter, onChange: setPriorityFilter },
-                            { key: 'member', keyword: 'member', description: 'Filter by assigned member', options: memberOptions, value: memberFilter, onChange: setMemberFilter },
-                            { key: 'comments', keyword: 'comments', description: 'Filter by comments', options: HAS_COMMENTS_OPTIONS, value: commentsFilter, onChange: setCommentsFilter },
-                            { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverables', options: HAS_DELIVERABLES_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
+                            { key: 'status', keyword: 'status', description: 'Filter by task status', category: 'Tasks', options: STATUS_OPTIONS.filter((s) => s.value !== 'all'), value: statusFilter, onChange: setStatusFilter },
+                            { key: 'priority', keyword: 'priority', description: 'Filter by task priority', category: 'Tasks', options: PRIORITY_OPTIONS, value: priorityFilter, onChange: setPriorityFilter },
+                            { key: 'assignee', keyword: 'assignee', description: 'Filter by assigned member', category: 'Tasks', options: memberOptions, value: assigneeFilter, onChange: setAssigneeFilter },
+                            { key: 'comments', keyword: 'comments', description: 'Search comment text', kind: 'text', value: commentsFilter, onChange: setCommentsFilter },
+                            { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverable type and name', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
+                            { key: 'resources', keyword: 'resources', description: 'Search project resources', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: resourcesFilter, onChange: setResourcesFilter },
                         ]}
                         placeholder={`Search in ${project.name}`}
                         className="w-full sm:w-64"
@@ -1142,6 +1173,38 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         {deletionCooldown > 0 ? `Resend Confirmation Email (${deletionCooldown}s)` : 'Resend Confirmation Email'}
                                     </SecondaryButton>
                                 </div>
+                            )}
+                        </div>
+                    )}
+                    {hasResourcesFilter && (
+                        <div className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-700">
+                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                    Resources{resourcesFilter.text ? ` matching "${resourcesFilter.text}"` : ''}
+                                    {resourcesFilter.type ? ` (${ATTACHMENT_TYPE_OPTIONS.find((t) => t.value === resourcesFilter.type)?.label})` : ''}
+                                </span>
+                                <Link href={route('projects.resources', project.id)} className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                                    View all resources
+                                </Link>
+                            </div>
+                            {matchingResources.length === 0 ? (
+                                <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No matching resources.</p>
+                            ) : (
+                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {matchingResources.map((r) => (
+                                        <li key={r.id}>
+                                            <Link
+                                                href={route('projects.resources', project.id)}
+                                                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                            >
+                                                <span className="min-w-0 truncate text-gray-700 dark:text-gray-200">{r.name}</span>
+                                                <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium uppercase text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                    {r.type}
+                                                </span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
                             )}
                         </div>
                     )}
