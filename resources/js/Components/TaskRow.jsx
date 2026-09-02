@@ -274,9 +274,14 @@ function RemoveButton({ onClick, title = 'Remove' }) {
     );
 }
 
-function DeliverableItem({ d, canRemove, onRemove, onPreview }) {
+function DeliverableItem({ d, canRemove, onRemove, onPreview, isHighlighted }) {
     return (
-        <li className="flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800">
+        <li
+            id={`deliverable-${d.id}`}
+            className={`flex items-center gap-2 rounded-md bg-white p-2 dark:bg-gray-800 ${
+                isHighlighted ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''
+            }`}
+        >
             {d.type === 'file' ? (
                 <FileTypeIcon name={d.original_name} className="h-4 w-4 shrink-0 text-gray-400" />
             ) : (
@@ -826,7 +831,7 @@ function CommentThread({
     );
 }
 
-export default function TaskRow({ task, currentUserId, canManage, canReview, isTrashed = false, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenChecklist = false, onJumpToTask, projectMuted = false }) {
+export default function TaskRow({ task, currentUserId, canManage, canReview, isTrashed = false, isHighlighted, members, selectable = false, selected = false, onToggleSelect, allTasks = [], autoOpenHistory = false, autoOpenCommentId = null, autoOpenDeliverableId = null, autoOpenChecklist = false, onJumpToTask, projectMuted = false }) {
     const isAssignee = task.assigned_to === currentUserId;
     // Roles are mutually exclusive per project, so "can review but can't manage"
     // means the role is exactly tester - no separate prop needs threading down
@@ -933,6 +938,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     }, [autoOpenChecklist]);
 
     const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+    const [highlightedDeliverableId, setHighlightedDeliverableId] = useState(null);
 
     // A comment/mention notification or email links to ?task=X&comment=Y. If this
     // is that task and it still has that comment, open the comments panel (it's
@@ -962,6 +968,20 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
         const clearTimer = setTimeout(() => setHighlightedCommentId(null), 3000);
         return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
     }, [autoOpenCommentId, task.comments]);
+
+    // Same idea as the comment deep-link above, but for a specific submitted
+    // deliverable found via the project search bar - open the "Submitted"
+    // panel (collapsed by default) and scroll straight to that file/link.
+    useEffect(() => {
+        if (!autoOpenDeliverableId || !task.deliverables?.some((d) => d.id === autoOpenDeliverableId)) return;
+        setShowDeliverables(true);
+        setHighlightedDeliverableId(autoOpenDeliverableId);
+        const scrollTimer = setTimeout(() => {
+            document.getElementById(`deliverable-${autoOpenDeliverableId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+        const clearTimer = setTimeout(() => setHighlightedDeliverableId(null), 3000);
+        return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+    }, [autoOpenDeliverableId, task.deliverables]);
 
     const assigneeStillMember = task.assigned_to != null && members?.some((m) => m.id === task.assigned_to);
 
@@ -1896,7 +1916,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     )}
                                     <ul className="space-y-1">
                                         {deliverableFiles.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
                                         ))}
                                     </ul>
                                 </div>
@@ -1908,7 +1928,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                     )}
                                     <ul className="space-y-1">
                                         {deliverableLinks.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} />
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
                                         ))}
                                     </ul>
                                 </div>

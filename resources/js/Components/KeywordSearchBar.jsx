@@ -95,8 +95,29 @@ function appliedLabel(f) {
     return `${f.keyword}: ${parts.length ? parts.join(' \u00b7 ') : '(any)'}`;
 }
 
+// A single row inside a "Results" group - a task/comment/member/resource/
+// deliverable that matched the typed text, taking the user straight to it
+// when clicked (see the resultGroups prop below).
+function ResultRow({ primary, secondary, onClick }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="flex w-full flex-col items-start gap-0.5 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+        >
+            <span className="w-full min-w-0 truncate">{primary}</span>
+            {secondary && <span className="w-full min-w-0 truncate text-xs text-gray-400 dark:text-gray-500">{secondary}</span>}
+        </button>
+    );
+}
+
 // filters: [{ key, keyword, description, category?, kind?, options?, types?, value, onChange }]
-export default function KeywordSearchBar({ value, onChange, filters, placeholder = 'Search...', className = '' }) {
+// resultGroups (optional): [{ key, label, items: [{ id, primary, secondary?, onSelect }] }]
+// - live search results grouped by category (Tasks, Comments, Members, ...),
+//   recomputed by the caller from whatever's currently typed in `value` and
+//   shown in their own list under the bar; picking one calls onSelect and
+//   closes the dropdown, instead of just narrowing what's on the page.
+export default function KeywordSearchBar({ value, onChange, filters, resultGroups, placeholder = 'Search...', className = '' }) {
     const [open, setOpen] = useState(false);
     // The filter type currently locked into a dark keyword tag (e.g. after
     // typing "status:"), while its value is still being picked. Separate
@@ -222,7 +243,12 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
     const typedPrefix = value.trim().toLowerCase();
     const matchingFilterTypes = availableFilterTypes.filter((f) => f.keyword.startsWith(typedPrefix));
     const showKeywordSuggestions = !showValueList && !showTextPanel && matchingFilterTypes.length > 0;
-    const showDropdown = open && (showValueList || showTextPanel || showKeywordSuggestions);
+    // Once there's plain typed text (not a "keyword:" being picked), show the
+    // live results list underneath - grouped by category, one section per
+    // type of thing (Tasks, Comments, Members, Resources, Deliverables).
+    const showResultsSection = !showValueList && !showTextPanel && !pendingType && Boolean(resultGroups) && value.trim() !== '';
+    const nonEmptyResultGroups = showResultsSection ? resultGroups.filter((g) => g.items.length > 0) : [];
+    const showDropdown = open && (showValueList || showTextPanel || showKeywordSuggestions || showResultsSection);
     const inputValue = pendingType ? pendingQuery : value;
 
     // Group the "Filter by" suggestion list by category (e.g. "Tasks"),
@@ -289,7 +315,7 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
             </div>
 
             {showDropdown && (
-                <div className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                <div className="absolute right-0 top-full z-20 mt-1 w-[22rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:w-96">
                     {showValueList && (
                         <div className="max-h-56 overflow-y-auto py-1">
                             <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -347,12 +373,12 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                     )}
 
                     {showKeywordSuggestions && (
-                        <div className="py-1">
+                        <div className="max-h-56 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700">
                             <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Filter by
                             </p>
                             {categoryOrder.map((cat) => (
-                                <div key={cat}>
+                                <div key={cat} className="pt-1 first:pt-0">
                                     <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                                         {cat}
                                     </p>
@@ -360,6 +386,33 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                                 </div>
                             ))}
                             {uncategorized.map(renderFilterTypeRow)}
+                        </div>
+                    )}
+
+                    {showResultsSection && (
+                        <div className={`max-h-80 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700 ${showKeywordSuggestions ? 'border-t border-gray-200 dark:border-gray-600' : ''}`}>
+                            {nonEmptyResultGroups.length === 0 && (
+                                <p className="px-3 py-3 text-sm text-gray-400 dark:text-gray-500">No results for &quot;{value}&quot;</p>
+                            )}
+                            {nonEmptyResultGroups.map((group) => (
+                                <div key={group.key} className="pt-1 first:pt-0">
+                                    <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                        {group.label}
+                                    </p>
+                                    {group.items.map((item) => (
+                                        <ResultRow
+                                            key={item.id}
+                                            primary={item.primary}
+                                            secondary={item.secondary}
+                                            onClick={() => {
+                                                item.onSelect();
+                                                onChange('');
+                                                setOpen(false);
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

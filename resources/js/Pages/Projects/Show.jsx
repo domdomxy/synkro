@@ -748,6 +748,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [autoOpenHistoryTaskId, setAutoOpenHistoryTaskId] = useState(null);
     const [autoOpenChecklistTaskId, setAutoOpenChecklistTaskId] = useState(null);
     const [autoOpenCommentId, setAutoOpenCommentId] = useState(null);
+    const [autoOpenDeliverableId, setAutoOpenDeliverableId] = useState(null);
+    const [highlightedMemberId, setHighlightedMemberId] = useState(null);
+    const [highlightedResourceId, setHighlightedResourceId] = useState(null);
 
     const jumpToTaskInList = (taskId) => {
         setViewMode('list');
@@ -758,6 +761,50 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 50);
         setTimeout(() => setHighlightedTaskId(null), 3000);
+    };
+
+    // Search-result navigation - picking a comment or deliverable from the
+    // search dropdown lands on its task with the right panel already open
+    // and the specific item scrolled to and briefly highlighted (TaskRow's
+    // own autoOpenCommentId/autoOpenDeliverableId effects do the actual
+    // expand+scroll once the task is on screen), same as clicking a
+    // notification link to a specific comment already does.
+    const jumpToTaskComment = (taskId, commentId) => {
+        setViewMode('list');
+        setShowBoardModal(false);
+        clearTaskFilters();
+        setAutoOpenDeliverableId(null);
+        setAutoOpenCommentId(commentId);
+    };
+
+    const jumpToTaskDeliverable = (taskId, deliverableId) => {
+        setViewMode('list');
+        setShowBoardModal(false);
+        clearTaskFilters();
+        setAutoOpenCommentId(null);
+        setAutoOpenDeliverableId(deliverableId);
+        setTimeout(() => {
+            document.getElementById(`task-${taskId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+    };
+
+    const jumpToMember = (memberId) => {
+        setMemberSearch('');
+        teamPaneRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' });
+        setHighlightedMemberId(memberId);
+        setTimeout(() => {
+            document.getElementById(`member-${memberId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+        setTimeout(() => setHighlightedMemberId(null), 3000);
+    };
+
+    const jumpToResource = (resourceId, resourceName) => {
+        setResourcesFilter({ type: null, text: resourceName });
+        setHighlightedResourceId(resourceId);
+        setTimeout(() => {
+            document.getElementById('resources-filter-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+        setTimeout(() => setHighlightedResourceId(null), 3000);
     };
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
     const [showInviteForm, setShowInviteForm] = useState(false);
@@ -1053,6 +1100,86 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     }, [project.resources, hasResourcesFilter, resourcesFilter.type, resourcesTerm]);
 
+    const MAX_SEARCH_RESULTS_PER_GROUP = 5;
+
+    // Live "type to search" results for the project search bar - separate
+    // from the keyword filters above (status:/priority:/etc narrow the task
+    // list in place), this finds actual tasks/comments/members/resources/
+    // deliverables matching plain typed text and groups them so picking one
+    // jumps straight to it, wherever it lives.
+    const searchResultGroups = useMemo(() => {
+        const term = taskSearch.trim().toLowerCase();
+        if (!term) return [];
+
+        const taskItems = project.tasks
+            .filter((t) => t.title.toLowerCase().includes(term))
+            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+            .map((t) => ({
+                id: `task-${t.id}`,
+                primary: t.title,
+                secondary: t.status,
+                onSelect: () => jumpToTaskInList(t.id),
+            }));
+
+        const commentItems = [];
+        project.tasks.forEach((t) => {
+            (t.comments ?? []).forEach((c) => {
+                if (commentItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
+                const text = stripHtml(c.body).trim();
+                if (!text.toLowerCase().includes(term)) return;
+                commentItems.push({
+                    id: `comment-${c.id}`,
+                    primary: text.length > 80 ? `${text.slice(0, 80)}...` : text,
+                    secondary: `${c.user?.name ? `${c.user.name} \u00b7 ` : ''}${t.title}`,
+                    onSelect: () => jumpToTaskComment(t.id, c.id),
+                });
+            });
+        });
+
+        const memberItems = project.members
+            .filter((m) => m.name.toLowerCase().includes(term))
+            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+            .map((m) => ({
+                id: `member-${m.id}`,
+                primary: m.name,
+                secondary: m.pivot?.role,
+                onSelect: () => jumpToMember(m.id),
+            }));
+
+        const resourceItems = (project.resources ?? [])
+            .filter((r) => [r.name, r.original_name].some((v) => v?.toLowerCase().includes(term)))
+            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+            .map((r) => ({
+                id: `resource-${r.id}`,
+                primary: r.name,
+                secondary: r.type,
+                onSelect: () => jumpToResource(r.id, r.name),
+            }));
+
+        const deliverableItems = [];
+        project.tasks.forEach((t) => {
+            (t.deliverables ?? []).forEach((d) => {
+                if (deliverableItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
+                const label = d.title || d.original_name || '';
+                if (!label.toLowerCase().includes(term)) return;
+                deliverableItems.push({
+                    id: `deliverable-${d.id}`,
+                    primary: label,
+                    secondary: t.title,
+                    onSelect: () => jumpToTaskDeliverable(t.id, d.id),
+                });
+            });
+        });
+
+        return [
+            { key: 'tasks', label: 'Tasks', items: taskItems },
+            { key: 'comments', label: 'Comments', items: commentItems },
+            { key: 'members', label: 'Members', items: memberItems },
+            { key: 'resources', label: 'Resources', items: resourceItems },
+            { key: 'deliverables', label: 'Deliverables', items: deliverableItems },
+        ];
+    }, [project.tasks, project.members, project.resources, taskSearch]);
+
     const hasActiveTaskFilters =
         taskSearch.trim() !== '' ||
         statusFilter !== 'all' ||
@@ -1117,10 +1244,11 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             { key: 'status', keyword: 'status', description: 'Filter by task status', category: 'Tasks', options: STATUS_OPTIONS.filter((s) => s.value !== 'all'), value: statusFilter, onChange: setStatusFilter },
                             { key: 'priority', keyword: 'priority', description: 'Filter by task priority', category: 'Tasks', options: PRIORITY_OPTIONS, value: priorityFilter, onChange: setPriorityFilter },
                             { key: 'assignee', keyword: 'assignee', description: 'Filter by assigned member', category: 'Tasks', options: memberOptions, value: assigneeFilter, onChange: setAssigneeFilter },
-                            { key: 'comments', keyword: 'comments', description: 'Search comment text', kind: 'text', value: commentsFilter, onChange: setCommentsFilter },
-                            { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverable type and name', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
-                            { key: 'resources', keyword: 'resources', description: 'Search project resources', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: resourcesFilter, onChange: setResourcesFilter },
+                            { key: 'comments', keyword: 'comments', description: 'Search comment text', category: 'Comments', kind: 'text', value: commentsFilter, onChange: setCommentsFilter },
+                            { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverable type and name', category: 'Deliverables', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
+                            { key: 'resources', keyword: 'resources', description: 'Search project resources', category: 'Resources', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: resourcesFilter, onChange: setResourcesFilter },
                         ]}
+                        resultGroups={searchResultGroups}
                         placeholder={`Search in ${project.name}`}
                         className="w-full sm:w-64"
                     />
@@ -1177,7 +1305,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </div>
                     )}
                     {hasResourcesFilter && (
-                        <div className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div id="resources-filter-panel" className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-700">
                                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                     Resources{resourcesFilter.text ? ` matching "${resourcesFilter.text}"` : ''}
@@ -1192,7 +1320,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             ) : (
                                 <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {matchingResources.map((r) => (
-                                        <li key={r.id}>
+                                        <li key={r.id} id={`resource-${r.id}`} className={r.id === highlightedResourceId ? 'ring-2 ring-inset ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''}>
                                             <Link
                                                 href={route('projects.resources', project.id)}
                                                 className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
@@ -1304,7 +1432,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
                                 <ul className="space-y-1 pr-1">
                                     {filteredMembers.map((member) => (
-                                        <li key={member.id} className="rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                        <li
+                                            key={member.id}
+                                            id={`member-${member.id}`}
+                                            className={`rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
+                                                member.id === highlightedMemberId ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''
+                                            }`}
+                                        >
                                             <div className="flex items-start gap-2">
                                                 <Avatar user={member} size="h-9 w-9" className="mt-0.5 shrink-0" />
                                                 <div className="min-w-0 flex-1">
@@ -1557,6 +1691,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         autoOpenHistory={task.id === autoOpenHistoryTaskId}
                                         autoOpenChecklist={task.id === autoOpenChecklistTaskId}
                                         autoOpenCommentId={autoOpenCommentId}
+                                        autoOpenDeliverableId={autoOpenDeliverableId}
                                         members={project.members}
                                         selectable={canManage && !isTrashed}
                                         selected={selectedTaskIds.includes(task.id)}
