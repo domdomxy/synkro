@@ -19,7 +19,7 @@ import Modal from '@/Components/Modal';
 import RichTextEditor from '@/Components/RichTextEditor';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
-import FiltersMenu from '@/Components/FiltersMenu';
+import TaskSearchBar from '@/Components/TaskSearchBar';
 import ProjectMenu from '@/Components/ProjectMenu';
 import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import { localDateTimeToIso } from '@/utils/datetime';
@@ -75,11 +75,6 @@ const PRIORITY_OPTIONS = [
     { value: 'low', label: 'Low' },
     { value: 'medium', label: 'Medium' },
     { value: 'high', label: 'High' },
-];
-
-const PRIORITY_FILTER_OPTIONS = [
-    { value: 'all', label: 'All Priorities' },
-    ...PRIORITY_OPTIONS,
 ];
 
 // Values are minutes-before-due-date, matching reminder_offset_minutes on the
@@ -1031,41 +1026,75 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
-            <div className="flex items-center justify-between gap-3">
-                <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    <HeaderIconButton onClick={goBack} title="Go back" className="-ms-2 shrink-0 sm:hidden">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </HeaderIconButton>
-                    <span className="min-w-0 truncate">{project.name}</span>
-                    {project.is_muted && (
-                        <svg title="Notifications muted for this project" className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
-                        </svg>
-                    )}
-                </h2>
-                <div className="flex shrink-0 items-center gap-1">
-                    <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
-                        {project.is_muted ? (
+            <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        <HeaderIconButton onClick={goBack} title="Go back" className="-ms-2 shrink-0 sm:hidden">
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                             </svg>
-                        ) : (
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </HeaderIconButton>
+                        <span className="min-w-0 truncate">{project.name}</span>
+                        {project.is_muted && (
+                            <svg title="Notifications muted for this project" className="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
                             </svg>
                         )}
-                    </HeaderIconButton>
+                    </h2>
+                    <div className="flex shrink-0 items-center gap-1">
+                        <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
+                            {project.is_muted ? (
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                                </svg>
+                            ) : (
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                            )}
+                        </HeaderIconButton>
 
-                    <ProjectMenu
-                        project={project}
-                        page="show"
-                        isOwner={isOwner}
-                        canManage={canManage}
-                        onShowInfo={() => setShowInfoModal(true)}
-                        canLeave={canLeave}
-                        onLeave={leaveProject}
+                        <ProjectMenu
+                            project={project}
+                            page="show"
+                            isOwner={isOwner}
+                            canManage={canManage}
+                            onShowInfo={() => setShowInfoModal(true)}
+                            canLeave={canLeave}
+                            onLeave={leaveProject}
+                        />
+                    </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200/60 pt-2.5 dark:border-gray-700/40">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Tasks</h3>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">{project.tasks.length}</span>
+                        <div className="ml-2 flex rounded-md border border-gray-200 p-0.5 dark:border-gray-700">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
+                            >
+                                List
+                            </button>
+                            <button
+                                onClick={() => setShowBoardModal(true)}
+                                className={`rounded px-2 py-1 text-xs font-medium ${showBoardModal ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
+                            >
+                                Board
+                            </button>
+                        </div>
+                    </div>
+                    <TaskSearchBar
+                        value={taskSearch}
+                        onChange={setTaskSearch}
+                        status={statusFilter}
+                        onStatusChange={setStatusFilter}
+                        statusOptions={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
+                        priority={priorityFilter}
+                        onPriorityChange={setPriorityFilter}
+                        priorityOptions={PRIORITY_OPTIONS}
+                        placeholder="Search tasks, or type status: / priority:..."
+                        className="w-full sm:w-80"
                     />
                 </div>
             </div>
@@ -1390,38 +1419,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
 
                             <div ref={taskToolbarRef} className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-lg font-semibold dark:text-gray-100">Tasks</h3>
-                                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">{project.tasks.length}</span>
-                                        <div className="ml-2 flex rounded-md border border-gray-200 p-0.5 dark:border-gray-700">
-                                            <button
-                                                onClick={() => setViewMode('list')}
-                                                className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
-                                            >
-                                                List
-                                            </button>
-                                            <button
-                                                onClick={() => setShowBoardModal(true)}
-                                                className={`rounded px-2 py-1 text-xs font-medium ${showBoardModal ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
-                                            >
-                                                Board
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <SearchInput value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="Search by task or assignee..." className="w-56 text-sm" />
-                                        <FiltersMenu activeCount={[statusFilter !== 'all', priorityFilter !== 'all'].filter(Boolean).length} onClear={clearTaskFilters}>
-                                            <FiltersMenu.Row label="Status">
-                                                <FilterSelect className="w-full" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
-                                            </FiltersMenu.Row>
-                                            <FiltersMenu.Row label="Priority">
-                                                <FilterSelect className="w-full" value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
-                                            </FiltersMenu.Row>
-                                        </FiltersMenu>
-                                    </div>
+                                <div className="-mt-3">
+                                    <TaskStatusBar tasks={project.tasks} />
                                 </div>
-                                <TaskStatusBar tasks={project.tasks} />
                                 {viewMode === 'list' && hasActiveTaskFilters && (
                                     <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">Showing {filteredTasks.length} of {project.tasks.length} tasks</p>
                                 )}
