@@ -1016,37 +1016,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         </svg>
                     )}
                 </h2>
-                <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Tasks</h3>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">{project.tasks.length}</span>
-                    <div className="flex rounded-md border border-gray-200 p-0.5 dark:border-gray-700">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`rounded px-2 py-1 text-xs font-medium ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
-                        >
-                            List
-                        </button>
-                        <button
-                            onClick={() => setShowBoardModal(true)}
-                            className={`rounded px-2 py-1 text-xs font-medium ${showBoardModal ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
-                        >
-                            Board
-                        </button>
-                    </div>
-                    <TaskSearchBar
-                        value={taskSearch}
-                        onChange={setTaskSearch}
-                        status={statusFilter}
-                        onStatusChange={setStatusFilter}
-                        statusOptions={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
-                        priority={priorityFilter}
-                        onPriorityChange={setPriorityFilter}
-                        priorityOptions={PRIORITY_OPTIONS}
-                        placeholder="Search tasks, or type status: / priority:..."
-                        className="w-full sm:w-80"
-                    />
-                </div>
                 <div className="flex shrink-0 items-center gap-1">
+                    <HeaderIconButton onClick={() => setShowBoardModal(true)} title="Board">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="16" rx="2" />
+                            <path strokeLinecap="round" d="M9 4v16M15 4v16" />
+                        </svg>
+                    </HeaderIconButton>
                     <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
                         {project.is_muted ? (
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1058,6 +1034,19 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             </svg>
                         )}
                     </HeaderIconButton>
+
+                    <TaskSearchBar
+                        value={taskSearch}
+                        onChange={setTaskSearch}
+                        status={statusFilter}
+                        onStatusChange={setStatusFilter}
+                        statusOptions={STATUS_OPTIONS.filter((s) => s.value !== 'all')}
+                        priority={priorityFilter}
+                        onPriorityChange={setPriorityFilter}
+                        priorityOptions={PRIORITY_OPTIONS}
+                        placeholder="Search tasks, or type status: / priority:..."
+                        className="w-full sm:w-64"
+                    />
 
                     <ProjectMenu
                         project={project}
