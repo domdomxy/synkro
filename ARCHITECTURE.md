@@ -195,6 +195,27 @@ component (parameterized with `rangeParam`/`fromParam`/`toParam` so each writes 
 params) and each passes the other's active params through as `extraParams`, so switching one
 filter's range doesn't reset the other's.
 
+## Project search: one bar, two different behaviors
+
+The search bar on the project page (`Projects/Show.jsx`, built on `KeywordSearchBar.jsx`) handles
+two distinct kinds of input, not one:
+
+- **Plain typed text** (no keyword) is a live "type to search" query matched across the project's
+  tasks, comments, members, resources, and deliverables. Results render in `SearchResultsPanel.jsx`,
+  which takes over the right-hand column (where `NotesPanel` normally sits) grouped by type with
+  an icon per group, and reverts to `NotesPanel` the instant the query is cleared - modeled on
+  Discord's in-server search-results pane rather than a small dropdown list.
+- **A filter keyword** (`status:`, `priority:`, `assignee:`, `comments:`, `deliverables:`,
+  `resources:`) locks into a solid tag inside the bar itself and opens a value picker; picking or
+  typing a value turns it into a removable applied-filter pill, narrowing the task list (or, for
+  `resources:`, the Resources panel) instead of populating the results panel. `status`/`priority`/
+  `assignee` are fixed-option selects; `comments` is free text matched against comment bodies;
+  `deliverables` and `resources` combine an optional type chip with free text matched against
+  name. Backspace on an empty bar pops the most recent tag or pill.
+
+A green completion bar (`TaskStatusBar.jsx`) sits above the task list/board, independent of the
+search bar - just a done/total count and percentage, not a per-status breakdown.
+
 ## Trash: two separate systems, don't confuse them
 
 Projects, tasks, and user accounts all use `SoftDeletes` rather than being removed
@@ -451,6 +472,9 @@ retargets the message/url, rather than only being able to remove the whole notif
     into the batch invite.
 - `resources/js/Components/ImageLightbox.jsx` - full-size viewer for feedback-ticket image
   attachments, used in `FeedbackPanel.jsx` and `Admin/Feedbacks.jsx`.
+- `resources/js/Components/KeywordSearchBar.jsx` + `SearchResultsPanel.jsx` +
+  `TaskStatusBar.jsx` - the project page's search bar, its live-match results panel, and the
+  task-completion bar above the list - see Project search above.
 - `resources/js/Components/TaskRow.jsx` - besides the task detail panel itself, owns the
   comment-thread UI: replies are grouped under their root comment (`buildCommentTree`) and
   start collapsed behind a "View replies" toggle, expanding only the thread(s) a user opens.

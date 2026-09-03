@@ -55,6 +55,11 @@ Built with Laravel 13, Inertia.js, and React.
   day-to-day into their own Active/Archived tab, same as Projects
 - Multi-select bulk actions on the project task list (delete, change status, change priority,
   reassign, change or clear the due date), restricted to owners/managers
+- A Discord-style search bar on the project page: typing plain text turns up live matches across
+  tasks, comments, members, resources, and deliverables in a dedicated results panel, while typing
+  a filter keyword (`status:`, `priority:`, `assignee:`, `comments:`, `deliverables:`, `resources:`)
+  locks in a removable filter tag/pill instead - a completion bar above the task list also shows
+  how many of the project's tasks are done, at a glance
 - When a member is removed, leaves, deactivates, or deletes their account, their unfinished tasks
   are unassigned and reset to To Do, but tasks that were done, submitted, or in review are frozen
   instead so nothing gets silently reassigned or lost - a manager then explicitly keeps or resets
