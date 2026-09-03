@@ -219,7 +219,7 @@ function RowActionsMenu({ label, onRestore, onDelete }) {
                     role="menu"
                     aria-label={label ? `Actions for ${label}` : 'Actions'}
                     style={{ position: 'fixed', top: position.top, left: position.left, width: ROW_MENU_WIDTH }}
-                    className="z-50 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
+                    className="z-[70] rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700"
                 >
                     <button
                         ref={firstItemRef}

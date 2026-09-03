@@ -1482,7 +1482,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
             )}
 
             {isEditing ? (
-                <form onSubmit={saveEdit} className="space-y-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950">
+                <form onSubmit={saveEdit} className="space-y-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950/40">
                     <div>
                         <InputLabel htmlFor={`title-${task.id}`} value="Title" />
                         <TextInput id={`title-${task.id}`} value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="mt-1 block w-full" />
@@ -1680,7 +1680,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                                 the kebab menu has moved up there with the rest of the
                                 header controls. */}
                             <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                <p className="min-w-0 break-words font-semibold text-gray-900 dark:text-gray-100">
+                                <p className="min-w-0 break-words text-gray-900 dark:text-gray-100">
                                     {task.title}
                                     {task.edited_at && <span className="ml-2 text-xs italic font-normal text-gray-400 dark:text-gray-500">(edited)</span>}
                                 </p>
@@ -1913,34 +1913,6 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
 
             {!showAddPanel && task.deliverables?.length > 0 && (
                 <div className="mt-2">
-                    {showDeliverables && (
-                        <div className="mb-2 space-y-2.5 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
-                            {deliverableFiles.length > 0 && (
-                                <div>
-                                    {deliverableLinks.length > 0 && (
-                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Files</p>
-                                    )}
-                                    <ul className="space-y-1">
-                                        {deliverableFiles.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            {deliverableLinks.length > 0 && (
-                                <div>
-                                    {deliverableFiles.length > 0 && (
-                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Links</p>
-                                    )}
-                                    <ul className="space-y-1">
-                                        {deliverableLinks.map((d) => (
-                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    )}
                     <div className="flex flex-wrap items-center gap-2">
                         <FooterToggle
                             active={showDeliverables}
@@ -1971,6 +1943,34 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                             </span>
                         )}
                     </div>
+                    {showDeliverables && (
+                        <div className="mt-2 space-y-2.5 rounded-md bg-gray-50 p-2 dark:bg-gray-900/40">
+                            {deliverableFiles.length > 0 && (
+                                <div>
+                                    {deliverableLinks.length > 0 && (
+                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Files</p>
+                                    )}
+                                    <ul className="space-y-1">
+                                        {deliverableFiles.map((d) => (
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {deliverableLinks.length > 0 && (
+                                <div>
+                                    {deliverableFiles.length > 0 && (
+                                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Links</p>
+                                    )}
+                                    <ul className="space-y-1">
+                                        {deliverableLinks.map((d) => (
+                                            <DeliverableItem key={d.id} d={d} canRemove={canEditDeliverables} onRemove={() => removeDeliverable(d.id)} onPreview={setPreviewingDeliverable} isHighlighted={d.id === highlightedDeliverableId} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 

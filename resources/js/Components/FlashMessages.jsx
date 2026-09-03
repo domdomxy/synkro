@@ -27,7 +27,7 @@ const MAX_FLASH_TOASTS = 3;
 
 export default function FlashMessages() {
     const { flash, errors } = usePage().props;
-    const { toasts, push, dismiss } = useToastStack(MAX_FLASH_TOASTS);
+    const { toasts, push } = useToastStack(MAX_FLASH_TOASTS);
 
     useEffect(() => {
         if (flash?.success) {
@@ -56,7 +56,7 @@ export default function FlashMessages() {
                     <div
                         key={message.id}
                         data-toast-type={message.type}
-                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-9 text-sm shadow-lg ${style.card}`}
+                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-4 text-sm shadow-lg ${style.card}`}
                     >
                         <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
 
@@ -67,17 +67,6 @@ export default function FlashMessages() {
                         </span>
 
                         <span className="text-gray-700 dark:text-gray-200">{message.text}</span>
-
-                        <button
-                            type="button"
-                            onClick={() => dismiss(message.id)}
-                            aria-label="Dismiss notification"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200"
-                        >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
                     </div>
                 );
             })}

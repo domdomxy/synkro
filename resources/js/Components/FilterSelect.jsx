@@ -186,7 +186,13 @@ export default function FilterSelect({ id, value, onChange, options, className =
 // that ref.
 const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, optionsAs: OptionsComponent = ListboxOptions, align = 'right', children }, forwardedRef) {
     const [rect, setRect] = useState(null);
+    // Same up-or-down flip as the trash row's kebab menu (RowActionsMenu):
+    // default to opening below the trigger, but flip above it when there
+    // isn't room below and there's more room above - e.g. a dependency
+    // picker near the bottom of a long task-edit form.
+    const [placement, setPlacement] = useState('bottom');
     const localRef = useRef(null);
+    const margin = 8;
 
     useLayoutEffect(() => {
         // Only measure/track while open. On close, deliberately leave the
@@ -196,7 +202,19 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, opt
         // top-left corner for that split second before it fully unmounts.
         if (!open || !anchorRef.current) return;
 
-        const recalc = () => setRect(anchorRef.current?.getBoundingClientRect() ?? null);
+        const recalc = () => {
+            const anchorRect = anchorRef.current?.getBoundingClientRect() ?? null;
+            setRect(anchorRect);
+            if (!anchorRect) return;
+            // localRef is already mounted with real content by this point (the
+            // options list renders in the same commit, before layout effects
+            // run), so its measured height reflects the actual panel - capped
+            // by max-h-60 - rather than an assumed constant.
+            const panelHeight = localRef.current?.getBoundingClientRect().height ?? 0;
+            const spaceBelow = window.innerHeight - anchorRect.bottom;
+            const spaceAbove = anchorRect.top;
+            setPlacement(spaceBelow < panelHeight + margin && spaceAbove > spaceBelow ? 'top' : 'bottom');
+        };
         recalc();
 
         window.addEventListener('resize', recalc);
@@ -221,7 +239,6 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, opt
     // presence; Transition tracks a stable ref to this node across
     // open/close, and a component that sometimes returns null breaks that.
     const r = rect ?? { top: 0, bottom: 0, left: 0, right: 0, width: 0 };
-    const margin = 8;
 
     // Right-aligned to the trigger by default, same as the old `absolute
     // right-0`, but anchored with `right` instead of a precomputed
@@ -246,11 +263,19 @@ const ClampedOptions = forwardRef(function ClampedOptions({ open, anchorRef, opt
         ? { left: Math.max(margin, r.left), maxWidth: Math.max(80, Math.min(window.innerWidth - margin * 2, window.innerWidth - r.left - margin)) }
         : { right: Math.max(margin, window.innerWidth - r.right), maxWidth: Math.max(80, Math.min(window.innerWidth - margin * 2, r.right - margin)) };
 
+    // 'top' anchors the panel's bottom edge just above the trigger and lets
+    // it grow upward - same as the default 'bottom' case growing downward
+    // from `r.bottom + 4` - so neither direction needs the panel's exact
+    // height to stay clear of the trigger.
+    const verticalStyle = placement === 'top'
+        ? { bottom: Math.max(margin, window.innerHeight - r.top + 4) }
+        : { top: r.bottom + 4 };
+
     return createPortal(
         <OptionsComponent
             ref={setRefs}
             data-filter-select-portal
-            style={{ position: 'fixed', top: r.bottom + 4, width: 'max-content', minWidth: r.width, ...style }}
+            style={{ position: 'fixed', width: 'max-content', minWidth: r.width, ...verticalStyle, ...style }}
             className="z-[70] max-h-60 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700"
         >
             {children}

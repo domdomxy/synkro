@@ -770,7 +770,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     };
 
     const jumpToMember = (memberId) => {
-        setMemberSearch('');
         teamPaneRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' });
         setHighlightedMemberId(memberId);
         setTimeout(() => {

@@ -85,7 +85,7 @@ const MAX_NOTIFICATION_TOASTS = 3;
 
 export default function NotificationToast() {
     const { auth } = usePage().props;
-    const { toasts, push, dismiss } = useToastStack(MAX_NOTIFICATION_TOASTS);
+    const { toasts, push } = useToastStack(MAX_NOTIFICATION_TOASTS);
 
     useEcho(
         `user.${auth.user.id}`,
@@ -133,7 +133,7 @@ export default function NotificationToast() {
                                 openToast(toast);
                             }
                         }}
-                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-9 text-sm shadow-lg ${style.card} ${toast.url ? 'cursor-pointer' : ''}`}
+                        className={`notification-toast ${anim} relative flex w-full items-center gap-3 overflow-hidden rounded-lg border py-3 pl-3 pr-4 text-sm shadow-lg ${style.card} ${toast.url ? 'cursor-pointer' : ''}`}
                     >
                         <span className={`absolute inset-y-0 left-0 w-1 ${style.accent}`} aria-hidden="true" />
 
@@ -146,22 +146,6 @@ export default function NotificationToast() {
                         <span className="text-gray-700 dark:text-gray-200">
                             {noteBoldSegments(toast.message, 'font-semibold text-gray-900 dark:text-white')}
                         </span>
-
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                // The dismiss button sits inside the now-clickable card, so its
-                                // click must not also bubble up and trigger openToast() above.
-                                e.stopPropagation();
-                                dismiss(toast.id);
-                            }}
-                            aria-label="Dismiss notification"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200"
-                        >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
                     </div>
                 );
             })}
