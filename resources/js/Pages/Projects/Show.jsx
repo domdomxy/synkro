@@ -598,7 +598,7 @@ function LeaveProjectModal({ show, onClose, project, form, onSubmit }) {
  * scroll frame and caused visible jank / layout glitches mid-swipe.
  */
 function MobilePaneTabs({ tabBarRef, columnsScrollRef, panes }) {
-    const [activePane, setActivePane] = useState(panes[1]?.label ?? panes[0]?.label);
+    const [activePane, setActivePane] = useState(panes.find((p) => p.label === 'Tasks')?.label ?? panes[0]?.label);
 
     useEffect(() => {
         const container = columnsScrollRef.current;
@@ -770,6 +770,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     };
 
     const jumpToMember = (memberId) => {
+        setShowTeamPanel(true);
         teamPaneRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' });
         setHighlightedMemberId(memberId);
         setTimeout(() => {
@@ -792,6 +793,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [showBoardModal, setShowBoardModal] = useState(false);
     useLandscapeOnOpen(showBoardModal);
+    // Lets people collapse the Team and My Notes side columns out of the
+    // 3-column desktop layout entirely (not just scroll past them) - toggled
+    // from the two header icon buttons that took over the toolbar slot the
+    // mute bell used to sit in, now that mute lives in the hamburger menu.
+    const [showTeamPanel, setShowTeamPanel] = useState(true);
+    const [showNotesPanel, setShowNotesPanel] = useState(true);
 
     // Mobile swipeable panes: Team <-> Tasks <-> Notes, opening on Tasks.
     const teamPaneRef = useRef(null);
@@ -1212,6 +1219,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             onShowInfo={() => setShowInfoModal(true)}
                             canLeave={canLeave}
                             onLeave={leaveProject}
+                            isMuted={project.is_muted}
+                            onToggleMute={toggleProjectMute}
                         />
                     </div>
                 </h2>
@@ -1222,16 +1231,23 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             <path strokeLinecap="round" d="M9 4v16M15 4v16" />
                         </svg>
                     </HeaderIconButton>
-                    <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
-                        {project.is_muted ? (
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
-                            </svg>
-                        ) : (
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                        )}
+                    <HeaderIconButton
+                        onClick={() => setShowTeamPanel((v) => !v)}
+                        title={showTeamPanel ? 'Hide Members panel' : 'Show Members panel'}
+                        className={showTeamPanel ? 'text-indigo-600 dark:text-indigo-400' : ''}
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-9.13a4 4 0 110 8 4 4 0 010-8zM17.5 8.5a3 3 0 110 6" />
+                        </svg>
+                    </HeaderIconButton>
+                    <HeaderIconButton
+                        onClick={() => setShowNotesPanel((v) => !v)}
+                        title={showNotesPanel ? 'Hide My Notes panel' : 'Show My Notes panel'}
+                        className={showNotesPanel ? 'text-indigo-600 dark:text-indigo-400' : ''}
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
+                        </svg>
                     </HeaderIconButton>
 
                     <TaskSearchBar
@@ -1260,6 +1276,8 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             onShowInfo={() => setShowInfoModal(true)}
                             canLeave={canLeave}
                             onLeave={leaveProject}
+                            isMuted={project.is_muted}
+                            onToggleMute={toggleProjectMute}
                         />
                     </div>
                 </div>
@@ -1270,7 +1288,14 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                 @media (min-width: 1024px) {
                     .project-columns {
                         display: grid;
-                        grid-template-columns: 320px minmax(0, 920px) 320px;
+                        grid-template-columns: ${[
+                            // A lone remaining side column gets extra width instead of
+                            // just the same 320px it'd share with a sibling column that
+                            // is no longer there to take up the freed-up space.
+                            showTeamPanel ? (showNotesPanel ? '320px' : '420px') : null,
+                            'minmax(0, 920px)',
+                            showNotesPanel ? (showTeamPanel ? '320px' : '420px') : null,
+                        ].filter(Boolean).join(' ')};
                         justify-content: center;
                         overflow: visible;
                     }
@@ -1340,14 +1365,15 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         tabBarRef={tabBarRef}
                         columnsScrollRef={columnsScrollRef}
                         panes={[
-                            { label: 'Team', ref: teamPaneRef },
+                            showTeamPanel && { label: 'Team', ref: teamPaneRef },
                             { label: 'Tasks', ref: tasksPaneRef },
-                            { label: taskSearch.trim() !== '' ? 'Results' : 'Notes', ref: notesPaneRef },
-                        ]}
+                            showNotesPanel && { label: taskSearch.trim() !== '' ? 'Results' : 'Notes', ref: notesPaneRef },
+                        ].filter(Boolean)}
                     />
                     <div ref={columnsScrollRef} className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
 
                         {/* LEFT: Team - Invite, Members, and Pending Invitations grouped together */}
+                        {showTeamPanel && (
                         <div ref={teamPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {canManage && !isTrashed && (
                                 <div className="rounded-lg bg-white shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
@@ -1508,6 +1534,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 )}
                             </div>
                         </div>
+                        )}
 
                         {/* MIDDLE: Tasks */}
                         <div ref={tasksPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none">
@@ -1726,6 +1753,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         {/* RIGHT: search results (while the search bar has a typed query) take over
                             this column in place of My Notes, page-like rather than a small dropdown -
                             reverts to Notes the moment the search is cleared. */}
+                        {showNotesPanel && (
                         <div ref={notesPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
                             {taskSearch.trim() !== '' ? (
                                 <SearchResultsPanel
@@ -1737,6 +1765,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                 <NotesPanel project={project} myNotes={myNotes} />
                             )}
                         </div>
+                        )}
                     </div>
                 </div>
             </div>

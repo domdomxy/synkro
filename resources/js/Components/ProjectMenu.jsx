@@ -49,6 +49,22 @@ function LeaveIcon() {
     );
 }
 
+function BellIcon() {
+    return (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+    );
+}
+
+function BellOffIcon() {
+    return (
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
+        </svg>
+    );
+}
+
 function MenuIcon() {
     return (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -65,7 +81,7 @@ function MenuIcon() {
  * doesn't need a link. "Project Information" isn't a page (it opens a modal
  * in place via `onShowInfo`), so it's never excluded.
  */
-export default function ProjectMenu({ project, page, isOwner, canManage, onShowInfo, canLeave = false, onLeave, className = '' }) {
+export default function ProjectMenu({ project, page, isOwner, canManage, onShowInfo, canLeave = false, onLeave, isMuted, onToggleMute, className = '' }) {
     return (
         <Dropdown>
             <Dropdown.Trigger>
@@ -78,6 +94,15 @@ export default function ProjectMenu({ project, page, isOwner, canManage, onShowI
                 </button>
             </Dropdown.Trigger>
             <Dropdown.Content align="right" width="56" contentClasses="py-1 bg-white dark:bg-gray-800">
+                {onToggleMute && (
+                    <>
+                        <button type="button" onClick={onToggleMute} className={ITEM_CLASSES}>
+                            {isMuted ? <BellOffIcon /> : <BellIcon />}
+                            {isMuted ? 'Unmute Notifications' : 'Mute Notifications'}
+                        </button>
+                        <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                    </>
+                )}
                 <button type="button" onClick={onShowInfo} className={ITEM_CLASSES}>
                     <InfoIcon />
                     Project Information
