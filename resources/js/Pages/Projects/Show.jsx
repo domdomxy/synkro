@@ -1292,9 +1292,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             // A lone remaining side column gets extra width instead of
                             // just the same 320px it'd share with a sibling column that
                             // is no longer there to take up the freed-up space.
-                            showTeamPanel ? (showNotesPanel ? '320px' : '420px') : null,
+                            showTeamPanel ? (showNotesPanel ? '320px' : '380px') : null,
                             'minmax(0, 920px)',
-                            showNotesPanel ? (showTeamPanel ? '320px' : '420px') : null,
+                            showNotesPanel ? (showTeamPanel ? '320px' : '480px') : null,
                         ].filter(Boolean).join(' ')};
                         justify-content: center;
                         overflow: visible;
