@@ -91,6 +91,11 @@ html.theme-black .dark\:bg-gray-900\/95 { background-color: rgba(0, 0, 0, 0.95) 
    background, so this needs its own near-black rgba rather than falling back
    to Tailwind's literal (much lighter) gray-800. */
 html.theme-black .dark\:bg-gray-800\/50 { background-color: rgba(13, 13, 13, 0.5) !important; }
+/* Welcome page's marquee strip and live-stats strip (Welcome.jsx) - same gap
+   as the /50 rule above: with no override, the /60 variant fell back to
+   Tailwind's literal (much lighter) gray-800, so both blocks read as a washed-
+   out gray panel instead of blending into this theme's near-black surfaces. */
+html.theme-black .dark\:bg-gray-800\/60 { background-color: rgba(13, 13, 13, 0.6) !important; }
 
 /* Reopened-task comment bubble (TaskRow.jsx) - the stock dark:bg-orange-950/30 tint
    is dark enough to nearly vanish against this theme's pure-black surfaces. */

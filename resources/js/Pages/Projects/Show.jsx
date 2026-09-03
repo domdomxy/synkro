@@ -108,14 +108,6 @@ const ROLE_OPTIONS = [
 // happen) sorts last rather than crashing the comparator.
 const ROLE_ORDER = { owner: 0, manager: 1, tester: 2, member: 3 };
 
-function SearchIcon() {
-    return (
-        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-    );
-}
-
 function RemoveButton({ onClick, title = 'Remove' }) {
     return (
         <button
@@ -128,17 +120,6 @@ function RemoveButton({ onClick, title = 'Remove' }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
-    );
-}
-
-function SearchInput({ value, onChange, placeholder, className = '' }) {
-    return (
-        <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
-                <SearchIcon />
-            </div>
-            <TextInput value={value} onChange={onChange} placeholder={placeholder} className={`pl-8 ${className}`} />
-        </div>
     );
 }
 
@@ -687,7 +668,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // mutating controls here too rather than letting them 404 silently.
     const isTrashed = !!project.deleted_at;
 
-    const [memberSearch, setMemberSearch] = useState('');
     const [taskSearch, setTaskSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
@@ -1031,20 +1011,16 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         [project.members]
     );
 
+    // No longer filterable by a dedicated search box (removed - redundant
+    // once the member list is short enough to just scan, see below); this
+    // now only sorts by role then name.
     const filteredMembers = useMemo(() => {
-        const term = memberSearch.trim().toLowerCase();
-        const list = term
-            ? project.members.filter((m) =>
-                  m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term) || m.pivot?.role?.toLowerCase().includes(term)
-              )
-            : project.members;
-
-        return [...list].sort((a, b) => {
+        return [...project.members].sort((a, b) => {
             const roleDiff = (ROLE_ORDER[a.pivot?.role] ?? 99) - (ROLE_ORDER[b.pivot?.role] ?? 99);
             if (roleDiff !== 0) return roleDiff;
             return a.name.localeCompare(b.name);
         });
-    }, [project.members, memberSearch]);
+    }, [project.members]);
 
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -1250,7 +1226,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                     <HeaderIconButton onClick={toggleProjectMute} title={project.is_muted ? 'Unmute notifications for this project' : 'Mute notifications for this project'}>
                         {project.is_muted ? (
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
                             </svg>
                         ) : (
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1454,14 +1430,18 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                         {project.members.length}
                                     </span>
                                 </div>
-                                <SearchInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search members or role..." className="mb-3 block w-full text-sm" />
                                 {/* Taller than a typical dropdown-sized list and internally scrollable
                                     (thin-scrollbar, see app.css) so a long member list doesn't push the
                                     Pending Invitations section (or the whole page) further down. On lg
                                     the cap is viewport-relative instead of a fixed rem value, since this
                                     card sits in a sticky column (see teamPaneRef below) - keeps it from
                                     ever growing taller than the visible viewport while stickied. */}
-                                <ul className="thin-scrollbar max-h-[26rem] space-y-1 overflow-y-auto pr-1.5 lg:max-h-[calc(100vh-16rem)]">
+                                {/* px-1.5/py-1 (rather than just the old pr-1.5, kept for scrollbar
+                                    clearance) give the highlighted-member ring (task-highlight-ring,
+                                    a non-inset ring-2) room to actually paint on every side - overflow-y-auto
+                                    with no matching horizontal padding clips a box-shadow-based ring flush
+                                    against the container's edge, same issue as the comment list above. */}
+                                <ul className="thin-scrollbar max-h-[26rem] space-y-1 overflow-y-auto px-1.5 py-1 lg:max-h-[calc(100vh-16rem)]">
                                     {filteredMembers.map((member) => (
                                         <li
                                             key={member.id}

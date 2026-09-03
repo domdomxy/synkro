@@ -43,6 +43,25 @@ function FilterTypeIcon() {
     );
 }
 
+// Replace the bar's native horizontal scrollbar (ugly/inconsistent across
+// browsers, and unusable on a trackpad-less desktop) with a pair of small
+// chevron buttons that page the pill row left/right instead.
+function ChevronLeftIcon() {
+    return (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    );
+}
+
+function ChevronRightIcon() {
+    return (
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+    );
+}
+
 // The keyword tag shown while a filter is mid-pick (before a value is
 // chosen), and the applied-filter pill once a value's picked, share the
 // same neutral gray palette across both light and dark theme - light gray
@@ -56,20 +75,31 @@ function KeywordTag({ keyword }) {
     );
 }
 
-function AppliedPill({ children, onRemove }) {
+// `onClick` (optional) re-opens the pill for editing - see `editFilter` below.
+// `onRemove` (optional) renders a small per-pill remove button; the applied
+// top-level filter pills no longer pass this (removing a filter now goes
+// through the single "clear all" button at the end of the bar instead - see
+// the render below), but the in-progress type-chip shown while composing a
+// typed-text filter still uses it to clear just that chip.
+function AppliedPill({ children, onClick, onRemove }) {
     return (
-        <span className="inline-flex h-5 shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-200 pl-1.5 pr-1 text-xs font-medium leading-none text-gray-700 dark:bg-gray-700 dark:text-gray-100">
+        <span
+            onClick={onClick}
+            className={`inline-flex h-5 shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-200 pl-1.5 pr-1 text-xs font-medium leading-none text-gray-700 dark:bg-gray-700 dark:text-gray-100 ${onClick ? 'cursor-text hover:bg-gray-300 dark:hover:bg-gray-600' : ''}`}
+        >
             {children}
-            <button
-                type="button"
-                onClick={onRemove}
-                className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded text-gray-500 hover:bg-gray-300 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
-                title="Remove filter"
-            >
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+            {onRemove && (
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                    className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded text-gray-500 hover:bg-gray-300 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                    title="Remove filter"
+                >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            )}
         </span>
     );
 }
@@ -119,30 +149,104 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
     // a bar that no longer spans the same fixed width - see the panel's own comment.
     // `top` has to be measured in JS since a fixed element ignores the bar's position.
     const [mobileDropdownTop, setMobileDropdownTop] = useState(0);
+    // Pill row scroll state, for the left/right arrow buttons that replace
+    // the native horizontal scrollbar - see the arrow buttons in the render
+    // below and the effects that keep these in sync further down.
+    const scrollRowRef = useRef(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
 
-    const appliedFilters = useMemo(() => filters.filter(isFilterApplied), [filters]);
+    // A filter currently being edited (see `editFilter`) is pulled out of the
+    // applied-pills row and rendered instead via the same keyword-tag +
+    // editable-input UI used while typing a brand new filter - so it stays
+    // excluded here while pendingType === that filter.
+    const appliedFilters = useMemo(
+        () => filters.filter((f) => isFilterApplied(f) && f.key !== pendingType?.key),
+        [filters, pendingType]
+    );
     const availableFilterTypes = useMemo(() => filters.filter((f) => !isFilterApplied(f)), [filters]);
+    const hasAppliedFilters = useMemo(() => filters.some(isFilterApplied), [filters]);
 
     useEffect(() => {
         const handlePointerDown = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) setOpen(false);
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setOpen(false);
+                // Clicking away from an in-progress or being-edited filter just
+                // discards the unsaved edit - it never touched the filter's
+                // real value (see editFilter/cancelPending), so the original
+                // pill (if any) simply reappears as-is.
+                setPendingType(null);
+                setPendingSubType(null);
+                setPendingQuery('');
+            }
         };
         document.addEventListener('mousedown', handlePointerDown);
         return () => document.removeEventListener('mousedown', handlePointerDown);
     }, []);
 
-    const cancelPending = () => {
+    // Clears the local "currently typing/editing a filter" state without
+    // touching the filter's actual value - used once a value has just been
+    // successfully applied (see applyValue/applyPending below).
+    const resetPendingState = () => {
         setPendingType(null);
         setPendingSubType(null);
         setPendingQuery('');
     };
 
+    // Backs out of a filter that was never finished: either a brand new
+    // keyword typed but not completed, or - if it's still applied - an
+    // existing pill that was reopened for editing (see editFilter) and then
+    // backspaced all the way through. In the latter case the filter is still
+    // sitting at its old value (editing never touches it until a new value
+    // is actually applied), so this is also where "backspacing into
+    // status:" removes the whole tag, rather than leaving it applied.
+    const cancelPending = () => {
+        if (pendingType && isFilterApplied(pendingType)) {
+            pendingType.onChange(emptyValueFor(pendingType));
+        }
+        resetPendingState();
+    };
+
     const applyValue = (filterType, optionValue) => {
         filterType.onChange(optionValue);
-        cancelPending();
+        resetPendingState();
         onChange('');
         setOpen(false);
         inputRef.current?.focus();
+    };
+
+    // Re-opens an already-applied pill for inline editing, reusing the same
+    // keyword-tag + editable-input flow as typing a brand new filter. The
+    // filter's real value is left untouched until the user actually picks/
+    // types a new one (applyValue/applyPending) or backs all the way out
+    // (cancelPending), so clicking away or losing focus never loses data.
+    const editFilter = (f) => {
+        const kind = filterKind(f);
+        setPendingType(f);
+        if (kind === 'select') {
+            setPendingSubType(null);
+            setPendingQuery(f.options.find((o) => o.value === f.value)?.label ?? '');
+        } else if (kind === 'text') {
+            setPendingSubType(null);
+            setPendingQuery(f.value ?? '');
+        } else {
+            setPendingSubType(f.value?.type ?? null);
+            setPendingQuery(f.value?.text ?? '');
+        }
+        onChange('');
+        setOpen(true);
+        inputRef.current?.focus();
+    };
+
+    // Clears every applied filter at once - the single "x" at the end of the
+    // bar (see render below) that replaced each pill's own remove button.
+    const clearAllFilters = () => {
+        filters.forEach((f) => {
+            if (isFilterApplied(f)) f.onChange(emptyValueFor(f));
+        });
+        resetPendingState();
+        onChange('');
+        setOpen(false);
     };
 
     // Applies a 'text' or 'typed-text' filter from whatever's currently
@@ -159,7 +263,7 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
         } else {
             return;
         }
-        cancelPending();
+        resetPendingState();
         onChange('');
         setOpen(false);
         inputRef.current?.focus();
@@ -258,6 +362,36 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
     }, [showDropdown]);
     const inputValue = pendingType ? pendingQuery : value;
 
+    // Keeps the left/right arrow buttons in sync with how far the pill row
+    // can actually scroll. Runs after every render (pills/tags being added
+    // or removed changes the row's scrollWidth) as well as on the row's own
+    // scroll events and window resizes.
+    useLayoutEffect(() => {
+        const el = scrollRowRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 1);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    });
+
+    useEffect(() => {
+        const el = scrollRowRef.current;
+        if (!el) return;
+        const updateScrollButtons = () => {
+            setCanScrollLeft(el.scrollLeft > 1);
+            setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+        };
+        el.addEventListener('scroll', updateScrollButtons, { passive: true });
+        window.addEventListener('resize', updateScrollButtons);
+        return () => {
+            el.removeEventListener('scroll', updateScrollButtons);
+            window.removeEventListener('resize', updateScrollButtons);
+        };
+    }, []);
+
+    const scrollPillRow = (direction) => {
+        scrollRowRef.current?.scrollBy({ left: direction * 120, behavior: 'smooth' });
+    };
+
     // Group the "Filter by" suggestion list by category (e.g. "Tasks"),
     // preserving first-seen order; filters without a category are listed
     // individually underneath any groups.
@@ -293,32 +427,73 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
 
     return (
         <div className={`relative ${className}`} ref={containerRef}>
-            <div
-                className="flex h-9 min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto rounded-md border border-gray-300 bg-white px-2.5 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
-                onClick={() => inputRef.current?.focus()}
-            >
+            <div className="flex h-9 min-w-0 items-center gap-1 rounded-md border border-gray-300 bg-white pl-2.5 pr-1.5 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900">
                 <SearchIcon />
-                {appliedFilters.map((f) => (
-                    <AppliedPill key={f.key} onRemove={() => f.onChange(emptyValueFor(f))}>
-                        {appliedLabel(f)}
-                    </AppliedPill>
-                ))}
-                {pendingType && <KeywordTag keyword={pendingType.keyword} />}
-                {pendingKind === 'typed-text' && pendingSubType && (
-                    <AppliedPill onRemove={() => setPendingSubType(null)}>
-                        {pendingType.types.find((t) => t.value === pendingSubType)?.label}
-                    </AppliedPill>
+                {canScrollLeft && (
+                    <button
+                        type="button"
+                        onClick={() => scrollPillRow(-1)}
+                        className="flex h-5 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        title="Scroll left"
+                    >
+                        <ChevronLeftIcon />
+                    </button>
                 )}
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
-                    onFocus={() => setOpen(true)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={!pendingType && appliedFilters.length === 0 ? placeholder : ''}
-                    className="min-w-[48px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
-                />
+                {/* .no-scrollbar (app.css) hides the native scrollbar - the row is still
+                    fully scrollable by trackpad/touch/drag, and the chevrons above/below
+                    give a click target for anyone without one. */}
+                <div
+                    ref={scrollRowRef}
+                    className="no-scrollbar flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto"
+                    onClick={() => inputRef.current?.focus()}
+                >
+                    {appliedFilters.map((f) => (
+                        <AppliedPill key={f.key} onClick={() => editFilter(f)}>
+                            {appliedLabel(f)}
+                        </AppliedPill>
+                    ))}
+                    {pendingType && <KeywordTag keyword={pendingType.keyword} />}
+                    {pendingKind === 'typed-text' && pendingSubType && (
+                        <AppliedPill onRemove={() => setPendingSubType(null)}>
+                            {pendingType.types.find((t) => t.value === pendingSubType)?.label}
+                        </AppliedPill>
+                    )}
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={inputValue}
+                        onChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
+                        onFocus={() => setOpen(true)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={!pendingType && appliedFilters.length === 0 ? placeholder : ''}
+                        className="min-w-[48px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
+                    />
+                </div>
+                {canScrollRight && (
+                    <button
+                        type="button"
+                        onClick={() => scrollPillRow(1)}
+                        className="flex h-5 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        title="Scroll right"
+                    >
+                        <ChevronRightIcon />
+                    </button>
+                )}
+                {/* Single clear-all control, replacing each pill's own remove button -
+                    a pill click now edits it (see editFilter) rather than removing it,
+                    so this is the one place left to drop every applied filter at once. */}
+                {hasAppliedFilters && (
+                    <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                        title="Clear all filters"
+                    >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
             </div>
 
             {showDropdown && (() => {

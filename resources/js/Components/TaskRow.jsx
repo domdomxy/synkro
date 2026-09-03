@@ -401,7 +401,7 @@ function KebabMenu({ canManage, canViewHistory, isPinned, isMuted, projectMuted,
                     >
                         {isMuted ? (
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.17 9.17A3 3 0 0012 15a2.99 2.99 0 002.83-2M17.61 17.61A9 9 0 016 18v-6a8.96 8.96 0 011.09-4.29M12 3a3 3 0 013 3v2m3 2v1a9 9 0 01-.36 2.52" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
                             </svg>
                         ) : (
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -1375,7 +1375,13 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
     // CommentDrawer bottom sheet - same thread, two different containers.
     const commentsPanelContent = (
         <>
-            <div className="thin-scrollbar max-h-[26rem] space-y-4 overflow-y-auto pr-0.5">
+            {/* px-1.5/py-1 (rather than just the old pr-0.5, kept for scrollbar
+                clearance) give the highlighted-comment ring (task-highlight-ring,
+                a non-inset ring-2) room to actually paint - overflow-y-auto with
+                no matching horizontal padding clips a box-shadow-based ring flush
+                against the container's edge, which is why it looked like the
+                highlight was getting cut off/hidden under the container. */}
+            <div className="thin-scrollbar max-h-[26rem] space-y-4 overflow-y-auto px-1.5 py-1">
                 {commentTree.roots.map((comment) => (
                     <CommentThread
                         key={comment.id}
