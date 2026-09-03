@@ -21,6 +21,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import AutoGrowTextarea from '@/Components/AutoGrowTextarea';
 import FilterSelect from '@/Components/FilterSelect';
 import TaskSearchBar from '@/Components/KeywordSearchBar';
+import SearchResultsPanel from '@/Components/SearchResultsPanel';
 import ProjectMenu from '@/Components/ProjectMenu';
 import ProjectInfoModal from '@/Components/ProjectInfoModal';
 import { localDateTimeToIso } from '@/utils/datetime';
@@ -1100,7 +1101,10 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     }, [project.resources, hasResourcesFilter, resourcesFilter.type, resourcesTerm]);
 
-    const MAX_SEARCH_RESULTS_PER_GROUP = 5;
+    // Generous cap now that results render as their own scrollable panel
+    // (SearchResultsPanel, in the right-hand column) rather than a handful
+    // of rows tucked under the search bar's dropdown.
+    const MAX_SEARCH_RESULTS_PER_GROUP = 20;
 
     // Live "type to search" results for the project search bar - separate
     // from the keyword filters above (status:/priority:/etc narrow the task
@@ -1266,7 +1270,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             { key: 'deliverables', keyword: 'deliverables', description: 'Filter by deliverable type and name', category: 'Deliverables', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: deliverablesFilter, onChange: setDeliverablesFilter },
                             { key: 'resources', keyword: 'resources', description: 'Search project resources', category: 'Resources', kind: 'typed-text', types: ATTACHMENT_TYPE_OPTIONS, value: resourcesFilter, onChange: setResourcesFilter },
                         ]}
-                        resultGroups={searchResultGroups}
                         placeholder={`Search in ${project.name}`}
                         className="flex-1 sm:w-64 sm:flex-none"
                     />
@@ -1364,7 +1367,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                         panes={[
                             { label: 'Team', ref: teamPaneRef },
                             { label: 'Tasks', ref: tasksPaneRef },
-                            { label: 'Notes', ref: notesPaneRef },
+                            { label: taskSearch.trim() !== '' ? 'Results' : 'Notes', ref: notesPaneRef },
                         ]}
                     />
                     <div ref={columnsScrollRef} className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
@@ -1741,9 +1744,19 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
 
-                        {/* RIGHT: My Notes - personal scratchpad, decoupled from team management */}
+                        {/* RIGHT: search results (while the search bar has a typed query) take over
+                            this column in place of My Notes, page-like rather than a small dropdown -
+                            reverts to Notes the moment the search is cleared. */}
                         <div ref={notesPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
-                            <NotesPanel project={project} myNotes={myNotes} />
+                            {taskSearch.trim() !== '' ? (
+                                <SearchResultsPanel
+                                    query={taskSearch}
+                                    groups={searchResultGroups}
+                                    onClear={() => setTaskSearch('')}
+                                />
+                            ) : (
+                                <NotesPanel project={project} myNotes={myNotes} />
+                            )}
                         </div>
                     </div>
                 </div>

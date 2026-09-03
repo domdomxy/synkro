@@ -19,6 +19,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 // Filters can also carry a `category` (e.g. "Tasks") to group related
 // keywords under a shared header in the "Filter by" suggestion list;
 // filters without a category are listed individually beneath any groups.
+//
+// Live "type to search" matches (plain text, no keyword) are NOT shown in
+// this bar's own dropdown - they're rendered as their own page-like panel
+// elsewhere (see SearchResultsPanel.jsx / Projects/Show.jsx), Discord's
+// dedicated search-results pane being the reference. This component only
+// ever pops open the "Filter by" keyword list and a filter's value picker.
 
 function SearchIcon() {
     return (
@@ -95,29 +101,8 @@ function appliedLabel(f) {
     return `${f.keyword}: ${parts.length ? parts.join(' \u00b7 ') : '(any)'}`;
 }
 
-// A single row inside a "Results" group - a task/comment/member/resource/
-// deliverable that matched the typed text, taking the user straight to it
-// when clicked (see the resultGroups prop below).
-function ResultRow({ primary, secondary, onClick }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="flex w-full flex-col items-start gap-0.5 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-            <span className="w-full min-w-0 truncate">{primary}</span>
-            {secondary && <span className="w-full min-w-0 truncate text-xs text-gray-400 dark:text-gray-500">{secondary}</span>}
-        </button>
-    );
-}
-
 // filters: [{ key, keyword, description, category?, kind?, options?, types?, value, onChange }]
-// resultGroups (optional): [{ key, label, items: [{ id, primary, secondary?, onSelect }] }]
-// - live search results grouped by category (Tasks, Comments, Members, ...),
-//   recomputed by the caller from whatever's currently typed in `value` and
-//   shown in their own list under the bar; picking one calls onSelect and
-//   closes the dropdown, instead of just narrowing what's on the page.
-export default function KeywordSearchBar({ value, onChange, filters, resultGroups, placeholder = 'Search...', className = '' }) {
+export default function KeywordSearchBar({ value, onChange, filters, placeholder = 'Search...', className = '' }) {
     const [open, setOpen] = useState(false);
     // The filter type currently locked into a dark keyword tag (e.g. after
     // typing "status:"), while its value is still being picked. Separate
@@ -246,14 +231,13 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
           )
         : [];
     const typedPrefix = value.trim().toLowerCase();
+    // Only worth suggesting keywords while what's typed so far could still
+    // be the start of one (e.g. "stat" -> "status:") - once it's longer than
+    // any known keyword it's unambiguously free text, whose matches live in
+    // SearchResultsPanel instead of this bar's own dropdown.
     const matchingFilterTypes = availableFilterTypes.filter((f) => f.keyword.startsWith(typedPrefix));
-    const showKeywordSuggestions = !showValueList && !showTextPanel && matchingFilterTypes.length > 0;
-    // Once there's plain typed text (not a "keyword:" being picked), show the
-    // live results list underneath - grouped by category, one section per
-    // type of thing (Tasks, Comments, Members, Resources, Deliverables).
-    const showResultsSection = !showValueList && !showTextPanel && !pendingType && Boolean(resultGroups) && value.trim() !== '';
-    const nonEmptyResultGroups = showResultsSection ? resultGroups.filter((g) => g.items.length > 0) : [];
-    const showDropdown = open && (showValueList || showTextPanel || showKeywordSuggestions || showResultsSection);
+    const showKeywordSuggestions = !showValueList && !showTextPanel && !pendingType && matchingFilterTypes.length > 0;
+    const showDropdown = open && (showValueList || showTextPanel || showKeywordSuggestions);
 
     // Re-measures the bar's bottom edge whenever the mobile panel opens, and keeps it
     // in sync if the page scrolls or resizes while it's open (e.g. rotating the device,
@@ -412,33 +396,6 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                             {uncategorized.map(renderFilterTypeRow)}
                         </div>
                     )}
-
-                    {showResultsSection && (
-                        <div className={`thin-scrollbar max-h-96 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700 ${showKeywordSuggestions ? 'border-t border-gray-200 dark:border-gray-600' : ''}`}>
-                            {nonEmptyResultGroups.length === 0 && (
-                                <p className="px-3 py-3 text-sm text-gray-400 dark:text-gray-500">No results for &quot;{value}&quot;</p>
-                            )}
-                            {nonEmptyResultGroups.map((group) => (
-                                <div key={group.key} className="pt-1 first:pt-0">
-                                    <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                                        {group.label}
-                                    </p>
-                                    {group.items.map((item) => (
-                                        <ResultRow
-                                            key={item.id}
-                                            primary={item.primary}
-                                            secondary={item.secondary}
-                                            onClick={() => {
-                                                item.onSelect();
-                                                onChange('');
-                                                setOpen(false);
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    )}
                     </>
                 );
 
@@ -454,8 +411,12 @@ export default function KeywordSearchBar({ value, onChange, filters, resultGroup
                         >
                             {dropdownBody}
                         </div>
-                        {/* Desktop: unchanged from before - anchored to the bar's own right edge. */}
-                        <div className="absolute right-0 top-full z-20 mt-1 hidden w-96 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:block">
+                        {/* Desktop: anchored to the bar's own right edge, and now sized to match
+                            the bar's own width (w-full off this relative container) rather than a
+                            fixed w-96 - the old fixed width was wider than some bars (e.g. Projects
+                            Index's w-72 search bar), so it hung off past their left edge over
+                            whatever sat beside/behind them. min-w guards the narrowest bars. */}
+                        <div className="absolute right-0 top-full z-20 mt-1 hidden w-full min-w-[16rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:block">
                             {dropdownBody}
                         </div>
                     </>
