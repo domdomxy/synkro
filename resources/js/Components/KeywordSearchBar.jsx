@@ -67,10 +67,42 @@ function ChevronRightIcon() {
 // same neutral gray palette across both light and dark theme - light gray
 // on the white bar, a visibly lighter gray than the bar's own background in
 // dark mode - rather than a stark black tag or an unrelated blue pill.
-function KeywordTag({ keyword }) {
+// The tag shown while a filter is being typed or an applied pill is
+// reopened for editing (see editFilter): keyword label plus the live query,
+// kept inside ONE pill - same gray background, rounded shape, and h-5 size
+// as the settled AppliedPill it replaces mid-edit - rather than a separate
+// keyword tag next to a bare, differently-sized text input. Sizing the
+// input off the query length keeps the whole pill hugging its content
+// instead of stretching to fill the bar.
+function EditingPill({ keyword, subTypeLabel, onRemoveSubType, query, onQueryChange, onFocus, onKeyDown, inputRef }) {
     return (
-        <span className="inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded bg-gray-200 px-2 text-xs font-semibold leading-none text-gray-700 dark:bg-gray-700 dark:text-gray-100">
-            {keyword}:
+        <span className="inline-flex h-5 shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-200 pl-1.5 pr-1.5 text-xs font-medium leading-none text-gray-700 dark:bg-gray-700 dark:text-gray-100">
+            <span className="font-semibold">{keyword}:</span>
+            {subTypeLabel && (
+                <span className="flex items-center gap-1 rounded bg-gray-300 px-1.5 py-0.5 text-[11px] leading-none text-gray-800 dark:bg-gray-600 dark:text-gray-100">
+                    {subTypeLabel}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onRemoveSubType(); }}
+                        className="flex h-3 w-3 items-center justify-center rounded hover:bg-gray-400/50 dark:hover:bg-gray-500/50"
+                        title="Remove type"
+                    >
+                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </span>
+            )}
+            <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={onQueryChange}
+                onFocus={onFocus}
+                onKeyDown={onKeyDown}
+                size={Math.max(query.length, 1)}
+                className="min-w-[6px] border-0 bg-transparent p-0 text-xs leading-none text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
+            />
         </span>
     );
 }
@@ -155,6 +187,17 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
     const scrollRowRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+    // Which category tab is selected in the "Filter by" keyword suggestion
+    // list (null = "All"). Lets someone jump straight to e.g. "Comments"
+    // instead of scrolling past every other category to find it.
+    const [activeCategory, setActiveCategory] = useState(null);
+    // Scroll state for the category tab row itself - it can run wider than
+    // the dropdown (more categories than fit), so it gets the same
+    // chevron-button pattern as the applied-pill row above instead of
+    // relying on an undiscoverable trackpad/shift-scroll gesture.
+    const tabRowRef = useRef(null);
+    const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+    const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
 
     // A filter currently being edited (see `editFilter`) is pulled out of the
     // applied-pills row and rendered instead via the same keyword-tag +
@@ -178,6 +221,7 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                 setPendingType(null);
                 setPendingSubType(null);
                 setPendingQuery('');
+                setActiveCategory(null);
             }
         };
         document.addEventListener('mousedown', handlePointerDown);
@@ -191,6 +235,7 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
         setPendingType(null);
         setPendingSubType(null);
         setPendingQuery('');
+        setActiveCategory(null);
     };
 
     // Backs out of a filter that was never finished: either a brand new
@@ -360,8 +405,6 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
             window.removeEventListener('scroll', updatePosition, true);
         };
     }, [showDropdown]);
-    const inputValue = pendingType ? pendingQuery : value;
-
     // Keeps the left/right arrow buttons in sync with how far the pill row
     // can actually scroll. Runs after every render (pills/tags being added
     // or removed changes the row's scrollWidth) as well as on the row's own
@@ -392,6 +435,41 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
         scrollRowRef.current?.scrollBy({ left: direction * 120, behavior: 'smooth' });
     };
 
+    // Same idea as the pill row's scroll-button sync above, but for the
+    // category tab row - recomputed after every render (opening the
+    // dropdown or the matching categories changing both resize it) and on
+    // its own scroll/resize events. The row is only ever in the DOM while
+    // the dropdown + tabs are visible, so a plain onScroll handler is used
+    // instead of an effect-mounted listener that could miss a ref that
+    // wasn't attached yet.
+    useLayoutEffect(() => {
+        const el = tabRowRef.current;
+        if (!el) return;
+        setCanScrollTabsLeft(el.scrollLeft > 1);
+        setCanScrollTabsRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    });
+
+    useEffect(() => {
+        const updateTabScrollButtons = () => {
+            const el = tabRowRef.current;
+            if (!el) return;
+            setCanScrollTabsLeft(el.scrollLeft > 1);
+            setCanScrollTabsRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+        };
+        window.addEventListener('resize', updateTabScrollButtons);
+        return () => window.removeEventListener('resize', updateTabScrollButtons);
+    }, []);
+
+    const handleTabRowScroll = (e) => {
+        const el = e.currentTarget;
+        setCanScrollTabsLeft(el.scrollLeft > 1);
+        setCanScrollTabsRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+
+    const scrollTabRow = (direction) => {
+        tabRowRef.current?.scrollBy({ left: direction * 100, behavior: 'smooth' });
+    };
+
     // Group the "Filter by" suggestion list by category (e.g. "Tasks"),
     // preserving first-seen order; filters without a category are listed
     // individually underneath any groups.
@@ -410,6 +488,14 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
         }
     });
 
+    // Falls back to "All" if the selected tab's category no longer has any
+    // matching filters (e.g. it narrowed away while typing) rather than
+    // rendering an empty pane.
+    const effectiveCategory = activeCategory && categoryOrder.includes(activeCategory) ? activeCategory : null;
+    // Tabs are only worth showing when there's more than one group to
+    // switch between - a single category (or none) has nothing to navigate.
+    const showCategoryTabs = categoryOrder.length + (uncategorized.length > 0 ? 1 : 0) > 1;
+
     const canApplyPending = pendingKind === 'typed-text' ? Boolean(pendingSubType) || pendingQuery.trim() !== '' : pendingQuery.trim() !== '';
 
     const renderFilterTypeRow = (f) => (
@@ -417,11 +503,15 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
             key={f.key}
             type="button"
             onClick={() => lockKeyword(f)}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
         >
-            <FilterTypeIcon />
-            <span className="font-medium">{f.keyword}:</span>
-            <span className="text-gray-400 dark:text-gray-500">{f.description}</span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                <FilterTypeIcon />
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-gray-800 dark:text-gray-100">{f.keyword}:</span>
+                <span className="block truncate text-xs text-gray-400 dark:text-gray-500">{f.description}</span>
+            </span>
         </button>
     );
 
@@ -452,22 +542,33 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                             {appliedLabel(f)}
                         </AppliedPill>
                     ))}
-                    {pendingType && <KeywordTag keyword={pendingType.keyword} />}
-                    {pendingKind === 'typed-text' && pendingSubType && (
-                        <AppliedPill onRemove={() => setPendingSubType(null)}>
-                            {pendingType.types.find((t) => t.value === pendingSubType)?.label}
-                        </AppliedPill>
+                    {pendingType ? (
+                        <EditingPill
+                            keyword={pendingType.keyword}
+                            subTypeLabel={
+                                pendingKind === 'typed-text' && pendingSubType
+                                    ? pendingType.types.find((t) => t.value === pendingSubType)?.label
+                                    : null
+                            }
+                            onRemoveSubType={() => setPendingSubType(null)}
+                            query={pendingQuery}
+                            onQueryChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
+                            onFocus={() => setOpen(true)}
+                            onKeyDown={handleKeyDown}
+                            inputRef={inputRef}
+                        />
+                    ) : (
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={value}
+                            onChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
+                            onFocus={() => setOpen(true)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={appliedFilters.length === 0 ? placeholder : ''}
+                            className="min-w-[48px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
+                        />
                     )}
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => { handleTextChange(e.target.value); setOpen(true); }}
-                        onFocus={() => setOpen(true)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={!pendingType && appliedFilters.length === 0 ? placeholder : ''}
-                        className="min-w-[48px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100"
-                    />
                 </div>
                 {canScrollRight && (
                     <button
@@ -556,19 +657,85 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                     )}
 
                     {showKeywordSuggestions && (
-                        <div className="thin-scrollbar max-h-72 divide-y divide-gray-100 overflow-y-auto py-1 dark:divide-gray-700">
-                            <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        <div>
+                            <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Filter by
                             </p>
-                            {categoryOrder.map((cat) => (
-                                <div key={cat} className="pt-1 first:pt-0">
-                                    <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                                        {cat}
-                                    </p>
-                                    {categorized[cat].map(renderFilterTypeRow)}
+                            {/* Category tabs sit above the list rather than as inline section
+                                headers you have to scroll past - clicking one jumps straight
+                                to that group instead of scanning past every other category. */}
+                            {showCategoryTabs && (
+                                <div className="flex items-center border-b border-gray-100 dark:border-gray-700">
+                                    {canScrollTabsLeft && (
+                                        <button
+                                            type="button"
+                                            onClick={() => scrollTabRow(-1)}
+                                            className="flex h-6 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                            title="Scroll left"
+                                        >
+                                            <ChevronLeftIcon />
+                                        </button>
+                                    )}
+                                    <div
+                                        ref={tabRowRef}
+                                        onScroll={handleTabRowScroll}
+                                        className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5"
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveCategory(null)}
+                                            className={`shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                                effectiveCategory === null
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            All
+                                        </button>
+                                        {categoryOrder.map((cat) => (
+                                            <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => setActiveCategory(cat)}
+                                                className={`shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                                                    effectiveCategory === cat
+                                                        ? 'bg-indigo-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {canScrollTabsRight && (
+                                        <button
+                                            type="button"
+                                            onClick={() => scrollTabRow(1)}
+                                            className="flex h-6 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                            title="Scroll right"
+                                        >
+                                            <ChevronRightIcon />
+                                        </button>
+                                    )}
                                 </div>
-                            ))}
-                            {uncategorized.map(renderFilterTypeRow)}
+                            )}
+                            <div className="thin-scrollbar max-h-72 overflow-y-auto p-2">
+                                {effectiveCategory === null
+                                    ? categoryOrder.map((cat) => (
+                                          <div key={cat} className="mb-2 last:mb-0">
+                                              <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                                  {cat}
+                                              </p>
+                                              <div className="space-y-0.5">{categorized[cat].map(renderFilterTypeRow)}</div>
+                                          </div>
+                                      ))
+                                    : (
+                                          <div className="space-y-0.5">{categorized[effectiveCategory].map(renderFilterTypeRow)}</div>
+                                      )}
+                                {effectiveCategory === null && uncategorized.length > 0 && (
+                                    <div className="space-y-0.5">{uncategorized.map(renderFilterTypeRow)}</div>
+                                )}
+                            </div>
                         </div>
                     )}
                     </>

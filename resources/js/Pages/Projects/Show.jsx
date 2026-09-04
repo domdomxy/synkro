@@ -28,7 +28,6 @@ import { localDateTimeToIso } from '@/utils/datetime';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { roleStyles } from '@/utils/roleStyles';
 
 // Must match Project::DELETION_EMAIL_COOLDOWN_SECONDS on the backend - this only
 // drives the countdown display, the backend is what actually enforces it.
@@ -291,7 +290,7 @@ function NoteEditForm({ editForm, onSubmit, onCancel }) {
     const removeItem = (index) => editForm.setData('items', editForm.data.items.filter((_, i) => i !== index));
 
     return (
-        <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
+        <li className="rounded border border-gray-200 bg-white px-4 py-3.5 dark:border-gray-700 dark:bg-gray-800">
             <form onSubmit={onSubmit} className="space-y-2">
                 <input type="text" placeholder="Title (e.g. Authentication)" value={editForm.data.title} onChange={(e) => editForm.setData('title', e.target.value)} className="block w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" autoFocus />
                 <div className="space-y-1.5">
@@ -346,7 +345,7 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
     };
 
     return (
-        <li className="rounded-2xl bg-gray-50 px-4 py-3.5 dark:bg-gray-900/70">
+        <li className="rounded border border-gray-200 bg-white px-4 py-3.5 dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
@@ -1026,6 +1025,25 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         });
     }, [project.members]);
 
+    // Members grouped by role for the sidebar list below - relies on
+    // filteredMembers already being role-then-name sorted (see above), so
+    // this is just a sequential scan rather than a second sort. The role
+    // becomes the section heading (with its own member count) instead of a
+    // badge repeated on every row.
+    const membersByRole = useMemo(() => {
+        const groups = [];
+        let currentRole = null;
+        filteredMembers.forEach((member) => {
+            const role = member.pivot?.role ?? 'member';
+            if (role !== currentRole) {
+                currentRole = role;
+                groups.push({ role, members: [] });
+            }
+            groups[groups.length - 1].members.push(member);
+        });
+        return groups;
+    }, [filteredMembers]);
+
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
     const commentsTerm = commentsFilter.trim().toLowerCase();
@@ -1098,13 +1116,17 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     // with only resources: applied, filteredTasks is every task, unfiltered.
     // Showing that as a "Tasks" match would be misleading, not helpful -
     // gate the Tasks group on this instead of "any filter at all".
+    // Deliberately excludes comments:/deliverables: - those live under
+    // their own Comments/Deliverables groups below, and surfacing the tasks
+    // that merely happen to contain a match muddies the Tasks group with
+    // results the person didn't ask a task-level question about. Tasks only
+    // shows for an actual task-level filter (status:/priority:/assignee:,
+    // i.e. this bar's "Tasks" category) or plain free-text search.
     const hasTaskLevelFilter =
         freeTextTerm !== '' ||
         statusFilter !== 'all' ||
         priorityFilter !== 'all' ||
-        assigneeFilter !== 'all' ||
-        commentsTerm !== '' ||
-        hasDeliverablesFilter;
+        assigneeFilter !== 'all';
     const searchResultGroups = useMemo(() => {
         const taskItems = hasTaskLevelFilter
             ? filteredTasks
@@ -1135,17 +1157,37 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             });
         }
 
-        const memberItems = freeTextTerm
-            ? project.members
-                  .filter((m) => m.name.toLowerCase().includes(freeTextTerm))
-                  .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
-                  .map((m) => ({
-                      id: `member-${m.id}`,
-                      primary: m.name,
-                      secondary: m.pivot?.role,
-                      onSelect: () => jumpToMember(m.id),
-                  }))
-            : [];
+        // Grouped by role (owner/manager/tester/member) rather than one flat
+        // "Members" list with a role caption on every row - the role is the
+        // group heading itself now, in the same owner-first hierarchy used
+        // everywhere else (see ROLE_ORDER), so a name only needs to appear
+        // once instead of repeating its role next to it.
+        const memberGroups = [];
+        if (freeTextTerm) {
+            const matchedMembers = project.members.filter((m) => m.name.toLowerCase().includes(freeTextTerm));
+            const byRole = {};
+            matchedMembers.forEach((m) => {
+                const role = m.pivot?.role ?? 'member';
+                if (!byRole[role]) byRole[role] = [];
+                byRole[role].push(m);
+            });
+            Object.keys(byRole)
+                .sort((a, b) => (ROLE_ORDER[a] ?? 99) - (ROLE_ORDER[b] ?? 99))
+                .forEach((role) => {
+                    memberGroups.push({
+                        key: `members-${role}`,
+                        label: role.charAt(0).toUpperCase() + role.slice(1),
+                        icon: 'members',
+                        items: byRole[role]
+                            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+                            .map((m) => ({
+                                id: `member-${m.id}`,
+                                primary: m.name,
+                                onSelect: () => jumpToMember(m.id),
+                            })),
+                    });
+                });
+        }
 
         const resourceSearchTerm = resourcesTerm || freeTextTerm;
         const resourceItems = (hasResourcesFilter || freeTextTerm)
@@ -1186,7 +1228,7 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         return [
             { key: 'tasks', label: 'Tasks', items: taskItems },
             { key: 'comments', label: 'Comments', items: commentItems },
-            { key: 'members', label: 'Members', items: memberItems },
+            ...memberGroups,
             { key: 'resources', label: 'Resources', items: resourceItems },
             { key: 'deliverables', label: 'Deliverables', items: deliverableItems },
         ];
@@ -1474,12 +1516,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
 
                             <div className="rounded-lg bg-white p-4 shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                <div className="mb-3 flex items-center gap-2">
-                                    <h3 className="text-base font-semibold dark:text-gray-100">Members</h3>
-                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                                        {project.members.length}
-                                    </span>
-                                </div>
+                                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                    Members &middot; {project.members.length}
+                                </p>
                                 {/* Taller than a typical dropdown-sized list and internally scrollable
                                     (thin-scrollbar, see app.css) so a long member list doesn't push the
                                     Pending Invitations section (or the whole page) further down. On lg
@@ -1491,46 +1530,56 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                                     a non-inset ring-2) room to actually paint on every side - overflow-y-auto
                                     with no matching horizontal padding clips a box-shadow-based ring flush
                                     against the container's edge, same issue as the comment list above. */}
-                                <ul className="thin-scrollbar max-h-[26rem] space-y-1 overflow-y-auto px-1.5 py-1 lg:max-h-[calc(100vh-16rem)]">
-                                    {filteredMembers.map((member) => (
-                                        <li
-                                            key={member.id}
-                                            id={`member-${member.id}`}
-                                            className={`rounded-md p-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
-                                                member.id === highlightedMemberId ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''
-                                            }`}
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <Avatar user={member} size="h-9 w-9" className="mt-0.5 shrink-0" />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-start justify-between gap-1">
-                                                        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-gray-200">
-                                                            <span className="min-w-0 truncate">{member.name}</span>
-                                                            {member.deleted_at && (
-                                                                <svg
-                                                                    className="h-3.5 w-3.5 shrink-0 text-red-400 dark:text-red-500"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="2"
-                                                                >
-                                                                    <title>Account pending deletion</title>
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            )}
-                                                        </p>
-                                                        <div className="flex shrink-0 items-center gap-1.5">
-                                                            <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-sm capitalize ${roleStyles[member.pivot.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                                {member.pivot.role}
-                                                            </span>
+                                <ul className="thin-scrollbar max-h-[26rem] space-y-3 overflow-y-auto px-1.5 py-1 lg:max-h-[calc(100vh-16rem)]">
+                                    {membersByRole.map((group) => (
+                                        <li key={group.role}>
+                                            <p className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                                {group.role} &middot; {group.members.length}
+                                            </p>
+                                            {/* Each member is its own bordered card (rather than a bare
+                                                hover-only row) so members read as separate entries instead
+                                                of one continuous block - same treatment as the search
+                                                results panel's rows. */}
+                                            <ul className="space-y-1.5">
+                                                {group.members.map((member) => (
+                                                    <li
+                                                        key={member.id}
+                                                        id={`member-${member.id}`}
+                                                        className={`rounded-md border border-gray-100 bg-white p-2 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700/80 dark:bg-gray-800 dark:hover:border-gray-600 dark:hover:bg-gray-700 ${
+                                                            member.id === highlightedMemberId ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''
+                                                        }`}
+                                                    >
+                                                        {/* items-center (rather than items-start) so the actions
+                                                            menu sits vertically centered against the full height
+                                                            of the row - name + email - instead of pinned to the
+                                                            top edge next to just the name. */}
+                                                        <div className="flex items-center gap-2">
+                                                            <Avatar user={member} size="h-9 w-9" className="shrink-0" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-gray-200">
+                                                                    <span className="min-w-0 truncate">{member.name}</span>
+                                                                    {member.deleted_at && (
+                                                                        <svg
+                                                                            className="h-3.5 w-3.5 shrink-0 text-red-400 dark:text-red-500"
+                                                                            fill="none"
+                                                                            viewBox="0 0 24 24"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                        >
+                                                                            <title>Account pending deletion</title>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                    )}
+                                                                </p>
+                                                                <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
+                                                            </div>
                                                             {canManage && !isTrashed && member.id !== project.owner_id && (isOwner || member.pivot.role !== 'manager') && (
                                                                 <MemberActionsMenu currentRole={member.pivot.role} onChangeRole={(newRole) => changeRole(member, newRole)} onRemove={() => setMemberToRemove(member)} />
                                                             )}
                                                         </div>
-                                                    </div>
-                                                    <p className="break-all text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
-                                                </div>
-                                            </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </li>
                                     ))}
                                     {filteredMembers.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No members match.</p>}
