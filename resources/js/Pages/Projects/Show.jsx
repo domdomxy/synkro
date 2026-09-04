@@ -328,6 +328,10 @@ function NoteEditForm({ editForm, onSubmit, onCancel }) {
 
 function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCancelEdit, onDelete, onToggleItem, onRemoveItem, onAddItem, onClearCompleted }) {
     const [quickAdd, setQuickAdd] = useState('');
+    // Collapsed by default so a long list of checklists doesn't turn the My
+    // Notes panel into an endless scroll - each card starts showing just its
+    // title/progress and opens on demand.
+    const [expanded, setExpanded] = useState(false);
     const items = note.content ?? [];
     const doneCount = items.filter((i) => i.done).length;
     const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
@@ -347,49 +351,75 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
     return (
         <li className="rounded border border-gray-200 bg-white px-4 py-3.5 dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
+                <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className="min-w-0 flex-1 text-left"
+                    title={expanded ? 'Minimize checklist' : 'Maximize checklist'}
+                >
                     <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
                             <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
                         </div>
                         <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length} &bull; {timeAgoLabel(note.updated_at)}</span>
-                        {doneCount > 0 && (
-                            <button onClick={onClearCompleted} className="shrink-0 whitespace-nowrap text-[11px] font-medium text-indigo-500 hover:underline">Clear completed</button>
+                        {expanded && doneCount > 0 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onClearCompleted(); }}
+                                className="shrink-0 whitespace-nowrap text-[11px] font-medium text-indigo-500 hover:underline"
+                            >
+                                Clear completed
+                            </button>
                         )}
                     </div>
+                </button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                        type="button"
+                        onClick={() => setExpanded((v) => !v)}
+                        className="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        title={expanded ? 'Minimize checklist' : 'Maximize checklist'}
+                    >
+                        <svg className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
                 </div>
-                <NoteKebabMenu onEdit={onStartEdit} onDelete={onDelete} />
             </div>
 
             {/* border-t + pt separates the note's own header (title, progress,
                 Clear completed) from its items - previously just an mt-2 gap,
-                which read as one continuous block instead of two sections. */}
-            <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
-                <form onSubmit={submitQuickAdd} className="note-add-item-box mb-2 flex items-start gap-1.5 rounded-lg bg-gray-50/60 px-2 py-1.5 dark:bg-gray-900/40">
-                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <AutoGrowTextarea
-                        value={quickAdd}
-                        onChange={(e) => setQuickAdd(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                if (quickAdd.trim()) submitQuickAdd(e);
-                            }
-                        }}
-                        placeholder="Add item..."
-                        className="block w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-300 dark:placeholder-gray-500"
-                    />
-                </form>
+                which read as one continuous block instead of two sections.
+                Only rendered while expanded, so a minimized card shows just
+                the header above. */}
+            {expanded && (
+                <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
+                    <form onSubmit={submitQuickAdd} className="note-add-item-box mb-2 flex items-start gap-1.5 rounded-lg bg-gray-50/60 px-2 py-1.5 dark:bg-gray-900/40">
+                        <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <AutoGrowTextarea
+                            value={quickAdd}
+                            onChange={(e) => setQuickAdd(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (quickAdd.trim()) submitQuickAdd(e);
+                                }
+                            }}
+                            placeholder="Add item..."
+                            className="block w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-300 dark:placeholder-gray-500"
+                        />
+                    </form>
 
-                <ul className="space-y-1.5 pl-0.5">
-                    {items.map((item) => (
-                        <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
-                    ))}
-                </ul>
-            </div>
+                    <ul className="space-y-1.5 pl-0.5">
+                        {items.map((item) => (
+                            <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
+                        ))}
+                    </ul>
+                </div>
+            )}
         </li>
     );
 }

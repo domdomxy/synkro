@@ -713,17 +713,33 @@ function MiniNoteCard({ note, onToggleItem }) {
     const items = note.content ?? [];
     const doneCount = items.filter((i) => i.done).length;
     const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+    // Collapsed by default, same as Projects/Show.jsx's NoteCard - the
+    // project group is already minimized on load, so a checklist inside it
+    // shouldn't dump its full item list the moment that group opens.
+    const [expanded, setExpanded] = useState(false);
 
     return (
         <li className="rounded border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-700 dark:bg-gray-800">
-            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
-            <div className="mt-1 flex items-center gap-2">
-                <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
-                    <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
+            <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="flex w-full items-start justify-between gap-2 text-left"
+                title={expanded ? 'Minimize checklist' : 'Maximize checklist'}
+            >
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{note.title || 'Checklist'}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                        <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                            <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length}</span>
+                    </div>
                 </div>
-                <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-gray-500">{doneCount}/{items.length}</span>
-            </div>
-            {items.length > 0 && (
+                <svg className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {expanded && items.length > 0 && (
                 // Same soft border-t treatment as Projects/Show.jsx's NoteCard,
                 // so the rollup here reads consistently with the full panel.
                 <div className="mt-2 border-t border-gray-200/70 pt-1.5 dark:border-gray-700/50">

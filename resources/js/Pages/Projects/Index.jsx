@@ -27,6 +27,16 @@ const roleStyles = {
     tester: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
 };
 
+// Solid counterparts of roleStyles, used for the grid card's thin top-edge
+// accent strip (a translucent bg-*-100 pill color would barely show against
+// the card background, so this needs its own solid-shade map).
+const roleAccent = {
+    owner: 'bg-purple-400 dark:bg-purple-600',
+    manager: 'bg-blue-400 dark:bg-blue-600',
+    member: 'bg-green-400 dark:bg-green-600',
+    tester: 'bg-amber-400 dark:bg-amber-600',
+};
+
 function EmptyState({ hasAnyProjects, showingArchived, onNewProject, onClearFilters }) {
     return (
         <div className="col-span-full flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
@@ -466,83 +476,94 @@ export default function Index({ projects, showingArchived, activeCount, archived
                             const progress = project.tasks_count > 0
                                 ? Math.round((project.done_tasks_count / project.tasks_count) * 100)
                                 : 0;
-                            const progressColor = progress === 100 ? 'bg-green-500' : 'bg-indigo-500';
+                            const progressColor = progress === 100 ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-indigo-400 dark:bg-indigo-500';
                             const isOwner = !!auth?.user && project.owner_id === auth.user.id;
+
+                            const progressTextColor = progress === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-500 dark:text-indigo-400';
 
                             return (
                                 <div
                                     key={project.id}
-                                    className="group relative rounded-lg border border-transparent bg-white p-4 shadow transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-md group-focus-within:ring-2 group-focus-within:ring-indigo-400 dark:bg-gray-800 dark:hover:border-indigo-900 dark:group-focus-within:ring-indigo-500 sm:p-6"
+                                    className="group relative overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-100 hover:shadow-lg group-focus-within:ring-2 group-focus-within:ring-indigo-400 dark:border-gray-700/60 dark:bg-gray-800 dark:hover:border-indigo-900 dark:group-focus-within:ring-indigo-500"
                                 >
-                                    <ProjectActionsMenu
-                                        project={project}
-                                        isOwner={isOwner}
-                                        showingArchived={showingArchived}
-                                        onPin={() => pinProject(project)}
-                                        onUnpin={() => unpinProject(project)}
-                                        onArchive={() => archiveProject(project)}
-                                        onUnarchive={() => unarchiveProject(project)}
-                                        onMute={() => muteProject(project)}
-                                        onUnmute={() => unmuteProject(project)}
-                                    />
-                                    {/* Browser back-navigation restores keyboard focus to whichever
-                                        card link was last clicked, and by default that shows the
-                                        browser's own square, off-brand focus outline. outline-none
-                                        here + group-focus-within:ring-2 on the card above swaps it
-                                        for a ring that follows the card's own rounded-lg shape
-                                        instead, so it reads as an intentional highlight rather than
-                                        a leftover browser artifact. */}
-                                    <Link href={route('projects.show', project.id)} className="block rounded-lg focus:outline-none">
-                                        <div className="flex items-start justify-between gap-2 pr-6">
-                                            <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
-                                                {project.name}
-                                            </h3>
-                                            <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium capitalize ${roleStyles[project.pivot?.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                                {project.pivot?.role}
-                                            </span>
-                                        </div>
-                                        <RichTextContent
-                                            className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100"
-                                            style={{ tabSize: 4 }}
-                                            html={project.description}
-                                            fallback='<span class="text-gray-400">No description provided.</span>'
+                                    {/* Thin role-colored top edge so a card's relationship to the
+                                        project reads at a glance, before you even reach the badge. */}
+                                    <div className={`h-1 w-full ${roleAccent[project.pivot?.role] ?? 'bg-gray-300 dark:bg-gray-600'}`} />
+
+                                    <div className="p-4 sm:p-6">
+                                        <ProjectActionsMenu
+                                            project={project}
+                                            isOwner={isOwner}
+                                            showingArchived={showingArchived}
+                                            onPin={() => pinProject(project)}
+                                            onUnpin={() => unpinProject(project)}
+                                            onArchive={() => archiveProject(project)}
+                                            onUnarchive={() => unarchiveProject(project)}
+                                            onMute={() => muteProject(project)}
+                                            onUnmute={() => unmuteProject(project)}
                                         />
+                                        {/* Browser back-navigation restores keyboard focus to whichever
+                                            card link was last clicked, and by default that shows the
+                                            browser's own square, off-brand focus outline. outline-none
+                                            here + group-focus-within:ring-2 on the card above swaps it
+                                            for a ring that follows the card's own rounded-xl shape
+                                            instead, so it reads as an intentional highlight rather than
+                                            a leftover browser artifact. */}
+                                        <Link href={route('projects.show', project.id)} className="block rounded-lg focus:outline-none">
+                                            <div className="flex items-start justify-between gap-2 pr-6">
+                                                <h3 className="min-w-0 truncate text-lg font-semibold text-gray-900 dark:text-gray-100" title={project.name}>
+                                                    {project.name}
+                                                </h3>
+                                                <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium capitalize ${roleStyles[project.pivot?.role] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                    {project.pivot?.role}
+                                                </span>
+                                            </div>
+                                            <RichTextContent
+                                                className="mt-2 line-clamp-2 min-h-10 whitespace-pre-wrap break-words text-sm text-gray-500 dark:text-gray-400"
+                                                style={{ tabSize: 4 }}
+                                                html={project.description}
+                                                fallback='<span class="text-gray-400 dark:text-gray-500">No description provided.</span>'
+                                            />
 
-                                        <div className="mt-4 flex items-center justify-between gap-2">
-                                            <div className="flex min-w-0 items-center gap-2">
-                                                <Avatar user={project.owner} size="h-6 w-6" />
-                                                <p className="truncate text-xs text-gray-400 dark:text-gray-500" title={project.owner?.name}>
-                                                    {project.owner?.name}
-                                                </p>
-                                                {!!project.pivot?.pinned && (
-                                                    <span title="Pinned" className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-                                                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                                        </svg>
-                                                        Pinned
-                                                    </span>
-                                                )}
-                                                {!!(project.pivot?.mute_in_app || project.pivot?.mute_email) && (
-                                                    <span title="Notifications muted" className="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
-                                                        </svg>
-                                                        Muted
-                                                    </span>
-                                                )}
+                                            <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/60">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <Avatar user={project.owner} size="h-6 w-6" />
+                                                    <p className="truncate text-xs text-gray-400 dark:text-gray-500" title={project.owner?.name}>
+                                                        {project.owner?.name}
+                                                    </p>
+                                                    {!!project.pivot?.pinned && (
+                                                        <span title="Pinned" className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                                                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                            </svg>
+                                                            Pinned
+                                                        </span>
+                                                    )}
+                                                    {!!(project.pivot?.mute_in_app || project.pivot?.mute_email) && (
+                                                        <span title="Notifications muted" className="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9M3 3l18 18" />
+                                                            </svg>
+                                                            Muted
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                    </svg>
+                                                    {project.tasks_count} {project.tasks_count === 1 ? 'task' : 'tasks'}
+                                                </div>
                                             </div>
-                                            <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                                                {project.tasks_count} tasks
-                                            </div>
-                                        </div>
 
-                                        <div className="mt-3">
-                                            <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-                                                <div className={`h-1.5 rounded-full transition-all ${progressColor}`} style={{ width: `${progress}%` }} />
+                                            <div className="mt-3 flex items-center gap-2.5">
+                                                <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700/70">
+                                                    <div className={`h-1 rounded-full transition-all ${progressColor}`} style={{ width: `${progress}%` }} />
+                                                </div>
+                                                <p className={`shrink-0 text-xs font-medium tabular-nums ${progressTextColor}`}>{progress}%</p>
                                             </div>
-                                            <p className="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">{progress}% done</p>
-                                        </div>
-                                    </Link>
+                                        </Link>
+                                    </div>
                                 </div>
                             );
                         })}
