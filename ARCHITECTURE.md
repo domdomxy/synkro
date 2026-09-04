@@ -195,23 +195,41 @@ component (parameterized with `rangeParam`/`fromParam`/`toParam` so each writes 
 params) and each passes the other's active params through as `extraParams`, so switching one
 filter's range doesn't reset the other's.
 
-## Project search: one bar, two different behaviors
+## Project search: one bar, one unified results panel
 
-The search bar on the project page (`Projects/Show.jsx`, built on `KeywordSearchBar.jsx`) handles
-two distinct kinds of input, not one:
+The search bar on the project page (`Projects/Show.jsx`, built on `KeywordSearchBar.jsx`) accepts
+two kinds of input - plain typed text, or a filter keyword (`status:`, `priority:`, `assignee:`,
+`comments:`, `deliverables:`, `resources:`) that locks into a solid tag and opens a value picker,
+turning into a removable applied-filter pill once a value is picked or typed. `status`/`priority`/
+`assignee` are fixed-option selects; `comments` is free text matched against comment bodies;
+`deliverables` and `resources` combine an optional type chip with free text matched against name.
+Backspace on an empty bar pops the most recent tag or pill.
 
-- **Plain typed text** (no keyword) is a live "type to search" query matched across the project's
-  tasks, comments, members, resources, and deliverables. Results render in `SearchResultsPanel.jsx`,
-  which takes over the right-hand column (where `NotesPanel` normally sits) grouped by type with
-  an icon per group, and reverts to `NotesPanel` the instant the query is cleared - modeled on
-  Discord's in-server search-results pane rather than a small dropdown list.
-- **A filter keyword** (`status:`, `priority:`, `assignee:`, `comments:`, `deliverables:`,
-  `resources:`) locks into a solid tag inside the bar itself and opens a value picker; picking or
-  typing a value turns it into a removable applied-filter pill, narrowing the task list (or, for
-  `resources:`, the Resources panel) instead of populating the results panel. `status`/`priority`/
-  `assignee` are fixed-option selects; `comments` is free text matched against comment bodies;
-  `deliverables` and `resources` combine an optional type chip with free text matched against
-  name. Backspace on an empty bar pops the most recent tag or pill.
+Either kind of input - or any combination of them - opens the same `SearchResultsPanel.jsx` in the
+right-hand column (where `NotesPanel` normally sits), grouped by type (Tasks/Comments/Members/
+Resources/Deliverables) with an icon per group, reverting to `NotesPanel` the instant every filter
+is cleared (the panel's own clear button clears all of them at once) - modeled on Discord's
+in-server search-results pane rather than a small dropdown list. This column stays visible during
+an active search even if My Notes has been toggled off via the header button (`showNotesPanel`
+false) - that toggle only governs whether `NotesPanel` itself shows once search is cleared, not
+whether results can occupy the slot; the two states are combined into a single `showRightColumn`
+flag (`showNotesPanel || hasActiveTaskFilters`) that the column's existence (and its width in the
+desktop grid, and its mobile pane tab) actually follows. On mobile, activating any filter also
+auto-scrolls the swipeable pane row to the Results pane, rather than leaving it behind a tab the
+user has to find and tap themselves. The Tasks group mirrors `filteredTasks` exactly (whatever's
+actually visible in the task list/board below, so the panel and the list never disagree about what
+"filtered" means) whenever a filter that actually narrows tasks is active - free text, `status:`,
+`priority:`, `assignee:`, `comments:`, or `deliverables:`. `resources:` is excluded from that list
+on purpose: a resource belongs to the project, not any task (see the earlier note on why it was
+never added as a task filter), so with `resources:` as the only active filter `filteredTasks` is
+every task, unfiltered - dumping all of them into a "Tasks" match group would misrepresent what was
+actually searched for, so the Tasks group is simply empty in that case instead. Comments/Resources/
+Deliverables match on their own keyword filter's text/type when one is set, falling back to the
+plain typed text otherwise (so a comment can still surface here even on a task hidden by
+`status:`); Members only respond to plain typed text, since no keyword filter targets the member
+list directly. The header reads `Results for "..."` when there's typed text, or a generic
+"Filtered results" when
+only a keyword filter (no free text) is active.
 
 A green completion bar (`TaskStatusBar.jsx`) sits above the task list/board, independent of the
 search bar - just a done/total count and percentage, not a per-status breakdown.

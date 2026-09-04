@@ -548,7 +548,7 @@ export default function KeywordSearchBar({ value, onChange, filters, placeholder
                                 <FilterTypeIcon />
                                 <span>
                                     {canApplyPending
-                                        ? `Press Enter to apply${pendingQuery ? ` \u2014 "${pendingQuery}"` : ''}`
+                                        ? `Press Enter to apply${pendingQuery ? ` - "${pendingQuery}"` : ''}`
                                         : `Type to search ${pendingType.keyword}`}
                                 </span>
                             </button>

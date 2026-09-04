@@ -731,7 +731,6 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
     const [autoOpenCommentId, setAutoOpenCommentId] = useState(null);
     const [autoOpenDeliverableId, setAutoOpenDeliverableId] = useState(null);
     const [highlightedMemberId, setHighlightedMemberId] = useState(null);
-    const [highlightedResourceId, setHighlightedResourceId] = useState(null);
 
     const jumpToTaskInList = (taskId) => {
         setViewMode('list');
@@ -779,13 +778,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         setTimeout(() => setHighlightedMemberId(null), 3000);
     };
 
-    const jumpToResource = (resourceId, resourceName) => {
-        setResourcesFilter({ type: null, text: resourceName });
-        setHighlightedResourceId(resourceId);
-        setTimeout(() => {
-            document.getElementById('resources-filter-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 50);
-        setTimeout(() => setHighlightedResourceId(null), 3000);
+    // Resources have no on-page preview anymore (the old inline box was
+    // removed as redundant with the search results panel's own Resources
+    // group) - so picking one from search just goes straight to the actual
+    // Resources page rather than scrolling to a highlighted row in place.
+    const jumpToResource = () => {
+        router.visit(route('projects.resources', project.id));
     };
     const [showNewTaskForm, setShowNewTaskForm] = useState(false);
     const [showInviteForm, setShowInviteForm] = useState(false);
@@ -1074,88 +1072,116 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
 
     const resourcesTerm = resourcesFilter.text.trim().toLowerCase();
     const hasResourcesFilter = Boolean(resourcesFilter.type) || resourcesTerm !== '';
-    const matchingResources = useMemo(() => {
-        if (!hasResourcesFilter) return [];
-        return (project.resources ?? []).filter((r) => {
-            if (resourcesFilter.type && r.type !== resourcesFilter.type) return false;
-            if (!resourcesTerm) return true;
-            return [r.name, r.original_name, r.url, r.description].some((v) => v?.toLowerCase().includes(resourcesTerm));
-        });
-    }, [project.resources, hasResourcesFilter, resourcesFilter.type, resourcesTerm]);
 
     // Generous cap now that results render as their own scrollable panel
     // (SearchResultsPanel, in the right-hand column) rather than a handful
     // of rows tucked under the search bar's dropdown.
     const MAX_SEARCH_RESULTS_PER_GROUP = 20;
 
-    // Live "type to search" results for the project search bar - separate
-    // from the keyword filters above (status:/priority:/etc narrow the task
-    // list in place), this finds actual tasks/comments/members/resources/
-    // deliverables matching plain typed text and groups them so picking one
-    // jumps straight to it, wherever it lives.
+    // Results for the project search bar - unified across BOTH plain typed
+    // text and keyword filters (status:/priority:/etc), so picking a filter
+    // tag opens this panel exactly the same way typing free text does,
+    // rather than only narrowing the task list silently underneath it.
+    // - Tasks group mirrors `filteredTasks` directly (which already combines
+    //   every active filter, keyword and free-text alike), so this panel and
+    //   the task list below it never disagree about what "filtered" means.
+    // - Comments/Resources/Deliverables each match on their own keyword
+    //   filter's text/type when set, falling back to the free-text term
+    //   otherwise - independent of the task-level filters above, so e.g. a
+    //   comment can still show up here even on a task hidden by status:.
+    // - Members only respond to free text - there's no keyword filter aimed
+    //   at members (assignee: narrows tasks, not the member list).
+    const freeTextTerm = taskSearch.trim().toLowerCase();
+    // Whether ANY currently-active filter actually narrows the task list -
+    // resources: does not (a resource belongs to the project, not a task;
+    // see the earlier note on why it was never added as a task filter), so
+    // with only resources: applied, filteredTasks is every task, unfiltered.
+    // Showing that as a "Tasks" match would be misleading, not helpful -
+    // gate the Tasks group on this instead of "any filter at all".
+    const hasTaskLevelFilter =
+        freeTextTerm !== '' ||
+        statusFilter !== 'all' ||
+        priorityFilter !== 'all' ||
+        assigneeFilter !== 'all' ||
+        commentsTerm !== '' ||
+        hasDeliverablesFilter;
     const searchResultGroups = useMemo(() => {
-        const term = taskSearch.trim().toLowerCase();
-        if (!term) return [];
+        const taskItems = hasTaskLevelFilter
+            ? filteredTasks
+                  .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+                  .map((t) => ({
+                      id: `task-${t.id}`,
+                      primary: t.title,
+                      secondary: t.status,
+                      onSelect: () => jumpToTaskInList(t.id),
+                  }))
+            : [];
 
-        const taskItems = project.tasks
-            .filter((t) => t.title.toLowerCase().includes(term))
-            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
-            .map((t) => ({
-                id: `task-${t.id}`,
-                primary: t.title,
-                secondary: t.status,
-                onSelect: () => jumpToTaskInList(t.id),
-            }));
-
+        const commentSearchTerm = commentsTerm || freeTextTerm;
         const commentItems = [];
-        project.tasks.forEach((t) => {
-            (t.comments ?? []).forEach((c) => {
-                if (commentItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
-                const text = stripHtml(c.body).trim();
-                if (!text.toLowerCase().includes(term)) return;
-                commentItems.push({
-                    id: `comment-${c.id}`,
-                    primary: text.length > 80 ? `${text.slice(0, 80)}...` : text,
-                    secondary: `${c.user?.name ? `${c.user.name} \u00b7 ` : ''}${t.title}`,
-                    onSelect: () => jumpToTaskComment(t.id, c.id),
+        if (commentSearchTerm) {
+            project.tasks.forEach((t) => {
+                (t.comments ?? []).forEach((c) => {
+                    if (commentItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
+                    const text = stripHtml(c.body).trim();
+                    if (!text.toLowerCase().includes(commentSearchTerm)) return;
+                    commentItems.push({
+                        id: `comment-${c.id}`,
+                        primary: text.length > 80 ? `${text.slice(0, 80)}...` : text,
+                        secondary: `${c.user?.name ? `${c.user.name} \u00b7 ` : ''}${t.title}`,
+                        onSelect: () => jumpToTaskComment(t.id, c.id),
+                    });
                 });
             });
-        });
+        }
 
-        const memberItems = project.members
-            .filter((m) => m.name.toLowerCase().includes(term))
-            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
-            .map((m) => ({
-                id: `member-${m.id}`,
-                primary: m.name,
-                secondary: m.pivot?.role,
-                onSelect: () => jumpToMember(m.id),
-            }));
+        const memberItems = freeTextTerm
+            ? project.members
+                  .filter((m) => m.name.toLowerCase().includes(freeTextTerm))
+                  .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+                  .map((m) => ({
+                      id: `member-${m.id}`,
+                      primary: m.name,
+                      secondary: m.pivot?.role,
+                      onSelect: () => jumpToMember(m.id),
+                  }))
+            : [];
 
-        const resourceItems = (project.resources ?? [])
-            .filter((r) => [r.name, r.original_name].some((v) => v?.toLowerCase().includes(term)))
-            .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
-            .map((r) => ({
-                id: `resource-${r.id}`,
-                primary: r.name,
-                secondary: r.type,
-                onSelect: () => jumpToResource(r.id, r.name),
-            }));
+        const resourceSearchTerm = resourcesTerm || freeTextTerm;
+        const resourceItems = (hasResourcesFilter || freeTextTerm)
+            ? (project.resources ?? [])
+                  .filter((r) => {
+                      if (resourcesFilter.type && r.type !== resourcesFilter.type) return false;
+                      if (!resourceSearchTerm) return true;
+                      return [r.name, r.original_name, r.url, r.description].some((v) => v?.toLowerCase().includes(resourceSearchTerm));
+                  })
+                  .slice(0, MAX_SEARCH_RESULTS_PER_GROUP)
+                  .map((r) => ({
+                      id: `resource-${r.id}`,
+                      primary: r.name,
+                      secondary: r.type,
+                      onSelect: () => jumpToResource(),
+                  }))
+            : [];
 
+        const deliverableSearchTerm = deliverablesTerm || freeTextTerm;
         const deliverableItems = [];
-        project.tasks.forEach((t) => {
-            (t.deliverables ?? []).forEach((d) => {
-                if (deliverableItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
-                const label = d.title || d.original_name || '';
-                if (!label.toLowerCase().includes(term)) return;
-                deliverableItems.push({
-                    id: `deliverable-${d.id}`,
-                    primary: label,
-                    secondary: t.title,
-                    onSelect: () => jumpToTaskDeliverable(t.id, d.id),
+        if (hasDeliverablesFilter || freeTextTerm) {
+            project.tasks.forEach((t) => {
+                (t.deliverables ?? []).forEach((d) => {
+                    if (deliverableItems.length >= MAX_SEARCH_RESULTS_PER_GROUP) return;
+                    if (deliverablesFilter.type && d.type !== deliverablesFilter.type) return;
+                    const label = d.title || d.original_name || '';
+                    if (deliverableSearchTerm && !label.toLowerCase().includes(deliverableSearchTerm)) return;
+                    deliverableItems.push({
+                        id: `deliverable-${d.id}`,
+                        primary: label,
+                        secondary: t.title,
+                        onSelect: () => jumpToTaskDeliverable(t.id, d.id),
+                    });
                 });
             });
-        });
+        }
 
         return [
             { key: 'tasks', label: 'Tasks', items: taskItems },
@@ -1164,7 +1190,21 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             { key: 'resources', label: 'Resources', items: resourceItems },
             { key: 'deliverables', label: 'Deliverables', items: deliverableItems },
         ];
-    }, [project.tasks, project.members, project.resources, taskSearch]);
+    }, [
+        filteredTasks,
+        hasTaskLevelFilter,
+        project.tasks,
+        project.members,
+        project.resources,
+        freeTextTerm,
+        commentsTerm,
+        hasResourcesFilter,
+        resourcesFilter.type,
+        resourcesTerm,
+        hasDeliverablesFilter,
+        deliverablesFilter.type,
+        deliverablesTerm,
+    ]);
 
     const hasActiveTaskFilters =
         taskSearch.trim() !== '' ||
@@ -1174,6 +1214,12 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
         commentsTerm !== '' ||
         hasDeliverablesFilter ||
         hasResourcesFilter;
+    // The right-hand column normally follows the "Hide/Show My Notes panel"
+    // toggle, but an active search should never be hidden by that toggle -
+    // it's a different thing occupying the same slot, not My Notes itself.
+    // So the column shows whenever either is true; which of the two renders
+    // inside it is still decided by hasActiveTaskFilters alone (see below).
+    const showRightColumn = showNotesPanel || hasActiveTaskFilters;
     const canLeave = !isOwner && role !== 'admin';
 
     // Mobile-only back navigation: on small screens there's no persistent sidebar
@@ -1187,6 +1233,17 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
             router.visit(route('dashboard'));
         }
     };
+
+    // On mobile, jump straight to the Results pane the moment a filter goes
+    // active instead of leaving it behind a manual tab swipe - the desktop
+    // grid just shows the panel in place, this keeps mobile in step with
+    // that instead of requiring an extra tap to find it. Skipped at lg+
+    // where the columns are a non-scrolling grid, not swipeable panes.
+    useEffect(() => {
+        if (!hasActiveTaskFilters) return;
+        if (window.matchMedia('(min-width: 1024px)').matches) return;
+        notesPaneRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, [hasActiveTaskFilters]);
 
     return (
         <AuthenticatedLayout headerMaxWidth="max-w-[1600px]" header={
@@ -1292,9 +1349,9 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             // A lone remaining side column gets extra width instead of
                             // just the same 320px it'd share with a sibling column that
                             // is no longer there to take up the freed-up space.
-                            showTeamPanel ? (showNotesPanel ? '320px' : '380px') : null,
+                            showTeamPanel ? (showRightColumn ? '320px' : '380px') : null,
                             'minmax(0, 920px)',
-                            showNotesPanel ? (showTeamPanel ? '320px' : '480px') : null,
+                            showRightColumn ? (showTeamPanel ? '320px' : '480px') : null,
                         ].filter(Boolean).join(' ')};
                         justify-content: center;
                         overflow: visible;
@@ -1329,45 +1386,13 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
                     )}
-                    {hasResourcesFilter && (
-                        <div id="resources-filter-panel" className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-700">
-                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                    Resources{resourcesFilter.text ? ` matching "${resourcesFilter.text}"` : ''}
-                                    {resourcesFilter.type ? ` (${ATTACHMENT_TYPE_OPTIONS.find((t) => t.value === resourcesFilter.type)?.label})` : ''}
-                                </span>
-                                <Link href={route('projects.resources', project.id)} className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                                    View all resources
-                                </Link>
-                            </div>
-                            {matchingResources.length === 0 ? (
-                                <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No matching resources.</p>
-                            ) : (
-                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {matchingResources.map((r) => (
-                                        <li key={r.id} id={`resource-${r.id}`} className={r.id === highlightedResourceId ? 'ring-2 ring-inset ring-indigo-400 dark:ring-indigo-500 task-highlight-ring' : ''}>
-                                            <Link
-                                                href={route('projects.resources', project.id)}
-                                                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                            >
-                                                <span className="min-w-0 truncate text-gray-700 dark:text-gray-200">{r.name}</span>
-                                                <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium uppercase text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                                                    {r.type}
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
                     <MobilePaneTabs
                         tabBarRef={tabBarRef}
                         columnsScrollRef={columnsScrollRef}
                         panes={[
                             showTeamPanel && { label: 'Team', ref: teamPaneRef },
                             { label: 'Tasks', ref: tasksPaneRef },
-                            showNotesPanel && { label: taskSearch.trim() !== '' ? 'Results' : 'Notes', ref: notesPaneRef },
+                            showRightColumn && { label: hasActiveTaskFilters ? 'Results' : 'Notes', ref: notesPaneRef },
                         ].filter(Boolean)}
                     />
                     <div ref={columnsScrollRef} className="project-columns flex snap-x snap-mandatory items-start gap-6 overflow-x-auto scroll-smooth pb-1 lg:pb-0 lg:snap-none">
@@ -1750,16 +1775,19 @@ export default function Show({ project, role, myNotes, pendingInvitations }) {
                             )}
                         </div>
 
-                        {/* RIGHT: search results (while the search bar has a typed query) take over
-                            this column in place of My Notes, page-like rather than a small dropdown -
-                            reverts to Notes the moment the search is cleared. */}
-                        {showNotesPanel && (
+                        {/* RIGHT: search results (while ANY filter - a typed query or a keyword tag
+                            like status:/resources: - is active) take over this column in place of My
+                            Notes, page-like rather than a small dropdown - reverts to Notes the moment
+                            every filter is cleared. This column stays visible during an active search
+                            even if My Notes has been toggled off (showNotesPanel false) - that toggle
+                            only governs Notes itself, not search results occupying the same slot. */}
+                        {showRightColumn && (
                         <div ref={notesPaneRef} className="w-full shrink-0 snap-center snap-always space-y-4 lg:w-auto lg:shrink lg:snap-align-none lg:sticky lg:top-40 lg:self-start">
-                            {taskSearch.trim() !== '' ? (
+                            {hasActiveTaskFilters ? (
                                 <SearchResultsPanel
                                     query={taskSearch}
                                     groups={searchResultGroups}
-                                    onClear={() => setTaskSearch('')}
+                                    onClear={clearTaskFilters}
                                 />
                             ) : (
                                 <NotesPanel project={project} myNotes={myNotes} />

@@ -1,8 +1,11 @@
-// Presents the project search bar's live "type to search" matches as their
-// own panel (Discord's in-server search-results pane was the reference),
-// instead of a small list tucked under the search bar's dropdown. Swapped
-// into the right-hand column in Projects/Show.jsx whenever there's a typed
-// query, replacing NotesPanel until the search is cleared.
+// Presents the project search bar's matches as their own panel (Discord's
+// in-server search-results pane was the reference), instead of a small list
+// tucked under the search bar's dropdown. Swapped into the right-hand column
+// in Projects/Show.jsx whenever any filter is active - a typed query or a
+// keyword tag like status:/resources: - replacing NotesPanel until every
+// filter is cleared. `query` may be empty (a keyword-only filter with no
+// free text typed), in which case the header falls back to a generic label
+// instead of `Results for ""`.
 
 const GROUP_ICONS = {
     tasks: (
@@ -68,7 +71,7 @@ export default function SearchResultsPanel({ query, groups, onClear }) {
             <div className="flex items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-700">
                 <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        Results for &quot;{query}&quot;
+                        {query ? <>Results for &quot;{query}&quot;</> : 'Filtered results'}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                         {totalCount} {totalCount === 1 ? 'result' : 'results'}
