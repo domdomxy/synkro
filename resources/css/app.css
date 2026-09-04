@@ -126,6 +126,37 @@ html.dark {
     height: 0;
 }
 
+/* Checklist item rows (NoteItemRow in Projects/Show.jsx, NoteItemMini in
+   Dashboard.jsx) - written as a plain CSS class rather than relying on a
+   dynamically-combined Tailwind border-color utility, so the border can't
+   silently disappear if a particular class combination isn't picked up by
+   a given build. Explicit and always compiled in. */
+.note-item-row {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #e5e7eb; /* light mode */
+}
+html.dark .note-item-row {
+    border-color: #454B69; /* regular dark theme */
+}
+html.theme-black .note-item-row {
+    border-color: #3a3a3a; /* black theme - visible against the near-black card/item fills */
+}
+
+/* Same treatment for the dashed "Add item..." box in Projects/Show.jsx's
+   NoteCard, so its border color survives the same way. */
+.note-add-item-box {
+    border-width: 1px;
+    border-style: dashed;
+    border-color: #d1d5db; /* light mode */
+}
+html.dark .note-add-item-box {
+    border-color: #454B69;
+}
+html.theme-black .note-add-item-box {
+    border-color: #3a3a3a;
+}
+
 /* AuthField.jsx (Login/Register/password-reset pages) and PasswordInput.jsx
    (Account settings password fields) each render their own eye icon to
    toggle password visibility. Microsoft Edge also draws its own native

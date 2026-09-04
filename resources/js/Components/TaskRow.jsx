@@ -1335,7 +1335,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                         }}
                         placeholder={replyingTo ? `Reply to ${replyingTo.user?.name ?? 'Deleted user'}...` : 'Write a comment... (@ to mention someone)'}
                         title="Tip: [label](url) turns into a clickable link, @ to mention someone or a role"
-                        className="block w-full rounded-2xl border-gray-300 py-2 !pr-11 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:!pr-3"
+                        className="block w-full rounded-lg border-gray-300 py-2 !pr-11 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:!pr-3"
                     />
                     <button
                         type="submit"
@@ -1408,7 +1408,7 @@ export default function TaskRow({ task, currentUserId, canManage, canReview, isT
                     />
                 ))}
                 {commentCount === 0 && (
-                    <div className="flex flex-col items-center gap-2 py-4 text-gray-300 dark:text-gray-600">
+                    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-gray-200 py-8 text-gray-300 dark:border-gray-700 dark:text-gray-600">
                         <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z" />
                         </svg>

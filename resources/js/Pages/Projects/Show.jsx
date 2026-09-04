@@ -233,7 +233,7 @@ function NoteKebabMenu({ onEdit, onDelete }) {
 
 function NoteItemRow({ item, onToggle, onRemove }) {
     return (
-        <li className="group/item flex items-start gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800/60 dark:ring-gray-700/60">
+        <li className="note-item-row group/item flex items-start gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm dark:bg-gray-800/60">
             <button
                 type="button"
                 onClick={onToggle}
@@ -366,14 +366,8 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
                 Clear completed) from its items - previously just an mt-2 gap,
                 which read as one continuous block instead of two sections. */}
             <div className="mt-3 border-t border-gray-200 pt-2.5 dark:border-gray-700">
-                <ul className="space-y-1.5 pl-0.5">
-                    {items.map((item) => (
-                        <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
-                    ))}
-                </ul>
-
-                <form onSubmit={submitQuickAdd} className="mt-1.5 flex items-start gap-1.5">
-                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <form onSubmit={submitQuickAdd} className="note-add-item-box mb-2 flex items-start gap-1.5 rounded-lg bg-gray-50/60 px-2 py-1.5 dark:bg-gray-900/40">
+                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
                     <AutoGrowTextarea
@@ -386,9 +380,15 @@ function NoteCard({ note, isEditing, editForm, onStartEdit, onSubmitEdit, onCanc
                             }
                         }}
                         placeholder="Add item..."
-                        className="block w-full border-0 border-b border-transparent bg-transparent p-0 text-xs text-gray-500 placeholder-gray-300 focus:border-indigo-400 focus:ring-0 dark:text-gray-400 dark:placeholder-gray-600"
+                        className="block w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-300 dark:placeholder-gray-500"
                     />
                 </form>
+
+                <ul className="space-y-1.5 pl-0.5">
+                    {items.map((item) => (
+                        <NoteItemRow key={item.id} item={item} onToggle={() => onToggleItem(item.id)} onRemove={() => onRemoveItem(item.id)} />
+                    ))}
+                </ul>
             </div>
         </li>
     );
@@ -457,10 +457,12 @@ function NotesPanel({ project, myNotes }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3 3L22 4M2 12v6a2 2 0 002 2h12" />
                         </svg>
                     </div>
-                    <span className="text-sm font-semibold dark:text-gray-100">My Notes</span>
-                    {sorted.length > 0 && (
-                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{sorted.length}</span>
-                    )}
+                    <span className="text-sm font-semibold dark:text-gray-100">
+                        My Notes
+                        {sorted.length > 0 && (
+                            <span className="font-normal text-gray-400 dark:text-gray-500"> &middot; {sorted.length}</span>
+                        )}
+                    </span>
                     <svg className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
