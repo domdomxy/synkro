@@ -189,6 +189,11 @@ The app will be available at the URL in `APP_URL` (`http://localhost:8000` by de
   is configurable via `NAME_CHANGE_COOLDOWN_DAYS` (defaults to 7 days) - see `config/synkro.php`.
   A changed display name also notifies the owners/managers of that user's projects, so a sudden
   name change doesn't read as an unfamiliar member.
+- **Database:** this repo's `.env.example` defaults to SQLite so anyone can clone and run
+  `composer run setup` with zero extra setup. Synkro was actually built and run against MySQL
+  (via MAMP) during development, as described in the PFA report - to match that locally, set
+  `DB_CONNECTION=mysql` plus the other `DB_*` variables in `.env` before running the setup
+  command, or after via `php artisan migrate:fresh`.
 
 ### Troubleshooting
 
