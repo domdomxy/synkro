@@ -547,7 +547,7 @@ export default function Welcome({ auth, stats }) {
                     .synkro-marquee-track { animation: none; }
                 }
             `}</style>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="min-h-screen overflow-x-hidden bg-gray-50 dark:bg-gray-900">
                 <div
                     aria-hidden="true"
                     className="fixed inset-x-0 top-0 z-50 h-[3px] origin-left bg-indigo-500 transition-transform duration-150 ease-out"

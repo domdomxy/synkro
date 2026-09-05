@@ -94,15 +94,6 @@ export default function ProjectMenu({ project, page, isOwner, canManage, onShowI
                 </button>
             </Dropdown.Trigger>
             <Dropdown.Content align="right" width="56" contentClasses="py-1 bg-white dark:bg-gray-800">
-                {onToggleMute && (
-                    <>
-                        <button type="button" onClick={onToggleMute} className={ITEM_CLASSES}>
-                            {isMuted ? <BellOffIcon /> : <BellIcon />}
-                            {isMuted ? 'Unmute Notifications' : 'Mute Notifications'}
-                        </button>
-                        <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                    </>
-                )}
                 <button type="button" onClick={onShowInfo} className={ITEM_CLASSES}>
                     <InfoIcon />
                     Project Information
@@ -119,14 +110,20 @@ export default function ProjectMenu({ project, page, isOwner, canManage, onShowI
                         Resources
                     </Link>
                 )}
+                {(onToggleMute || (canManage && page !== 'settings')) && (
+                    <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                )}
+                {onToggleMute && (
+                    <button type="button" onClick={onToggleMute} className={ITEM_CLASSES}>
+                        {isMuted ? <BellOffIcon /> : <BellIcon />}
+                        {isMuted ? 'Unmute Notifications' : 'Mute Notifications'}
+                    </button>
+                )}
                 {canManage && page !== 'settings' && (
-                    <>
-                        <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                        <Link href={route('projects.settings', project.id)} className={ITEM_CLASSES}>
-                            <SettingsIcon />
-                            {isOwner ? 'Owner Settings' : 'Manager Settings'}
-                        </Link>
-                    </>
+                    <Link href={route('projects.settings', project.id)} className={ITEM_CLASSES}>
+                        <SettingsIcon />
+                        {isOwner ? 'Owner Settings' : 'Manager Settings'}
+                    </Link>
                 )}
                 {canLeave && (
                     <>
