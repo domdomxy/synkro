@@ -49,8 +49,11 @@ const sections = [
         title: 'Third-party services',
         body: (
             <p>
-                Synkro relies on very few third-party services to function: mainly an email provider to
-                deliver notification emails. Real-time updates (live notifications, dashboard activity, and
+                Synkro relies on very few third-party services to function: an email provider to deliver
+                notification emails, and an IP geolocation lookup service that resolves the approximate
+                city/region/country shown for each of your active sessions - only your IP address is sent
+                for this lookup, and only when you sign in or view your logged-in devices, never any other
+                account or activity data. Real-time updates (live notifications, dashboard activity, and
                 the like) run over a self-hosted WebSocket server rather than a third-party broadcasting
                 service, so that data doesn't leave Synkro's own infrastructure.
             </p>

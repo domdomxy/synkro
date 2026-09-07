@@ -123,7 +123,7 @@ Built with Laravel 13, Inertia.js, and React.
 
 ## Tech stack
 
-- **Backend:** Laravel 13 (PHP 8.3+), Inertia.js, Laravel Reverb (WebSockets), Sanctum
+- **Backend:** Laravel 13 (PHP 8.3+), Inertia.js, Laravel Reverb (WebSockets)
 - **Frontend:** React, Tailwind CSS, Recharts, Headless UI
 - **Build tooling:** Vite
 

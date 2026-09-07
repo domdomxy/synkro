@@ -71,14 +71,22 @@ failure) anyone already a member or already invited.
 
 ```
 To Do → In Progress → Submitted → In Review → Done
-                          ↑___________|
-                      (reject/reopen loop)
+                          ↑___________|      ↓
+                      (reject loop)   (send back for changes)
+                                              ↓
+                                       In Progress
 ```
 
 A `tester` (or `owner`/`manager`) reviews a `Submitted` task and either approves it
-(→ `Done`) or rejects it, which reopens it for further work. Deliverables (files or
-links) attach to a task via `TaskDeliverable`; a project's submitted deliverables can be
-bulk-exported as a ZIP.
+(→ `Done`) or rejects it (`TaskController::review()`), which reopens it for further work
+and resets `submitted_at`/`review_started_at` so the next cycle's wait time is measured
+fresh. Separately, a *`Done`* task can also be sent back for changes
+(`TaskController::reopen()`) - owner/manager only, not the tester who approved it
+(`manageMembers` gate, changed from the review policy on purpose) - which returns it to
+`in_progress` with its submission and history intact, clears the same two timestamps,
+and posts the required feedback as a comment (`is_reopened: true`) rather than a silent
+status flip. Deliverables (files or links) attach to a task via `TaskDeliverable`; a
+project's submitted deliverables can be bulk-exported as a ZIP.
 
 `TaskController::bulkUpdate()` lets an owner/manager act on several tasks from the project task
 list at once (delete, change status, change priority, reassign, change or clear the due date)
