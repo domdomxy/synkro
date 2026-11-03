@@ -42,7 +42,10 @@ class PurgeDeletedTasks extends Command
             }
 
             foreach ($task->deliverables as $deliverable) {
-                Storage::disk('public')->delete($deliverable->path);
+                // Link deliverables have no stored file (path is null).
+                if ($deliverable->type === 'file' && $deliverable->path) {
+                    Storage::disk('public')->delete($deliverable->path);
+                }
             }
 
             $task->forceDelete();
